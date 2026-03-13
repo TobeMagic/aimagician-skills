@@ -1,0 +1,55 @@
+skills:
+  sources:
+    - id: default-skill-source
+      type: github
+      github:
+        repo: aimagician/default-skills
+        path: skills
+      assets:
+        - id: ship-everywhere
+          kind: skill
+          path: ship-everywhere/SKILL.md
+    - id: selective-skill-source
+      type: github
+      targets:
+        include:
+          - claude
+          - opencode
+      github:
+        repo: aimagician/selective-skills
+      assets:
+        - id: source-default
+          kind: skill
+        - id: gemini-native
+          kind: skill
+          targets:
+            include:
+              - gemini
+            capabilities:
+              gemini:
+                skill:
+                  support: unsupported
+                  reason: Needs target-native GEMINI.md rendering
+plugins:
+  sources:
+    - id: plugin-source
+      type: command
+      targets:
+        include:
+          - opencode
+          - codex
+        capabilities:
+          codex:
+            plugin:
+              support: unsupported
+              reason: Codex plugin adapters are not available
+      command:
+        run: opencode plugin add browser-tools
+      assets:
+        - id: browser-tools
+          kind: plugin
+        - id: opencode-only
+          kind: plugin
+          targets:
+            exclude:
+              - codex
