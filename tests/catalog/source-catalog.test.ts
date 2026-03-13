@@ -30,6 +30,7 @@ describe("loadCatalog", () => {
       "claude-official",
       "opencode-browser"
     ]);
+    expect(catalog.ownedSkills).toHaveLength(0);
     expect(catalog.skills.sources[0]?.type).toBe("github");
     expect(catalog.plugins.sources[0]?.type).toBe("command");
   });
@@ -40,11 +41,24 @@ describe("loadCatalog", () => {
 
     const skillsRoot = join(root, "skills");
     const pluginsRoot = join(root, "plugins");
+    const ownedSkillsRoot = join(root, "owned");
     await mkdir(skillsRoot, { recursive: true });
     await mkdir(pluginsRoot, { recursive: true });
+    await mkdir(join(ownedSkillsRoot, "release-notes"), { recursive: true });
+    await mkdir(join(ownedSkillsRoot, "daily-ops"), { recursive: true });
 
     const skillYaml = await readFile(join(skillsCatalogRoot, "example.yaml"), "utf8");
     await writeFile(join(skillsRoot, "example.yaml"), skillYaml, "utf8");
+    await writeFile(
+      join(ownedSkillsRoot, "release-notes", "SKILL.md"),
+      "# Release Notes\n",
+      "utf8"
+    );
+    await writeFile(
+      join(ownedSkillsRoot, "daily-ops", "SKILL.md"),
+      "# Daily Ops\n",
+      "utf8"
+    );
     await writeFile(
       join(pluginsRoot, "example.yaml"),
       [
@@ -61,7 +75,11 @@ describe("loadCatalog", () => {
       "utf8"
     );
 
-    const catalog = await loadCatalog({ skillsRoot, pluginsRoot });
+    const catalog = await loadCatalog({
+      ownedSkillsRoot,
+      skillsRoot,
+      pluginsRoot
+    });
 
     expect(catalog.sources.map((source) => source.id)).toEqual([
       "claude-official",
@@ -74,5 +92,9 @@ describe("loadCatalog", () => {
     expect(catalog.sources.find((source) => source.id === "local-bootstrap")?.enabled).toBe(
       false
     );
+    expect(catalog.ownedSkills.map((skill) => skill.id)).toEqual([
+      "daily-ops",
+      "release-notes"
+    ]);
   });
 });

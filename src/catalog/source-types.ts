@@ -48,6 +48,12 @@ export type CatalogSourceRecord = (CatalogSourceInput & {
   originFile: string;
 });
 
+export interface OwnedSkillRecord {
+  id: string;
+  skillDir: string;
+  skillFile: string;
+}
+
 export interface LoadedCatalogFile {
   section: CatalogSection;
   filePath: string;
@@ -64,6 +70,7 @@ export interface LoadedCatalogSection {
 }
 
 export interface LoadedCatalog {
+  ownedSkills: OwnedSkillRecord[];
   skills: LoadedCatalogSection;
   plugins: LoadedCatalogSection;
   sources: CatalogSourceRecord[];

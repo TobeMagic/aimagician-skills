@@ -1,16 +1,23 @@
 import { readFile } from "node:fs/promises";
+import { basename, dirname } from "node:path";
 import fg from "fast-glob";
 import { parse } from "yaml";
 import type { CatalogSection } from "../model/assets";
-import { pluginsCatalogRoot, skillsCatalogRoot } from "../shared/paths";
+import {
+  ownedSkillsRoot,
+  pluginsCatalogRoot,
+  skillsCatalogRoot
+} from "../shared/paths";
 import type {
   LoadedCatalog,
   LoadedCatalogFile,
-  LoadedCatalogSection
+  LoadedCatalogSection,
+  OwnedSkillRecord
 } from "./source-types";
 import { parseCatalogFile } from "./schemas";
 
 export interface CatalogLoadOptions {
+  ownedSkillsRoot?: string;
   skillsRoot?: string;
   pluginsRoot?: string;
 }
@@ -18,6 +25,9 @@ export interface CatalogLoadOptions {
 export async function loadCatalog(
   options: CatalogLoadOptions = {}
 ): Promise<LoadedCatalog> {
+  const ownedSkills = await discoverOwnedSkills(
+    options.ownedSkillsRoot ?? ownedSkillsRoot
+  );
   const skills = await loadCatalogSection("skills", options.skillsRoot ?? skillsCatalogRoot);
   const plugins = await loadCatalogSection(
     "plugins",
@@ -28,11 +38,33 @@ export async function loadCatalog(
   const activeSources = [...skills.activeSources, ...plugins.activeSources];
 
   return {
+    ownedSkills,
     skills,
     plugins,
     sources,
     activeSources
   };
+}
+
+export async function discoverOwnedSkills(
+  rootDir: string = ownedSkillsRoot
+): Promise<OwnedSkillRecord[]> {
+  const matches = await fg(["*/SKILL.md"], {
+    cwd: rootDir,
+    onlyFiles: true,
+    absolute: true,
+    suppressErrors: true
+  });
+
+  return matches.map((skillFile) => {
+    const skillDir = dirname(skillFile);
+
+    return {
+      id: basename(skillDir),
+      skillDir,
+      skillFile
+    };
+  });
 }
 
 export async function loadCatalogSection(
