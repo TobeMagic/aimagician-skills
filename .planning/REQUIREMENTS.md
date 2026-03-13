@@ -7,15 +7,15 @@
 
 ### Repository
 
-- [ ] **REPO-01**: User can keep self-authored skills inside this repository in a stable directory that the installer scans automatically
-- [ ] **REPO-02**: User can add or update owned skills without editing installer source code
+- [x] **REPO-01**: User can keep self-authored skills inside this repository in a stable directory that the installer scans automatically
+- [x] **REPO-02**: User can add or update owned skills without editing installer source code
 
 ### Sources
 
-- [ ] **SRC-01**: User can register an external GitHub skill source in configuration
-- [ ] **SRC-02**: User can register an external command-based source in configuration
-- [ ] **SRC-03**: User can enable or disable an individual external source without deleting its definition
-- [ ] **SRC-04**: User can declare which target CLIs each skill or source should deploy to
+- [x] **SRC-01**: User can register an external GitHub skill source in configuration
+- [x] **SRC-02**: User can register an external command-based source in configuration
+- [x] **SRC-03**: User can enable or disable an individual external source without deleting its definition
+- [x] **SRC-04**: User can declare which target CLIs each skill or source should deploy to
 
 ### Installation
 
@@ -72,12 +72,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REPO-01 | Phase 1 | Pending |
-| REPO-02 | Phase 1 | Pending |
-| SRC-01 | Phase 1 | Pending |
-| SRC-02 | Phase 1 | Pending |
-| SRC-03 | Phase 1 | Pending |
-| SRC-04 | Phase 1 | Pending |
+| REPO-01 | Phase 1 | Complete |
+| REPO-02 | Phase 1 | Complete |
+| SRC-01 | Phase 1 | Complete |
+| SRC-02 | Phase 1 | Complete |
+| SRC-03 | Phase 1 | Complete |
+| SRC-04 | Phase 1 | Complete |
 | INST-01 | Phase 2 | Pending |
 | INST-02 | Phase 2 | Pending |
 | INST-03 | Phase 2 | Pending |
@@ -102,4 +102,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-03-13 after roadmap creation*
+*Last updated: 2026-03-13 after Phase 1 completion*

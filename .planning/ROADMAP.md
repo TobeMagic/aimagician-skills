@@ -12,7 +12,7 @@ AImagician Skills will move from a repository concept to a reliable personal boo
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Catalog Foundation** - Define owned-skill structure, external source schema, and normalized config rules
+- [x] **Phase 1: Catalog Foundation** - Define owned-skill structure, external source schema, and normalized config rules (completed 2026-03-13)
 - [ ] **Phase 2: Bootstrap Engine** - Build the one-command install and update workflow with cross-platform execution
 - [ ] **Phase 3: Direct Skill Targets** - Install skills into Codex, Claude Code, and OpenCode user-level locations
 - [ ] **Phase 4: Gemini and Plugins** - Add Gemini-native output plus capability-aware plugin and extension handling
@@ -31,9 +31,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Scaffold package structure, command surface, and repository conventions
-- [ ] 01-02: Implement owned-skill discovery plus external source schema
-- [ ] 01-03: Implement normalized asset model and target metadata validation
+- [x] 01-01: Scaffold package structure, command surface, and repository conventions
+- [x] 01-02: Implement owned-skill discovery plus external source schema
+- [x] 01-03: Implement normalized asset model and target metadata validation
 
 ### Phase 2: Bootstrap Engine
 **Goal**: Build the clone-and-run bootstrap workflow with idempotent updates and cross-platform install planning
@@ -105,7 +105,7 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Catalog Foundation | 0/3 | Not started | - |
+| 1. Catalog Foundation | 3/3 | Complete    | 2026-03-13 |
 | 2. Bootstrap Engine | 0/3 | Not started | - |
 | 3. Direct Skill Targets | 0/3 | Not started | - |
 | 4. Gemini and Plugins | 0/3 | Not started | - |
