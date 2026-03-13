@@ -72,12 +72,34 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| REPO-01 | Phase 1 | Pending |
+| REPO-02 | Phase 1 | Pending |
+| SRC-01 | Phase 1 | Pending |
+| SRC-02 | Phase 1 | Pending |
+| SRC-03 | Phase 1 | Pending |
+| SRC-04 | Phase 1 | Pending |
+| INST-01 | Phase 2 | Pending |
+| INST-02 | Phase 2 | Pending |
+| INST-03 | Phase 2 | Pending |
+| INST-04 | Phase 3 | Pending |
+| INST-05 | Phase 2 | Pending |
+| TARG-01 | Phase 3 | Pending |
+| TARG-02 | Phase 3 | Pending |
+| TARG-03 | Phase 3 | Pending |
+| TARG-04 | Phase 4 | Pending |
+| TARG-05 | Phase 2 | Pending |
+| PLUG-01 | Phase 4 | Pending |
+| PLUG-02 | Phase 4 | Pending |
+| PLUG-03 | Phase 4 | Pending |
+| VER-01 | Phase 5 | Pending |
+| VER-02 | Phase 5 | Pending |
+| VER-03 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 21 total
-- Mapped to phases: 0
-- Unmapped: 21
+- v1 requirements: 22 total
+- Mapped to phases: 22
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-03-13 after initial definition*
+*Last updated: 2026-03-13 after roadmap creation*
