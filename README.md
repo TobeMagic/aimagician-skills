@@ -157,6 +157,63 @@ When `assets` is omitted:
 - skill catalogs scan first-level directories under `github.path` and keep the ones that contain `SKILL.md`
 - plugin catalogs scan first-level directories and first-level JavaScript or TypeScript files under `github.path`
 
+Common GitHub source shapes:
+
+Default all assets:
+
+```yaml
+sources:
+  - id: claude-official
+    type: github
+    github:
+      repo: anthropics/skills
+      ref: main
+      path: skills
+```
+
+Single asset:
+
+```yaml
+sources:
+  - id: claude-official
+    type: github
+    github:
+      repo: anthropics/skills
+      ref: main
+      path: skills
+    assets:
+      - id: docx
+        kind: skill
+        path: docx
+```
+
+Multiple assets:
+
+```yaml
+sources:
+  - id: claude-official
+    type: github
+    github:
+      repo: anthropics/skills
+      ref: main
+      path: skills
+    assets:
+      - id: docx
+        kind: skill
+        path: docx
+      - id: pdf
+        kind: skill
+        path: pdf
+      - id: xlsx
+        kind: skill
+        path: xlsx
+```
+
+`assets` is always an array:
+
+- one asset means one `-` item under `assets:`
+- multiple assets means multiple `-` items under `assets:`
+
 ## Add a Command-Based Skill Source
 
 If an upstream project already ships its own installer command, declare it under `catalog/skills/`, for example:
@@ -230,6 +287,50 @@ Reference:
 - Anthropic official skills repo: `https://github.com/anthropics/skills`
 
 If you only want a subset, add explicit `assets` entries and point `path` at the skill directory name, for example `docx`, `pdf`, or `xlsx`.
+
+Single official skill:
+
+```yaml
+sources:
+  - id: claude-official
+    type: github
+    targets:
+      include:
+        - claude
+    github:
+      repo: anthropics/skills
+      ref: main
+      path: skills
+    assets:
+      - id: docx
+        kind: skill
+        path: docx
+```
+
+Multiple official skills:
+
+```yaml
+sources:
+  - id: claude-official
+    type: github
+    targets:
+      include:
+        - claude
+    github:
+      repo: anthropics/skills
+      ref: main
+      path: skills
+    assets:
+      - id: docx
+        kind: skill
+        path: docx
+      - id: pdf
+        kind: skill
+        path: pdf
+      - id: xlsx
+        kind: skill
+        path: xlsx
+```
 
 ## Example: Add a Supported OpenCode Plugin
 
@@ -306,6 +407,50 @@ What happens today:
 - you should still use Claude Code's native plugin flow for actual installation
 
 This default-all form maps directly to the official directory layout, where `external_plugins/<plugin-id>/` is the unit you want to track.
+
+Single official plugin:
+
+```yaml
+sources:
+  - id: claude-official-plugins
+    type: github
+    targets:
+      include:
+        - claude
+    github:
+      repo: anthropics/claude-plugins-official
+      ref: main
+      path: external_plugins
+    assets:
+      - id: github
+        kind: plugin
+        path: github
+```
+
+Multiple official plugins:
+
+```yaml
+sources:
+  - id: claude-official-plugins
+    type: github
+    targets:
+      include:
+        - claude
+    github:
+      repo: anthropics/claude-plugins-official
+      ref: main
+      path: external_plugins
+    assets:
+      - id: github
+        kind: plugin
+        path: github
+      - id: linear
+        kind: plugin
+        path: linear
+      - id: playwright
+        kind: plugin
+        path: playwright
+```
 
 According to Anthropic's official plugin directory flow:
 

@@ -153,6 +153,36 @@ sources:
 - `assets[].path`
   该 asset 在 `github.path` 下面的相对路径
 
+补一句最容易混淆的点：
+
+- `assets` 永远是数组
+- 单个 asset 也要写成 `assets:` 加一个 `-`
+- 多个 assets 就是在 `assets:` 下面连续写多个 `-`
+
+例如，单个 asset：
+
+```yaml
+assets:
+  - id: docx
+    kind: skill
+    path: docx
+```
+
+多个 assets：
+
+```yaml
+assets:
+  - id: docx
+    kind: skill
+    path: docx
+  - id: pdf
+    kind: skill
+    path: pdf
+  - id: xlsx
+    kind: skill
+    path: xlsx
+```
+
 ## 5. “默认全部”到底怎么工作
 
 ### 5.1 Skills
@@ -318,7 +348,26 @@ sources:
 
 这时就把 `assets` 写出来。
 
-### 7.1 只拿部分官方 skills
+### 7.1 单个官方 skill
+
+```yaml
+sources:
+  - id: claude-official
+    type: github
+    targets:
+      include:
+        - claude
+    github:
+      repo: anthropics/skills
+      ref: main
+      path: skills
+    assets:
+      - id: docx
+        kind: skill
+        path: docx
+```
+
+### 7.2 多个官方 skills
 
 ```yaml
 sources:
@@ -345,7 +394,26 @@ sources:
 
 这里的 `path` 对应的是 `skills/` 下面的目录名，不需要再写成 `docx/SKILL.md`。
 
-### 7.2 只拿部分官方 plugins
+### 7.3 单个官方 plugin
+
+```yaml
+sources:
+  - id: claude-official-plugins
+    type: github
+    targets:
+      include:
+        - claude
+    github:
+      repo: anthropics/claude-plugins-official
+      ref: main
+      path: external_plugins
+    assets:
+      - id: github
+        kind: plugin
+        path: github
+```
+
+### 7.4 多个官方 plugins
 
 ```yaml
 sources:
