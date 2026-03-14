@@ -1,0 +1,13 @@
+sources:
+  - id: gsd
+    type: command
+    enabled: true
+    description: Install or update Get Shit Done for Claude Code
+    targets:
+      include:
+        - claude
+    command:
+      run: npx get-shit-done-cc@latest --global
+    assets:
+      - id: gsd
+        kind: skill
