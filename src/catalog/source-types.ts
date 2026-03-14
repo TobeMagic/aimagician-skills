@@ -2,6 +2,14 @@ import type { AssetKind, CatalogSection } from "../model/assets";
 import type { TargetSelection } from "../model/targets";
 
 export interface CatalogAssetInput {
+  id?: string;
+  kind?: AssetKind;
+  path?: string;
+  description?: string;
+  targets?: TargetSelection;
+}
+
+export interface CatalogResolvedAssetInput {
   id: string;
   kind: AssetKind;
   path?: string;
@@ -29,7 +37,7 @@ export interface GithubSourceInput extends BaseCatalogSourceInput {
 
 export interface CommandSourceInput extends BaseCatalogSourceInput {
   type: "command";
-  assets: CatalogAssetInput[];
+  assets?: CatalogAssetInput[];
   command: {
     run: string;
     shell?: string;
@@ -40,8 +48,14 @@ export interface CommandSourceInput extends BaseCatalogSourceInput {
 export type CatalogSourceInput = GithubSourceInput | CommandSourceInput;
 
 export type CatalogResolvedSourceInput =
-  | (Omit<GithubSourceInput, "assets"> & { type: "github"; assets: CatalogAssetInput[] })
-  | CommandSourceInput;
+  | (Omit<GithubSourceInput, "assets"> & {
+      type: "github";
+      assets: CatalogResolvedAssetInput[];
+    })
+  | (Omit<CommandSourceInput, "assets"> & {
+      type: "command";
+      assets: CatalogResolvedAssetInput[];
+    });
 
 export interface CatalogFileInput {
   sources: CatalogSourceInput[];

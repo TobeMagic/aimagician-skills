@@ -8,6 +8,3 @@ sources:
         - claude
     command:
       run: npx get-shit-done-cc@latest --global
-    assets:
-      - id: gsd
-        kind: skill

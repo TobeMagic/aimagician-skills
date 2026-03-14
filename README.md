@@ -148,14 +148,22 @@ Field notes:
 - `repo`: GitHub repo in `owner/name` format
 - `ref`: optional branch, tag, or commit
 - `path`: optional parent directory inside the repo that contains the assets you want to scan
-- `assets`: optional for `github`, required for `command`
-- `assets[].id`: local asset id used by this project
+- `assets`: optional for both `github` and `command`
+- `assets[].id`: optional local asset id; if omitted, it is derived from `assets[].path`
+- `assets[].kind`: optional; inferred from whether the file lives under `catalog/skills` or `catalog/plugins`
 - `assets[].path`: path to the source asset inside the repo, relative to `github.path`
+
+`id` vs `path`:
+
+- `path` answers "where is the source asset"
+- `id` answers "what local name should this project use"
+- if you do not need renaming, omit `id` and let it follow the directory or file name from `path`
 
 When `assets` is omitted:
 
 - skill catalogs scan first-level directories under `github.path` and keep the ones that contain `SKILL.md`
 - plugin catalogs scan first-level directories and first-level JavaScript or TypeScript files under `github.path`
+- command catalogs treat the whole source as one logical asset and default its id to the source `id`
 
 Common GitHub source shapes:
 
@@ -182,9 +190,7 @@ sources:
       ref: main
       path: skills
     assets:
-      - id: docx
-        kind: skill
-        path: docx
+      - path: docx
 ```
 
 Multiple assets:
@@ -198,15 +204,9 @@ sources:
       ref: main
       path: skills
     assets:
-      - id: docx
-        kind: skill
-        path: docx
-      - id: pdf
-        kind: skill
-        path: pdf
-      - id: xlsx
-        kind: skill
-        path: xlsx
+      - path: docx
+      - path: pdf
+      - path: xlsx
 ```
 
 `assets` is always an array:
@@ -236,9 +236,21 @@ sources:
     command:
       run: node scripts/install-upstream.js
       cwd: .
+```
+
+If you omit `assets` on a command source, this project treats it as one logical installed pack and uses the source id as the asset id.
+
+If a command source needs to expose multiple logical assets, then declare them explicitly:
+
+```yaml
+sources:
+  - id: upstream-installer
+    type: command
+    command:
+      run: node scripts/install-upstream.js
     assets:
-      - id: upstream-helper
-        kind: skill
+      - id: upstream-core
+      - id: upstream-review
 ```
 
 At runtime, delegated skill installers receive:
@@ -302,9 +314,7 @@ sources:
       ref: main
       path: skills
     assets:
-      - id: docx
-        kind: skill
-        path: docx
+      - path: docx
 ```
 
 Multiple official skills:
@@ -321,15 +331,9 @@ sources:
       ref: main
       path: skills
     assets:
-      - id: docx
-        kind: skill
-        path: docx
-      - id: pdf
-        kind: skill
-        path: pdf
-      - id: xlsx
-        kind: skill
-        path: xlsx
+      - path: docx
+      - path: pdf
+      - path: xlsx
 ```
 
 ## Example: Add a Supported OpenCode Plugin
@@ -357,9 +361,7 @@ sources:
       ref: main
       path: plugins
     assets:
-      - id: audit-helper
-        kind: plugin
-        path: audit-helper.ts
+      - path: audit-helper.ts
 ```
 
 Then run:
@@ -422,9 +424,7 @@ sources:
       ref: main
       path: external_plugins
     assets:
-      - id: github
-        kind: plugin
-        path: github
+      - path: github
 ```
 
 Multiple official plugins:
@@ -441,15 +441,9 @@ sources:
       ref: main
       path: external_plugins
     assets:
-      - id: github
-        kind: plugin
-        path: github
-      - id: linear
-        kind: plugin
-        path: linear
-      - id: playwright
-        kind: plugin
-        path: playwright
+      - path: github
+      - path: linear
+      - path: playwright
 ```
 
 According to Anthropic's official plugin directory flow:

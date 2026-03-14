@@ -55,13 +55,21 @@ function createAssetSchema(section: CatalogSection) {
 
   return z
     .object({
-      id: slugSchema,
-      kind: z.literal(expectedKind),
+      id: slugSchema.optional(),
+      kind: z.literal(expectedKind).optional(),
       path: z.string().min(1).optional(),
       description: z.string().min(1).optional(),
       targets: targetSelectionSchema.optional()
     })
-    .strict();
+    .strict()
+    .superRefine((asset, context) => {
+      if (!asset.id && !asset.path) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Asset must define id or path"
+        });
+      }
+    });
 }
 
 function createSourceCommonSchema() {
@@ -100,7 +108,7 @@ function createCommandSourceSchema(section: CatalogSection) {
         cwd: z.string().min(1).optional()
       })
       .strict(),
-    assets: z.array(createAssetSchema(section)).min(1)
+    assets: z.array(createAssetSchema(section)).min(1).optional()
   });
 }
 
@@ -136,8 +144,9 @@ export function isCatalogSourceInput(value: unknown): value is CatalogSourceInpu
         type: z.literal("github"),
         assets: z.array(
           z.object({
-            id: slugSchema,
-            kind: z.enum(assetKinds)
+            id: slugSchema.optional(),
+            kind: z.enum(assetKinds).optional(),
+            path: z.string().min(1).optional()
           })
         ).optional()
       }),
@@ -146,10 +155,11 @@ export function isCatalogSourceInput(value: unknown): value is CatalogSourceInpu
         type: z.literal("command"),
         assets: z.array(
           z.object({
-            id: slugSchema,
-            kind: z.enum(assetKinds)
+            id: slugSchema.optional(),
+            kind: z.enum(assetKinds).optional(),
+            path: z.string().min(1).optional()
           })
-        ).min(1)
+        ).optional()
       })
     ])
     .safeParse(value).success;

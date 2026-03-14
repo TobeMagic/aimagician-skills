@@ -37,7 +37,7 @@ github:
   path: external_plugins
 ```
 
-### 规则 2: `assets` 对 `github` source 现在可以省略
+### 规则 2: `assets` 对 `github` source 可省略
 
 如果你省略 `assets`，这个项目会自动“拿全部”。
 
@@ -48,9 +48,11 @@ github:
 - `catalog/plugins/*.yaml`
   扫描 `github.path` 下的一级子目录，以及一级 `.js/.cjs/.mjs/.ts/.cts/.mts` 文件
 
-### 规则 3: `command` source 仍然必须写 `assets`
+### 规则 3: `command` source 也可以不写 `assets`
 
-因为命令型 source 没法从远程目录结构里自动推断要安装什么。
+如果不写，系统会把整个 command source 当成一个逻辑 asset，默认使用 source 自己的 `id`。
+
+只有当一个 command source 需要在本项目里拆成多个逻辑 asset 时，你才需要显式写 `assets`。
 
 ## 2. 目录分工
 
@@ -111,9 +113,6 @@ sources:
         - claude
     command:
       run: npx get-shit-done-cc@latest --global
-    assets:
-      - id: gsd
-        kind: skill
 ```
 
 这类 source 不是复制仓库目录，而是直接执行命令。
@@ -147,11 +146,20 @@ sources:
 - `assets`
   这个 source 里要取哪些具体 asset
 - `assets[].id`
-  在本项目里的 asset id
+  在本项目里的 asset id；可选
 - `assets[].kind`
-  `skill` 或 `plugin`
+  `skill` 或 `plugin`；通常可省略
 - `assets[].path`
   该 asset 在 `github.path` 下面的相对路径
+
+你可以把它理解成：
+
+- `path`
+  回答“源资产在哪里”
+- `id`
+  回答“本项目里把它叫什么”
+
+如果你不需要重命名，通常直接只写 `path` 就够了，`id` 会自动跟随目录名或文件名。
 
 补一句最容易混淆的点：
 
@@ -163,24 +171,16 @@ sources:
 
 ```yaml
 assets:
-  - id: docx
-    kind: skill
-    path: docx
+  - path: docx
 ```
 
 多个 assets：
 
 ```yaml
 assets:
-  - id: docx
-    kind: skill
-    path: docx
-  - id: pdf
-    kind: skill
-    path: pdf
-  - id: xlsx
-    kind: skill
-    path: xlsx
+  - path: docx
+  - path: pdf
+  - path: xlsx
 ```
 
 ## 5. “默认全部”到底怎么工作
@@ -300,16 +300,13 @@ sources:
         - claude
     command:
       run: npx get-shit-done-cc@latest --global
-    assets:
-      - id: gsd
-        kind: skill
 ```
 
 意思：
 
 - 不走 GitHub 目录复制
 - 直接执行 `npx get-shit-done-cc@latest --global`
-- 这类 source 仍然要写 `assets`
+- 不写 `assets` 时，就把整个 source 当成一个逻辑 asset，id 默认就是 `gsd`
 
 ### 6.3 Claude 官方 plugins
 
@@ -362,9 +359,7 @@ sources:
       ref: main
       path: skills
     assets:
-      - id: docx
-        kind: skill
-        path: docx
+      - path: docx
 ```
 
 ### 7.2 多个官方 skills
@@ -381,15 +376,9 @@ sources:
       ref: main
       path: skills
     assets:
-      - id: docx
-        kind: skill
-        path: docx
-      - id: pdf
-        kind: skill
-        path: pdf
-      - id: xlsx
-        kind: skill
-        path: xlsx
+      - path: docx
+      - path: pdf
+      - path: xlsx
 ```
 
 这里的 `path` 对应的是 `skills/` 下面的目录名，不需要再写成 `docx/SKILL.md`。
@@ -408,9 +397,7 @@ sources:
       ref: main
       path: external_plugins
     assets:
-      - id: github
-        kind: plugin
-        path: github
+      - path: github
 ```
 
 ### 7.4 多个官方 plugins
@@ -427,12 +414,8 @@ sources:
       ref: main
       path: external_plugins
     assets:
-      - id: github
-        kind: plugin
-        path: github
-      - id: linear
-        kind: plugin
-        path: linear
+      - path: github
+      - path: linear
 ```
 
 这里的 `path` 对应的是 `external_plugins/` 下面的目录名。
@@ -455,9 +438,7 @@ sources:
       ref: main
       path: plugins
     assets:
-      - id: audit-helper
-        kind: plugin
-        path: audit-helper.ts
+      - path: audit-helper.ts
 ```
 
 如果省略 `assets`，而扫描出来的是目录型 plugin，那么：
@@ -498,9 +479,7 @@ sources:
       ref: main
       path: skills
     assets:
-      - id: review-helper
-        kind: skill
-        path: review-helper
+      - path: review-helper
 ```
 
 ### 9.4 临时关闭一个 source

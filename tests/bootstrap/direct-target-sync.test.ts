@@ -341,9 +341,7 @@ async function createFixtureRepository(
       "      repo: aimagician/external-skills",
       "      path: skills",
       "    assets:",
-      "      - id: gsd",
-      "        kind: skill",
-      "        path: gsd/SKILL.md",
+      "      - path: gsd",
       ...(options.includeCommandSource
         ? [
             "  - id: delegated-tools",
@@ -355,8 +353,7 @@ async function createFixtureRepository(
             "    command:",
             `      run: '${process.execPath} ${commandScriptPath}'`,
             "    assets:",
-            "      - id: command-helper",
-            "        kind: skill"
+            "      - id: command-helper"
           ]
         : [])
     ].join("\n"),
@@ -377,9 +374,7 @@ async function createFixtureRepository(
           "      repo: aimagician/external-skills",
           "      path: plugins",
           "    assets:",
-          "      - id: audit-helper",
-          "        kind: plugin",
-          "        path: audit-helper.ts"
+          "      - path: audit-helper.ts"
         ].join("\n")
       : "sources: []\n",
     "utf8"

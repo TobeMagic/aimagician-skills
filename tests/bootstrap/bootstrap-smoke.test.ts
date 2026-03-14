@@ -204,7 +204,9 @@ async function createSmokeFixture(
       "    type: github",
       "    github:",
       "      repo: aimagician/external-skills",
-      "      path: skills"
+      "      path: skills",
+      "    assets:",
+      "      - path: gsd"
     ].join("\n"),
     "utf8"
   );
@@ -221,7 +223,9 @@ async function createSmokeFixture(
           "        - opencode",
           "    github:",
           "      repo: aimagician/external-skills",
-          "      path: plugins"
+          "      path: plugins",
+          "    assets:",
+          "      - path: audit-helper.ts"
         ].join("\n")
       : "sources: []\n",
     "utf8"

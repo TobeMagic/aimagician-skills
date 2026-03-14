@@ -176,10 +176,39 @@ describe("runBootstrap", () => {
       reason: "Claude Code plugin automation remains marketplace- and consent-driven, so bootstrap skips it"
     });
   });
+
+  it("treats a command source without assets as one logical asset using the source id", async () => {
+    const fixture = await createFixtureRepository({
+      includeImplicitCommandSource: true
+    });
+
+    const result = await runBootstrap({
+      dryRun: true,
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      githubRepoOverrides: {
+        "aimagician/repo-skills": fixture.externalRepoRoot
+      },
+      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
+    });
+
+    expect(result.plan.assets.map((asset) => asset.id)).toContain("implicit-command");
+    expect(result.commandReports).toContainEqual({
+      sourceId: "implicit-command",
+      assetIds: ["implicit-command"],
+      targets: ["claude"],
+      command: `${process.execPath} ${fixture.commandScriptPath}`,
+      status: "planned"
+    });
+  });
 });
 
 async function createFixtureRepository(
-  options: { includePluginSource?: boolean; includeDirectoryPlugin?: boolean } = {}
+  options: {
+    includePluginSource?: boolean;
+    includeDirectoryPlugin?: boolean;
+    includeImplicitCommandSource?: boolean;
+  } = {}
 ) {
   const root = await mkdtemp(join(tmpdir(), "aimagician-bootstrap-"));
   tempDirectories.push(root);
@@ -227,7 +256,17 @@ async function createFixtureRepository(
       `      run: '${process.execPath} ${commandScriptPath}'`,
       "    assets:",
       "      - id: bootstrap-tools",
-      "        kind: skill"
+      ...(options.includeImplicitCommandSource
+        ? [
+            "  - id: implicit-command",
+            "    type: command",
+            "    targets:",
+            "      include:",
+            "        - claude",
+            "    command:",
+            `      run: '${process.execPath} ${commandScriptPath}'`
+          ]
+        : [])
     ].join("\n"),
     "utf8"
   );
@@ -253,6 +292,7 @@ async function createFixtureRepository(
   return {
     root,
     externalRepoRoot,
+    commandScriptPath,
     catalog: {
       ownedSkillsRoot,
       skillsRoot,

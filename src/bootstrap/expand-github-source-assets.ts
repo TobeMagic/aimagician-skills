@@ -3,6 +3,7 @@ import { constants } from "node:fs";
 import { basename, extname, join } from "node:path";
 import type {
   CatalogAssetInput,
+  CatalogResolvedAssetInput,
   CatalogResolvedSourceRecord,
   CatalogSourceRecord
 } from "../catalog/source-types";
@@ -23,14 +24,21 @@ export async function expandGithubSourceAssets(
 
   for (const source of options.sources) {
     if (source.type !== "github") {
-      expandedSources.push(source);
+      expandedSources.push({
+        ...source,
+        assets: resolveDeclaredAssets(
+          source.assets?.length ? source.assets : [{ id: source.id }],
+          source.section,
+          source.id
+        )
+      });
       continue;
     }
 
     if ((source.assets?.length ?? 0) > 0) {
       expandedSources.push({
         ...source,
-        assets: source.assets ?? []
+        assets: resolveDeclaredAssets(source.assets ?? [], source.section, source.id)
       });
       continue;
     }
@@ -69,7 +77,7 @@ async function discoverGithubAssets(
   checkoutRoot: string,
   githubPath: string | undefined,
   sourceId: string
-): Promise<CatalogAssetInput[]> {
+): Promise<CatalogResolvedAssetInput[]> {
   const baseDir = githubPath ? join(checkoutRoot, githubPath) : checkoutRoot;
   const entries = await readdir(baseDir, { withFileTypes: true });
   const assets =
@@ -95,8 +103,8 @@ async function discoverGithubAssets(
 async function discoverGithubSkillAssets(
   baseDir: string,
   names: string[]
-): Promise<CatalogAssetInput[]> {
-  const assets: CatalogAssetInput[] = [];
+): Promise<CatalogResolvedAssetInput[]> {
+  const assets: CatalogResolvedAssetInput[] = [];
 
   for (const name of names.sort((left, right) => left.localeCompare(right))) {
     if (name.startsWith(".")) {
@@ -123,8 +131,8 @@ async function discoverGithubSkillAssets(
 
 function discoverGithubPluginAssets(
   entries: Array<{ name: string; isDirectory: boolean; isFile: boolean }>
-): CatalogAssetInput[] {
-  const assets: CatalogAssetInput[] = [];
+): CatalogResolvedAssetInput[] {
+  const assets: CatalogResolvedAssetInput[] = [];
 
   for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
     if (entry.name.startsWith(".")) {
@@ -152,6 +160,75 @@ function discoverGithubPluginAssets(
   return assets;
 }
 
+function resolveDeclaredAssets(
+  assets: CatalogAssetInput[],
+  section: CatalogSection,
+  sourceId: string
+): CatalogResolvedAssetInput[] {
+  const resolved = assets.map((asset) => resolveDeclaredAsset(asset, section, sourceId));
+
+  assertUniqueAssetIds(resolved, sourceId);
+
+  return resolved.sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function resolveDeclaredAsset(
+  asset: CatalogAssetInput,
+  section: CatalogSection,
+  sourceId: string
+): CatalogResolvedAssetInput {
+  const id = asset.id ?? deriveAssetIdFromPath(asset.path);
+
+  if (!id) {
+    throw new Error(
+      `Source ${sourceId} has an asset without an id or a path that can derive one`
+    );
+  }
+
+  if (!isValidSlug(id)) {
+    throw new Error(
+      `Source ${sourceId} resolved invalid asset id "${id}". Use lowercase kebab-case.`
+    );
+  }
+
+  return {
+    id,
+    kind: asset.kind ?? inferAssetKind(section),
+    path: asset.path,
+    description: asset.description,
+    targets: asset.targets
+  };
+}
+
+function inferAssetKind(section: CatalogSection): CatalogResolvedAssetInput["kind"] {
+  return section === "skills" ? "skill" : "plugin";
+}
+
+function deriveAssetIdFromPath(pathValue: string | undefined): string | null {
+  if (!pathValue) {
+    return null;
+  }
+
+  const segments = pathValue.split(/[\\/]+/).filter(Boolean);
+  const lastSegment = segments.at(-1);
+
+  if (!lastSegment) {
+    return null;
+  }
+
+  if (lastSegment.toLowerCase() === "skill.md") {
+    return segments.at(-2) ?? null;
+  }
+
+  const extension = extname(lastSegment).toLowerCase();
+
+  if (extension) {
+    return basename(lastSegment, extension);
+  }
+
+  return lastSegment;
+}
+
 function isSupportedPluginFile(fileName: string): boolean {
   return [".js", ".cjs", ".mjs", ".ts", ".cts", ".mts"].includes(
     extname(fileName).toLowerCase()
@@ -159,7 +236,7 @@ function isSupportedPluginFile(fileName: string): boolean {
 }
 
 function assertUniqueAssetIds(
-  assets: CatalogAssetInput[],
+  assets: Array<{ id: string }>,
   sourceId: string
 ): void {
   const seen = new Set<string>();
@@ -173,4 +250,8 @@ function assertUniqueAssetIds(
 
     seen.add(asset.id);
   }
+}
+
+function isValidSlug(value: string): boolean {
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
 }

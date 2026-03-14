@@ -114,7 +114,7 @@ describe("loadCatalog", () => {
     expect(catalog.sources.find((source) => source.id === "local-bootstrap")?.enabled).toBe(
       false
     );
-    expect(catalog.ownedSkills.map((skill) => skill.id)).toEqual([
+    expect(catalog.ownedSkills.map((skill) => skill.id).sort()).toEqual([
       "daily-ops",
       "release-notes"
     ]);
