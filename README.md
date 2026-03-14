@@ -84,6 +84,10 @@ node dist/cli/index.js doctor --target claude --json
 4. Run `list` to see what is present under the current user profile.
 5. Run `doctor` if you want to verify that managed installs recorded in the manifest still exist on disk.
 
+If you want the full Chinese explanation of the YAML config scheme and the exact live catalog now checked into this repo, read:
+
+- [docs/CATALOG-CONFIG.md](D:\Growth_up_youth\repo\skills\docs\CATALOG-CONFIG.md)
+
 ## Repository Layout
 
 ```text
