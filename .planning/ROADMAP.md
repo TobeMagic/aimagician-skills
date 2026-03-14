@@ -13,7 +13,7 @@ AImagician Skills will move from a repository concept to a reliable personal boo
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Catalog Foundation** - Define owned-skill structure, external source schema, and normalized config rules (completed 2026-03-13)
-- [ ] **Phase 2: Bootstrap Engine** - Build the one-command install and update workflow with cross-platform execution
+- [x] **Phase 2: Bootstrap Engine** - Build the one-command install and update workflow with cross-platform execution (completed 2026-03-14)
 - [ ] **Phase 3: Direct Skill Targets** - Install skills into Codex, Claude Code, and OpenCode user-level locations
 - [ ] **Phase 4: Gemini and Plugins** - Add Gemini-native output plus capability-aware plugin and extension handling
 - [ ] **Phase 5: Verification and Release UX** - Add doctor/list/report flows and finish the bootstrap experience
@@ -47,9 +47,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: Build CLI entrypoint and bootstrap command UX
-- [ ] 02-02: Implement install planning, update logic, and cross-platform path core
-- [ ] 02-03: Package npm distribution and bootstrap smoke coverage
+- [x] 02-01: Build CLI entrypoint and bootstrap command UX
+- [x] 02-02: Implement install planning, update logic, and cross-platform path core
+- [x] 02-03: Package npm distribution and bootstrap smoke coverage
 
 ### Phase 3: Direct Skill Targets
 **Goal**: Materialize configured skills into the current user's default homes for the direct skill-folder targets
@@ -106,7 +106,7 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Catalog Foundation | 3/3 | Complete    | 2026-03-13 |
-| 2. Bootstrap Engine | 0/3 | Not started | - |
+| 2. Bootstrap Engine | 3/3 | Complete    | 2026-03-14 |
 | 3. Direct Skill Targets | 0/3 | Not started | - |
 | 4. Gemini and Plugins | 0/3 | Not started | - |
 | 5. Verification and Release UX | 0/2 | Not started | - |

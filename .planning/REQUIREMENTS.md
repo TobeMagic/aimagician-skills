@@ -19,11 +19,11 @@
 
 ### Installation
 
-- [ ] **INST-01**: User can clone the repository and run one bootstrap command to install configured assets
-- [ ] **INST-02**: User can re-run the bootstrap command to update existing installs without duplicating installed assets
-- [ ] **INST-03**: User can run the same project on Windows and Linux with the same repository configuration
+- [x] **INST-01**: User can clone the repository and run one bootstrap command to install configured assets
+- [x] **INST-02**: User can re-run the bootstrap command to update existing installs without duplicating installed assets
+- [x] **INST-03**: User can run the same project on Windows and Linux with the same repository configuration
 - [ ] **INST-04**: User can install into the current user's default target locations so skills load automatically
-- [ ] **INST-05**: User can invoke the bootstrap workflow through an npm-executed command in an `npx ...@latest` style
+- [x] **INST-05**: User can invoke the bootstrap workflow through an npm-executed command in an `npx ...@latest` style
 
 ### Targets
 
@@ -31,7 +31,7 @@
 - [ ] **TARG-02**: User can install configured skills into Claude Code
 - [ ] **TARG-03**: User can install configured skills into OpenCode
 - [ ] **TARG-04**: User can install Gemini-compatible output even when the source asset originates as a repository skill
-- [ ] **TARG-05**: User can default installation to all supported CLIs and still override target selection when needed
+- [x] **TARG-05**: User can default installation to all supported CLIs and still override target selection when needed
 
 ### Plugins
 
@@ -78,16 +78,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SRC-02 | Phase 1 | Complete |
 | SRC-03 | Phase 1 | Complete |
 | SRC-04 | Phase 1 | Complete |
-| INST-01 | Phase 2 | Pending |
-| INST-02 | Phase 2 | Pending |
-| INST-03 | Phase 2 | Pending |
+| INST-01 | Phase 2 | Complete |
+| INST-02 | Phase 2 | Complete |
+| INST-03 | Phase 2 | Complete |
 | INST-04 | Phase 3 | Pending |
-| INST-05 | Phase 2 | Pending |
+| INST-05 | Phase 2 | Complete |
 | TARG-01 | Phase 3 | Pending |
 | TARG-02 | Phase 3 | Pending |
 | TARG-03 | Phase 3 | Pending |
 | TARG-04 | Phase 4 | Pending |
-| TARG-05 | Phase 2 | Pending |
+| TARG-05 | Phase 2 | Complete |
 | PLUG-01 | Phase 4 | Pending |
 | PLUG-02 | Phase 4 | Pending |
 | PLUG-03 | Phase 4 | Pending |
@@ -102,4 +102,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-03-13 after Phase 1 completion*
+*Last updated: 2026-03-14 after Phase 2 completion*
