@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Catalog Foundation** - Define owned-skill structure, external source schema, and normalized config rules (completed 2026-03-13)
 - [x] **Phase 2: Bootstrap Engine** - Build the one-command install and update workflow with cross-platform execution (completed 2026-03-14)
-- [ ] **Phase 3: Direct Skill Targets** - Install skills into Codex, Claude Code, and OpenCode user-level locations
+- [x] **Phase 3: Direct Skill Targets** - Install skills into Codex, Claude Code, and OpenCode user-level locations (completed 2026-03-14)
 - [ ] **Phase 4: Gemini and Plugins** - Add Gemini-native output plus capability-aware plugin and extension handling
 - [ ] **Phase 5: Verification and Release UX** - Add doctor/list/report flows and finish the bootstrap experience
 
@@ -63,9 +63,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: Implement Codex adapter and current-user path writer
-- [ ] 03-02: Implement Claude Code and OpenCode skill adapters
-- [ ] 03-03: Add manifest-backed sync behavior for direct skill targets
+- [x] 03-01: Implement Codex adapter and current-user path writer
+- [x] 03-02: Implement Claude Code and OpenCode skill adapters
+- [x] 03-03: Add manifest-backed sync behavior for direct skill targets
 
 ### Phase 4: Gemini and Plugins
 **Goal**: Support Gemini with target-native output and add capability-aware plugin or extension handling across supported targets
@@ -107,6 +107,6 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 |-------|----------------|--------|-----------|
 | 1. Catalog Foundation | 3/3 | Complete    | 2026-03-13 |
 | 2. Bootstrap Engine | 3/3 | Complete    | 2026-03-14 |
-| 3. Direct Skill Targets | 0/3 | Not started | - |
+| 3. Direct Skill Targets | 3/3 | Complete    | 2026-03-14 |
 | 4. Gemini and Plugins | 0/3 | Not started | - |
 | 5. Verification and Release UX | 0/2 | Not started | - |
