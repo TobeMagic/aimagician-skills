@@ -5,40 +5,52 @@ import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 import type { LoadedCatalog } from "../catalog/source-types";
 import type { NormalizedAsset } from "../model/assets";
-import { directSkillTargets, type DirectSkillTarget } from "./target-homes";
+import type { SupportedTarget } from "../model/targets";
+import { materializeGeminiExtension } from "./gemini-extension";
+import type { ResolvedTargetHomes } from "./target-homes";
 
 const execFileAsync = promisify(execFile);
 
-export interface ResolveDirectSkillInstallsOptions {
+export interface ResolveManagedSkillInstallsOptions {
   catalog: LoadedCatalog;
   normalizedAssets: NormalizedAsset[];
   workspaceRoot: string;
-  selectedTargets: DirectSkillTarget[];
+  selectedTargets: SupportedTarget[];
+  targetHomes: ResolvedTargetHomes;
   githubRepoOverrides?: Record<string, string>;
 }
 
-export interface ResolvedDirectSkillInstall {
-  target: DirectSkillTarget;
+export interface ResolvedManagedInstall {
+  target: SupportedTarget;
   assetId: string;
+  kind: "skill" | "plugin";
   origin: "owned" | "external";
   sourceId?: string;
-  sourceDir: string;
+  sourcePath: string;
+  destinationPath: string;
+  installType: "directory" | "file";
+  installArea: "skills" | "plugins" | "extensions";
 }
 
-export async function resolveDirectSkillInstalls(
-  options: ResolveDirectSkillInstallsOptions
-): Promise<ResolvedDirectSkillInstall[]> {
-  const installs: ResolvedDirectSkillInstall[] = [];
+export async function resolveManagedSkillInstalls(
+  options: ResolveManagedSkillInstallsOptions
+): Promise<ResolvedManagedInstall[]> {
+  const installs: ResolvedManagedInstall[] = [];
   const checkoutRoots = new Map<string, string>();
 
   for (const skill of options.catalog.ownedSkills) {
     for (const target of options.selectedTargets) {
-      installs.push({
+      const install = await createOwnedSkillInstall(
+        skill.id,
+        skill.skillDir,
         target,
-        assetId: skill.id,
-        origin: "owned",
-        sourceDir: skill.skillDir
-      });
+        options.targetHomes,
+        options.workspaceRoot
+      );
+
+      if (install) {
+        installs.push(install);
+      }
     }
   }
 
@@ -47,17 +59,16 @@ export async function resolveDirectSkillInstalls(
       continue;
     }
 
-    const selectedTargets = asset.effectiveTargets.filter(
-      (target): target is DirectSkillTarget =>
-        (directSkillTargets as readonly string[]).includes(target) &&
-        options.selectedTargets.includes(target as DirectSkillTarget)
+    const selectedTargets = asset.effectiveTargets.filter((target) =>
+      options.selectedTargets.includes(target)
     );
 
     if (selectedTargets.length === 0) {
       continue;
     }
 
-    const cacheKey = `${asset.sourceId}:${asset.locator.github.repo}:${asset.locator.github.ref ?? "HEAD"}`;
+    const cacheKey =
+      `${asset.sourceId}:${asset.locator.github.repo}:${asset.locator.github.ref ?? "HEAD"}`;
     let checkoutRoot = checkoutRoots.get(cacheKey);
 
     if (!checkoutRoot) {
@@ -79,20 +90,135 @@ export async function resolveDirectSkillInstalls(
     );
 
     for (const target of selectedTargets) {
-      installs.push({
+      const install = await createExternalSkillInstall(
+        asset.id,
+        asset.sourceId,
+        sourceDir,
         target,
-        assetId: asset.id,
-        origin: "external",
-        sourceId: asset.sourceId,
-        sourceDir
-      });
+        options.targetHomes,
+        options.workspaceRoot
+      );
+
+      if (install) {
+        installs.push(install);
+      }
     }
   }
 
   return installs.sort(compareInstallRecord);
 }
 
-async function materializeGithubSource(
+async function createOwnedSkillInstall(
+  assetId: string,
+  sourceDir: string,
+  target: SupportedTarget,
+  targetHomes: ResolvedTargetHomes,
+  workspaceRoot: string
+): Promise<ResolvedManagedInstall | null> {
+  const destination = await resolveSkillInstallDestination(
+    assetId,
+    sourceDir,
+    target,
+    targetHomes,
+    workspaceRoot
+  );
+
+  if (!destination) {
+    return null;
+  }
+
+  return {
+    target,
+    assetId,
+    kind: "skill",
+    origin: "owned",
+    sourceId: undefined,
+    sourcePath: destination.sourcePath,
+    destinationPath: destination.destinationPath,
+    installType: "directory",
+    installArea: destination.installArea
+  };
+}
+
+async function createExternalSkillInstall(
+  assetId: string,
+  sourceId: string,
+  sourceDir: string,
+  target: SupportedTarget,
+  targetHomes: ResolvedTargetHomes,
+  workspaceRoot: string
+): Promise<ResolvedManagedInstall | null> {
+  const destination = await resolveSkillInstallDestination(
+    assetId,
+    sourceDir,
+    target,
+    targetHomes,
+    workspaceRoot
+  );
+
+  if (!destination) {
+    return null;
+  }
+
+  return {
+    target,
+    assetId,
+    kind: "skill",
+    origin: "external",
+    sourceId,
+    sourcePath: destination.sourcePath,
+    destinationPath: destination.destinationPath,
+    installType: "directory",
+    installArea: destination.installArea
+  };
+}
+
+async function resolveSkillInstallDestination(
+  assetId: string,
+  sourceDir: string,
+  target: SupportedTarget,
+  targetHomes: ResolvedTargetHomes,
+  workspaceRoot: string
+): Promise<{
+  sourcePath: string;
+  destinationPath: string;
+  installArea: "skills" | "extensions";
+} | null> {
+  switch (target) {
+    case "codex":
+      return {
+        sourcePath: sourceDir,
+        destinationPath: join(targetHomes.codex.skillsDir, assetId),
+        installArea: "skills"
+      };
+    case "claude":
+      return {
+        sourcePath: sourceDir,
+        destinationPath: join(targetHomes.claude.skillsDir, assetId),
+        installArea: "skills"
+      };
+    case "opencode":
+      return {
+        sourcePath: sourceDir,
+        destinationPath: join(targetHomes.opencode.skillsDir, assetId),
+        installArea: "skills"
+      };
+    case "gemini":
+      return {
+        sourcePath: await materializeGeminiExtension({
+          assetId,
+          sourceDir,
+          workspaceRoot
+        }),
+        destinationPath: join(targetHomes.gemini.extensionsDir, assetId),
+        installArea: "extensions"
+      };
+    default:
+      return null;
+  }
+}
+
+export async function materializeGithubSource(
   sourceId: string,
   repo: string,
   ref: string | undefined,
@@ -132,7 +258,7 @@ async function materializeGithubSource(
   return checkoutRoot;
 }
 
-function readGithubRepoOverridesFromEnv(): Record<string, string> {
+export function readGithubRepoOverridesFromEnv(): Record<string, string> {
   const raw = process.env.AIMAGICIAN_GITHUB_REPO_OVERRIDES;
 
   if (!raw) {
@@ -148,7 +274,7 @@ function readGithubRepoOverridesFromEnv(): Record<string, string> {
   }
 }
 
-async function resolveGithubAssetSourceDir(
+export async function resolveGithubAssetSourceDir(
   checkoutRoot: string,
   githubPath: string | undefined,
   relativePath: string | undefined,
@@ -161,6 +287,24 @@ async function resolveGithubAssetSourceDir(
   await assertSkillDirectory(sourceDir, assetId);
 
   return sourceDir;
+}
+
+export async function resolveGithubAssetPath(
+  checkoutRoot: string,
+  githubPath: string | undefined,
+  relativePath: string | undefined,
+  assetId: string
+): Promise<string> {
+  const baseDir = githubPath ? join(checkoutRoot, githubPath) : checkoutRoot;
+  const candidatePath = relativePath ? join(baseDir, relativePath) : join(baseDir, assetId);
+
+  try {
+    await access(candidatePath, constants.F_OK);
+  } catch {
+    throw new Error(`Resolved asset path for ${assetId} does not exist: ${candidatePath}`);
+  }
+
+  return candidatePath;
 }
 
 async function assertSkillDirectory(sourceDir: string, assetId: string): Promise<void> {
@@ -180,13 +324,14 @@ function looksLikeSkillFile(relativePath: string | undefined): boolean {
 }
 
 function compareInstallRecord(
-  left: ResolvedDirectSkillInstall,
-  right: ResolvedDirectSkillInstall
+  left: ResolvedManagedInstall,
+  right: ResolvedManagedInstall
 ): number {
   return [
     left.target.localeCompare(right.target),
+    left.kind.localeCompare(right.kind),
     left.assetId.localeCompare(right.assetId),
     (left.sourceId ?? "").localeCompare(right.sourceId ?? ""),
-    left.origin.localeCompare(right.origin)
+    left.destinationPath.localeCompare(right.destinationPath)
   ].find((result) => result !== 0) ?? 0;
 }

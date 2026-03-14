@@ -60,7 +60,7 @@ describe("runBootstrap", () => {
     const manifest = JSON.parse(await readFile(firstRun.manifestPath, "utf8")) as {
       version: number;
       assets: Array<{ id: string }>;
-      directInstalls: Array<{ target: string; assetId: string }>;
+      managedInstalls: Array<{ target: string; assetId: string; kind: string; installArea: string }>;
     };
     const plan = JSON.parse(await readFile(firstRun.planPath, "utf8")) as {
       selectedTargets: string[];
@@ -71,24 +71,28 @@ describe("runBootstrap", () => {
     expect(secondRun.changed).toBe(false);
     expect(plan.selectedTargets).toEqual(["codex", "claude", "opencode", "gemini"]);
     expect(plan.ownedSkillIds).toEqual(["daily-ops"]);
-    expect(manifest.version).toBe(2);
+    expect(manifest.version).toBe(3);
     expect(manifest.assets.map((asset) => asset.id)).toEqual([
       "daily-ops",
       "claude-sync",
       "bootstrap-tools"
     ]);
     expect(
-      manifest.directInstalls.map((install) => ({
+      manifest.managedInstalls.map((install) => ({
         target: install.target,
-        assetId: install.assetId
+        assetId: install.assetId,
+        kind: install.kind,
+        installArea: install.installArea
       }))
     ).toEqual([
-      { target: "claude", assetId: "claude-sync" },
-      { target: "claude", assetId: "daily-ops" },
-      { target: "codex", assetId: "claude-sync" },
-      { target: "codex", assetId: "daily-ops" },
-      { target: "opencode", assetId: "claude-sync" },
-      { target: "opencode", assetId: "daily-ops" }
+      { target: "claude", assetId: "claude-sync", kind: "skill", installArea: "skills" },
+      { target: "claude", assetId: "daily-ops", kind: "skill", installArea: "skills" },
+      { target: "codex", assetId: "claude-sync", kind: "skill", installArea: "skills" },
+      { target: "codex", assetId: "daily-ops", kind: "skill", installArea: "skills" },
+      { target: "gemini", assetId: "claude-sync", kind: "skill", installArea: "extensions" },
+      { target: "gemini", assetId: "daily-ops", kind: "skill", installArea: "extensions" },
+      { target: "opencode", assetId: "claude-sync", kind: "skill", installArea: "skills" },
+      { target: "opencode", assetId: "daily-ops", kind: "skill", installArea: "skills" }
     ]);
   }, 15000);
 
@@ -115,9 +119,42 @@ describe("runBootstrap", () => {
       { id: "bootstrap-tools", targets: ["claude"] }
     ]);
   });
+
+  it("reports planned and skipped plugin outcomes during dry-run", async () => {
+    const fixture = await createFixtureRepository({ includePluginSource: true });
+
+    const result = await runBootstrap({
+      dryRun: true,
+      selectedTargets: ["claude", "opencode"],
+      catalog: fixture.catalog,
+      githubRepoOverrides: {
+        "aimagician/repo-skills": fixture.externalRepoRoot
+      },
+      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
+    });
+
+    expect(result.pluginReports).toEqual([
+      {
+        assetId: "audit-helper",
+        sourceId: "plugin-repo",
+        target: "claude",
+        status: "skipped",
+        reason: "Claude Code plugin automation remains marketplace- and consent-driven, so bootstrap skips it"
+      },
+      {
+        assetId: "audit-helper",
+        sourceId: "plugin-repo",
+        target: "opencode",
+        status: "planned",
+        destinationPath: join(fixture.root, ".config", "opencode", "plugins", "audit-helper.ts")
+      }
+    ]);
+  });
 });
 
-async function createFixtureRepository() {
+async function createFixtureRepository(
+  options: { includePluginSource?: boolean } = {}
+) {
   const root = await mkdtemp(join(tmpdir(), "aimagician-bootstrap-"));
   tempDirectories.push(root);
 
@@ -131,9 +168,15 @@ async function createFixtureRepository() {
   await mkdir(skillsRoot, { recursive: true });
   await mkdir(pluginsRoot, { recursive: true });
   await mkdir(join(externalRepoRoot, "claude-sync"), { recursive: true });
+  await mkdir(join(externalRepoRoot, "plugins"), { recursive: true });
 
   await writeFile(join(ownedSkillsRoot, "daily-ops", "SKILL.md"), "# Daily Ops\n", "utf8");
   await writeFile(join(externalRepoRoot, "claude-sync", "SKILL.md"), "# Claude Sync\n", "utf8");
+  await writeFile(
+    join(externalRepoRoot, "plugins", "audit-helper.ts"),
+    "export default async function auditHelper() {}\n",
+    "utf8"
+  );
   await writeFile(commandScriptPath, "process.exit(0);\n", "utf8");
   await writeFile(
     join(skillsRoot, "skills.yaml"),
@@ -160,7 +203,28 @@ async function createFixtureRepository() {
     ].join("\n"),
     "utf8"
   );
-  await writeFile(join(pluginsRoot, "plugins.yaml"), "sources: []\n", "utf8");
+  await writeFile(
+    join(pluginsRoot, "plugins.yaml"),
+    options.includePluginSource
+      ? [
+          "sources:",
+          "  - id: plugin-repo",
+          "    type: github",
+          "    targets:",
+          "      include:",
+          "        - claude",
+          "        - opencode",
+          "    github:",
+          "      repo: aimagician/repo-skills",
+          "      path: plugins",
+          "    assets:",
+          "      - id: audit-helper",
+          "        kind: plugin",
+          "        path: audit-helper.ts"
+        ].join("\n")
+      : "sources: []\n",
+    "utf8"
+  );
 
   return {
     root,

@@ -79,6 +79,56 @@ describe("bootstrap package smoke", () => {
     };
     expect(manifest.assets.map((asset) => asset.id)).toContain("gsd");
   }, 30000);
+
+  it("runs the compiled bootstrap CLI with plugin installs and skip reporting", async () => {
+    const workspaceRoot = await mkdtemp(join(tmpdir(), "aimagician-plugin-smoke-"));
+    const homeDir = join(workspaceRoot, "home");
+    const fixture = await createSmokeFixture(workspaceRoot, { includePluginSource: true });
+    tempDirectories.push(workspaceRoot);
+
+    await runPackageCommand("run build");
+
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      ["dist/cli/index.js", "bootstrap", "--targets", "claude,opencode", "--json"],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          AIMAGICIAN_WORKSPACE_ROOT: workspaceRoot,
+          AIMAGICIAN_HOME_DIR: homeDir,
+          AIMAGICIAN_CONFIG_HOME: join(homeDir, ".config"),
+          AIMAGICIAN_OWNED_SKILLS_ROOT: fixture.ownedSkillsRoot,
+          AIMAGICIAN_SKILLS_CATALOG_ROOT: fixture.skillsRoot,
+          AIMAGICIAN_PLUGINS_CATALOG_ROOT: fixture.pluginsRoot,
+          AIMAGICIAN_GITHUB_REPO_OVERRIDES: JSON.stringify({
+            "aimagician/external-skills": fixture.externalRepoRoot
+          })
+        }
+      }
+    );
+
+    const result = JSON.parse(stdout) as {
+      pluginReports: Array<{ target: string; status: string; destinationPath?: string; reason?: string }>;
+    };
+
+    expect(result.pluginReports).toMatchObject([
+      {
+        target: "claude",
+        status: "skipped",
+        reason: "Claude Code plugin automation remains marketplace- and consent-driven, so bootstrap skips it"
+      },
+      {
+        target: "opencode",
+        status: "installed",
+        destinationPath: join(homeDir, ".config", "opencode", "plugins", "audit-helper.ts")
+      }
+    ]);
+    await access(
+      join(homeDir, ".config", "opencode", "plugins", "audit-helper.ts"),
+      constants.F_OK
+    );
+  }, 30000);
 });
 
 async function runPackageCommand(command: string): Promise<void> {
@@ -94,7 +144,10 @@ async function runPackageCommand(command: string): Promise<void> {
   });
 }
 
-async function createSmokeFixture(root: string) {
+async function createSmokeFixture(
+  root: string,
+  options: { includePluginSource?: boolean } = {}
+) {
   const ownedSkillsRoot = join(root, "fixture", "skills", "owned");
   const skillsRoot = join(root, "fixture", "catalog", "skills");
   const pluginsRoot = join(root, "fixture", "catalog", "plugins");
@@ -104,9 +157,15 @@ async function createSmokeFixture(root: string) {
   await mkdir(join(skillsRoot), { recursive: true });
   await mkdir(join(pluginsRoot), { recursive: true });
   await mkdir(join(externalRepoRoot, "skills", "gsd"), { recursive: true });
+  await mkdir(join(externalRepoRoot, "plugins"), { recursive: true });
 
   await writeFile(join(ownedSkillsRoot, "daily-ops", "SKILL.md"), "# Daily Ops\n", "utf8");
   await writeFile(join(externalRepoRoot, "skills", "gsd", "SKILL.md"), "# GSD\n", "utf8");
+  await writeFile(
+    join(externalRepoRoot, "plugins", "audit-helper.ts"),
+    "export default async function auditHelper() {}\n",
+    "utf8"
+  );
   await writeFile(
     join(skillsRoot, "skills.yaml"),
     [
@@ -123,7 +182,28 @@ async function createSmokeFixture(root: string) {
     ].join("\n"),
     "utf8"
   );
-  await writeFile(join(pluginsRoot, "plugins.yaml"), "sources: []\n", "utf8");
+  await writeFile(
+    join(pluginsRoot, "plugins.yaml"),
+    options.includePluginSource
+      ? [
+          "sources:",
+          "  - id: plugin-repo",
+          "    type: github",
+          "    targets:",
+          "      include:",
+          "        - claude",
+          "        - opencode",
+          "    github:",
+          "      repo: aimagician/external-skills",
+          "      path: plugins",
+          "    assets:",
+          "      - id: audit-helper",
+          "        kind: plugin",
+          "        path: audit-helper.ts"
+        ].join("\n")
+      : "sources: []\n",
+    "utf8"
+  );
 
   return {
     ownedSkillsRoot,

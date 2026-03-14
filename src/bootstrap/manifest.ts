@@ -1,6 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
 import type { SupportedTarget } from "../model/targets";
-import type { DirectSkillTarget } from "./target-homes";
 
 export interface BootstrapManifestAsset {
   id: string;
@@ -10,20 +9,23 @@ export interface BootstrapManifestAsset {
   selectedTargets: SupportedTarget[];
 }
 
-export interface BootstrapManifestDirectInstall {
-  target: DirectSkillTarget;
+export interface BootstrapManifestManagedInstall {
+  target: SupportedTarget;
   assetId: string;
+  kind: "skill" | "plugin";
   origin: "owned" | "external";
   sourceId?: string;
-  destinationDir: string;
+  destinationPath: string;
+  installType: "directory" | "file";
+  installArea: "skills" | "plugins" | "extensions";
 }
 
 export interface BootstrapManifest {
-  version: 2;
+  version: 3;
   updatedAt: string;
   selectedTargets: SupportedTarget[];
   assets: BootstrapManifestAsset[];
-  directInstalls: BootstrapManifestDirectInstall[];
+  managedInstalls: BootstrapManifestManagedInstall[];
 }
 
 export async function loadManifest(path: string): Promise<BootstrapManifest | null> {
@@ -31,14 +33,34 @@ export async function loadManifest(path: string): Promise<BootstrapManifest | nu
     const contents = await readFile(path, "utf8");
     const parsed = JSON.parse(contents) as Partial<BootstrapManifest> & {
       version?: number;
+      directInstalls?: Array<{
+        target: SupportedTarget;
+        assetId: string;
+        origin: "owned" | "external";
+        sourceId?: string;
+        destinationDir: string;
+      }>;
     };
+    const managedInstalls =
+      parsed.managedInstalls ??
+      parsed.directInstalls?.map<BootstrapManifestManagedInstall>((install) => ({
+        target: install.target,
+        assetId: install.assetId,
+        kind: "skill",
+        origin: install.origin,
+        sourceId: install.sourceId,
+        destinationPath: install.destinationDir,
+        installType: "directory",
+        installArea: "skills"
+      })) ??
+      [];
 
     return {
-      version: 2,
+      version: 3,
       updatedAt: parsed.updatedAt ?? "",
       selectedTargets: parsed.selectedTargets ?? [],
       assets: parsed.assets ?? [],
-      directInstalls: parsed.directInstalls ?? []
+      managedInstalls
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {

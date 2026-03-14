@@ -59,9 +59,9 @@ describe("direct target sync", () => {
       },
       {
         target: "gemini",
-        status: "deferred",
+        status: "synced",
         installedSkillIds: ["daily-ops", "gsd"],
-        reason: "Gemini direct target adapter lands in Phase 4"
+        extensionsDir: expect.stringMatching(/[\\/]?\.gemini[\\/]extensions$/)
       }
     ]);
 
@@ -71,12 +71,25 @@ describe("direct target sync", () => {
     await expectSkillInstalled(homeDir, ".codex", "gsd", "# GSD\n");
     await expectSkillInstalled(homeDir, ".claude", "gsd", "# GSD\n");
     await expectSkillInstalled(homeDir, ".config/opencode", "gsd", "# GSD\n");
+    await access(
+      join(homeDir, ".gemini", "extensions", "daily-ops", "gemini-extension.json"),
+      constants.F_OK
+    );
+    await access(
+      join(homeDir, ".gemini", "extensions", "gsd", "gemini-extension.json"),
+      constants.F_OK
+    );
 
     const copiedHelper = await readFile(
       join(homeDir, ".codex", "skills", "daily-ops", "notes.txt"),
       "utf8"
     );
     expect(copiedHelper).toBe("owned helper\n");
+    const geminiContext = await readFile(
+      join(homeDir, ".gemini", "extensions", "daily-ops", "GEMINI.md"),
+      "utf8"
+    );
+    expect(geminiContext).toContain("# Daily Ops");
   });
 
   it("prunes stale managed installs on selected targets and keeps unmanaged directories", async () => {
@@ -224,10 +237,54 @@ describe("direct target sync", () => {
       constants.F_OK
     );
   }, 15000);
+
+  it("installs OpenCode plugin assets and reports explicit skips for unsupported plugin targets", async () => {
+    const fixture = await createFixtureRepository({ includePluginSource: true });
+    const workspaceRoot = join(fixture.root, "workspace");
+    const homeDir = join(fixture.root, "home");
+
+    const result = await runBootstrap({
+      selectedTargets: ["claude", "opencode"],
+      catalog: fixture.catalog,
+      platform: {
+        platform: "linux",
+        homeDir,
+        configBaseDir: join(homeDir, ".config"),
+        stateBaseDir: fixture.root,
+        workspaceRoot
+      },
+      githubRepoOverrides: {
+        "aimagician/external-skills": fixture.externalRepoRoot
+      },
+      now: "2026-03-14T03:00:00Z"
+    });
+
+    expect(result.pluginReports).toEqual([
+      {
+        assetId: "audit-helper",
+        sourceId: "opencode-plugins",
+        target: "claude",
+        status: "skipped",
+        reason: "Claude Code plugin automation remains marketplace- and consent-driven, so bootstrap skips it"
+      },
+      {
+        assetId: "audit-helper",
+        sourceId: "opencode-plugins",
+        target: "opencode",
+        status: "installed",
+        destinationPath: join(homeDir, ".config", "opencode", "plugins", "audit-helper.ts")
+      }
+    ]);
+
+    await access(
+      join(homeDir, ".config", "opencode", "plugins", "audit-helper.ts"),
+      constants.F_OK
+    );
+  });
 });
 
 async function createFixtureRepository(
-  options: { includeCommandSource?: boolean } = {}
+  options: { includeCommandSource?: boolean; includePluginSource?: boolean } = {}
 ) {
   const root = await mkdtemp(join(tmpdir(), "aimagician-direct-targets-"));
   tempDirectories.push(root);
@@ -242,11 +299,17 @@ async function createFixtureRepository(
   await mkdir(join(skillsRoot), { recursive: true });
   await mkdir(join(pluginsRoot), { recursive: true });
   await mkdir(join(externalRepoRoot, "skills", "gsd"), { recursive: true });
+  await mkdir(join(externalRepoRoot, "plugins"), { recursive: true });
 
   await writeFile(join(ownedSkillsRoot, "daily-ops", "SKILL.md"), "# Daily Ops\n", "utf8");
   await writeFile(join(ownedSkillsRoot, "daily-ops", "notes.txt"), "owned helper\n", "utf8");
   await writeFile(join(externalRepoRoot, "skills", "gsd", "SKILL.md"), "# GSD\n", "utf8");
   await writeFile(join(externalRepoRoot, "skills", "gsd", "README.md"), "external helper\n", "utf8");
+  await writeFile(
+    join(externalRepoRoot, "plugins", "audit-helper.ts"),
+    "export default async function auditHelper() {}\n",
+    "utf8"
+  );
   await writeFile(
     commandScriptPath,
     [
@@ -299,7 +362,28 @@ async function createFixtureRepository(
     ].join("\n"),
     "utf8"
   );
-  await writeFile(join(pluginsRoot, "plugins.yaml"), "sources: []\n", "utf8");
+  await writeFile(
+    join(pluginsRoot, "plugins.yaml"),
+    options.includePluginSource
+      ? [
+          "sources:",
+          "  - id: opencode-plugins",
+          "    type: github",
+          "    targets:",
+          "      include:",
+          "        - opencode",
+          "        - claude",
+          "    github:",
+          "      repo: aimagician/external-skills",
+          "      path: plugins",
+          "    assets:",
+          "      - id: audit-helper",
+          "        kind: plugin",
+          "        path: audit-helper.ts"
+        ].join("\n")
+      : "sources: []\n",
+    "utf8"
+  );
 
   return {
     root,

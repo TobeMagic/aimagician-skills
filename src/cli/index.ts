@@ -63,6 +63,7 @@ function createBootstrapPreview(parsed: ParsedCli, result: Awaited<ReturnType<ty
     ownedSkillCount: result.plan.ownedSkillIds.length,
     changed: result.changed,
     targetReports: result.targetReports,
+    pluginReports: result.pluginReports,
     commandReports: result.commandReports
   };
 }
@@ -82,6 +83,7 @@ function renderBootstrapPreview(
     `Planned assets: ${preview.assetCount}`,
     `Changes applied: ${preview.changed ? "yes" : "no"}`,
     ...preview.targetReports.map((report) => renderTargetReport(report)),
+    ...preview.pluginReports.map((report) => renderPluginReport(report)),
     ...preview.commandReports.map((report) => renderCommandReport(report))
   ].join("\n");
 }
@@ -106,14 +108,32 @@ function renderTargetReport(
   report: Awaited<ReturnType<typeof runBootstrap>>["targetReports"][number]
 ): string {
   const skillCount = report.installedSkillIds.length;
+  const pluginCount = report.installedPluginIds.length;
 
   if (report.status === "deferred") {
     return `Target ${report.target}: deferred (${report.reason})`;
   }
 
-  const location = report.skillsDir ? ` @ ${report.skillsDir}` : "";
+  const location =
+    report.skillsDir ? ` @ ${report.skillsDir}` :
+    report.extensionsDir ? ` @ ${report.extensionsDir}` :
+    "";
 
-  return `Target ${report.target}: ${report.status} (${skillCount} skills)${location}`;
+  const pluginSummary =
+    pluginCount > 0
+      ? `, ${pluginCount} plugins${report.pluginsDir ? ` @ ${report.pluginsDir}` : ""}`
+      : "";
+
+  return `Target ${report.target}: ${report.status} (${skillCount} skills${pluginSummary})${location}`;
+}
+
+function renderPluginReport(
+  report: Awaited<ReturnType<typeof runBootstrap>>["pluginReports"][number]
+): string {
+  const destination = report.destinationPath ? ` @ ${report.destinationPath}` : "";
+  const reason = report.reason ? ` (${report.reason})` : "";
+
+  return `Plugin ${report.assetId} -> ${report.target}: ${report.status}${destination}${reason}`;
 }
 
 function renderCommandReport(
