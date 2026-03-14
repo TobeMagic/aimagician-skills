@@ -3,14 +3,32 @@
   "version": "0.1.0",
   "description": "Personal skills repository and deployment toolkit for AI coding CLIs.",
   "license": "MIT",
+  "main": "./dist/cli/index.js",
+  "exports": {
+    ".": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "catalog",
+    "skills",
+    "README.md"
+  ],
   "bin": {
     "aimagician-skills": "./dist/cli/index.js"
   },
   "scripts": {
+    "bootstrap": "node ./dist/cli/index.js bootstrap",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
+  "keywords": [
+    "skills",
+    "bootstrap",
+    "cli",
+    "codex",
+    "claude"
+  ],
   "devDependencies": {
     "@types/node": "^24.5.0",
     "typescript": "^5.9.2",
