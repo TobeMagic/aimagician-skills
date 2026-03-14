@@ -4,29 +4,30 @@ Personal skills repository and bootstrap toolkit for AI coding CLIs.
 
 ## What This Repo Does
 
-This repo is meant to be your personal skills distribution layer:
+This repo is your personal skills distribution layer:
 
 - keep your own skills in-repo
 - declare third-party skill sources from GitHub
-- declare command-based installers for sources that already ship their own install command
-- sync selected skills into user-level directories for supported CLIs
+- declare command-based skill installers when an upstream project already ships its own install command
+- install skills into user-level locations for supported CLIs
+- generate Gemini-native output from repository-managed skills
+- install supported plugin assets where the target exposes a stable user-level plugin path
 
-Current direct install targets:
+## Current Support
 
-- `codex` -> `~/.codex/skills`
-- `claude` -> `~/.claude/skills`
-- `opencode` -> `~/.config/opencode/skills`
-
-Current implementation status:
-
-| Area | Status | Notes |
-|------|--------|-------|
-| Owned skills | supported | copied from `skills/owned/*` |
-| GitHub skill sources | supported | repo is resolved, skill directories are copied into target homes |
-| Command skill sources | supported | command is executed as a delegated installer |
-| Plugin catalog | supported | can be declared under `catalog/plugins/*.yaml` |
-| Plugin installation | not yet | planned for Phase 4 |
-| Gemini output | not yet | planned for Phase 4 |
+| Capability | Status | Notes |
+|------------|--------|-------|
+| Owned skills | supported | loaded from `skills/owned/*` |
+| GitHub skill sources | supported | repo is materialized and copied into target homes |
+| Command skill sources | supported | delegated installer execution |
+| Codex skills | supported | installs to `~/.codex/skills` |
+| Claude Code skills | supported | installs to `~/.claude/skills` |
+| OpenCode skills | supported | installs to `~/.config/opencode/skills` |
+| Gemini skills | supported | generated as native extensions under `~/.gemini/extensions` |
+| Plugin catalog | supported | declare under `catalog/plugins/*.yaml` |
+| OpenCode plugins | supported | GitHub-backed JavaScript or TypeScript file assets install to `~/.config/opencode/plugins` |
+| Claude plugins | explicit skip | bootstrap reports skip because the documented flow is marketplace- and consent-driven |
+| Gemini plugin catalog assets | explicit skip | Phase 4 Gemini support is for generated skill extensions, not plugin catalog installs |
 
 ## Quick Start
 
@@ -38,45 +39,50 @@ npm run build
 npm run bootstrap
 ```
 
-To install only for one CLI:
+If you publish this package, the intended operator flow is also:
 
 ```bash
-npm run bootstrap -- --target claude
+npx aimagician-skills@latest bootstrap
 ```
 
-To install for multiple targets:
+## Core Commands
+
+Bootstrap:
 
 ```bash
-node dist/cli/index.js bootstrap --targets codex,claude,opencode
+npm run bootstrap
+node dist/cli/index.js bootstrap --target claude
+node dist/cli/index.js bootstrap --targets codex,claude,opencode,gemini --json
 ```
 
-Dry run:
+List detected assets from the current user profile:
 
 ```bash
-node dist/cli/index.js bootstrap --dry-run
+node dist/cli/index.js list
+node dist/cli/index.js list --target gemini --json
 ```
 
-JSON output:
+Inspect detailed target state:
 
 ```bash
-node dist/cli/index.js bootstrap --json
+node dist/cli/index.js inspect
+node dist/cli/index.js inspect --targets codex,opencode
+```
+
+Verify managed installs against live target homes:
+
+```bash
+node dist/cli/index.js doctor
+node dist/cli/index.js doctor --target claude --json
 ```
 
 ## Typical Workflow
 
-The normal operator flow is:
-
 1. Clone this repo.
 2. Add your own skills under `skills/owned/`, or add source definitions under `catalog/skills/` and `catalog/plugins/`.
-3. Build the project.
-4. Run bootstrap once.
-5. Open your target CLI and use its native skill list command to confirm the new skills are visible.
-
-In practice, the only recurring command is usually:
-
-```bash
-npm run bootstrap
-```
+3. Run bootstrap.
+4. Run `list` to see what is present under the current user profile.
+5. Run `doctor` if you want to verify that managed installs recorded in the manifest still exist on disk.
 
 ## Repository Layout
 
@@ -92,7 +98,7 @@ catalog/
     *.yaml
 ```
 
-Important: files under `catalog/skills/*.yaml` and `catalog/plugins/*.yaml` are live config, not docs-only examples.
+Files under `catalog/skills/*.yaml` and `catalog/plugins/*.yaml` are live config.
 
 ## Add Your Own Skill
 
@@ -102,7 +108,7 @@ Create a directory under `skills/owned/` and put a `SKILL.md` in it:
 skills/owned/my-review-workflow/SKILL.md
 ```
 
-After that, rerun bootstrap:
+Then rerun bootstrap:
 
 ```bash
 npm run bootstrap
@@ -140,12 +146,12 @@ Field notes:
 - `repo`: GitHub repo in `owner/name` format
 - `ref`: optional branch, tag, or commit
 - `path`: optional base directory inside the repo
-- `assets[].id`: local skill id used by this project
-- `assets[].path`: path to the skill directory or `SKILL.md` inside the source repo
+- `assets[].id`: local asset id used by this project
+- `assets[].path`: path to the source asset inside the repo
 
 ## Add a Command-Based Skill Source
 
-If a third-party source already provides its own installer command, declare it under `catalog/skills/`, for example:
+If an upstream project already ships its own installer command, declare it under `catalog/skills/`, for example:
 
 ```text
 catalog/skills/upstream-installer.yaml
@@ -170,7 +176,7 @@ sources:
         kind: skill
 ```
 
-At runtime, the command gets target-aware environment variables:
+At runtime, delegated skill installers receive:
 
 - `AIMAGICIAN_TARGETS`
 - `AIMAGICIAN_SOURCE_ID`
@@ -181,11 +187,9 @@ At runtime, the command gets target-aware environment variables:
 - `AIMAGICIAN_CLAUDE_SKILLS_DIR`
 - `AIMAGICIAN_OPENCODE_SKILLS_DIR`
 
-This is useful when the upstream project already knows how to install itself and you just want this repo to orchestrate it.
-
 ## Example: Only Use Anthropic Official Claude Skills
 
-If you only want a small subset from Anthropic's official skills repo, create:
+Create:
 
 ```text
 catalog/skills/claude-official.yaml
@@ -226,19 +230,55 @@ Then run:
 npm run bootstrap -- --target claude
 ```
 
-This tells the project:
-
-- only sync to `claude`
-- pull skills from `anthropics/skills`
-- only install the assets you listed
-
 Reference:
 
 - Anthropic official skills repo: `https://github.com/anthropics/skills`
 
+## Example: Add a Supported OpenCode Plugin
+
+OpenCode plugins currently work when the asset is a JavaScript or TypeScript file.
+
+Create:
+
+```text
+catalog/plugins/opencode-tools.yaml
+```
+
+with:
+
+```yaml
+sources:
+  - id: opencode-tools
+    type: github
+    enabled: true
+    targets:
+      include:
+        - opencode
+    github:
+      repo: owner/opencode-plugins
+      ref: main
+      path: plugins
+    assets:
+      - id: audit-helper
+        kind: plugin
+        path: audit-helper.ts
+```
+
+Then run:
+
+```bash
+npm run bootstrap -- --target opencode
+```
+
+That installs the plugin file into:
+
+```text
+~/.config/opencode/plugins/audit-helper.ts
+```
+
 ## Example: Declare Anthropic Official Claude Plugins
 
-Plugin installation is not implemented in this project yet, but you can already track plugin intent under `catalog/plugins/`.
+Claude plugin entries can be tracked in `catalog/plugins/`, but bootstrap will report an explicit skip rather than pretending they were installed.
 
 Create:
 
@@ -266,13 +306,13 @@ sources:
         path: example-plugin
 ```
 
-What this means today:
+What happens today:
 
 - the plugin metadata is valid in this repo
-- target rules are normalized correctly
-- bootstrap will not install the plugin yet
+- bootstrap reports why Claude plugin automation was skipped
+- you should still use Claude Code's native plugin flow for actual installation
 
-If you need official Claude plugins right now, use Claude Code's native plugin marketplace directly. According to Anthropic's official plugin directory README:
+According to Anthropic's official plugin directory flow:
 
 ```text
 /plugin install {plugin-name}@claude-plugin-directory
@@ -282,24 +322,6 @@ References:
 
 - Anthropic official plugin directory: `https://github.com/anthropics/claude-plugins-official`
 - Anthropic official skills repo: `https://github.com/anthropics/skills`
-
-## Example: Only Anthropic Official Skills Plus Plugin Declarations
-
-If your goal is "I only want Claude official skills and Claude official plugins", the repo setup is:
-
-1. Create `catalog/skills/claude-official.yaml` with the skills you want from `anthropics/skills`.
-2. Create `catalog/plugins/claude-official-plugins.yaml` with the plugin entries you want from `anthropics/claude-plugins-official`.
-3. Run:
-
-```bash
-npm run bootstrap -- --target claude
-```
-
-What happens today:
-
-- official Anthropic skills are installed into your user-level Claude skills directory
-- plugin entries are tracked in config, but this project does not install them yet
-- for plugins, use Claude Code's native install flow until Phase 4 lands
 
 ## Target Selection
 
@@ -320,36 +342,48 @@ targets:
     - gemini
 ```
 
-Current supported target names:
+Supported target names:
 
 - `codex`
 - `claude`
 - `opencode`
 - `gemini`
 
-## User-Level Workspace
+## User-Level Locations
 
-Bootstrap state is written to a user-level workspace:
+Bootstrap currently writes to these user-level locations:
+
+- Codex skills: `~/.codex/skills`
+- Claude Code skills: `~/.claude/skills`
+- OpenCode skills: `~/.config/opencode/skills`
+- OpenCode plugins: `~/.config/opencode/plugins`
+- Gemini generated skill extensions: `~/.gemini/extensions`
+
+Bootstrap state is written to:
 
 - Windows: `%LOCALAPPDATA%\\aimagician-skills`
 - Linux: `$XDG_STATE_HOME/aimagician-skills` or `~/.local/state/aimagician-skills`
 
-For tests or isolated runs:
-
-```bash
-AIMAGICIAN_WORKSPACE_ROOT=/tmp/aimagician-skills node dist/cli/index.js bootstrap
-```
-
-To redirect direct-target writes into a fake user home:
+For isolated runs:
 
 ```bash
 AIMAGICIAN_HOME_DIR=/tmp/aimagician-home \
 AIMAGICIAN_CONFIG_HOME=/tmp/aimagician-home/.config \
 AIMAGICIAN_WORKSPACE_ROOT=/tmp/aimagician-skills \
-node dist/cli/index.js bootstrap --target claude
+node dist/cli/index.js bootstrap --targets claude,gemini
 ```
 
 ## Verify
+
+After bootstrap, the recommended verification flow is:
+
+```bash
+node dist/cli/index.js list
+node dist/cli/index.js inspect --target gemini
+node dist/cli/index.js doctor
+```
+
+Project verification:
 
 ```bash
 npm test

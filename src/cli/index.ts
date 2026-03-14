@@ -2,6 +2,7 @@
 
 import type { CommandOutput, ParsedCli } from "../bootstrap/command-types";
 import { runBootstrap } from "../bootstrap/run-bootstrap";
+import { inspectInstallation } from "../inspection/inspect-installation";
 import { parseCli } from "./parse-cli";
 
 export async function runCli(argv: string[]): Promise<CommandOutput> {
@@ -16,16 +17,30 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
       };
     }
 
-    const result = await runBootstrap({
-      selectedTargets: parsed.targets,
-      dryRun: parsed.dryRun
+    if (parsed.command === "bootstrap") {
+      const result = await runBootstrap({
+        selectedTargets: parsed.targets,
+        dryRun: parsed.dryRun
+      });
+
+      return {
+        exitCode: 0,
+        stdout: parsed.json
+          ? JSON.stringify(createBootstrapPreview(parsed, result), null, 2)
+          : renderBootstrapPreview(parsed, result),
+        stderr: ""
+      };
+    }
+
+    const inspection = await inspectInstallation({
+      selectedTargets: parsed.targets
     });
 
     return {
       exitCode: 0,
       stdout: parsed.json
-        ? JSON.stringify(createBootstrapPreview(parsed, result), null, 2)
-        : renderBootstrapPreview(parsed, result),
+        ? JSON.stringify(createInspectionPreview(parsed.command, inspection), null, 2)
+        : renderInspection(parsed.command, inspection),
       stderr: ""
     };
   } catch (error) {
@@ -68,6 +83,33 @@ function createBootstrapPreview(parsed: ParsedCli, result: Awaited<ReturnType<ty
   };
 }
 
+function createInspectionPreview(
+  command: "list" | "inspect" | "doctor",
+  inspection: Awaited<ReturnType<typeof inspectInstallation>>
+) {
+  if (command === "doctor") {
+    return {
+      command,
+      status: inspection.status,
+      workspaceRoot: inspection.workspaceRoot,
+      manifestPath: inspection.manifestPath,
+      manifestExists: inspection.manifestExists,
+      targets: inspection.targets.map((target) => ({
+        target: target.target,
+        status: target.status,
+        managedCount: target.managedInstalls.length,
+        detectedCount: target.detectedAssets.length,
+        issues: target.issues
+      }))
+    };
+  }
+
+  return {
+    command,
+    ...inspection
+  };
+}
+
 function renderBootstrapPreview(
   parsed: ParsedCli,
   result: Awaited<ReturnType<typeof runBootstrap>>
@@ -88,17 +130,34 @@ function renderBootstrapPreview(
   ].join("\n");
 }
 
+function renderInspection(
+  command: "list" | "inspect" | "doctor",
+  inspection: Awaited<ReturnType<typeof inspectInstallation>>
+): string {
+  switch (command) {
+    case "list":
+      return renderList(inspection);
+    case "inspect":
+      return renderInspect(inspection);
+    case "doctor":
+      return renderDoctor(inspection);
+  }
+}
+
 function renderHelp(): string {
   return [
-    "Usage: aimagician-skills [bootstrap] [--targets codex,claude] [--dry-run] [--json]",
+    "Usage: aimagician-skills <command> [--target claude] [--json]",
     "",
     "Commands:",
     "  bootstrap     Run the bootstrap workflow (default command)",
+    "  list          Show detected assets per target",
+    "  inspect       Show detailed target inspection output",
+    "  doctor        Verify managed installs against live target homes",
     "",
     "Options:",
     "  --targets     Comma-separated targets to include",
     "  --target      Single target override (repeatable)",
-    "  --dry-run     Print bootstrap intent without applying changes",
+    "  --dry-run     Print bootstrap intent without applying changes (bootstrap only)",
     "  --json        Render machine-readable output",
     "  -h, --help    Show command help"
   ].join("\n");
@@ -118,7 +177,6 @@ function renderTargetReport(
     report.skillsDir ? ` @ ${report.skillsDir}` :
     report.extensionsDir ? ` @ ${report.extensionsDir}` :
     "";
-
   const pluginSummary =
     pluginCount > 0
       ? `, ${pluginCount} plugins${report.pluginsDir ? ` @ ${report.pluginsDir}` : ""}`
@@ -140,6 +198,63 @@ function renderCommandReport(
   report: Awaited<ReturnType<typeof runBootstrap>>["commandReports"][number]
 ): string {
   return `Command source ${report.sourceId}: ${report.status} (${report.assetIds.length} skills -> ${report.targets.join(", ")})`;
+}
+
+function renderList(
+  inspection: Awaited<ReturnType<typeof inspectInstallation>>
+): string {
+  return [
+    "AImagician Skills list",
+    `Workspace: ${inspection.workspaceRoot}`,
+    `Manifest: ${inspection.manifestExists ? "present" : "missing"}`,
+    ...inspection.targets.flatMap((target) => {
+      const skills = target.detectedAssets
+        .filter((asset) => asset.kind === "skill")
+        .map((asset) => asset.id);
+      const plugins = target.detectedAssets
+        .filter((asset) => asset.kind === "plugin")
+        .map((asset) => asset.id);
+
+      return [
+        `Target ${target.target}: ${target.status}`,
+        `  skills: ${skills.length > 0 ? skills.join(", ") : "none"}`,
+        `  plugins: ${plugins.length > 0 ? plugins.join(", ") : "none"}`
+      ];
+    })
+  ].join("\n");
+}
+
+function renderInspect(
+  inspection: Awaited<ReturnType<typeof inspectInstallation>>
+): string {
+  return [
+    "AImagician Skills inspect",
+    `Workspace: ${inspection.workspaceRoot}`,
+    `Manifest path: ${inspection.manifestPath}`,
+    ...inspection.targets.flatMap((target) => [
+      `Target ${target.target}: ${target.status}`,
+      `  skills dir: ${target.skillsDir ?? "-"}`,
+      `  plugins dir: ${target.pluginsDir ?? "-"}`,
+      `  extensions dir: ${target.extensionsDir ?? "-"}`,
+      `  managed installs: ${target.managedInstalls.length}`,
+      `  detected assets: ${target.detectedAssets.length}`,
+      `  issues: ${target.issues.length > 0 ? target.issues.join(" | ") : "none"}`
+    ])
+  ].join("\n");
+}
+
+function renderDoctor(
+  inspection: Awaited<ReturnType<typeof inspectInstallation>>
+): string {
+  return [
+    "AImagician Skills doctor",
+    `Status: ${inspection.status}`,
+    `Manifest: ${inspection.manifestExists ? inspection.manifestPath : "missing"}`,
+    ...inspection.targets.flatMap((target) => [
+      `Target ${target.target}: ${target.status} (${target.managedInstalls.length} managed, ${target.detectedAssets.length} detected)`,
+      ...(target.issues.length > 0 ? target.issues.map((issue) => `  issue: ${issue}`) : ["  issue: none"])
+    ])
+  ].join("\n");
 }
 
 if (require.main === module) {

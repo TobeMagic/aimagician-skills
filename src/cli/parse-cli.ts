@@ -1,17 +1,22 @@
 import { supportedTargets, type SupportedTarget } from "../model/targets";
-import type { BootstrapCommand, ParsedCli } from "../bootstrap/command-types";
+import type {
+  BootstrapCommand,
+  DoctorCommand,
+  InspectCommand,
+  ListCommand,
+  ParsedCli
+} from "../bootstrap/command-types";
 
 const supportedTargetSet = new Set<SupportedTarget>(supportedTargets);
+const supportedCommands = ["bootstrap", "list", "inspect", "doctor"] as const;
+
+type SupportedCommand = (typeof supportedCommands)[number];
 
 export function parseCli(argv: string[]): ParsedCli {
   const args = [...argv];
   const firstArg = args[0];
   const command =
     !firstArg || firstArg.startsWith("-") ? "bootstrap" : consumeCommand(args.shift()!);
-
-  if (command !== "bootstrap") {
-    throw new Error(`Unsupported command: ${command}`);
-  }
 
   const targetSelections: SupportedTarget[] = [];
   let dryRun = false;
@@ -23,6 +28,9 @@ export function parseCli(argv: string[]): ParsedCli {
 
     switch (argument) {
       case "--dry-run":
+        if (command !== "bootstrap") {
+          throw new Error(`Unsupported argument for ${command}: ${argument}`);
+        }
         dryRun = true;
         break;
       case "--json":
@@ -41,21 +49,43 @@ export function parseCli(argv: string[]): ParsedCli {
     }
   }
 
-  return {
-    command: "bootstrap",
+  const base = {
     targets: targetSelections.length > 0 ? dedupeTargets(targetSelections) : [...supportedTargets],
-    dryRun,
     json,
     help
-  } satisfies BootstrapCommand;
+  };
+
+  switch (command) {
+    case "bootstrap":
+      return {
+        command,
+        dryRun,
+        ...base
+      } satisfies BootstrapCommand;
+    case "list":
+      return {
+        command,
+        ...base
+      } satisfies ListCommand;
+    case "inspect":
+      return {
+        command,
+        ...base
+      } satisfies InspectCommand;
+    case "doctor":
+      return {
+        command,
+        ...base
+      } satisfies DoctorCommand;
+  }
 }
 
-function consumeCommand(command: string): "bootstrap" {
-  if (command !== "bootstrap") {
+function consumeCommand(command: string): SupportedCommand {
+  if (!(supportedCommands as readonly string[]).includes(command)) {
     throw new Error(`Unsupported command: ${command}`);
   }
 
-  return command;
+  return command as SupportedCommand;
 }
 
 function parseTargetArgument(value: string | undefined, flag: string): SupportedTarget[] {

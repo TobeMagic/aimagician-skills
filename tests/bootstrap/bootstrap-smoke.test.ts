@@ -78,6 +78,36 @@ describe("bootstrap package smoke", () => {
       assets: Array<{ id: string }>;
     };
     expect(manifest.assets.map((asset) => asset.id)).toContain("gsd");
+
+    const { stdout: doctorStdout } = await execFileAsync(
+      process.execPath,
+      ["dist/cli/index.js", "doctor", "--json", "--target", "claude"],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          AIMAGICIAN_WORKSPACE_ROOT: workspaceRoot,
+          AIMAGICIAN_HOME_DIR: homeDir,
+          AIMAGICIAN_CONFIG_HOME: join(homeDir, ".config"),
+          AIMAGICIAN_OWNED_SKILLS_ROOT: fixture.ownedSkillsRoot,
+          AIMAGICIAN_SKILLS_CATALOG_ROOT: fixture.skillsRoot,
+          AIMAGICIAN_PLUGINS_CATALOG_ROOT: fixture.pluginsRoot,
+          AIMAGICIAN_GITHUB_REPO_OVERRIDES: JSON.stringify({
+            "aimagician/external-skills": fixture.externalRepoRoot
+          })
+        }
+      }
+    );
+    const doctor = JSON.parse(doctorStdout) as {
+      command: string;
+      status: string;
+      targets: Array<{ target: string; status: string }>;
+    };
+    expect(doctor).toMatchObject({
+      command: "doctor",
+      status: "healthy",
+      targets: [{ target: "claude", status: "healthy" }]
+    });
   }, 30000);
 
   it("runs the compiled bootstrap CLI with plugin installs and skip reporting", async () => {
