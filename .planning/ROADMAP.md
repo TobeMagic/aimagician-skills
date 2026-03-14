@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Bootstrap Engine** - Build the one-command install and update workflow with cross-platform execution (completed 2026-03-14)
 - [x] **Phase 3: Direct Skill Targets** - Install skills into Codex, Claude Code, and OpenCode user-level locations (completed 2026-03-14)
 - [x] **Phase 4: Gemini and Plugins** - Add Gemini-native output plus capability-aware plugin and extension handling (completed 2026-03-14)
-- [ ] **Phase 5: Verification and Release UX** - Add doctor/list/report flows and finish the bootstrap experience
+- [x] **Phase 5: Verification and Release UX** - Add doctor/list/report flows and finish the bootstrap experience (completed 2026-03-14)
 
 ## Phase Details
 
@@ -95,8 +95,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: Implement list, inspect, and doctor commands
-- [ ] 05-02: Add final reporting, verification UX, and setup documentation
+- [x] 05-01: Implement list, inspect, and doctor commands
+- [x] 05-02: Add final reporting, verification UX, and setup documentation
 
 ## Progress
 
@@ -109,4 +109,4 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 | 2. Bootstrap Engine | 3/3 | Complete    | 2026-03-14 |
 | 3. Direct Skill Targets | 3/3 | Complete    | 2026-03-14 |
 | 4. Gemini and Plugins | 3/3 | Complete    | 2026-03-14 |
-| 5. Verification and Release UX | 0/2 | Not started | - |
+| 5. Verification and Release UX | 2/2 | Complete    | 2026-03-14 |

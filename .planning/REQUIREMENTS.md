@@ -41,9 +41,9 @@
 
 ### Verification
 
-- [ ] **VER-01**: User can list or inspect what skills were installed for each target after running setup
-- [ ] **VER-02**: User can see which targets succeeded, failed, or were skipped in the latest setup run
-- [ ] **VER-03**: User can use a doctor or verification command to confirm that configured targets are wired correctly
+- [x] **VER-01**: User can list or inspect what skills were installed for each target after running setup
+- [x] **VER-02**: User can see which targets succeeded, failed, or were skipped in the latest setup run
+- [x] **VER-03**: User can use a doctor or verification command to confirm that configured targets are wired correctly
 
 ## v2 Requirements
 
@@ -91,9 +91,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLUG-01 | Phase 4 | Complete |
 | PLUG-02 | Phase 4 | Complete |
 | PLUG-03 | Phase 4 | Complete |
-| VER-01 | Phase 5 | Pending |
-| VER-02 | Phase 5 | Pending |
-| VER-03 | Phase 5 | Pending |
+| VER-01 | Phase 5 | Complete |
+| VER-02 | Phase 5 | Complete |
+| VER-03 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 22 total
@@ -102,4 +102,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-03-14 after Phase 4 completion*
+*Last updated: 2026-03-14 after Phase 5 completion*
