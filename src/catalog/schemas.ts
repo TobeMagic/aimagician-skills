@@ -64,21 +64,20 @@ function createAssetSchema(section: CatalogSection) {
     .strict();
 }
 
-function createBaseSourceSchema(section: CatalogSection) {
+function createSourceCommonSchema() {
   return z
     .object({
       id: slugSchema,
       enabled: z.boolean().default(true),
       description: z.string().min(1).optional(),
       version: z.string().min(1).optional(),
-      targets: targetSelectionSchema.optional(),
-      assets: z.array(createAssetSchema(section)).min(1)
+      targets: targetSelectionSchema.optional()
     })
     .strict();
 }
 
 function createGithubSourceSchema(section: CatalogSection) {
-  return createBaseSourceSchema(section).extend({
+  return createSourceCommonSchema().extend({
     type: z.literal("github"),
     github: z
       .object({
@@ -86,12 +85,13 @@ function createGithubSourceSchema(section: CatalogSection) {
         ref: z.string().min(1).optional(),
         path: z.string().min(1).optional()
       })
-      .strict()
+      .strict(),
+    assets: z.array(createAssetSchema(section)).min(1).optional()
   });
 }
 
 function createCommandSourceSchema(section: CatalogSection) {
-  return createBaseSourceSchema(section).extend({
+  return createSourceCommonSchema().extend({
     type: z.literal("command"),
     command: z
       .object({
@@ -99,7 +99,8 @@ function createCommandSourceSchema(section: CatalogSection) {
         shell: z.string().min(1).optional(),
         cwd: z.string().min(1).optional()
       })
-      .strict()
+      .strict(),
+    assets: z.array(createAssetSchema(section)).min(1)
   });
 }
 
@@ -129,15 +130,27 @@ export function parseCatalogFile(
 
 export function isCatalogSourceInput(value: unknown): value is CatalogSourceInput {
   return z
-    .object({
-      id: slugSchema,
-      type: z.enum(["github", "command"] as const),
-      assets: z.array(
-        z.object({
-          id: slugSchema,
-          kind: z.enum(assetKinds)
-        })
-      )
-    })
+    .discriminatedUnion("type", [
+      z.object({
+        id: slugSchema,
+        type: z.literal("github"),
+        assets: z.array(
+          z.object({
+            id: slugSchema,
+            kind: z.enum(assetKinds)
+          })
+        ).optional()
+      }),
+      z.object({
+        id: slugSchema,
+        type: z.literal("command"),
+        assets: z.array(
+          z.object({
+            id: slugSchema,
+            kind: z.enum(assetKinds)
+          })
+        ).min(1)
+      })
+    ])
     .safeParse(value).success;
 }

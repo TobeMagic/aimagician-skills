@@ -15,11 +15,11 @@ interface BaseCatalogSourceInput {
   description?: string;
   version?: string;
   targets?: TargetSelection;
-  assets: CatalogAssetInput[];
 }
 
 export interface GithubSourceInput extends BaseCatalogSourceInput {
   type: "github";
+  assets?: CatalogAssetInput[];
   github: {
     repo: string;
     ref?: string;
@@ -29,6 +29,7 @@ export interface GithubSourceInput extends BaseCatalogSourceInput {
 
 export interface CommandSourceInput extends BaseCatalogSourceInput {
   type: "command";
+  assets: CatalogAssetInput[];
   command: {
     run: string;
     shell?: string;
@@ -38,11 +39,21 @@ export interface CommandSourceInput extends BaseCatalogSourceInput {
 
 export type CatalogSourceInput = GithubSourceInput | CommandSourceInput;
 
+export type CatalogResolvedSourceInput =
+  | (Omit<GithubSourceInput, "assets"> & { type: "github"; assets: CatalogAssetInput[] })
+  | CommandSourceInput;
+
 export interface CatalogFileInput {
   sources: CatalogSourceInput[];
 }
 
 export type CatalogSourceRecord = (CatalogSourceInput & {
+  enabled: boolean;
+  section: CatalogSection;
+  originFile: string;
+});
+
+export type CatalogResolvedSourceRecord = (CatalogResolvedSourceInput & {
   enabled: boolean;
   section: CatalogSection;
   originFile: string;

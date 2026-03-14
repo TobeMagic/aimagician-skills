@@ -1,21 +1,65 @@
 # Catalog YAML 配置说明
 
-这份文档专门解释 [catalog](D:\Growth_up_youth\repo\skills\catalog) 下面的 YAML 配置。
+这份文档专门解释 [catalog](D:\Growth_up_youth\repo\skills\catalog) 下面的 YAML 怎么写，重点回答这几个问题：
 
-如果你现在的目标是：
+- `github.path` 到底该写什么
+- `assets` 是不是必须写
+- Claude 官方 `skills` 仓库和 `plugins` 仓库应该怎么配
+- 我只想“默认全量”时该怎么写
+- 我只想拿一部分时该怎么写
 
-- 用你自己的本地 skills
-- 加上 Claude 官方 skills
-- 加上 GSD
-- 再声明 Claude 官方 plugins
+## 1. 先记住最重要的规则
 
-那你只需要看这份文档，不需要自己猜 YAML 格式。
+### 规则 1: `github.path` 指的是“仓库里的父目录”
 
-## 1. 先理解目录
+它不是单个 skill，也不是单个 plugin。
 
-这个项目把外部配置分成两类：
+比如：
+
+- `anthropics/skills` 里，skills 放在 `skills/`
+- `anthropics/claude-plugins-official` 里，对 Claude 官方目录插件，这个项目现在用的是 `external_plugins/`
+
+所以你通常会这样写：
+
+```yaml
+github:
+  repo: anthropics/skills
+  ref: main
+  path: skills
+```
+
+或者：
+
+```yaml
+github:
+  repo: anthropics/claude-plugins-official
+  ref: main
+  path: external_plugins
+```
+
+### 规则 2: `assets` 对 `github` source 现在可以省略
+
+如果你省略 `assets`，这个项目会自动“拿全部”。
+
+自动展开规则是：
+
+- `catalog/skills/*.yaml`
+  扫描 `github.path` 下的一级子目录；只要该目录里有 `SKILL.md`，就算一个 skill
+- `catalog/plugins/*.yaml`
+  扫描 `github.path` 下的一级子目录，以及一级 `.js/.cjs/.mjs/.ts/.cts/.mts` 文件
+
+### 规则 3: `command` source 仍然必须写 `assets`
+
+因为命令型 source 没法从远程目录结构里自动推断要安装什么。
+
+## 2. 目录分工
 
 ```text
+skills/
+  owned/
+    <skill-id>/
+      SKILL.md
+
 catalog/
   skills/
     *.yaml
@@ -23,111 +67,39 @@ catalog/
     *.yaml
 ```
 
-含义是：
+含义：
 
+- `skills/owned/`
+  你自己仓库里直接维护的 skills
 - `catalog/skills/*.yaml`
-  管理 skill 类来源
+  外部 skill source，或者 command installer
 - `catalog/plugins/*.yaml`
-  管理 plugin 类来源
+  外部 plugin source
 
-你自己写的本地 skill 不在这里配，它们直接放在：
+## 3. 最小 YAML 结构
 
-```text
-skills/owned/<skill-id>/SKILL.md
-```
-
-## 2. 最核心的 YAML 结构
-
-每个 YAML 文件的顶层都是：
-
-```yaml
-sources:
-  - id: some-source
-    type: github
-```
-
-也就是说，一个文件里可以放一个或多个 source。
-
-每个 source 常见字段：
+### 3.1 GitHub source
 
 ```yaml
 sources:
   - id: some-source
     type: github
     enabled: true
-    description: source description
-    targets:
-      include:
-        - claude
     github:
       repo: owner/repo
       ref: main
       path: skills
-    assets:
-      - id: some-asset
-        kind: skill
-        path: some-asset/SKILL.md
 ```
 
-字段解释：
+这已经是有效配置了。
 
-- `id`
-  这个 source 的唯一名字
-- `type`
-  目前常用两种：
-  - `github`
-  - `command`
-- `enabled`
-  `true` 表示启用，`false` 表示先保留配置但不执行
-- `description`
-  备注说明
-- `targets.include`
-  只给哪些 CLI 安装
-- `github.repo`
-  GitHub 仓库，格式 `owner/repo`
-- `github.ref`
-  分支、tag 或 commit，通常写 `main`
-- `github.path`
-  仓库里的子目录
-- `assets`
-  这个 source 里实际要拿哪些 asset
-- `assets[].id`
-  这个 asset 在你项目里的名字
-- `assets[].kind`
-  `skill` 或 `plugin`
-- `assets[].path`
-  这个 asset 在远程仓库里的实际路径
+含义是：
 
-## 3. `github` source 和 `command` source 的区别
+- 从 `owner/repo` 拉取
+- 以 `skills/` 作为父目录
+- `assets` 没写，所以默认扫描并拿全量
 
-### `github`
-
-意思是：
-从某个 GitHub 仓库拉内容，然后把你指定的 asset 装进目标 CLI。
-
-例子：
-
-```yaml
-sources:
-  - id: claude-official
-    type: github
-    enabled: true
-    github:
-      repo: anthropics/skills
-      ref: main
-      path: skills
-    assets:
-      - id: docx
-        kind: skill
-        path: docx/SKILL.md
-```
-
-### `command`
-
-意思是：
-这个 source 不走“复制目录”安装，而是直接执行一个命令。
-
-例子：
+### 3.2 Command source
 
 ```yaml
 sources:
@@ -144,23 +116,124 @@ sources:
         kind: skill
 ```
 
-这类 source 适合：
+这类 source 不是复制仓库目录，而是直接执行命令。
 
-- 上游本身就有自己的安装命令
-- 你不想自己复制它的 skill 目录
-- 你只想让这个仓库统一调度它
+## 4. 字段到底什么意思
 
-## 4. 你当前仓库正在使用的配置
+### 顶层字段
 
-你现在的 `catalog` 已经换成真实可用配置，不是示例了。
+- `id`
+  这个 source 在本项目里的名字
+- `type`
+  目前主要是 `github` 或 `command`
+- `enabled`
+  是否启用；`false` 时保留配置但不参与安装
+- `description`
+  说明文字
+- `targets`
+  这个 source 默认要给哪些 CLI 用
 
-### 4.1 Claude 官方 skills
+### `github` 字段
+
+- `github.repo`
+  GitHub 仓库，格式 `owner/repo`
+- `github.ref`
+  分支、tag 或 commit；一般写 `main`
+- `github.path`
+  仓库里用于扫描 assets 的父目录
+
+### `assets` 字段
+
+- `assets`
+  这个 source 里要取哪些具体 asset
+- `assets[].id`
+  在本项目里的 asset id
+- `assets[].kind`
+  `skill` 或 `plugin`
+- `assets[].path`
+  该 asset 在 `github.path` 下面的相对路径
+
+## 5. “默认全部”到底怎么工作
+
+### 5.1 Skills
+
+如果你这样写：
+
+```yaml
+sources:
+  - id: claude-official
+    type: github
+    github:
+      repo: anthropics/skills
+      ref: main
+      path: skills
+```
+
+那么程序会去看：
+
+```text
+anthropics/skills
+└─ skills/
+   ├─ docx/
+   │  └─ SKILL.md
+   ├─ pdf/
+   │  └─ SKILL.md
+   └─ ...
+```
+
+然后自动把每个 `*/SKILL.md` 所在目录识别成一个 skill。
+
+也就是说：
+
+- `docx/` 会变成 asset `docx`
+- `pdf/` 会变成 asset `pdf`
+- `frontend-design/` 会变成 asset `frontend-design`
+
+### 5.2 Plugins
+
+如果你这样写：
+
+```yaml
+sources:
+  - id: claude-official-plugins
+    type: github
+    targets:
+      include:
+        - claude
+    github:
+      repo: anthropics/claude-plugins-official
+      ref: main
+      path: external_plugins
+```
+
+那么程序会去看：
+
+```text
+anthropics/claude-plugins-official
+└─ external_plugins/
+   ├─ github/
+   ├─ linear/
+   ├─ playwright/
+   └─ ...
+```
+
+然后自动把每个一级目录识别成一个 plugin asset。
+
+也就是说：
+
+- `github/` 会变成 asset `github`
+- `linear/` 会变成 asset `linear`
+- `playwright/` 会变成 asset `playwright`
+
+## 6. 你当前仓库里的真实配置
+
+### 6.1 Claude 官方 skills
 
 文件：
 
-- [catalog/skills/claude-official.yaml](D:\Growth_up_youth\repo\skills\catalog\skills\claude-official.yaml)
+- [claude-official.yaml](D:\Growth_up_youth\repo\skills\catalog\skills\claude-official.yaml)
 
-内容：
+现在就是最简写法：
 
 ```yaml
 sources:
@@ -172,54 +245,19 @@ sources:
       repo: anthropics/skills
       ref: main
       path: skills
-    assets:
-      - id: docx
-        kind: skill
-        path: docx/SKILL.md
-      - id: pdf
-        kind: skill
-        path: pdf/SKILL.md
-      - id: pptx
-        kind: skill
-        path: pptx/SKILL.md
-      - id: xlsx
-        kind: skill
-        path: xlsx/SKILL.md
-      - id: frontend-design
-        kind: skill
-        path: frontend-design/SKILL.md
-      - id: webapp-testing
-        kind: skill
-        path: webapp-testing/SKILL.md
-      - id: mcp-builder
-        kind: skill
-        path: mcp-builder/SKILL.md
-      - id: skill-creator
-        kind: skill
-        path: skill-creator/SKILL.md
 ```
 
-它的意思是：
+意思：
 
-- 从 `anthropics/skills` 仓库读取
-- 仓库里的根目录是 `skills/`
-- 只取你列出来的这些 skills
+- 父目录是 `skills/`
+- `assets` 没写
+- 所以默认拿 `skills/` 下全部官方 skills
 
-如果你以后想再加一个官方 skill，只需要在 `assets:` 里继续追加：
-
-```yaml
-      - id: some-skill
-        kind: skill
-        path: some-skill/SKILL.md
-```
-
-### 4.2 GSD
+### 6.2 GSD
 
 文件：
 
-- [catalog/skills/gsd.yaml](D:\Growth_up_youth\repo\skills\catalog\skills\gsd.yaml)
-
-内容：
+- [gsd.yaml](D:\Growth_up_youth\repo\skills\catalog\skills\gsd.yaml)
 
 ```yaml
 sources:
@@ -237,25 +275,17 @@ sources:
         kind: skill
 ```
 
-它的意思是：
+意思：
 
-- 这个 source 不走 GitHub 复制
+- 不走 GitHub 目录复制
 - 直接执行 `npx get-shit-done-cc@latest --global`
-- 目标只针对 `claude`
+- 这类 source 仍然要写 `assets`
 
-如果你以后想先停用 GSD，可以改成：
-
-```yaml
-enabled: false
-```
-
-### 4.3 Claude 官方 plugins
+### 6.3 Claude 官方 plugins
 
 文件：
 
-- [catalog/plugins/claude-official-plugins.yaml](D:\Growth_up_youth\repo\skills\catalog\plugins\claude-official-plugins.yaml)
-
-内容：
+- [claude-official-plugins.yaml](D:\Growth_up_youth\repo\skills\catalog\plugins\claude-official-plugins.yaml)
 
 ```yaml
 sources:
@@ -270,99 +300,131 @@ sources:
       repo: anthropics/claude-plugins-official
       ref: main
       path: external_plugins
+```
+
+意思：
+
+- 父目录是 `external_plugins/`
+- `assets` 没写
+- 所以默认拿 `external_plugins/` 下全部官方目录插件
+
+注意当前边界：
+
+- 这些 plugin 现在能被识别、列出、纳入 plan
+- 对 `claude` 目标仍然是显式 skip
+- 也就是“知道它们存在”，但不会冒充已经自动安装进 Claude Code
+
+## 7. 如果你只想拿一部分，不要默认全部
+
+这时就把 `assets` 写出来。
+
+### 7.1 只拿部分官方 skills
+
+```yaml
+sources:
+  - id: claude-official
+    type: github
+    targets:
+      include:
+        - claude
+    github:
+      repo: anthropics/skills
+      ref: main
+      path: skills
     assets:
-      - id: asana
-        kind: plugin
-        path: asana
-      - id: context7
-        kind: plugin
-        path: context7
-      - id: firebase
-        kind: plugin
-        path: firebase
+      - id: docx
+        kind: skill
+        path: docx
+      - id: pdf
+        kind: skill
+        path: pdf
+      - id: xlsx
+        kind: skill
+        path: xlsx
+```
+
+这里的 `path` 对应的是 `skills/` 下面的目录名，不需要再写成 `docx/SKILL.md`。
+
+### 7.2 只拿部分官方 plugins
+
+```yaml
+sources:
+  - id: claude-official-plugins
+    type: github
+    targets:
+      include:
+        - claude
+    github:
+      repo: anthropics/claude-plugins-official
+      ref: main
+      path: external_plugins
+    assets:
       - id: github
         kind: plugin
         path: github
-      - id: gitlab
-        kind: plugin
-        path: gitlab
-      - id: greptile
-        kind: plugin
-        path: greptile
-      - id: laravel-boost
-        kind: plugin
-        path: laravel-boost
       - id: linear
         kind: plugin
         path: linear
-      - id: playwright
-        kind: plugin
-        path: playwright
-      - id: serena
-        kind: plugin
-        path: serena
-      - id: slack
-        kind: plugin
-        path: slack
-      - id: stripe
-        kind: plugin
-        path: stripe
-      - id: supabase
-        kind: plugin
-        path: supabase
 ```
 
-它的意思是：
+这里的 `path` 对应的是 `external_plugins/` 下面的目录名。
 
-- 从 `anthropics/claude-plugins-official` 仓库读取
-- 仓库里的插件目录是 `external_plugins/`
-- 你现在已经把官方插件目录里的主要插件都声明进来了
+## 8. OpenCode plugin 的一个特殊点
 
-注意：
+对 OpenCode 自动安装 plugin 时，当前要求 asset 必须是明确的 JavaScript 或 TypeScript 文件。
 
-- 这份配置现在是“声明 + 识别”
-- 当前项目对 `claude` plugin 仍然是显式 `skip`
-- 也就是会告诉你“我认得这些插件配置”，但不会替你自动完成 Claude 官方插件安装
-
-这是当前项目的设计边界，不是 YAML 写错。
-
-## 5. 你以后最常见的改法
-
-### 5.1 我想减少 Claude 官方 skills，只保留几个
-
-直接删掉不想要的 `assets` 条目即可。
-
-例如你只保留：
+也就是说，如果你要给 OpenCode 装 plugin，建议这样写：
 
 ```yaml
-assets:
-  - id: docx
-    kind: skill
-    path: docx/SKILL.md
-  - id: pdf
-    kind: skill
-    path: pdf/SKILL.md
+sources:
+  - id: opencode-tools
+    type: github
+    targets:
+      include:
+        - opencode
+    github:
+      repo: owner/opencode-plugins
+      ref: main
+      path: plugins
+    assets:
+      - id: audit-helper
+        kind: plugin
+        path: audit-helper.ts
 ```
 
-### 5.2 我想新增一个 GitHub skills 仓库
+如果省略 `assets`，而扫描出来的是目录型 plugin，那么：
 
-在 `catalog/skills/` 新建一个 YAML，例如：
+- 对 `claude`：会被识别，但显式 skip
+- 对 `opencode`：会因为不是明确的 `.js/.ts` 文件而 skip
+
+## 9. 以后你最常见的几种操作
+
+### 9.1 增加一个你自己的 skill
+
+直接放：
 
 ```text
-catalog/skills/my-extra-skills.yaml
+skills/owned/my-skill/SKILL.md
 ```
 
-写：
+### 9.2 增加一个新的 GitHub skills 仓库，并默认拿全量
 
 ```yaml
 sources:
   - id: my-extra-skills
     type: github
-    enabled: true
-    targets:
-      include:
-        - codex
-        - claude
+    github:
+      repo: owner/repo
+      ref: main
+      path: skills
+```
+
+### 9.3 增加一个新的 GitHub skills 仓库，但只拿一部分
+
+```yaml
+sources:
+  - id: my-extra-skills
+    type: github
     github:
       repo: owner/repo
       ref: main
@@ -370,113 +432,32 @@ sources:
     assets:
       - id: review-helper
         kind: skill
-        path: review-helper/SKILL.md
+        path: review-helper
 ```
 
-### 5.3 我想新增一个 command 安装器
-
-在 `catalog/skills/` 新建：
-
-```yaml
-sources:
-  - id: some-installer
-    type: command
-    enabled: true
-    targets:
-      include:
-        - claude
-    command:
-      run: npx some-package@latest install
-    assets:
-      - id: some-installer
-        kind: skill
-```
-
-### 5.4 我想只针对某个 CLI
-
-这样写：
-
-```yaml
-targets:
-  include:
-    - claude
-```
-
-或者：
-
-```yaml
-targets:
-  include:
-    - codex
-    - opencode
-```
-
-### 5.5 我想暂时禁用某个 source
-
-最简单：
+### 9.4 临时关闭一个 source
 
 ```yaml
 enabled: false
 ```
 
-## 6. 这套配置实际会发生什么
-
-按你现在这套 catalog，运行 bootstrap 时：
-
-### skills/owned
-
-你自己写在 `skills/owned/*` 里的 skills 会直接参与安装。
-
-### claude-official
-
-会从 Anthropic 官方 skills 仓库取你列出来的 skill。
-
-### gsd
-
-会执行：
-
-```bash
-npx get-shit-done-cc@latest --global
-```
-
-### claude-official-plugins
-
-会被识别为 plugin catalog。
-
-但是当前结果是：
-
-- 对 Claude：显式 skip
-- 不会假装已经装好了
-
-## 7. 你现在最应该怎么用
-
-如果你想保持现在的默认配置，直接用：
+### 9.5 重新执行安装
 
 ```bash
 npm run bootstrap
 ```
 
-如果你只想先装 Claude 相关：
+或者只装 Claude：
 
 ```bash
 npm run bootstrap -- --target claude
 ```
 
-安装后你可以用：
+## 10. 官方仓库参考
 
-```bash
-node dist/cli/index.js list
-node dist/cli/index.js inspect --target claude
-node dist/cli/index.js doctor
-```
+官方仓库：
 
-## 8. 一句话规则
+- Anthropic official skills: `https://github.com/anthropics/skills`
+- Anthropic official Claude plugins: `https://github.com/anthropics/claude-plugins-official`
 
-你以后只要记住这几个点就够了：
-
-- 你自己的 skill 放 `skills/owned/`
-- GitHub skills 放 `catalog/skills/*.yaml`
-- command 安装器也放 `catalog/skills/*.yaml`
-- plugin 放 `catalog/plugins/*.yaml`
-- 不想启用就改 `enabled: false`
-- 改完后重新跑 `bootstrap`
+这两个仓库的目录约定，就是你这里 `github.path` 和默认全量扫描规则的来源。

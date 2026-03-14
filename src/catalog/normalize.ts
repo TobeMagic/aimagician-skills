@@ -7,9 +7,9 @@ import {
   type SupportedTarget,
   type TargetSelection
 } from "../model/targets";
-import type { CatalogSourceRecord } from "./source-types";
+import type { CatalogResolvedSourceRecord } from "./source-types";
 
-export function normalizeSources(sources: CatalogSourceRecord[]): NormalizedAsset[] {
+export function normalizeSources(sources: CatalogResolvedSourceRecord[]): NormalizedAsset[] {
   return sources.flatMap((source) =>
     source.assets.map((asset) => normalizeSourceAsset(source, asset))
   );
@@ -39,8 +39,8 @@ export function mergeTargetSelections(
 }
 
 export function normalizeSourceAsset(
-  source: CatalogSourceRecord,
-  asset: CatalogSourceRecord["assets"][number]
+  source: CatalogResolvedSourceRecord,
+  asset: CatalogResolvedSourceRecord["assets"][number]
 ): NormalizedAsset {
   const effectiveSelection = mergeTargetSelections(source.targets, asset.targets);
   const effectiveTargets = resolveSelectedTargets(effectiveSelection);
@@ -78,7 +78,7 @@ function createTargetState(
   target: SupportedTarget,
   effectiveTargets: SupportedTarget[],
   selection: TargetSelection,
-  assetKind: CatalogSourceRecord["assets"][number]["kind"]
+  assetKind: CatalogResolvedSourceRecord["assets"][number]["kind"]
 ): NormalizedTargetState {
   const selected = effectiveTargets.includes(target);
   const capabilities = selection.capabilities?.[target] ?? {};

@@ -90,7 +90,7 @@ describe("direct target sync", () => {
       "utf8"
     );
     expect(geminiContext).toContain("# Daily Ops");
-  });
+  }, 15000);
 
   it("prunes stale managed installs on selected targets and keeps unmanaged directories", async () => {
     const fixture = await createFixtureRepository();

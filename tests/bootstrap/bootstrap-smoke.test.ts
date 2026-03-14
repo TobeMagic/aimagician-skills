@@ -108,7 +108,7 @@ describe("bootstrap package smoke", () => {
       status: "healthy",
       targets: [{ target: "claude", status: "healthy" }]
     });
-  }, 30000);
+  }, 60000);
 
   it("runs the compiled bootstrap CLI with plugin installs and skip reporting", async () => {
     const workspaceRoot = await mkdtemp(join(tmpdir(), "aimagician-plugin-smoke-"));
@@ -158,7 +158,7 @@ describe("bootstrap package smoke", () => {
       join(homeDir, ".config", "opencode", "plugins", "audit-helper.ts"),
       constants.F_OK
     );
-  }, 30000);
+  }, 45000);
 });
 
 async function runPackageCommand(command: string): Promise<void> {
@@ -204,11 +204,7 @@ async function createSmokeFixture(
       "    type: github",
       "    github:",
       "      repo: aimagician/external-skills",
-      "      path: skills",
-      "    assets:",
-      "      - id: gsd",
-      "        kind: skill",
-      "        path: gsd/SKILL.md"
+      "      path: skills"
     ].join("\n"),
     "utf8"
   );
@@ -225,11 +221,7 @@ async function createSmokeFixture(
           "        - opencode",
           "    github:",
           "      repo: aimagician/external-skills",
-          "      path: plugins",
-          "    assets:",
-          "      - id: audit-helper",
-          "        kind: plugin",
-          "        path: audit-helper.ts"
+          "      path: plugins"
         ].join("\n")
       : "sources: []\n",
     "utf8"

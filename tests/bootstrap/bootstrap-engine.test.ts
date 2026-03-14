@@ -150,10 +150,36 @@ describe("runBootstrap", () => {
       }
     ]);
   });
+
+  it("discovers directory-based plugin assets when github assets are omitted", async () => {
+    const fixture = await createFixtureRepository({
+      includePluginSource: true,
+      includeDirectoryPlugin: true
+    });
+
+    const result = await runBootstrap({
+      dryRun: true,
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      githubRepoOverrides: {
+        "aimagician/repo-skills": fixture.externalRepoRoot
+      },
+      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
+    });
+
+    expect(result.plan.assets.map((asset) => asset.id)).toContain("browser-tools");
+    expect(result.pluginReports).toContainEqual({
+      assetId: "browser-tools",
+      sourceId: "plugin-repo",
+      target: "claude",
+      status: "skipped",
+      reason: "Claude Code plugin automation remains marketplace- and consent-driven, so bootstrap skips it"
+    });
+  });
 });
 
 async function createFixtureRepository(
-  options: { includePluginSource?: boolean } = {}
+  options: { includePluginSource?: boolean; includeDirectoryPlugin?: boolean } = {}
 ) {
   const root = await mkdtemp(join(tmpdir(), "aimagician-bootstrap-"));
   tempDirectories.push(root);
@@ -169,6 +195,11 @@ async function createFixtureRepository(
   await mkdir(pluginsRoot, { recursive: true });
   await mkdir(join(externalRepoRoot, "claude-sync"), { recursive: true });
   await mkdir(join(externalRepoRoot, "plugins"), { recursive: true });
+  if (options.includeDirectoryPlugin) {
+    await mkdir(join(externalRepoRoot, "plugins", "browser-tools"), {
+      recursive: true
+    });
+  }
 
   await writeFile(join(ownedSkillsRoot, "daily-ops", "SKILL.md"), "# Daily Ops\n", "utf8");
   await writeFile(join(externalRepoRoot, "claude-sync", "SKILL.md"), "# Claude Sync\n", "utf8");
@@ -186,9 +217,6 @@ async function createFixtureRepository(
       "    type: github",
       "    github:",
       "      repo: aimagician/repo-skills",
-      "    assets:",
-      "      - id: claude-sync",
-      "        kind: skill",
       "  - id: bootstrap-command",
       "    type: command",
       "    targets:",
@@ -216,11 +244,7 @@ async function createFixtureRepository(
           "        - opencode",
           "    github:",
           "      repo: aimagician/repo-skills",
-          "      path: plugins",
-          "    assets:",
-          "      - id: audit-helper",
-          "        kind: plugin",
-          "        path: audit-helper.ts"
+          "      path: plugins"
         ].join("\n")
       : "sources: []\n",
     "utf8"

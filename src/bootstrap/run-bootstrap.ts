@@ -71,11 +71,13 @@ export async function runBootstrap(
   options: RunBootstrapOptions = {}
 ): Promise<BootstrapRunResult> {
   const selectedTargets = options.selectedTargets ?? [...supportedTargets];
+  const platformContext = resolvePlatformContext(options.platform);
   const prepared = await prepareBootstrapRun({
     selectedTargets,
-    catalog: options.catalog
+    catalog: options.catalog,
+    workspaceRoot: platformContext.workspaceRoot,
+    githubRepoOverrides: options.githubRepoOverrides
   });
-  const platformContext = resolvePlatformContext(options.platform);
   const workspace = options.dryRun
     ? resolveBootstrapWorkspace(platformContext)
     : await ensureBootstrapWorkspace(platformContext);

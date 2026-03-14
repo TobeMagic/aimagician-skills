@@ -7,28 +7,3 @@ sources:
       repo: anthropics/skills
       ref: main
       path: skills
-    assets:
-      - id: docx
-        kind: skill
-        path: docx/SKILL.md
-      - id: pdf
-        kind: skill
-        path: pdf/SKILL.md
-      - id: pptx
-        kind: skill
-        path: pptx/SKILL.md
-      - id: xlsx
-        kind: skill
-        path: xlsx/SKILL.md
-      - id: frontend-design
-        kind: skill
-        path: frontend-design/SKILL.md
-      - id: webapp-testing
-        kind: skill
-        path: webapp-testing/SKILL.md
-      - id: mcp-builder
-        kind: skill
-        path: mcp-builder/SKILL.md
-      - id: skill-creator
-        kind: skill
-        path: skill-creator/SKILL.md

@@ -139,19 +139,23 @@ sources:
       repo: owner/repo
       ref: main
       path: skills
-    assets:
-      - id: some-skill
-        kind: skill
-        path: some-skill/SKILL.md
 ```
+
+For GitHub sources, `assets` is optional. If you omit it, bootstrap expands the whole parent directory declared in `github.path`.
 
 Field notes:
 
 - `repo`: GitHub repo in `owner/name` format
 - `ref`: optional branch, tag, or commit
-- `path`: optional base directory inside the repo
+- `path`: optional parent directory inside the repo that contains the assets you want to scan
+- `assets`: optional for `github`, required for `command`
 - `assets[].id`: local asset id used by this project
-- `assets[].path`: path to the source asset inside the repo
+- `assets[].path`: path to the source asset inside the repo, relative to `github.path`
+
+When `assets` is omitted:
+
+- skill catalogs scan first-level directories under `github.path` and keep the ones that contain `SKILL.md`
+- plugin catalogs scan first-level directories and first-level JavaScript or TypeScript files under `github.path`
 
 ## Add a Command-Based Skill Source
 
@@ -213,19 +217,6 @@ sources:
       repo: anthropics/skills
       ref: main
       path: skills
-    assets:
-      - id: docx
-        kind: skill
-        path: docx/SKILL.md
-      - id: pdf
-        kind: skill
-        path: pdf/SKILL.md
-      - id: pptx
-        kind: skill
-        path: pptx/SKILL.md
-      - id: xlsx
-        kind: skill
-        path: xlsx/SKILL.md
 ```
 
 Then run:
@@ -237,6 +228,8 @@ npm run bootstrap -- --target claude
 Reference:
 
 - Anthropic official skills repo: `https://github.com/anthropics/skills`
+
+If you only want a subset, add explicit `assets` entries and point `path` at the skill directory name, for example `docx`, `pdf`, or `xlsx`.
 
 ## Example: Add a Supported OpenCode Plugin
 
@@ -303,11 +296,7 @@ sources:
     github:
       repo: anthropics/claude-plugins-official
       ref: main
-      path: plugins
-    assets:
-      - id: example-plugin
-        kind: plugin
-        path: example-plugin
+      path: external_plugins
 ```
 
 What happens today:
@@ -315,6 +304,8 @@ What happens today:
 - the plugin metadata is valid in this repo
 - bootstrap reports why Claude plugin automation was skipped
 - you should still use Claude Code's native plugin flow for actual installation
+
+This default-all form maps directly to the official directory layout, where `external_plugins/<plugin-id>/` is the unit you want to track.
 
 According to Anthropic's official plugin directory flow:
 

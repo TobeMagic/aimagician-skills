@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -18,7 +18,7 @@ afterEach(async () => {
 });
 
 describe("loadCatalog", () => {
-  it("loads example skill and plugin catalogs with shared source vocabulary", async () => {
+  it("loads the live repository catalogs and preserves github sources that default to all assets", async () => {
     const catalog = await loadCatalog({
       skillsRoot: skillsCatalogRoot,
       pluginsRoot: pluginsCatalogRoot
@@ -28,11 +28,15 @@ describe("loadCatalog", () => {
     expect(catalog.plugins.sources).toHaveLength(1);
     expect(catalog.activeSources.map((source) => source.id)).toEqual([
       "claude-official",
-      "opencode-browser"
+      "gsd",
+      "claude-official-plugins"
     ]);
     expect(catalog.ownedSkills).toHaveLength(0);
     expect(catalog.skills.sources[0]?.type).toBe("github");
-    expect(catalog.plugins.sources[0]?.type).toBe("command");
+    expect(catalog.skills.sources[0]?.assets).toBeUndefined();
+    expect(catalog.skills.sources[1]?.type).toBe("command");
+    expect(catalog.plugins.sources[0]?.type).toBe("github");
+    expect(catalog.plugins.sources[0]?.assets).toBeUndefined();
   });
 
   it("keeps disabled sources in config while filtering them from active resolution", async () => {
@@ -47,8 +51,26 @@ describe("loadCatalog", () => {
     await mkdir(join(ownedSkillsRoot, "release-notes"), { recursive: true });
     await mkdir(join(ownedSkillsRoot, "daily-ops"), { recursive: true });
 
-    const skillYaml = await readFile(join(skillsCatalogRoot, "example.yaml"), "utf8");
-    await writeFile(join(skillsRoot, "example.yaml"), skillYaml, "utf8");
+    await writeFile(
+      join(skillsRoot, "skills.yaml"),
+      [
+        "sources:",
+        "  - id: claude-official",
+        "    type: github",
+        "    github:",
+        "      repo: anthropics/skills",
+        "      path: skills",
+        "  - id: local-bootstrap",
+        "    type: command",
+        "    enabled: false",
+        "    command:",
+        "      run: node scripts/install-local-bootstrap.js",
+        "    assets:",
+        "      - id: bootstrap-tools",
+        "        kind: skill"
+      ].join("\n"),
+      "utf8"
+    );
     await writeFile(
       join(ownedSkillsRoot, "release-notes", "SKILL.md"),
       "# Release Notes\n",

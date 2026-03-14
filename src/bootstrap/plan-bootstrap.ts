@@ -4,7 +4,9 @@ import type { CatalogLoadOptions } from "../catalog/load-catalog";
 import { loadCatalog } from "../catalog/load-catalog";
 import { normalizeSources } from "../catalog/normalize";
 import type { LoadedCatalog } from "../catalog/source-types";
+import { resolvePlatformContext } from "../shared/platform";
 import type { BootstrapManifestAsset } from "./manifest";
+import { expandGithubSourceAssets } from "./expand-github-source-assets";
 
 export interface PlannedAsset extends BootstrapManifestAsset {
   warnings: string[];
@@ -19,6 +21,8 @@ export interface BootstrapPlan {
 export interface BuildBootstrapPlanOptions {
   selectedTargets?: SupportedTarget[];
   catalog?: CatalogLoadOptions;
+  workspaceRoot?: string;
+  githubRepoOverrides?: Record<string, string>;
 }
 
 export interface PreparedBootstrapRun {
@@ -39,7 +43,14 @@ export async function prepareBootstrapRun(
 ): Promise<PreparedBootstrapRun> {
   const selectedTargets = options.selectedTargets ?? [...supportedTargets];
   const catalog = await loadCatalog(options.catalog);
-  const normalizedAssets = normalizeSources(catalog.activeSources);
+  const normalizedAssets = normalizeSources(
+    await expandGithubSourceAssets({
+      sources: catalog.activeSources,
+      workspaceRoot:
+        options.workspaceRoot ?? resolvePlatformContext().workspaceRoot,
+      githubRepoOverrides: options.githubRepoOverrides
+    })
+  );
 
   return {
     selectedTargets,

@@ -71,14 +71,19 @@ describe("parseCli", () => {
 
 describe("runCli", () => {
   it("renders a readable bootstrap preview", async () => {
-    const result = await runCli(["--dry-run", "--target", "claude"]);
+    const fixture = await createBootstrapFixture();
 
-    expect(result.exitCode).toBe(0);
-    expect(result.stderr).toBe("");
-    expect(result.stdout).toContain("AImagician Skills bootstrap");
-    expect(result.stdout).toContain("Mode: dry-run");
-    expect(result.stdout).toContain("Targets: claude");
-  });
+    await withFixtureEnv(fixture, async () => {
+      const result = await runCli(["--dry-run", "--target", "claude"]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe("");
+      expect(result.stdout).toContain("AImagician Skills bootstrap");
+      expect(result.stdout).toContain("Mode: dry-run");
+      expect(result.stdout).toContain("Targets: claude");
+      expect(result.stdout).toContain("Planned assets: 1");
+    });
+  }, 10000);
 
   it("renders list, inspect, and doctor output from a fake home", async () => {
     const fixture = await createInspectionFixture();
@@ -193,19 +198,91 @@ async function createInspectionFixture() {
   };
 }
 
+async function createBootstrapFixture() {
+  const root = await mkdtemp(join(tmpdir(), "aimagician-cli-bootstrap-"));
+  tempDirectories.push(root);
+
+  const homeDir = join(root, "home");
+  const workspaceRoot = join(root, "workspace");
+  const ownedSkillsRoot = join(root, "fixture", "skills", "owned");
+  const skillsRoot = join(root, "fixture", "catalog", "skills");
+  const pluginsRoot = join(root, "fixture", "catalog", "plugins");
+  const externalRepoRoot = join(root, "fixture", "external-source");
+
+  await mkdir(workspaceRoot, { recursive: true });
+  await mkdir(ownedSkillsRoot, { recursive: true });
+  await mkdir(skillsRoot, { recursive: true });
+  await mkdir(pluginsRoot, { recursive: true });
+  await mkdir(join(externalRepoRoot, "skills", "gsd"), { recursive: true });
+
+  await writeFile(join(externalRepoRoot, "skills", "gsd", "SKILL.md"), "# GSD\n", "utf8");
+  await writeFile(
+    join(skillsRoot, "skills.yaml"),
+    [
+      "sources:",
+      "  - id: external-skills",
+      "    type: github",
+      "    targets:",
+      "      include:",
+      "        - claude",
+      "    github:",
+      "      repo: aimagician/external-skills",
+      "      path: skills"
+    ].join("\n"),
+    "utf8"
+  );
+  await writeFile(join(pluginsRoot, "plugins.yaml"), "sources: []\n", "utf8");
+
+  return {
+    homeDir,
+    workspaceRoot,
+    configHome: join(homeDir, ".config"),
+    ownedSkillsRoot,
+    skillsRoot,
+    pluginsRoot,
+    githubRepoOverrides: JSON.stringify({
+      "aimagician/external-skills": externalRepoRoot
+    })
+  };
+}
+
 async function withFixtureEnv<T>(
-  fixture: { homeDir: string; workspaceRoot: string; configHome: string },
+  fixture: {
+    homeDir: string;
+    workspaceRoot: string;
+    configHome: string;
+    ownedSkillsRoot?: string;
+    skillsRoot?: string;
+    pluginsRoot?: string;
+    githubRepoOverrides?: string;
+  },
   callback: () => Promise<T>
 ): Promise<T> {
   const original = {
     AIMAGICIAN_HOME_DIR: process.env.AIMAGICIAN_HOME_DIR,
     AIMAGICIAN_CONFIG_HOME: process.env.AIMAGICIAN_CONFIG_HOME,
-    AIMAGICIAN_WORKSPACE_ROOT: process.env.AIMAGICIAN_WORKSPACE_ROOT
+    AIMAGICIAN_WORKSPACE_ROOT: process.env.AIMAGICIAN_WORKSPACE_ROOT,
+    AIMAGICIAN_OWNED_SKILLS_ROOT: process.env.AIMAGICIAN_OWNED_SKILLS_ROOT,
+    AIMAGICIAN_SKILLS_CATALOG_ROOT: process.env.AIMAGICIAN_SKILLS_CATALOG_ROOT,
+    AIMAGICIAN_PLUGINS_CATALOG_ROOT: process.env.AIMAGICIAN_PLUGINS_CATALOG_ROOT,
+    AIMAGICIAN_GITHUB_REPO_OVERRIDES: process.env.AIMAGICIAN_GITHUB_REPO_OVERRIDES
   };
 
   process.env.AIMAGICIAN_HOME_DIR = fixture.homeDir;
   process.env.AIMAGICIAN_CONFIG_HOME = fixture.configHome;
   process.env.AIMAGICIAN_WORKSPACE_ROOT = fixture.workspaceRoot;
+  if (fixture.ownedSkillsRoot) {
+    process.env.AIMAGICIAN_OWNED_SKILLS_ROOT = fixture.ownedSkillsRoot;
+  }
+  if (fixture.skillsRoot) {
+    process.env.AIMAGICIAN_SKILLS_CATALOG_ROOT = fixture.skillsRoot;
+  }
+  if (fixture.pluginsRoot) {
+    process.env.AIMAGICIAN_PLUGINS_CATALOG_ROOT = fixture.pluginsRoot;
+  }
+  if (fixture.githubRepoOverrides) {
+    process.env.AIMAGICIAN_GITHUB_REPO_OVERRIDES = fixture.githubRepoOverrides;
+  }
 
   try {
     return await callback();
@@ -213,6 +290,10 @@ async function withFixtureEnv<T>(
     restoreEnv("AIMAGICIAN_HOME_DIR", original.AIMAGICIAN_HOME_DIR);
     restoreEnv("AIMAGICIAN_CONFIG_HOME", original.AIMAGICIAN_CONFIG_HOME);
     restoreEnv("AIMAGICIAN_WORKSPACE_ROOT", original.AIMAGICIAN_WORKSPACE_ROOT);
+    restoreEnv("AIMAGICIAN_OWNED_SKILLS_ROOT", original.AIMAGICIAN_OWNED_SKILLS_ROOT);
+    restoreEnv("AIMAGICIAN_SKILLS_CATALOG_ROOT", original.AIMAGICIAN_SKILLS_CATALOG_ROOT);
+    restoreEnv("AIMAGICIAN_PLUGINS_CATALOG_ROOT", original.AIMAGICIAN_PLUGINS_CATALOG_ROOT);
+    restoreEnv("AIMAGICIAN_GITHUB_REPO_OVERRIDES", original.AIMAGICIAN_GITHUB_REPO_OVERRIDES);
   }
 }
 
