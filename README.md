@@ -11,8 +11,9 @@ This repository currently provides:
 - target-aware normalization for supported CLIs
 - a bootstrap command that stages manifest-backed workspace state
 - direct user-level skill sync for Codex, Claude Code, and OpenCode from owned and GitHub-backed skill sources
+- delegated execution for command-based skill sources when a source provides its own installer command
 
-Gemini remains deferred to a later phase, and command-based skill sources are still cataloged rather than applied directly.
+Gemini remains deferred to a later phase. Command-based sources are executed as delegated installers instead of being materialized through the direct folder sync path.
 
 ## Install
 

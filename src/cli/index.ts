@@ -62,7 +62,8 @@ function createBootstrapPreview(parsed: ParsedCli, result: Awaited<ReturnType<ty
     assetCount: result.plan.assets.length,
     ownedSkillCount: result.plan.ownedSkillIds.length,
     changed: result.changed,
-    targetReports: result.targetReports
+    targetReports: result.targetReports,
+    commandReports: result.commandReports
   };
 }
 
@@ -80,7 +81,8 @@ function renderBootstrapPreview(
     `Owned skills: ${preview.ownedSkillCount}`,
     `Planned assets: ${preview.assetCount}`,
     `Changes applied: ${preview.changed ? "yes" : "no"}`,
-    ...preview.targetReports.map((report) => renderTargetReport(report))
+    ...preview.targetReports.map((report) => renderTargetReport(report)),
+    ...preview.commandReports.map((report) => renderCommandReport(report))
   ].join("\n");
 }
 
@@ -112,6 +114,12 @@ function renderTargetReport(
   const location = report.skillsDir ? ` @ ${report.skillsDir}` : "";
 
   return `Target ${report.target}: ${report.status} (${skillCount} skills)${location}`;
+}
+
+function renderCommandReport(
+  report: Awaited<ReturnType<typeof runBootstrap>>["commandReports"][number]
+): string {
+  return `Command source ${report.sourceId}: ${report.status} (${report.assetIds.length} skills -> ${report.targets.join(", ")})`;
 }
 
 if (require.main === module) {

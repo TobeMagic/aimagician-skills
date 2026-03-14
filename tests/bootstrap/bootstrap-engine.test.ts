@@ -44,7 +44,7 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root, workspaceRoot },
+      platform: { platform: "windows", homeDir: fixture.root, configBaseDir: join(fixture.root, ".config"), stateBaseDir: fixture.root, workspaceRoot },
       now: "2026-03-14T01:00:00Z"
     });
 
@@ -53,7 +53,7 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root, workspaceRoot },
+      platform: { platform: "windows", homeDir: fixture.root, configBaseDir: join(fixture.root, ".config"), stateBaseDir: fixture.root, workspaceRoot },
       now: "2026-03-14T01:00:00Z"
     });
 
@@ -90,7 +90,7 @@ describe("runBootstrap", () => {
       { target: "opencode", assetId: "claude-sync" },
       { target: "opencode", assetId: "daily-ops" }
     ]);
-  });
+  }, 15000);
 
   it("respects selected target overrides during bootstrap planning", async () => {
     const fixture = await createFixtureRepository();
@@ -125,6 +125,7 @@ async function createFixtureRepository() {
   const skillsRoot = join(root, "catalog", "skills");
   const pluginsRoot = join(root, "catalog", "plugins");
   const externalRepoRoot = join(root, "external-source");
+  const commandScriptPath = join(root, "bootstrap-command.js");
 
   await mkdir(join(ownedSkillsRoot, "daily-ops"), { recursive: true });
   await mkdir(skillsRoot, { recursive: true });
@@ -133,6 +134,7 @@ async function createFixtureRepository() {
 
   await writeFile(join(ownedSkillsRoot, "daily-ops", "SKILL.md"), "# Daily Ops\n", "utf8");
   await writeFile(join(externalRepoRoot, "claude-sync", "SKILL.md"), "# Claude Sync\n", "utf8");
+  await writeFile(commandScriptPath, "process.exit(0);\n", "utf8");
   await writeFile(
     join(skillsRoot, "skills.yaml"),
     [
@@ -151,7 +153,7 @@ async function createFixtureRepository() {
       "        - claude",
       "        - opencode",
       "    command:",
-      "      run: npx bootstrap-tools sync",
+      `      run: '${process.execPath} ${commandScriptPath}'`,
       "    assets:",
       "      - id: bootstrap-tools",
       "        kind: skill"

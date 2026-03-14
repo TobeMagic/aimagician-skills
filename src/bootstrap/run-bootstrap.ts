@@ -5,6 +5,11 @@ import {
   resolvePlatformContext,
   type PlatformContext
 } from "../shared/platform";
+import {
+  executeCommandSkillSources,
+  previewCommandSkillSources,
+  type CommandSourceReport
+} from "./command-sources";
 import { syncDirectTargets } from "./direct-target-sync";
 import { ensureBootstrapWorkspace, resolveBootstrapWorkspace } from "./workspace";
 import {
@@ -49,6 +54,7 @@ export interface BootstrapRunResult {
   planPath: string;
   plan: BootstrapPlan;
   targetReports: BootstrapTargetReport[];
+  commandReports: CommandSourceReport[];
 }
 
 export async function runBootstrap(
@@ -64,6 +70,7 @@ export async function runBootstrap(
     ? resolveBootstrapWorkspace(platformContext)
     : await ensureBootstrapWorkspace(platformContext);
   const targetHomes = resolveDirectTargetHomes(platformContext);
+  const selectedDirectTargets = selectedTargets.filter(isDirectSkillTarget);
 
   if (options.dryRun) {
     return {
@@ -73,12 +80,15 @@ export async function runBootstrap(
       manifestPath: workspace.manifestPath,
       planPath: workspace.planPath,
       plan: prepared.plan,
-      targetReports: createPreviewTargetReports(prepared.plan, targetHomes)
+      targetReports: createPreviewTargetReports(prepared.plan, targetHomes),
+      commandReports: previewCommandSkillSources(
+        prepared.normalizedAssets,
+        selectedDirectTargets
+      )
     };
   }
 
   const previousManifest = await loadManifest(workspace.manifestPath);
-  const selectedDirectTargets = selectedTargets.filter(isDirectSkillTarget);
   const retainedDirectInstalls = previousManifest?.directInstalls.filter(
     (install) => !selectedDirectTargets.includes(install.target)
   ) ?? [];
@@ -94,6 +104,13 @@ export async function runBootstrap(
     selectedTargets: selectedDirectTargets,
     installs: resolvedInstalls,
     previousInstalls: previousManifest?.directInstalls ?? []
+  });
+  const commandReports = await executeCommandSkillSources({
+    normalizedAssets: prepared.normalizedAssets,
+    selectedTargets: selectedDirectTargets,
+    workspaceRoot: workspace.rootDir,
+    platformContext,
+    targetHomes
   });
   const nextManifest = createManifest(
     prepared.plan,
@@ -111,7 +128,8 @@ export async function runBootstrap(
     JSON.stringify(
       {
         ...prepared.plan,
-        targetReports
+        targetReports,
+        commandReports
       },
       null,
       2
@@ -127,7 +145,8 @@ export async function runBootstrap(
     manifestPath: workspace.manifestPath,
     planPath: workspace.planPath,
     plan: prepared.plan,
-    targetReports
+    targetReports,
+    commandReports
   };
 }
 
