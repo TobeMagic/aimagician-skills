@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Catalog Foundation** - Define owned-skill structure, external source schema, and normalized config rules (completed 2026-03-13)
 - [x] **Phase 2: Bootstrap Engine** - Build the one-command install and update workflow with cross-platform execution (completed 2026-03-14)
 - [x] **Phase 3: Direct Skill Targets** - Install skills into Codex, Claude Code, and OpenCode user-level locations (completed 2026-03-14)
-- [ ] **Phase 4: Gemini and Plugins** - Add Gemini-native output plus capability-aware plugin and extension handling
+- [x] **Phase 4: Gemini and Plugins** - Add Gemini-native output plus capability-aware plugin and extension handling (completed 2026-03-14)
 - [ ] **Phase 5: Verification and Release UX** - Add doctor/list/report flows and finish the bootstrap experience
 
 ## Phase Details
@@ -79,9 +79,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Implement Gemini adapter and target-native output generation
-- [ ] 04-02: Implement plugin and extension schema plus capability matrix
-- [ ] 04-03: Add supported plugin installers and explicit skip reporting
+- [x] 04-01: Implement Gemini adapter and target-native output generation
+- [x] 04-02: Implement plugin and extension schema plus capability matrix
+- [x] 04-03: Add supported plugin installers and explicit skip reporting
 
 ### Phase 5: Verification and Release UX
 **Goal**: Give the user clear proof that setup worked and package the workflow as a polished personal bootstrap tool
@@ -108,5 +108,5 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 | 1. Catalog Foundation | 3/3 | Complete    | 2026-03-13 |
 | 2. Bootstrap Engine | 3/3 | Complete    | 2026-03-14 |
 | 3. Direct Skill Targets | 3/3 | Complete    | 2026-03-14 |
-| 4. Gemini and Plugins | 0/3 | Not started | - |
+| 4. Gemini and Plugins | 3/3 | Complete    | 2026-03-14 |
 | 5. Verification and Release UX | 0/2 | Not started | - |

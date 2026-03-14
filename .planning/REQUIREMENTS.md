@@ -30,14 +30,14 @@
 - [x] **TARG-01**: User can install configured skills into Codex
 - [x] **TARG-02**: User can install configured skills into Claude Code
 - [x] **TARG-03**: User can install configured skills into OpenCode
-- [ ] **TARG-04**: User can install Gemini-compatible output even when the source asset originates as a repository skill
+- [x] **TARG-04**: User can install Gemini-compatible output even when the source asset originates as a repository skill
 - [x] **TARG-05**: User can default installation to all supported CLIs and still override target selection when needed
 
 ### Plugins
 
-- [ ] **PLUG-01**: User can declare plugin or extension assets separately from skill assets in configuration
-- [ ] **PLUG-02**: User can install plugin or extension assets only for targets that support them
-- [ ] **PLUG-03**: User can see when a plugin or extension asset was skipped because a target does not support that capability
+- [x] **PLUG-01**: User can declare plugin or extension assets separately from skill assets in configuration
+- [x] **PLUG-02**: User can install plugin or extension assets only for targets that support them
+- [x] **PLUG-03**: User can see when a plugin or extension asset was skipped because a target does not support that capability
 
 ### Verification
 
@@ -86,11 +86,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TARG-01 | Phase 3 | Complete |
 | TARG-02 | Phase 3 | Complete |
 | TARG-03 | Phase 3 | Complete |
-| TARG-04 | Phase 4 | Pending |
+| TARG-04 | Phase 4 | Complete |
 | TARG-05 | Phase 2 | Complete |
-| PLUG-01 | Phase 4 | Pending |
-| PLUG-02 | Phase 4 | Pending |
-| PLUG-03 | Phase 4 | Pending |
+| PLUG-01 | Phase 4 | Complete |
+| PLUG-02 | Phase 4 | Complete |
+| PLUG-03 | Phase 4 | Complete |
 | VER-01 | Phase 5 | Pending |
 | VER-02 | Phase 5 | Pending |
 | VER-03 | Phase 5 | Pending |
@@ -102,4 +102,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-03-14 after Phase 3 completion*
+*Last updated: 2026-03-14 after Phase 4 completion*
