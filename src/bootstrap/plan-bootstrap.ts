@@ -3,6 +3,7 @@ import { supportedTargets, type SupportedTarget } from "../model/targets";
 import type { CatalogLoadOptions } from "../catalog/load-catalog";
 import { loadCatalog } from "../catalog/load-catalog";
 import { normalizeSources } from "../catalog/normalize";
+import type { LoadedCatalog } from "../catalog/source-types";
 import type { BootstrapManifestAsset } from "./manifest";
 
 export interface PlannedAsset extends BootstrapManifestAsset {
@@ -20,13 +21,39 @@ export interface BuildBootstrapPlanOptions {
   catalog?: CatalogLoadOptions;
 }
 
+export interface PreparedBootstrapRun {
+  selectedTargets: SupportedTarget[];
+  catalog: LoadedCatalog;
+  normalizedAssets: NormalizedAsset[];
+  plan: BootstrapPlan;
+}
+
 export async function buildBootstrapPlan(
   options: BuildBootstrapPlanOptions = {}
 ): Promise<BootstrapPlan> {
+  return (await prepareBootstrapRun(options)).plan;
+}
+
+export async function prepareBootstrapRun(
+  options: BuildBootstrapPlanOptions = {}
+): Promise<PreparedBootstrapRun> {
   const selectedTargets = options.selectedTargets ?? [...supportedTargets];
   const catalog = await loadCatalog(options.catalog);
   const normalizedAssets = normalizeSources(catalog.activeSources);
 
+  return {
+    selectedTargets,
+    catalog,
+    normalizedAssets,
+    plan: createPlan(catalog, normalizedAssets, selectedTargets)
+  };
+}
+
+function createPlan(
+  catalog: LoadedCatalog,
+  normalizedAssets: NormalizedAsset[],
+  selectedTargets: SupportedTarget[]
+): BootstrapPlan {
   return {
     selectedTargets,
     ownedSkillIds: catalog.ownedSkills.map((skill) => skill.id).sort(),

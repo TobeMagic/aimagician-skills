@@ -1,18 +1,28 @@
 import { writeFile } from "node:fs/promises";
 import type { CatalogLoadOptions } from "../catalog/load-catalog";
 import { type SupportedTarget, supportedTargets } from "../model/targets";
-import type { PlatformContext } from "../shared/platform";
+import {
+  resolvePlatformContext,
+  type PlatformContext
+} from "../shared/platform";
+import { syncDirectTargets } from "./direct-target-sync";
 import { ensureBootstrapWorkspace, resolveBootstrapWorkspace } from "./workspace";
 import {
   loadManifest,
   manifestsEqual,
   writeManifest,
-  type BootstrapManifest
+  type BootstrapManifest,
+  type BootstrapManifestDirectInstall
 } from "./manifest";
 import {
-  buildBootstrapPlan,
+  prepareBootstrapRun,
   type BootstrapPlan
 } from "./plan-bootstrap";
+import { resolveDirectSkillInstalls } from "./source-resolution";
+import {
+  isDirectSkillTarget,
+  resolveDirectTargetHomes
+} from "./target-homes";
 
 export interface RunBootstrapOptions {
   selectedTargets?: SupportedTarget[];
@@ -20,6 +30,15 @@ export interface RunBootstrapOptions {
   now?: string;
   catalog?: CatalogLoadOptions;
   platform?: Partial<PlatformContext>;
+  githubRepoOverrides?: Record<string, string>;
+}
+
+export interface BootstrapTargetReport {
+  target: SupportedTarget;
+  status: "planned" | "synced" | "deferred";
+  installedSkillIds: string[];
+  skillsDir?: string;
+  reason?: string;
 }
 
 export interface BootstrapRunResult {
@@ -29,19 +48,22 @@ export interface BootstrapRunResult {
   manifestPath: string;
   planPath: string;
   plan: BootstrapPlan;
+  targetReports: BootstrapTargetReport[];
 }
 
 export async function runBootstrap(
   options: RunBootstrapOptions = {}
 ): Promise<BootstrapRunResult> {
   const selectedTargets = options.selectedTargets ?? [...supportedTargets];
-  const plan = await buildBootstrapPlan({
+  const prepared = await prepareBootstrapRun({
     selectedTargets,
     catalog: options.catalog
   });
+  const platformContext = resolvePlatformContext(options.platform);
   const workspace = options.dryRun
-    ? resolveBootstrapWorkspace(options.platform)
-    : await ensureBootstrapWorkspace(options.platform);
+    ? resolveBootstrapWorkspace(platformContext)
+    : await ensureBootstrapWorkspace(platformContext);
+  const targetHomes = resolveDirectTargetHomes(platformContext);
 
   if (options.dryRun) {
     return {
@@ -50,15 +72,52 @@ export async function runBootstrap(
       workspaceRoot: workspace.rootDir,
       manifestPath: workspace.manifestPath,
       planPath: workspace.planPath,
-      plan
+      plan: prepared.plan,
+      targetReports: createPreviewTargetReports(prepared.plan, targetHomes)
     };
   }
 
-  const nextManifest = createManifest(plan, options.now);
   const previousManifest = await loadManifest(workspace.manifestPath);
+  const selectedDirectTargets = selectedTargets.filter(isDirectSkillTarget);
+  const retainedDirectInstalls = previousManifest?.directInstalls.filter(
+    (install) => !selectedDirectTargets.includes(install.target)
+  ) ?? [];
+  const resolvedInstalls = await resolveDirectSkillInstalls({
+    catalog: prepared.catalog,
+    normalizedAssets: prepared.normalizedAssets,
+    workspaceRoot: workspace.rootDir,
+    selectedTargets: selectedDirectTargets,
+    githubRepoOverrides: options.githubRepoOverrides
+  });
+  const directSyncResults = await syncDirectTargets({
+    targetHomes,
+    selectedTargets: selectedDirectTargets,
+    installs: resolvedInstalls,
+    previousInstalls: previousManifest?.directInstalls ?? []
+  });
+  const nextManifest = createManifest(
+    prepared.plan,
+    options.now,
+    [
+      ...retainedDirectInstalls,
+      ...directSyncResults.flatMap((result) => result.manifestInstalls)
+    ]
+  );
   const changed = !manifestsEqual(previousManifest, nextManifest);
+  const targetReports = createAppliedTargetReports(prepared.plan, targetHomes, directSyncResults);
 
-  await writeFile(workspace.planPath, JSON.stringify(plan, null, 2), "utf8");
+  await writeFile(
+    workspace.planPath,
+    JSON.stringify(
+      {
+        ...prepared.plan,
+        targetReports
+      },
+      null,
+      2
+    ),
+    "utf8"
+  );
   await writeManifest(workspace.manifestPath, nextManifest);
 
   return {
@@ -67,16 +126,18 @@ export async function runBootstrap(
     workspaceRoot: workspace.rootDir,
     manifestPath: workspace.manifestPath,
     planPath: workspace.planPath,
-    plan
+    plan: prepared.plan,
+    targetReports
   };
 }
 
 function createManifest(
   plan: BootstrapPlan,
-  now: string | undefined
+  now: string | undefined,
+  directInstalls: BootstrapManifestDirectInstall[]
 ): BootstrapManifest {
   return {
-    version: 1,
+    version: 2,
     updatedAt: now ?? new Date().toISOString(),
     selectedTargets: plan.selectedTargets,
     assets: plan.assets.map((asset) => ({
@@ -85,6 +146,84 @@ function createManifest(
       kind: asset.kind,
       sourceId: asset.sourceId,
       selectedTargets: asset.selectedTargets
-    }))
+    })),
+    directInstalls: [...directInstalls].sort(compareDirectInstall)
   };
+}
+
+function createPreviewTargetReports(
+  plan: BootstrapPlan,
+  targetHomes: ReturnType<typeof resolveDirectTargetHomes>
+): BootstrapTargetReport[] {
+  return plan.selectedTargets.map((target) => {
+    const installedSkillIds = listSkillIdsForTarget(plan, target);
+
+    if (isDirectSkillTarget(target)) {
+      return {
+        target,
+        status: "planned",
+        installedSkillIds,
+        skillsDir: targetHomes[target].skillsDir
+      };
+    }
+
+    return {
+      target,
+      status: "deferred",
+      installedSkillIds,
+      reason: "Gemini direct target adapter lands in Phase 4"
+    };
+  });
+}
+
+function createAppliedTargetReports(
+  plan: BootstrapPlan,
+  targetHomes: ReturnType<typeof resolveDirectTargetHomes>,
+  directSyncResults: Awaited<ReturnType<typeof syncDirectTargets>>
+): BootstrapTargetReport[] {
+  const resultsByTarget = new Map(
+    directSyncResults.map((result) => [result.target, result] as const)
+  );
+
+  return plan.selectedTargets.map((target) => {
+    if (isDirectSkillTarget(target)) {
+      const result = resultsByTarget.get(target);
+
+      return {
+        target,
+        status: "synced",
+        installedSkillIds: result?.installedSkillIds ?? [],
+        skillsDir: targetHomes[target].skillsDir
+      };
+    }
+
+    return {
+      target,
+      status: "deferred",
+      installedSkillIds: listSkillIdsForTarget(plan, target),
+      reason: "Gemini direct target adapter lands in Phase 4"
+    };
+  });
+}
+
+function listSkillIdsForTarget(
+  plan: BootstrapPlan,
+  target: SupportedTarget
+): string[] {
+  return plan.assets
+    .filter((asset) => asset.kind === "skill" && asset.selectedTargets.includes(target))
+    .map((asset) => asset.id)
+    .sort();
+}
+
+function compareDirectInstall(
+  left: BootstrapManifestDirectInstall,
+  right: BootstrapManifestDirectInstall
+): number {
+  return (
+    left.target.localeCompare(right.target) ||
+    left.assetId.localeCompare(right.assetId) ||
+    left.destinationDir.localeCompare(right.destinationDir) ||
+    (left.sourceId ?? "").localeCompare(right.sourceId ?? "")
+  );
 }

@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import type { SupportedTarget } from "../model/targets";
+import type { DirectSkillTarget } from "./target-homes";
 
 export interface BootstrapManifestAsset {
   id: string;
@@ -9,17 +10,36 @@ export interface BootstrapManifestAsset {
   selectedTargets: SupportedTarget[];
 }
 
+export interface BootstrapManifestDirectInstall {
+  target: DirectSkillTarget;
+  assetId: string;
+  origin: "owned" | "external";
+  sourceId?: string;
+  destinationDir: string;
+}
+
 export interface BootstrapManifest {
-  version: 1;
+  version: 2;
   updatedAt: string;
   selectedTargets: SupportedTarget[];
   assets: BootstrapManifestAsset[];
+  directInstalls: BootstrapManifestDirectInstall[];
 }
 
 export async function loadManifest(path: string): Promise<BootstrapManifest | null> {
   try {
     const contents = await readFile(path, "utf8");
-    return JSON.parse(contents) as BootstrapManifest;
+    const parsed = JSON.parse(contents) as Partial<BootstrapManifest> & {
+      version?: number;
+    };
+
+    return {
+      version: 2,
+      updatedAt: parsed.updatedAt ?? "",
+      selectedTargets: parsed.selectedTargets ?? [],
+      assets: parsed.assets ?? [],
+      directInstalls: parsed.directInstalls ?? []
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return null;

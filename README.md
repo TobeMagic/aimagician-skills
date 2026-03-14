@@ -10,8 +10,9 @@ This repository currently provides:
 - YAML catalogs for external skill and plugin sources
 - target-aware normalization for supported CLIs
 - a bootstrap command that stages manifest-backed workspace state
+- direct user-level skill sync for Codex, Claude Code, and OpenCode from owned and GitHub-backed skill sources
 
-Direct writes into Codex, Claude Code, OpenCode, and Gemini homes are planned in later phases. The current bootstrap engine prepares the reusable command and workspace layer that those target adapters will call.
+Gemini remains deferred to a later phase, and command-based skill sources are still cataloged rather than applied directly.
 
 ## Install
 
@@ -46,6 +47,13 @@ For machine-readable output:
 node dist/cli/index.js bootstrap --json
 ```
 
+Current direct-target behavior:
+
+- `codex` -> installs skills into `~/.codex/skills`
+- `claude` -> installs skills into `~/.claude/skills`
+- `opencode` -> installs skills into `~/.config/opencode/skills`
+- `gemini` -> deferred until Gemini-native output lands
+
 ## User-Level Workspace
 
 Bootstrap state is written to a user-level workspace:
@@ -57,6 +65,15 @@ For tests or isolated runs, override the workspace root with:
 
 ```bash
 AIMAGICIAN_WORKSPACE_ROOT=/tmp/aimagician-skills node dist/cli/index.js bootstrap
+```
+
+To redirect direct-target writes into a fake user home during tests:
+
+```bash
+AIMAGICIAN_HOME_DIR=/tmp/aimagician-home \
+AIMAGICIAN_CONFIG_HOME=/tmp/aimagician-home/.config \
+AIMAGICIAN_WORKSPACE_ROOT=/tmp/aimagician-skills \
+node dist/cli/index.js bootstrap --target claude
 ```
 
 ## Verify

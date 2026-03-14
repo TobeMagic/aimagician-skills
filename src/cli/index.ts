@@ -61,7 +61,8 @@ function createBootstrapPreview(parsed: ParsedCli, result: Awaited<ReturnType<ty
     workspaceRoot: result.workspaceRoot,
     assetCount: result.plan.assets.length,
     ownedSkillCount: result.plan.ownedSkillIds.length,
-    changed: result.changed
+    changed: result.changed,
+    targetReports: result.targetReports
   };
 }
 
@@ -78,7 +79,8 @@ function renderBootstrapPreview(
     `Workspace: ${preview.workspaceRoot}`,
     `Owned skills: ${preview.ownedSkillCount}`,
     `Planned assets: ${preview.assetCount}`,
-    `Changes applied: ${preview.changed ? "yes" : "no"}`
+    `Changes applied: ${preview.changed ? "yes" : "no"}`,
+    ...preview.targetReports.map((report) => renderTargetReport(report))
   ].join("\n");
 }
 
@@ -96,6 +98,20 @@ function renderHelp(): string {
     "  --json        Render machine-readable output",
     "  -h, --help    Show command help"
   ].join("\n");
+}
+
+function renderTargetReport(
+  report: Awaited<ReturnType<typeof runBootstrap>>["targetReports"][number]
+): string {
+  const skillCount = report.installedSkillIds.length;
+
+  if (report.status === "deferred") {
+    return `Target ${report.target}: deferred (${report.reason})`;
+  }
+
+  const location = report.skillsDir ? ` @ ${report.skillsDir}` : "";
+
+  return `Target ${report.target}: ${report.status} (${skillCount} skills)${location}`;
 }
 
 if (require.main === module) {

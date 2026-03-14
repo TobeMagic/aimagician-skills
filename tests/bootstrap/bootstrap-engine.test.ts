@@ -41,18 +41,26 @@ describe("runBootstrap", () => {
 
     const firstRun = await runBootstrap({
       catalog: fixture.catalog,
+      githubRepoOverrides: {
+        "aimagician/repo-skills": fixture.externalRepoRoot
+      },
       platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root, workspaceRoot },
       now: "2026-03-14T01:00:00Z"
     });
 
     const secondRun = await runBootstrap({
       catalog: fixture.catalog,
+      githubRepoOverrides: {
+        "aimagician/repo-skills": fixture.externalRepoRoot
+      },
       platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root, workspaceRoot },
       now: "2026-03-14T01:00:00Z"
     });
 
     const manifest = JSON.parse(await readFile(firstRun.manifestPath, "utf8")) as {
+      version: number;
       assets: Array<{ id: string }>;
+      directInstalls: Array<{ target: string; assetId: string }>;
     };
     const plan = JSON.parse(await readFile(firstRun.planPath, "utf8")) as {
       selectedTargets: string[];
@@ -63,10 +71,24 @@ describe("runBootstrap", () => {
     expect(secondRun.changed).toBe(false);
     expect(plan.selectedTargets).toEqual(["codex", "claude", "opencode", "gemini"]);
     expect(plan.ownedSkillIds).toEqual(["daily-ops"]);
+    expect(manifest.version).toBe(2);
     expect(manifest.assets.map((asset) => asset.id)).toEqual([
       "daily-ops",
       "claude-sync",
       "bootstrap-tools"
+    ]);
+    expect(
+      manifest.directInstalls.map((install) => ({
+        target: install.target,
+        assetId: install.assetId
+      }))
+    ).toEqual([
+      { target: "claude", assetId: "claude-sync" },
+      { target: "claude", assetId: "daily-ops" },
+      { target: "codex", assetId: "claude-sync" },
+      { target: "codex", assetId: "daily-ops" },
+      { target: "opencode", assetId: "claude-sync" },
+      { target: "opencode", assetId: "daily-ops" }
     ]);
   });
 
@@ -77,6 +99,9 @@ describe("runBootstrap", () => {
       dryRun: true,
       selectedTargets: ["claude"],
       catalog: fixture.catalog,
+      githubRepoOverrides: {
+        "aimagician/repo-skills": fixture.externalRepoRoot
+      },
       platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
     });
 
@@ -99,12 +124,15 @@ async function createFixtureRepository() {
   const ownedSkillsRoot = join(root, "skills", "owned");
   const skillsRoot = join(root, "catalog", "skills");
   const pluginsRoot = join(root, "catalog", "plugins");
+  const externalRepoRoot = join(root, "external-source");
 
   await mkdir(join(ownedSkillsRoot, "daily-ops"), { recursive: true });
   await mkdir(skillsRoot, { recursive: true });
   await mkdir(pluginsRoot, { recursive: true });
+  await mkdir(join(externalRepoRoot, "claude-sync"), { recursive: true });
 
   await writeFile(join(ownedSkillsRoot, "daily-ops", "SKILL.md"), "# Daily Ops\n", "utf8");
+  await writeFile(join(externalRepoRoot, "claude-sync", "SKILL.md"), "# Claude Sync\n", "utf8");
   await writeFile(
     join(skillsRoot, "skills.yaml"),
     [
@@ -134,6 +162,7 @@ async function createFixtureRepository() {
 
   return {
     root,
+    externalRepoRoot,
     catalog: {
       ownedSkillsRoot,
       skillsRoot,

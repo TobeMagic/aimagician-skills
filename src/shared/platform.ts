@@ -6,6 +6,7 @@ export type BootstrapPlatform = "windows" | "linux";
 export interface PlatformContext {
   platform: BootstrapPlatform;
   homeDir: string;
+  configBaseDir: string;
   stateBaseDir: string;
   workspaceRoot: string;
 }
@@ -14,7 +15,12 @@ export function resolvePlatformContext(
   overrides: Partial<PlatformContext> = {}
 ): PlatformContext {
   const platform = overrides.platform ?? detectPlatform();
-  const homeDir = overrides.homeDir ?? homedir();
+  const homeDir =
+    overrides.homeDir ?? process.env.AIMAGICIAN_HOME_DIR ?? homedir();
+  const configBaseDir =
+    overrides.configBaseDir ??
+    process.env.AIMAGICIAN_CONFIG_HOME ??
+    resolveConfigBaseDir(platform, homeDir);
   const stateBaseDir =
     overrides.stateBaseDir ??
     process.env.AIMAGICIAN_STATE_BASE_DIR ??
@@ -23,6 +29,7 @@ export function resolvePlatformContext(
   return {
     platform,
     homeDir,
+    configBaseDir,
     stateBaseDir,
     workspaceRoot:
       overrides.workspaceRoot ??
@@ -47,4 +54,15 @@ function resolveStateBaseDir(platform: BootstrapPlatform, homeDir: string): stri
   }
 
   return process.env.XDG_STATE_HOME ?? posix.join(homeDir, ".local", "state");
+}
+
+function resolveConfigBaseDir(
+  platform: BootstrapPlatform,
+  homeDir: string
+): string {
+  if (platform === "windows") {
+    return win32.join(homeDir, ".config");
+  }
+
+  return process.env.XDG_CONFIG_HOME ?? posix.join(homeDir, ".config");
 }

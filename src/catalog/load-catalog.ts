@@ -26,12 +26,21 @@ export async function loadCatalog(
   options: CatalogLoadOptions = {}
 ): Promise<LoadedCatalog> {
   const ownedSkills = await discoverOwnedSkills(
-    options.ownedSkillsRoot ?? ownedSkillsRoot
+    options.ownedSkillsRoot ??
+      process.env.AIMAGICIAN_OWNED_SKILLS_ROOT ??
+      ownedSkillsRoot
   );
-  const skills = await loadCatalogSection("skills", options.skillsRoot ?? skillsCatalogRoot);
+  const skills = await loadCatalogSection(
+    "skills",
+    options.skillsRoot ??
+      process.env.AIMAGICIAN_SKILLS_CATALOG_ROOT ??
+      skillsCatalogRoot
+  );
   const plugins = await loadCatalogSection(
     "plugins",
-    options.pluginsRoot ?? pluginsCatalogRoot
+    options.pluginsRoot ??
+      process.env.AIMAGICIAN_PLUGINS_CATALOG_ROOT ??
+      pluginsCatalogRoot
   );
 
   const sources = [...skills.sources, ...plugins.sources];
