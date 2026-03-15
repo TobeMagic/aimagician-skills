@@ -236,6 +236,17 @@ describe("direct target sync", () => {
       join(homeDir, ".config", "opencode", "skills", "command-helper", "SKILL.md"),
       constants.F_OK
     );
+
+    const envSnapshot = JSON.parse(
+      await readFile(fixture.commandEnvPath, "utf8")
+    ) as Record<string, string>;
+    expect(envSnapshot).toMatchObject({
+      AIMAGICIAN_HOME_DIR: homeDir,
+      HOME: homeDir,
+      USERPROFILE: homeDir,
+      APPDATA: join(homeDir, ".config"),
+      LOCALAPPDATA: fixture.root
+    });
   }, 15000);
 
   it("installs OpenCode plugin assets and reports explicit skips for unsupported plugin targets", async () => {
@@ -294,6 +305,7 @@ async function createFixtureRepository(
   const pluginsRoot = join(root, "catalog", "plugins");
   const externalRepoRoot = join(root, "external-source");
   const commandScriptPath = join(root, "delegate-install.js");
+  const commandEnvPath = join(root, "command-env.json");
 
   await mkdir(join(ownedSkillsRoot, "daily-ops"), { recursive: true });
   await mkdir(join(skillsRoot), { recursive: true });
@@ -316,6 +328,13 @@ async function createFixtureRepository(
       "const { mkdirSync, writeFileSync } = require('node:fs');",
       "const { join } = require('node:path');",
       "const targets = (process.env.AIMAGICIAN_TARGETS || '').split(',').filter(Boolean);",
+      `writeFileSync(${JSON.stringify(commandEnvPath)}, JSON.stringify({`,
+      "  AIMAGICIAN_HOME_DIR: process.env.AIMAGICIAN_HOME_DIR,",
+      "  HOME: process.env.HOME,",
+      "  USERPROFILE: process.env.USERPROFILE,",
+      "  APPDATA: process.env.APPDATA,",
+      "  LOCALAPPDATA: process.env.LOCALAPPDATA",
+      "}, null, 2), 'utf8');",
       "const homes = {",
       "  claude: process.env.AIMAGICIAN_CLAUDE_SKILLS_DIR,",
       "  opencode: process.env.AIMAGICIAN_OPENCODE_SKILLS_DIR,",
@@ -384,6 +403,7 @@ async function createFixtureRepository(
     root,
     externalRepoRoot,
     commandScriptPath,
+    commandEnvPath,
     catalog: {
       ownedSkillsRoot,
       skillsRoot,

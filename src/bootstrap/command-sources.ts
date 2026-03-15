@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { isAbsolute, join } from "node:path";
+import { isAbsolute, join, win32 } from "node:path";
 import { promisify } from "node:util";
 import type { NormalizedAsset } from "../model/assets";
 import { repositoryRoot } from "../shared/paths";
@@ -117,17 +117,7 @@ async function runCommandGroup(
   options: ExecuteCommandSkillSourcesOptions
 ): Promise<void> {
   const cwd = resolveCommandCwd(group.command.cwd);
-  const env = {
-    ...process.env,
-    AIMAGICIAN_TARGETS: [...group.targets].sort().join(","),
-    AIMAGICIAN_SOURCE_ID: group.sourceId,
-    AIMAGICIAN_ASSET_IDS: [...group.assetIds].sort().join(","),
-    AIMAGICIAN_WORKSPACE_ROOT: options.workspaceRoot,
-    AIMAGICIAN_HOME_DIR: options.platformContext.homeDir,
-    AIMAGICIAN_CODEX_SKILLS_DIR: options.targetHomes.codex.skillsDir,
-    AIMAGICIAN_CLAUDE_SKILLS_DIR: options.targetHomes.claude.skillsDir,
-    AIMAGICIAN_OPENCODE_SKILLS_DIR: options.targetHomes.opencode.skillsDir
-  };
+  const env = createCommandEnvironment(group, options);
 
   try {
     if (options.platformContext.platform === "windows") {
@@ -156,4 +146,52 @@ function resolveCommandCwd(commandCwd: string | undefined): string {
   }
 
   return isAbsolute(commandCwd) ? commandCwd : join(repositoryRoot, commandCwd);
+}
+
+function createCommandEnvironment(
+  group: CommandSourceGroup,
+  options: ExecuteCommandSkillSourcesOptions
+): NodeJS.ProcessEnv {
+  const baseEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    AIMAGICIAN_TARGETS: [...group.targets].sort().join(","),
+    AIMAGICIAN_SOURCE_ID: group.sourceId,
+    AIMAGICIAN_ASSET_IDS: [...group.assetIds].sort().join(","),
+    AIMAGICIAN_WORKSPACE_ROOT: options.workspaceRoot,
+    AIMAGICIAN_HOME_DIR: options.platformContext.homeDir,
+    AIMAGICIAN_CODEX_SKILLS_DIR: options.targetHomes.codex.skillsDir,
+    AIMAGICIAN_CLAUDE_SKILLS_DIR: options.targetHomes.claude.skillsDir,
+    AIMAGICIAN_OPENCODE_SKILLS_DIR: options.targetHomes.opencode.skillsDir,
+    HOME: options.platformContext.homeDir
+  };
+
+  if (options.platformContext.platform === "windows") {
+    const homeDir = options.platformContext.homeDir;
+    const homePath = resolveWindowsHomePath(homeDir);
+
+    return {
+      ...baseEnv,
+      USERPROFILE: homeDir,
+      HOMEDRIVE: resolveWindowsHomeDrive(homeDir),
+      HOMEPATH: homePath,
+      APPDATA: options.platformContext.configBaseDir,
+      LOCALAPPDATA: options.platformContext.stateBaseDir
+    };
+  }
+
+  return {
+    ...baseEnv,
+    XDG_CONFIG_HOME: options.platformContext.configBaseDir,
+    XDG_STATE_HOME: options.platformContext.stateBaseDir
+  };
+}
+
+function resolveWindowsHomeDrive(homeDir: string): string {
+  const parsed = win32.parse(homeDir);
+  return parsed.root.slice(0, 2);
+}
+
+function resolveWindowsHomePath(homeDir: string): string {
+  const drive = resolveWindowsHomeDrive(homeDir);
+  return homeDir.startsWith(drive) ? homeDir.slice(drive.length) : homeDir;
 }

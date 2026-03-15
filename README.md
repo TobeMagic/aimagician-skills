@@ -501,6 +501,16 @@ node dist/cli/index.js doctor --target claude --home /tmp/test-home
 
 That makes the CLI behave as if `~/` were `/tmp/test-home`.
 
+For command-based sources, `--home` also rewrites the process environment that installer scripts usually read, including:
+
+- `AIMAGICIAN_HOME_DIR`
+- `HOME`
+- `USERPROFILE`
+- `APPDATA`
+- `LOCALAPPDATA`
+- `XDG_CONFIG_HOME`
+- `XDG_STATE_HOME`
+
 ## User-Level Locations
 
 Bootstrap currently writes to these user-level locations:
