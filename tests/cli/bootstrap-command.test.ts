@@ -107,11 +107,13 @@ describe("runCli", () => {
       expect(listResult.stdout).toContain("AImagician Skills list");
       expect(listResult.stdout).toContain("daily-ops");
       expect(listResult.stdout).toContain("audit-helper");
+      expect(listResult.stdout).toContain("command sources: none");
 
       const inspectResult = await runCli(["inspect", "--target", "gemini"]);
       expect(inspectResult.exitCode).toBe(0);
       expect(inspectResult.stdout).toContain("AImagician Skills inspect");
       expect(inspectResult.stdout).toContain(".gemini");
+      expect(inspectResult.stdout).toContain("command installs: gsd");
 
       const doctorResult = await runCli(["doctor", "--json", "--targets", "codex,opencode"]);
       expect(doctorResult.exitCode).toBe(0);
@@ -119,8 +121,8 @@ describe("runCli", () => {
         command: "doctor",
         status: "healthy",
         targets: [
-          { target: "codex", status: "healthy", managedCount: 1 },
-          { target: "opencode", status: "healthy", managedCount: 1 }
+          { target: "codex", status: "healthy", managedCount: 1, commandCount: 0 },
+          { target: "opencode", status: "healthy", managedCount: 1, commandCount: 0 }
         ]
       });
     });
@@ -166,6 +168,14 @@ async function createInspectionFixture() {
           { id: "daily-ops", origin: "owned", kind: "skill", selectedTargets: ["codex"] },
           { id: "audit-helper", origin: "external", kind: "plugin", sourceId: "plugin-repo", selectedTargets: ["opencode"] },
           { id: "gsd", origin: "external", kind: "skill", sourceId: "external-skills", selectedTargets: ["gemini"] }
+        ],
+        commandInstalls: [
+          {
+            sourceId: "gsd",
+            assetIds: ["gsd"],
+            targets: ["gemini"],
+            command: "npx get-shit-done-cc@latest --global"
+          }
         ],
         managedInstalls: [
           {

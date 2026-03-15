@@ -1,7 +1,11 @@
 import { access, readdir } from "node:fs/promises";
 import { constants } from "node:fs";
 import { basename, extname, join } from "node:path";
-import { loadManifest, type BootstrapManifestManagedInstall } from "../bootstrap/manifest";
+import {
+  loadManifest,
+  type BootstrapManifestCommandInstall,
+  type BootstrapManifestManagedInstall
+} from "../bootstrap/manifest";
 import { resolveTargetHomes } from "../bootstrap/target-homes";
 import { resolveBootstrapWorkspace } from "../bootstrap/workspace";
 import { supportedTargets, type SupportedTarget } from "../model/targets";
@@ -26,6 +30,13 @@ export interface TargetManagedInstallStatus {
   present: boolean;
 }
 
+export interface TargetCommandInstallStatus {
+  sourceId: string;
+  assetIds: string[];
+  targets: SupportedTarget[];
+  command: string;
+}
+
 export interface TargetInspection {
   target: SupportedTarget;
   status: "healthy" | "issues" | "empty";
@@ -34,6 +45,7 @@ export interface TargetInspection {
   extensionsDir?: string;
   detectedAssets: LiveTargetAsset[];
   managedInstalls: TargetManagedInstallStatus[];
+  commandInstalls: TargetCommandInstallStatus[];
   issues: string[];
 }
 
@@ -65,7 +77,12 @@ export async function inspectInstallation(
 
   const targets = await Promise.all(
     selectedTargets.map((target) =>
-      inspectTarget(target, targetHomes, manifest?.managedInstalls ?? [])
+      inspectTarget(
+        target,
+        targetHomes,
+        manifest?.managedInstalls ?? [],
+        manifest?.commandInstalls ?? []
+      )
     )
   );
   const status =
@@ -86,12 +103,16 @@ export async function inspectInstallation(
 async function inspectTarget(
   target: SupportedTarget,
   targetHomes: ReturnType<typeof resolveTargetHomes>,
-  managedInstalls: BootstrapManifestManagedInstall[]
+  managedInstalls: BootstrapManifestManagedInstall[],
+  commandInstalls: BootstrapManifestCommandInstall[]
 ): Promise<TargetInspection> {
   const liveAssets: LiveTargetAsset[] = [];
   const installs = managedInstalls
     .filter((install) => install.target === target)
     .sort(compareManagedInstall);
+  const targetCommandInstalls = commandInstalls
+    .filter((install) => install.targets.includes(target))
+    .sort(compareCommandInstall);
   const managedStatuses = await Promise.all(
     installs.map(async (install) => ({
       assetId: install.assetId,
@@ -124,7 +145,9 @@ async function inspectTarget(
 
   const status =
     issues.length > 0 ? "issues" :
-    liveAssets.length === 0 && managedStatuses.length === 0 ? "empty" :
+    liveAssets.length === 0 &&
+    managedStatuses.length === 0 &&
+    targetCommandInstalls.length === 0 ? "empty" :
     "healthy";
 
   return {
@@ -139,6 +162,7 @@ async function inspectTarget(
     extensionsDir: target === "gemini" ? targetHomes.gemini.extensionsDir : undefined,
     detectedAssets: liveAssets.sort(compareLiveAsset),
     managedInstalls: managedStatuses,
+    commandInstalls: targetCommandInstalls,
     issues
   };
 }
@@ -276,5 +300,17 @@ function compareLiveAsset(
     left.kind.localeCompare(right.kind),
     left.installArea.localeCompare(right.installArea),
     left.id.localeCompare(right.id)
+  ].find((result) => result !== 0) ?? 0;
+}
+
+function compareCommandInstall(
+  left: BootstrapManifestCommandInstall,
+  right: BootstrapManifestCommandInstall
+): number {
+  return [
+    left.sourceId.localeCompare(right.sourceId),
+    left.command.localeCompare(right.command),
+    left.assetIds.join(",").localeCompare(right.assetIds.join(",")),
+    left.targets.join(",").localeCompare(right.targets.join(","))
   ].find((result) => result !== 0) ?? 0;
 }

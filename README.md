@@ -8,7 +8,7 @@ This repo is your personal skills distribution layer:
 
 - keep your own skills in-repo
 - declare third-party skill sources from GitHub
-- declare command-based skill installers when an upstream project already ships its own install command
+- declare command-based upstream installers such as GSD when an upstream project already ships its own install command
 - install skills into user-level locations for supported CLIs
 - generate Gemini-native output from repository-managed skills
 - install supported plugin assets where the target exposes a stable user-level plugin path
@@ -19,7 +19,7 @@ This repo is your personal skills distribution layer:
 |------------|--------|-------|
 | Owned skills | supported | loaded from `skills/owned/*` |
 | GitHub skill sources | supported | repo is materialized and copied into target homes |
-| Command skill sources | supported | delegated installer execution |
+| Command skill sources | supported | delegated upstream installer execution, currently used for GSD-style packages |
 | Codex skills | supported | installs to `~/.codex/skills` |
 | Claude Code skills | supported | installs to `~/.claude/skills` |
 | OpenCode skills | supported | installs to `~/.config/opencode/skills` |
@@ -220,44 +220,38 @@ sources:
 
 ## Add a Command-Based Skill Source
 
-If an upstream project already ships its own installer command, declare it under `catalog/skills/`, for example:
+In this repo, `command` is mainly for upstream installers like GSD.
+
+That means:
+
+- bootstrap does not copy a local `SKILL.md` directory
+- it executes the upstream install command directly
+- the upstream installer may write Claude `skills`, `commands`, `agents`, `hooks`, or other files under the target home
+
+Declare it under `catalog/skills/`, for example:
 
 ```text
-catalog/skills/upstream-installer.yaml
+catalog/skills/gsd.yaml
 ```
 
 Then add:
 
 ```yaml
 sources:
-  - id: upstream-installer
+  - id: gsd
     type: command
     enabled: true
+    description: Install or update Get Shit Done for Claude Code
     targets:
       include:
         - claude
-        - opencode
     command:
-      run: node scripts/install-upstream.js
-      cwd: .
+      run: npx get-shit-done-cc@latest --global
 ```
 
-If you omit `assets` on a command source, this project treats it as one logical installed pack and uses the source id as the asset id.
+If you omit `assets` on a command source, this project treats it as one logical installed pack and uses the source id as the asset id. For the current repo, that is the intended shape for `gsd`.
 
-If a command source needs to expose multiple logical assets, then declare them explicitly:
-
-```yaml
-sources:
-  - id: upstream-installer
-    type: command
-    command:
-      run: node scripts/install-upstream.js
-    assets:
-      - id: upstream-core
-      - id: upstream-review
-```
-
-At runtime, delegated skill installers receive:
+At runtime, delegated installers receive:
 
 - `AIMAGICIAN_TARGETS`
 - `AIMAGICIAN_SOURCE_ID`
@@ -267,6 +261,10 @@ At runtime, delegated skill installers receive:
 - `AIMAGICIAN_CODEX_SKILLS_DIR`
 - `AIMAGICIAN_CLAUDE_SKILLS_DIR`
 - `AIMAGICIAN_OPENCODE_SKILLS_DIR`
+
+And when you override home with `--home`, the installer also receives a rewritten `HOME` and the common user-directory variables for that platform.
+
+For command-based sources like GSD, `list` and `inspect` show them under `command sources` / `command installs`. They may not appear under `skills:` because the upstream installer is free to manage commands, agents, hooks, and support files outside the plain skills directory.
 
 ## Example: Only Use Anthropic Official Claude Skills
 

@@ -100,6 +100,7 @@ function createInspectionPreview(
         target: target.target,
         status: target.status,
         managedCount: target.managedInstalls.length,
+        commandCount: target.commandInstalls.length,
         detectedCount: target.detectedAssets.length,
         issues: target.issues
       }))
@@ -221,7 +222,8 @@ function renderList(
       return [
         `Target ${target.target}: ${target.status}`,
         `  skills: ${skills.length > 0 ? skills.join(", ") : "none"}`,
-        `  plugins: ${plugins.length > 0 ? plugins.join(", ") : "none"}`
+        `  plugins: ${plugins.length > 0 ? plugins.join(", ") : "none"}`,
+        `  command sources: ${target.commandInstalls.length > 0 ? target.commandInstalls.map((install) => install.sourceId).join(", ") : "none"}`
       ];
     })
   ].join("\n");
@@ -240,6 +242,7 @@ function renderInspect(
       `  plugins dir: ${target.pluginsDir ?? "-"}`,
       `  extensions dir: ${target.extensionsDir ?? "-"}`,
       `  managed installs: ${target.managedInstalls.length}`,
+      `  command installs: ${target.commandInstalls.length > 0 ? target.commandInstalls.map((install) => install.sourceId).join(", ") : "none"}`,
       `  detected assets: ${target.detectedAssets.length}`,
       `  issues: ${target.issues.length > 0 ? target.issues.join(" | ") : "none"}`
     ])
@@ -254,7 +257,7 @@ function renderDoctor(
     `Status: ${inspection.status}`,
     `Manifest: ${inspection.manifestExists ? inspection.manifestPath : "missing"}`,
     ...inspection.targets.flatMap((target) => [
-      `Target ${target.target}: ${target.status} (${target.managedInstalls.length} managed, ${target.detectedAssets.length} detected)`,
+      `Target ${target.target}: ${target.status} (${target.managedInstalls.length} managed, ${target.commandInstalls.length} command, ${target.detectedAssets.length} detected)`,
       ...(target.issues.length > 0 ? target.issues.map((issue) => `  issue: ${issue}`) : ["  issue: none"])
     ])
   ].join("\n");

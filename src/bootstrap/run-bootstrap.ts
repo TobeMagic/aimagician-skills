@@ -16,6 +16,7 @@ import {
   manifestsEqual,
   writeManifest,
   type BootstrapManifest,
+  type BootstrapManifestCommandInstall,
   type BootstrapManifestManagedInstall
 } from "./manifest";
 import {
@@ -149,7 +150,8 @@ export async function runBootstrap(
     [
       ...retainedManagedInstalls,
       ...managedSyncResults.flatMap((result) => result.installs)
-    ]
+    ],
+    commandReports
   );
   const changed = !manifestsEqual(previousManifest, nextManifest);
   const targetReports = createAppliedTargetReports(
@@ -191,7 +193,8 @@ export async function runBootstrap(
 function createManifest(
   plan: BootstrapPlan,
   now: string | undefined,
-  managedInstalls: BootstrapManifestManagedInstall[]
+  managedInstalls: BootstrapManifestManagedInstall[],
+  commandReports: CommandSourceReport[]
 ): BootstrapManifest {
   return {
     version: 3,
@@ -204,7 +207,15 @@ function createManifest(
       sourceId: asset.sourceId,
       selectedTargets: asset.selectedTargets
     })),
-    managedInstalls: [...managedInstalls].sort(compareManagedInstall)
+    managedInstalls: [...managedInstalls].sort(compareManagedInstall),
+    commandInstalls: commandReports
+      .map<BootstrapManifestCommandInstall>((report) => ({
+        sourceId: report.sourceId,
+        assetIds: [...report.assetIds].sort(),
+        targets: [...report.targets].sort(),
+        command: report.command
+      }))
+      .sort(compareCommandInstall)
   };
 }
 
@@ -311,5 +322,17 @@ function compareManagedInstall(
     left.assetId.localeCompare(right.assetId),
     left.destinationPath.localeCompare(right.destinationPath),
     (left.sourceId ?? "").localeCompare(right.sourceId ?? "")
+  ].find((result) => result !== 0) ?? 0;
+}
+
+function compareCommandInstall(
+  left: BootstrapManifestCommandInstall,
+  right: BootstrapManifestCommandInstall
+): number {
+  return [
+    left.sourceId.localeCompare(right.sourceId),
+    left.command.localeCompare(right.command),
+    left.assetIds.join(",").localeCompare(right.assetIds.join(",")),
+    left.targets.join(",").localeCompare(right.targets.join(","))
   ].find((result) => result !== 0) ?? 0;
 }

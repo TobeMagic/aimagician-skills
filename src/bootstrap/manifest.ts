@@ -20,12 +20,20 @@ export interface BootstrapManifestManagedInstall {
   installArea: "skills" | "plugins" | "extensions";
 }
 
+export interface BootstrapManifestCommandInstall {
+  sourceId: string;
+  assetIds: string[];
+  targets: SupportedTarget[];
+  command: string;
+}
+
 export interface BootstrapManifest {
   version: 3;
   updatedAt: string;
   selectedTargets: SupportedTarget[];
   assets: BootstrapManifestAsset[];
   managedInstalls: BootstrapManifestManagedInstall[];
+  commandInstalls: BootstrapManifestCommandInstall[];
 }
 
 export async function loadManifest(path: string): Promise<BootstrapManifest | null> {
@@ -60,7 +68,8 @@ export async function loadManifest(path: string): Promise<BootstrapManifest | nu
       updatedAt: parsed.updatedAt ?? "",
       selectedTargets: parsed.selectedTargets ?? [],
       assets: parsed.assets ?? [],
-      managedInstalls
+      managedInstalls,
+      commandInstalls: parsed.commandInstalls ?? []
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {

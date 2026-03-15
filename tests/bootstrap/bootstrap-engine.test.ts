@@ -60,6 +60,7 @@ describe("runBootstrap", () => {
     const manifest = JSON.parse(await readFile(firstRun.manifestPath, "utf8")) as {
       version: number;
       assets: Array<{ id: string }>;
+      commandInstalls: Array<{ sourceId: string; assetIds: string[]; targets: string[]; command: string }>;
       managedInstalls: Array<{ target: string; assetId: string; kind: string; installArea: string }>;
     };
     const plan = JSON.parse(await readFile(firstRun.planPath, "utf8")) as {
@@ -76,6 +77,14 @@ describe("runBootstrap", () => {
       "daily-ops",
       "claude-sync",
       "bootstrap-tools"
+    ]);
+    expect(manifest.commandInstalls).toEqual([
+      {
+        sourceId: "bootstrap-command",
+        assetIds: ["bootstrap-tools"],
+        targets: ["claude", "opencode"],
+        command: `${process.execPath} ${fixture.commandScriptPath}`
+      }
     ]);
     expect(
       manifest.managedInstalls.map((install) => ({

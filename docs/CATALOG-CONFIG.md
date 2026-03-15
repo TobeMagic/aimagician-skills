@@ -48,11 +48,21 @@ github:
 - `catalog/plugins/*.yaml`
   扫描 `github.path` 下的一级子目录，以及一级 `.js/.cjs/.mjs/.ts/.cts/.mts` 文件
 
-### 规则 3: `command` source 也可以不写 `assets`
+### 规则 3: `command` source 在这个仓库里主要就是 GSD 这类“上游自带安装器”
+
+它不是“从 GitHub 复制一个 skill 目录”。
+
+它更接近：
+
+- 这个项目负责执行命令
+- 具体往 `~/.claude` 里写什么，由上游安装器自己决定
+- 比如 GSD 会写入 commands、agents、hooks，以及自己的运行文件
+
+所以 `command` source 也可以不写 `assets`
 
 如果不写，系统会把整个 command source 当成一个逻辑 asset，默认使用 source 自己的 `id`。
 
-只有当一个 command source 需要在本项目里拆成多个逻辑 asset 时，你才需要显式写 `assets`。
+对你现在这个仓库来说，`gsd` 就应该用这个最简形式。
 
 ## 2. 目录分工
 
@@ -115,7 +125,7 @@ sources:
       run: npx get-shit-done-cc@latest --global
 ```
 
-这类 source 不是复制仓库目录，而是直接执行命令。
+这类 source 不是复制仓库目录，而是直接执行上游安装命令。
 
 ## 4. 字段到底什么意思
 
@@ -306,7 +316,15 @@ sources:
 
 - 不走 GitHub 目录复制
 - 直接执行 `npx get-shit-done-cc@latest --global`
+- 这个 source 代表的是“GSD 安装器”本身，不是一个单独的 `SKILL.md` 目录
 - 不写 `assets` 时，就把整个 source 当成一个逻辑 asset，id 默认就是 `gsd`
+
+你可以把它理解成：
+
+- `claude-official.yaml` 是“拉官方 skills 目录”
+- `gsd.yaml` 是“执行 GSD 自己的安装器”
+
+它们不是同一种安装方式。
 
 ### 6.3 Claude 官方 plugins
 
@@ -488,7 +506,23 @@ sources:
 enabled: false
 ```
 
-### 9.5 重新执行安装
+### 9.5 怎么看 command source 有没有生效
+
+像 `gsd.yaml` 这种 command source，安装后不一定会在 `skills:` 那一栏出现。
+
+原因是它可能装的是：
+
+- commands
+- agents
+- hooks
+- 其他运行文件
+
+所以你用这个项目查看时：
+
+- `list` 主要看 `command sources`
+- `inspect` 主要看 `command installs`
+
+### 9.6 重新执行安装
 
 ```bash
 npm run bootstrap
