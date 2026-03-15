@@ -218,6 +218,36 @@ sources:
 - one asset means one `-` item under `assets:`
 - multiple assets means multiple `-` items under `assets:`
 
+## Example: Add a ClawHub Skill
+
+For ClawHub/OpenClaw skills, the cleanest way in this repo is usually a GitHub source, not `clawhub install`.
+
+Example for `beauty-generation-api`:
+
+```yaml
+sources:
+  - id: beauty-generation-api
+    type: github
+    enabled: true
+    description: ClawHub/OpenClaw beauty-generation-api skill from openclaw/skills
+    github:
+      repo: openclaw/skills
+      ref: main
+      path: skills/luruibu
+    assets:
+      - path: beauty-generation-api
+```
+
+Why this repo uses GitHub for that skill:
+
+- `clawhub install <slug>` installs into the current working directory `./skills` by default
+- if an OpenClaw workspace is configured, ClawHub falls back to that workspace unless you override it with `--workdir` or `CLAWHUB_WORKDIR`
+- that means `clawhub install` is aimed at OpenClaw workspace skills, not at Claude/Codex user-level skill directories
+
+So for a standard `SKILL.md` package like `beauty-generation-api`, this repo should mirror it from GitHub and then distribute it to Claude/Codex/OpenCode/Gemini itself.
+
+Current note for this specific skill: the current upstream `SKILL.md` says it requires an API key, even though it appears to offer a free key request flow.
+
 ## Add a Command-Based Skill Source
 
 In this repo, `command` is mainly for upstream installers like GSD.

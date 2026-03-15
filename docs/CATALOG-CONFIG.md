@@ -506,7 +506,38 @@ sources:
 enabled: false
 ```
 
-### 9.5 怎么看 command source 有没有生效
+### 9.5 ClawHub skill 应该怎么接进这个仓库
+
+如果某个 skill 来自 ClawHub，而且它背后其实就是一个标准 `SKILL.md` 目录，优先用 GitHub source。
+
+例如 `beauty-generation-api`：
+
+```yaml
+sources:
+  - id: beauty-generation-api
+    type: github
+    enabled: true
+    description: ClawHub/OpenClaw beauty-generation-api skill from openclaw/skills
+    github:
+      repo: openclaw/skills
+      ref: main
+      path: skills/luruibu
+    assets:
+      - path: beauty-generation-api
+```
+
+为什么这里不用 `clawhub install beauty-generation-api`：
+
+- `clawhub install` 默认安装到当前工作目录下的 `./skills`
+- 如果已配置 OpenClaw workspace，它会回退到那个 workspace
+- 它的目标是 OpenClaw workspace skills，不是 Claude/Codex 这类用户级 skills 目录
+
+所以在你这个项目里，更合适的做法是：
+
+- 用 GitHub source 把 skill 拉进来
+- 再由这个项目统一同步到 Claude / Codex / OpenCode / Gemini
+
+### 9.6 怎么看 command source 有没有生效
 
 像 `gsd.yaml` 这种 command source，安装后不一定会在 `skills:` 那一栏出现。
 
@@ -522,7 +553,7 @@ enabled: false
 - `list` 主要看 `command sources`
 - `inspect` 主要看 `command installs`
 
-### 9.6 重新执行安装
+### 9.7 重新执行安装
 
 ```bash
 npm run bootstrap
