@@ -2,9 +2,6 @@ sources:
   - id: gsd
     type: command
     enabled: true
-    description: Install or update Get Shit Done for Claude Code
-    targets:
-      include:
-        - claude
+    description: Install or update Get Shit Done across Claude, Codex, OpenCode, and Gemini
     command:
-      run: npx get-shit-done-cc@latest --global
+      run: npx get-shit-done-cc --all --global

@@ -203,7 +203,7 @@ describe("direct target sync", () => {
     const homeDir = join(fixture.root, "home");
 
     const result = await runBootstrap({
-      selectedTargets: ["claude", "opencode"],
+      selectedTargets: ["claude", "opencode", "gemini"],
       catalog: fixture.catalog,
       platform: {
         platform: "windows",
@@ -222,7 +222,7 @@ describe("direct target sync", () => {
       {
         sourceId: "delegated-tools",
         assetIds: ["command-helper"],
-        targets: ["claude", "opencode"],
+        targets: ["claude", "gemini", "opencode"],
         command: `${process.execPath} ${fixture.commandScriptPath}`,
         status: "executed"
       }
@@ -236,6 +236,10 @@ describe("direct target sync", () => {
       join(homeDir, ".config", "opencode", "skills", "command-helper", "SKILL.md"),
       constants.F_OK
     );
+    await access(
+      join(homeDir, ".gemini", "extensions", "command-helper", "gemini-extension.json"),
+      constants.F_OK
+    );
 
     const envSnapshot = JSON.parse(
       await readFile(fixture.commandEnvPath, "utf8")
@@ -245,7 +249,8 @@ describe("direct target sync", () => {
       HOME: homeDir,
       USERPROFILE: homeDir,
       APPDATA: join(homeDir, ".config"),
-      LOCALAPPDATA: fixture.root
+      LOCALAPPDATA: fixture.root,
+      AIMAGICIAN_GEMINI_EXTENSIONS_DIR: join(homeDir, ".gemini", "extensions")
     });
   }, 15000);
 
@@ -333,7 +338,8 @@ async function createFixtureRepository(
       "  HOME: process.env.HOME,",
       "  USERPROFILE: process.env.USERPROFILE,",
       "  APPDATA: process.env.APPDATA,",
-      "  LOCALAPPDATA: process.env.LOCALAPPDATA",
+      "  LOCALAPPDATA: process.env.LOCALAPPDATA,",
+      "  AIMAGICIAN_GEMINI_EXTENSIONS_DIR: process.env.AIMAGICIAN_GEMINI_EXTENSIONS_DIR",
       "}, null, 2), 'utf8');",
       "const homes = {",
       "  claude: process.env.AIMAGICIAN_CLAUDE_SKILLS_DIR,",
@@ -341,6 +347,14 @@ async function createFixtureRepository(
       "  codex: process.env.AIMAGICIAN_CODEX_SKILLS_DIR",
       "};",
       "for (const target of targets) {",
+      "  if (target === 'gemini') {",
+      "    const root = process.env.AIMAGICIAN_GEMINI_EXTENSIONS_DIR;",
+      "    if (!root) continue;",
+      "    const extensionDir = join(root, 'command-helper');",
+      "    mkdirSync(extensionDir, { recursive: true });",
+      "    writeFileSync(join(extensionDir, 'gemini-extension.json'), JSON.stringify({ name: 'command-helper', version: '1.0.0' }, null, 2), 'utf8');",
+      "    continue;",
+      "  }",
       "  const root = homes[target];",
       "  if (!root) continue;",
       "  const skillDir = join(root, 'command-helper');",
@@ -369,6 +383,7 @@ async function createFixtureRepository(
             "      include:",
             "        - claude",
             "        - opencode",
+            "        - gemini",
             "    command:",
             `      run: '${process.execPath} ${commandScriptPath}'`,
             "    assets:",

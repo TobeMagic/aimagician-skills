@@ -2,32 +2,33 @@ import { execFile } from "node:child_process";
 import { isAbsolute, join, win32 } from "node:path";
 import { promisify } from "node:util";
 import type { NormalizedAsset } from "../model/assets";
+import type { SupportedTarget } from "../model/targets";
 import { repositoryRoot } from "../shared/paths";
 import type { PlatformContext } from "../shared/platform";
-import type { DirectSkillTarget, DirectTargetHome } from "./target-homes";
+import type { ResolvedTargetHomes } from "./target-homes";
 
 const execFileAsync = promisify(execFile);
 
 export interface CommandSourceReport {
   sourceId: string;
   assetIds: string[];
-  targets: DirectSkillTarget[];
+  targets: SupportedTarget[];
   command: string;
   status: "planned" | "executed";
 }
 
 export interface ExecuteCommandSkillSourcesOptions {
   normalizedAssets: NormalizedAsset[];
-  selectedTargets: DirectSkillTarget[];
+  selectedTargets: SupportedTarget[];
   workspaceRoot: string;
   platformContext: PlatformContext;
-  targetHomes: Record<DirectSkillTarget, DirectTargetHome>;
+  targetHomes: ResolvedTargetHomes;
 }
 
 interface CommandSourceGroup {
   sourceId: string;
   assetIds: Set<string>;
-  targets: Set<DirectSkillTarget>;
+  targets: Set<SupportedTarget>;
   command: {
     run: string;
     shell?: string;
@@ -37,7 +38,7 @@ interface CommandSourceGroup {
 
 export function previewCommandSkillSources(
   normalizedAssets: NormalizedAsset[],
-  selectedTargets: DirectSkillTarget[]
+  selectedTargets: SupportedTarget[]
 ): CommandSourceReport[] {
   return [...groupCommandSkillSources(normalizedAssets, selectedTargets)].map(
     ([, group]) => ({
@@ -73,7 +74,7 @@ export async function executeCommandSkillSources(
 
 function groupCommandSkillSources(
   normalizedAssets: NormalizedAsset[],
-  selectedTargets: DirectSkillTarget[]
+  selectedTargets: SupportedTarget[]
 ): Map<string, CommandSourceGroup> {
   const groups = new Map<string, CommandSourceGroup>();
 
@@ -82,9 +83,8 @@ function groupCommandSkillSources(
       continue;
     }
 
-    const matchingTargets = asset.effectiveTargets.filter(
-      (target): target is DirectSkillTarget =>
-        selectedTargets.includes(target as DirectSkillTarget)
+    const matchingTargets = asset.effectiveTargets.filter((target) =>
+      selectedTargets.includes(target)
     );
 
     if (matchingTargets.length === 0) {
@@ -162,6 +162,7 @@ function createCommandEnvironment(
     AIMAGICIAN_CODEX_SKILLS_DIR: options.targetHomes.codex.skillsDir,
     AIMAGICIAN_CLAUDE_SKILLS_DIR: options.targetHomes.claude.skillsDir,
     AIMAGICIAN_OPENCODE_SKILLS_DIR: options.targetHomes.opencode.skillsDir,
+    AIMAGICIAN_GEMINI_EXTENSIONS_DIR: options.targetHomes.gemini.extensionsDir,
     HOME: options.platformContext.homeDir
   };
 

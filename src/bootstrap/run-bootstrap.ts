@@ -29,11 +29,7 @@ import {
   type BootstrapPluginReport
 } from "./plugin-resolution";
 import { resolveManagedSkillInstalls } from "./source-resolution";
-import {
-  isDirectSkillTarget,
-  resolveTargetHomes,
-  type ResolvedTargetHomes
-} from "./target-homes";
+import { resolveTargetHomes, type ResolvedTargetHomes } from "./target-homes";
 import { ensureBootstrapWorkspace, resolveBootstrapWorkspace } from "./workspace";
 
 export interface RunBootstrapOptions {
@@ -83,7 +79,6 @@ export async function runBootstrap(
     ? resolveBootstrapWorkspace(platformContext)
     : await ensureBootstrapWorkspace(platformContext);
   const targetHomes = resolveTargetHomes(platformContext);
-  const selectedDirectTargets = selectedTargets.filter(isDirectSkillTarget);
 
   if (options.dryRun) {
     const pluginReports = await previewPluginReports({
@@ -101,10 +96,7 @@ export async function runBootstrap(
       plan: prepared.plan,
       targetReports: createPreviewTargetReports(prepared.plan, targetHomes, pluginReports),
       pluginReports,
-      commandReports: previewCommandSkillSources(
-        prepared.normalizedAssets,
-        selectedDirectTargets
-      )
+      commandReports: previewCommandSkillSources(prepared.normalizedAssets, selectedTargets)
     };
   }
 
@@ -135,14 +127,10 @@ export async function runBootstrap(
   });
   const commandReports = await executeCommandSkillSources({
     normalizedAssets: prepared.normalizedAssets,
-    selectedTargets: selectedDirectTargets,
+    selectedTargets,
     workspaceRoot: workspace.rootDir,
     platformContext,
-    targetHomes: {
-      codex: targetHomes.codex,
-      claude: targetHomes.claude,
-      opencode: targetHomes.opencode
-    }
+    targetHomes
   });
   const nextManifest = createManifest(
     prepared.plan,

@@ -218,36 +218,6 @@ sources:
 - one asset means one `-` item under `assets:`
 - multiple assets means multiple `-` items under `assets:`
 
-## Example: Add a ClawHub Skill
-
-For ClawHub/OpenClaw skills, the cleanest way in this repo is usually a GitHub source, not `clawhub install`.
-
-Example for `beauty-generation-api`:
-
-```yaml
-sources:
-  - id: beauty-generation-api
-    type: github
-    enabled: true
-    description: ClawHub/OpenClaw beauty-generation-api skill from openclaw/skills
-    github:
-      repo: openclaw/skills
-      ref: main
-      path: skills/luruibu
-    assets:
-      - path: beauty-generation-api
-```
-
-Why this repo uses GitHub for that skill:
-
-- `clawhub install <slug>` installs into the current working directory `./skills` by default
-- if an OpenClaw workspace is configured, ClawHub falls back to that workspace unless you override it with `--workdir` or `CLAWHUB_WORKDIR`
-- that means `clawhub install` is aimed at OpenClaw workspace skills, not at Claude/Codex user-level skill directories
-
-So for a standard `SKILL.md` package like `beauty-generation-api`, this repo should mirror it from GitHub and then distribute it to Claude/Codex/OpenCode/Gemini itself.
-
-Current note for this specific skill: the current upstream `SKILL.md` says it requires an API key, even though it appears to offer a free key request flow.
-
 ## Add a Command-Based Skill Source
 
 In this repo, `command` is mainly for upstream installers like GSD.
@@ -271,12 +241,9 @@ sources:
   - id: gsd
     type: command
     enabled: true
-    description: Install or update Get Shit Done for Claude Code
-    targets:
-      include:
-        - claude
+    description: Install or update Get Shit Done across Claude, Codex, OpenCode, and Gemini
     command:
-      run: npx get-shit-done-cc@latest --global
+      run: npx get-shit-done-cc --all --global
 ```
 
 If you omit `assets` on a command source, this project treats it as one logical installed pack and uses the source id as the asset id. For the current repo, that is the intended shape for `gsd`.
@@ -291,10 +258,17 @@ At runtime, delegated installers receive:
 - `AIMAGICIAN_CODEX_SKILLS_DIR`
 - `AIMAGICIAN_CLAUDE_SKILLS_DIR`
 - `AIMAGICIAN_OPENCODE_SKILLS_DIR`
+- `AIMAGICIAN_GEMINI_EXTENSIONS_DIR`
 
 And when you override home with `--home`, the installer also receives a rewritten `HOME` and the common user-directory variables for that platform.
 
 For command-based sources like GSD, `list` and `inspect` show them under `command sources` / `command installs`. They may not appear under `skills:` because the upstream installer is free to manage commands, agents, hooks, and support files outside the plain skills directory.
+
+Current GSD default in this repo uses the all-target installer, so the upstream command itself installs Claude, Codex, OpenCode, and Gemini in one run:
+
+```bash
+npx get-shit-done-cc --all --global
+```
 
 ## Example: Only Use Anthropic Official Claude Skills
 

@@ -174,7 +174,7 @@ async function createInspectionFixture() {
             sourceId: "gsd",
             assetIds: ["gsd"],
             targets: ["gemini"],
-            command: "npx get-shit-done-cc@latest --global"
+            command: "npx get-shit-done-cc --all --global"
           }
         ],
         managedInstalls: [
