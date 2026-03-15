@@ -4,6 +4,7 @@ export interface BaseCliCommand {
   targets: SupportedTarget[];
   json: boolean;
   help: boolean;
+  homeDir?: string;
 }
 
 export interface BootstrapCommand extends BaseCliCommand {

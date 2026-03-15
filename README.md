@@ -53,6 +53,7 @@ Bootstrap:
 npm run bootstrap
 node dist/cli/index.js bootstrap --target claude
 node dist/cli/index.js bootstrap --targets codex,claude,opencode,gemini --json
+node dist/cli/index.js bootstrap --target claude --home /tmp/test-home
 ```
 
 List detected assets from the current user profile:
@@ -60,6 +61,7 @@ List detected assets from the current user profile:
 ```bash
 node dist/cli/index.js list
 node dist/cli/index.js list --target gemini --json
+node dist/cli/index.js list --target claude --home /tmp/test-home
 ```
 
 Inspect detailed target state:
@@ -67,6 +69,7 @@ Inspect detailed target state:
 ```bash
 node dist/cli/index.js inspect
 node dist/cli/index.js inspect --targets codex,opencode
+node dist/cli/index.js inspect --target claude --home /tmp/test-home
 ```
 
 Verify managed installs against live target homes:
@@ -74,6 +77,7 @@ Verify managed installs against live target homes:
 ```bash
 node dist/cli/index.js doctor
 node dist/cli/index.js doctor --target claude --json
+node dist/cli/index.js doctor --target claude --home /tmp/test-home
 ```
 
 ## Typical Workflow
@@ -482,6 +486,20 @@ Supported target names:
 - `claude`
 - `opencode`
 - `gemini`
+
+## Override Home
+
+If you do not pass anything, the CLI uses the current user's `~/`.
+
+If you want an isolated target home without writing an extra wrapper script, pass `--home`:
+
+```bash
+node dist/cli/index.js bootstrap --target claude --home /tmp/test-home
+node dist/cli/index.js list --target claude --home /tmp/test-home
+node dist/cli/index.js doctor --target claude --home /tmp/test-home
+```
+
+That makes the CLI behave as if `~/` were `/tmp/test-home`.
 
 ## User-Level Locations
 

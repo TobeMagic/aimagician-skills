@@ -20,7 +20,8 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
     if (parsed.command === "bootstrap") {
       const result = await runBootstrap({
         selectedTargets: parsed.targets,
-        dryRun: parsed.dryRun
+        dryRun: parsed.dryRun,
+        platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
       });
 
       return {
@@ -33,7 +34,8 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
     }
 
     const inspection = await inspectInstallation({
-      selectedTargets: parsed.targets
+      selectedTargets: parsed.targets,
+      platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
     });
 
     return {
@@ -157,6 +159,7 @@ function renderHelp(): string {
     "Options:",
     "  --targets     Comma-separated targets to include",
     "  --target      Single target override (repeatable)",
+    "  --home        Override the effective home directory (default: current ~/)",
     "  --dry-run     Print bootstrap intent without applying changes (bootstrap only)",
     "  --json        Render machine-readable output",
     "  -h, --help    Show command help"

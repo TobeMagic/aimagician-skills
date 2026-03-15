@@ -22,6 +22,7 @@ export function parseCli(argv: string[]): ParsedCli {
   let dryRun = false;
   let json = false;
   let help = false;
+  let homeDir: string | undefined;
 
   while (args.length > 0) {
     const argument = args.shift()!;
@@ -44,6 +45,9 @@ export function parseCli(argv: string[]): ParsedCli {
       case "--target":
         targetSelections.push(...parseTargetArgument(args.shift(), argument));
         break;
+      case "--home":
+        homeDir = parsePathArgument(args.shift(), argument);
+        break;
       default:
         throw new Error(`Unsupported argument: ${argument}`);
     }
@@ -52,7 +56,8 @@ export function parseCli(argv: string[]): ParsedCli {
   const base = {
     targets: targetSelections.length > 0 ? dedupeTargets(targetSelections) : [...supportedTargets],
     json,
-    help
+    help,
+    ...(homeDir ? { homeDir } : {})
   };
 
   switch (command) {
@@ -106,6 +111,14 @@ function parseTarget(target: string): SupportedTarget {
   }
 
   return target as SupportedTarget;
+}
+
+function parsePathArgument(value: string | undefined, flag: string): string {
+  if (!value) {
+    throw new Error(`Missing value for ${flag}`);
+  }
+
+  return value;
 }
 
 function dedupeTargets(targets: SupportedTarget[]): SupportedTarget[] {

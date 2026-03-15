@@ -38,6 +38,19 @@ describe("parseCli", () => {
     });
   });
 
+  it("supports overriding the effective home directory", () => {
+    expect(
+      parseCli(["bootstrap", "--target", "claude", "--home", "/tmp/test-home"])
+    ).toEqual({
+      command: "bootstrap",
+      targets: ["claude"],
+      dryRun: false,
+      json: false,
+      help: false,
+      homeDir: "/tmp/test-home"
+    });
+  });
+
   it("supports verification commands", () => {
     expect(parseCli(["list", "--target", "gemini", "--json"])).toEqual({
       command: "list",
@@ -120,6 +133,7 @@ describe("runCli", () => {
     expect(result.stdout).toContain("Usage: aimagician-skills");
     expect(result.stdout).toContain("list");
     expect(result.stdout).toContain("doctor");
+    expect(result.stdout).toContain("--home");
   });
 });
 
