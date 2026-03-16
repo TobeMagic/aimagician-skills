@@ -1,0 +1,11 @@
+sources:
+  - id: playwright-skill
+    type: github
+    enabled: true
+    description: Playwright browser automation skill from lackeyjb/playwright-skill
+    github:
+      repo: lackeyjb/playwright-skill
+      ref: main
+      path: skills
+    assets:
+      - path: playwright-skill
