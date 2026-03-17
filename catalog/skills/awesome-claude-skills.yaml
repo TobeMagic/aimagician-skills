@@ -1,0 +1,11 @@
+sources:
+  - id: awesome-claude-skills
+    type: github
+    enabled: true
+    description: Selected skills from ComposioHQ/awesome-claude-skills
+    github:
+      repo: ComposioHQ/awesome-claude-skills
+      ref: master
+    assets:
+      - path: content-research-writer
+      - path: image-enhancer
