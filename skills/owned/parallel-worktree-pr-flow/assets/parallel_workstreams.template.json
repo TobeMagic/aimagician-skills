@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "base_branch": "master",
+  "integration_branch": "parallel/provider-integration",
+  "integration_worktree_name": ".",
+  "shared_surfaces": [
+    "config/operator_intents.json",
+    "config/skill_entrypoints.json",
+    ".env.example",
+    "README.md",
+    "docs/SETUP.md",
+    "docs/TROUBLESHOOTING.md",
+    ".planning/PROJECT.md",
+    ".planning/ROADMAP.md",
+    ".planning/STATE.md",
+    ".planning/REQUIREMENTS.md"
+  ],
+  "provider_manifest_template": "provider_manifests/provider_manifest.template.json",
+  "default_bootstrap_statuses": [
+    "planned"
+  ],
+  "streams": [
+    {
+      "id": "publish-example-provider",
+      "label": "示例发布 lane",
+      "group": "distribution",
+      "type": "publish_provider",
+      "priority": "high",
+      "status": "planned",
+      "branch": "feat/publish-example-provider",
+      "worktree": "../repo-publish-example-provider",
+      "manifest_path": "provider_manifests/publish-example-provider.json",
+      "write_scope": [
+        "skills/publish/references/platforms/example-provider.md",
+        "skills/publish/scripts/platforms/publish_example_provider.py",
+        "scripts/publish_example_provider.py"
+      ],
+      "integration_touchpoints": [
+        "config/operator_intents.json",
+        "config/skill_entrypoints.json",
+        ".env.example",
+        "README.md",
+        "docs/SETUP.md",
+        "docs/TROUBLESHOOTING.md"
+      ],
+      "acceptance": [
+        "存在该 lane 的 canonical script",
+        "支持 dry-run 或 check-session",
+        "返回成功 URL、阻塞原因或验证证据"
+      ]
+    }
+  ]
+}

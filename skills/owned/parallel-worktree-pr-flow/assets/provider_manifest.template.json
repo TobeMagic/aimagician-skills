@@ -1,0 +1,51 @@
+{
+  "id": "publish-example-provider",
+  "label": "示例 provider",
+  "type": "publish_provider",
+  "status": "draft",
+  "owner_branch": "feat/publish-example-provider",
+  "owner_worktree": "../repo-publish-example-provider",
+  "write_scope": [
+    "skills/publish/references/platforms/example-provider.md",
+    "skills/publish/scripts/platforms/publish_example_provider.py",
+    "scripts/publish_example_provider.py"
+  ],
+  "integration_touchpoints_requested": [
+    "config/operator_intents.json",
+    "config/skill_entrypoints.json",
+    ".env.example",
+    "README.md",
+    "docs/SETUP.md",
+    "docs/TROUBLESHOOTING.md"
+  ],
+  "env_contract": {
+    "required": [
+      "EXAMPLE_PROVIDER_USERNAME",
+      "EXAMPLE_PROVIDER_PASSWORD"
+    ],
+    "optional": [
+      "EXAMPLE_PROVIDER_SESSION",
+      "EXAMPLE_PROVIDER_SESSION_STATE_FILE",
+      "EXAMPLE_PROVIDER_BROWSER_PROFILE_DIR"
+    ]
+  },
+  "entrypoints": {
+    "canonical_script": "skills/publish/scripts/platforms/publish_example_provider.py",
+    "compat_script": "scripts/publish_example_provider.py",
+    "operator_intent_id": "push_example_provider_article",
+    "skill_entrypoint_key": "publish.publish_example_provider"
+  },
+  "verification": {
+    "commands": [
+      "python skills/publish/scripts/platforms/publish_example_provider.py --dry-run --article-id <article-id>"
+    ],
+    "expected_outcome": [
+      "returns status=ok",
+      "returns provider-specific payload or live readiness result"
+    ]
+  },
+  "integration_notes": [
+    "Provider branch must not edit shared integration files directly.",
+    "Integrator reads this manifest and applies registry/intents/docs changes in the integration worktree."
+  ]
+}
