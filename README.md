@@ -92,6 +92,10 @@ If you want the full Chinese explanation of the YAML config scheme and the exact
 
 - [docs/CATALOG-CONFIG.md](D:\Growth_up_youth\repo\skills\docs\CATALOG-CONFIG.md)
 
+If you want a Chinese explanation of how GSD is designed, why `$gsd-*` commands can take parameters, and how the main workflows connect, read:
+
+- [docs/GSD-WORKFLOW.md](D:\Growth_up_youth\repo\skills\docs\GSD-WORKFLOW.md)
+
 ## Repository Layout
 
 ```text
