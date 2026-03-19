@@ -1,41 +1,93 @@
 ---
 name: infinite-research-loop
 description: |
-  启动一个自主循环实验流程，让 AI 在无人监管的情况下反复尝试、评估、保留或回退实验。
-  适用于任何可以迭代 + 量化反馈的任务，例如训练调参、算法优化、功能迭代等。
-  当用户说“让 AI 帮我整夜跑实验”“自动调参”“循环测试”“无人守候”时触发。
-  使用前必须先和用户 discuss 确认各项参数，再写入 `program.md`。
+  Run a self-directed experiment loop for any task that can improve through repeated edits plus measured feedback.
+  Use when the user wants "overnight experiments", "auto tuning", "autonomous iteration", "loop testing",
+  or an unattended research workflow. In GSD-managed repos, use this skill as the inner experiment executor
+  inside an existing phase or quick task instead of creating a parallel planning flow. Before the loop starts,
+  discuss and lock the objective metric, writable scope, eval command, time budget, and stop conditions into
+  `program.md`.
 compatibility:
   tools: [bash, git, python]
-  requires: 项目仓库已初始化 git，存在可运行的评估脚本
+  requires: Git-initialized project with a runnable eval or test command
 ---
 
-# Infinite Research Loop Skill
+# Infinite Research Loop
 
 Reference: https://github.com/karpathy/autoresearch/tree/master
 
 The core idea comes from Karpathy's autoresearch:
-write a `program.md` as the agent's operating specification, then let the agent
-iterate autonomously without asking the user whether to continue.
+write a `program.md` as the agent's operating contract, then let the agent run
+many small experiments without asking the user whether to continue.
 
-## Before You Start: discuss with the user
+This skill is the inner experiment engine.
+If the repo already uses GSD, then GSD remains the outer control plane:
 
-Do NOT skip this step and jump straight into the loop.
+- GSD decides the broader task, phase, and verification path.
+- This skill executes the narrow repeated search loop inside that boundary.
 
-Before writing `program.md`, confirm the following:
+## Operating Modes
 
-1. Objective metric: what exactly are we optimizing, and where do we read it?
-2. Writable scope: which single file may the agent modify, and what is strictly read-only?
-3. Time budget: max duration per experiment, and total session length.
-4. Eval method: exact eval command to run, exact field to read from output.
-5. Exploration focus: what to prioritize this session, and what to explicitly skip.
+Choose the smallest mode that fits the repo:
 
-Once confirmed, write the agreed parameters into `program.md` in the format below.
+- `GSD mode`
+  Use this when `.planning/STATE.md`, `.planning/phases/`, or `.planning/quick/`
+  exists. Reuse the active phase or quick-task objective instead of inventing a
+  separate roadmap.
+- `Standalone mode`
+  Use this when the repo is not managed by GSD. `program.md` becomes the only
+  execution contract.
+
+## GSD Integration
+
+When GSD artifacts exist, treat them as upstream source of truth.
+
+Read only the minimum context needed:
+
+1. `.planning/STATE.md`
+2. The active phase or quick-task plan
+3. The latest `UAT.md` or `VERIFICATION.md` if the loop is trying to close a known gap
+
+Then apply these rules:
+
+- Reuse the active goal, constraints, and success criteria from GSD.
+- Narrow the loop to one writable file or one tightly scoped module.
+- Do not create a second roadmap, milestone, or independent planning track.
+- Keep commits atomic so they remain compatible with GSD's normal verification flow.
+- When the loop finishes, hand back a concise summary that can feed directly into
+  `$gsd-verify-work`, `$gsd-plan-phase`, or `$gsd-quick --full`.
+
+If the repo is GSD-managed but the active scope is still ambiguous, resolve the
+missing details during the initial discussion before writing `program.md`.
+
+## Before You Start: Discuss With The User
+
+Do not start the loop before these parameters are explicit.
+
+Confirm:
+
+1. Objective metric
+   What exactly are we optimizing? Where do we read the number?
+2. Baseline
+   What is the current best result or current stable commit?
+3. Writable scope
+   Which single file may the agent modify? What is strictly read-only?
+4. Eval method
+   What exact command runs one experiment? Which file and field hold the result?
+5. Time budget
+   What is the per-run timeout, and what is the total session budget?
+6. Exploration focus
+   What dimensions should this session prioritize, and what should be skipped?
+7. GSD handoff
+   If this is a GSD repo, which phase or quick task does this loop belong to,
+   and what command should the user run after the loop finishes?
+
+Once agreed, write the parameters into `program.md`.
 
 ## `program.md` Format
 
-This file lives in the project root and is the agent's single source of truth.
-Humans edit it. The agent executes it strictly.
+`program.md` lives in the project root and becomes the loop's only execution contract.
+Humans revise it. The agent follows it strictly.
 
 ```md
 # program.md — [PROJECT_NAME]
@@ -44,22 +96,31 @@ Humans edit it. The agent executes it strictly.
 
 METRIC:    [metric_name]
 DIRECTION: [lower|higher] is better
-SUCCESS_THRESHOLD: [delta vs current best, e.g. improvement > 0.002]
+BASELINE:  [current best value or commit]
+SUCCESS_THRESHOLD: [minimum meaningful improvement]
+
+## GSD Context
+
+MODE:            [phase|quick|standalone]
+SOURCE_OF_TRUTH: [path to active PLAN.md, quick task, or "manual"]
+HANDOFF_HINT:    [$gsd-verify-work 3 | $gsd-quick --full ... | none]
 
 ## File Permissions
 
-WRITABLE:  [filename]           # agent may only modify this file
-READONLY:  [file1, file2, ...]  # never touch
+WRITABLE:  [single file path]
+READONLY:  [file1, file2, ...]
 
 ## Experiment Rules
 
-TIME_LIMIT:    [N] min
-EVAL_COMMAND:  [shell command]
-RESULT_PATH:   [path/to/file]
-RESULT_FIELD:  [json_key]
-COMMIT_FORMAT: "exp: {description} | {metric}: {value}"
+TIME_LIMIT:      [N] min
+SESSION_LIMIT:   [optional total time or experiment count]
+EVAL_COMMAND:    [shell command]
+RESULT_PATH:     [path/to/result/file]
+RESULT_FIELD:    [json key, jq path, or parser note]
+REVERT_STRATEGY: [prefer restoring only WRITABLE]
+COMMIT_FORMAT:   "exp: {description} | {metric}: {value}"
 
-## Exploration Focus (this session)
+## Exploration Focus
 
 - [dimension_1]
 - [dimension_2]
@@ -67,94 +128,105 @@ COMMIT_FORMAT: "exp: {description} | {metric}: {value}"
 
 ## Excluded Directions
 
-- [what NOT to try, to save search space]
+- [what not to try]
 
-## Fallback (when out of ideas)
+## Fallback
 
-1. Read referenced papers/libs inside WRITABLE file
-2. Re-read project files from a fresh angle
-3. Combine near-miss ideas from past experiment history
-4. Try more aggressive architectural changes
+1. Re-read the WRITABLE file and referenced libraries
+2. Re-read nearby project files from a fresh angle
+3. Combine near-miss ideas from previous runs
+4. Try a more aggressive but still scoped change
 
 ## Termination
 
-- User interrupts (Ctrl+C)
-- Optional: stop after [N] experiments
-- Optional: stop when metric reaches [threshold]
+- User interrupts
+- Session limit reached
+- Metric reaches target
+- No credible ideas remain
 ```
 
-## Agent Execution Loop
+## Execution Loop
 
-Once `program.md` is written, run the following loop without stopping:
+Once `program.md` exists, run this loop without stopping for permission:
 
 ```text
 loop:
 
-1. propose one new idea -> modify WRITABLE file only
-2. run EVAL_COMMAND with timeout TIME_LIMIT
-3. read metric from RESULT_PATH[RESULT_FIELD]
-4. decide:
-   - error (trivial: typo, syntax) -> fix and re-run
-   - error (fundamental)           -> skip, log FAILED, git reset
-   - timeout / crash               -> skip, log FAILED, git reset
-   - metric improved               -> git commit with COMMIT_FORMAT
-   - metric degraded               -> git reset --hard HEAD
-5. if out of ideas -> run Fallback sequence from program.md
-6. NEVER ask the user whether to continue
+1. propose one reversible idea
+2. modify WRITABLE only
+3. run EVAL_COMMAND with TIME_LIMIT
+4. read RESULT_PATH and parse RESULT_FIELD
+5. decide:
+   - trivial failure        -> fix once and re-run
+   - fundamental failure    -> log FAILED and revert WRITABLE scope
+   - timeout / crash        -> log FAILED and revert WRITABLE scope
+   - metric improved        -> git commit atomically with COMMIT_FORMAT
+   - metric degraded        -> revert WRITABLE scope
+6. if out of ideas -> execute Fallback from program.md
+7. never ask the user whether to continue
 ```
 
-## Research Loop Model
+## Loop Discipline
 
-```text
-propose idea, modify main code
-    ->
-run pre-written experiment or test script
-    ->
-save output result to file
-    ->
-evaluate outcome
-   /            \\
-error           normal
-  ->              ->
-try fix       result improved? -> git commit ->
-  ->              ->
-repeat fail    result worse?   -> git reset
-  ->              ->
-skip          continue loop
-```
+Follow these rules throughout execution:
 
-## Hard Constraints
-
-- Modify ONLY the file listed under `WRITABLE`. One character outside that scope means stop and report.
-- `git reset` is a last resort. Use it only when the metric clearly degrades or the idea is fundamentally broken.
-- Never pause, prompt, or wait for user input once the loop has started.
+- Change only `WRITABLE`.
+- Prefer one idea per experiment so results stay interpretable.
+- Save or print enough output to explain why an experiment passed or failed.
+- Be conservative with rollback.
+- Preserve good commits; do not squash multiple experiments into one commit.
 - Respect user interrupt immediately.
 
-## Failure Handling Rules
+## Revert Policy
 
-- Timeout rule:
-  - expected runtime per experiment is about 5 minutes
-  - if one run exceeds 10 minutes, kill it and mark it as FAILED
-- Crash rule:
-  - trivial mistakes like typos or syntax errors should be fixed and retried
-  - fundamentally bad ideas should be skipped quickly
-- Autonomy rule:
-  - once the loop starts, do not ask the user whether to continue
-- Reset rule:
-  - be conservative; avoid rollback unless the result clearly got worse
+Prefer the smallest rollback that restores the pre-experiment state:
+
+- First choice:
+  restore only `WRITABLE`
+- Second choice:
+  revert only the files explicitly allowed by `program.md`
+- Last resort:
+  broader git reset, but only if the experiment scope is isolated and
+  `program.md` explicitly allows it
+
+This keeps the loop compatible with GSD's atomic-commit and state-tracking style.
+
+## Failure Handling
+
+- Expected runtime per experiment is about 5 minutes.
+- If one run exceeds 10 minutes, kill it and mark it as `FAILED`.
+- Trivial failures like typos, imports, or syntax mistakes can be fixed once and re-run.
+- Fundamentally bad ideas should be abandoned quickly.
+- Once the loop starts, do not pause for approval.
 
 ## If There Are No Ideas
 
-Use this fallback sequence:
+Use this fallback order:
 
-1. Read papers, libraries, or references mentioned in the writable file.
-2. Re-read project code from a fresh angle.
+1. Read papers, libraries, or references mentioned in `WRITABLE`.
+2. Re-read nearby code with a different hypothesis.
 3. Combine previous near-miss ideas.
-4. Try more aggressive architectural changes.
+4. Try a more aggressive but still single-scope architectural change.
+
+## Handoff Back To GSD
+
+When the loop stops in a GSD-managed repo, return a concise research handoff:
+
+- best metric versus baseline
+- commits kept
+- failed directions worth avoiding
+- remaining uncertainty
+- recommended next GSD step
+
+Use these handoff defaults:
+
+- Stable improvement ready for user-facing validation -> `$gsd-verify-work`
+- Improvement found but plan needs to change -> `$gsd-plan-phase`
+- Narrow follow-up task without milestone changes -> `$gsd-quick --full`
 
 ## Throughput Estimate
 
-As a rough guide:
+Rough guide:
 
 - about 5 minutes per experiment
 - about 12 experiments per hour
