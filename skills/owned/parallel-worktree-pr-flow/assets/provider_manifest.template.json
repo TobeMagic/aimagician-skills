@@ -46,6 +46,7 @@
   },
   "integration_notes": [
     "Provider branch must not edit shared integration files directly.",
-    "Integrator reads this manifest and applies registry/intents/docs changes in the integration worktree."
+    "Integrator reads this manifest and applies registry/intents/docs changes in the integration worktree.",
+    "In GSD-managed repos, integration also writes back PROJECT/ROADMAP/STATE/SUMMARY; in plain repos, integration updates the repo-local coordination truth source such as .codex_parallel/provider_workstreams.json and STATUS/INTEGRATION_NOTES."
   ]
 }

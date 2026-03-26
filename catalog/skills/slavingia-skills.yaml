@@ -1,0 +1,9 @@
+sources:
+  - id: slavingia-skills
+    type: github
+    enabled: true
+    description: Skills from slavingia/skills
+    github:
+      repo: slavingia/skills
+      ref: main
+      path: skills

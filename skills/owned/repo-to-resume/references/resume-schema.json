@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/resume.schema.json",
+  "title": "resume.json",
+  "type": "object",
+  "required": [
+    "name",
+    "title",
+    "contacts",
+    "summary",
+    "skills",
+    "experiences",
+    "projects",
+    "education"
+  ],
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "contacts": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "required": [
+        "links"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "experiences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "company",
+          "role",
+          "location",
+          "start",
+          "end",
+          "bullets"
+        ],
+        "properties": {
+          "company": { "type": "string" },
+          "role": { "type": "string" },
+          "location": { "type": "string" },
+          "start": { "type": "string" },
+          "end": { "type": "string" },
+          "bullets": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "role",
+          "start",
+          "end",
+          "tech",
+          "bullets"
+        ],
+        "properties": {
+          "name": { "type": "string" },
+          "role": { "type": "string" },
+          "start": { "type": "string" },
+          "end": { "type": "string" },
+          "tech": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "bullets": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "education": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "school",
+          "degree",
+          "start",
+          "end",
+          "bullets"
+        ],
+        "properties": {
+          "school": { "type": "string" },
+          "degree": { "type": "string" },
+          "start": { "type": "string" },
+          "end": { "type": "string" },
+          "bullets": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

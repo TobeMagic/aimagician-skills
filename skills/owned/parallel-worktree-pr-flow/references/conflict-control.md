@@ -14,7 +14,8 @@
 - 顶层配置
 - `.env.example`
 - README 和部署文档
-- planning / roadmap / state
+- planning / roadmap / state（仅 GSD repo）
+- `.codex_parallel/provider_workstreams.json`、`STATUS.md`、`INTEGRATION_NOTES.md`（仅 plain repo）
 - 跨平台汇总逻辑
 
 这些文件一旦允许所有 provider 分支都改，merge 成本会高于实现本身。
@@ -36,6 +37,18 @@
   ".env.example",
   "README.md",
   "docs/SETUP.md"
+]
+```
+
+如果仓库带 `.planning`，再把 `PROJECT / ROADMAP / STATE / REQUIREMENTS` 加入共享面。
+
+如果仓库不带 `.planning`，则把 repo-local 协调真相源加入共享面，例如：
+
+```json
+"shared_surfaces": [
+  ".codex_parallel/provider_workstreams.json",
+  ".codex_parallel/STATUS.md",
+  ".codex_parallel/INTEGRATION_NOTES.md"
 ]
 ```
 
@@ -97,6 +110,10 @@ provider 分支可以在 manifest 里声明：
 1. provider 先把局部实现做完
 2. integration 验收通过
 3. integration 再统一补 README / env / setup / troubleshooting
+
+如果是 GSD repo，这一步还包括 `.planning` 写回。
+
+如果是 plain repo，这一步还包括 `.codex_parallel/provider_workstreams.json` 和 `STATUS/INTEGRATION_NOTES` 写回。
 
 ## 7. 波次切分建议
 

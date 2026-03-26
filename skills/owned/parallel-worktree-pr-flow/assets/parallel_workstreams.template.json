@@ -1,5 +1,7 @@
 {
   "version": 1,
+  "repo_mode": "detect",
+  "coordination_root": "auto",
   "base_branch": "master",
   "integration_branch": "parallel/provider-integration",
   "integration_worktree_name": ".",
@@ -9,12 +11,21 @@
     ".env.example",
     "README.md",
     "docs/SETUP.md",
-    "docs/TROUBLESHOOTING.md",
-    ".planning/PROJECT.md",
-    ".planning/ROADMAP.md",
-    ".planning/STATE.md",
-    ".planning/REQUIREMENTS.md"
+    "docs/TROUBLESHOOTING.md"
   ],
+  "mode_specific_shared_surfaces": {
+    "gsd_managed": [
+      ".planning/PROJECT.md",
+      ".planning/ROADMAP.md",
+      ".planning/STATE.md",
+      ".planning/REQUIREMENTS.md"
+    ],
+    "plain_repo": [
+      ".codex_parallel/provider_workstreams.json",
+      ".codex_parallel/STATUS.md",
+      ".codex_parallel/INTEGRATION_NOTES.md"
+    ]
+  },
   "provider_manifest_template": "provider_manifests/provider_manifest.template.json",
   "default_bootstrap_statuses": [
     "planned"

@@ -1,0 +1,23 @@
+{
+  "skill_name": "deep-research-system",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "给一个新的机器人项目搭一套 docs/deep_research 文献调研系统，要求支持多源抓取、可复用 profile、覆盖缺口登记。",
+      "expected_output": "A bootstrapped research directory with starter assets, workflow docs, and runnable retrieval scripts.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "在现有仓库里继续做调研，但尽量只用不需要 API key 的来源，同时诚实记录没覆盖到的平台。",
+      "expected_output": "A rerun or extension using anonymous sources first, with explicit coverage-gap documentation.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "把当前项目的论文调研流程封装成以后其他方向也能复用的研究系统。",
+      "expected_output": "A reusable docs-first research system with scripts, templates, and usage guidance rather than a one-off paper list.",
+      "files": []
+    }
+  ]
+}

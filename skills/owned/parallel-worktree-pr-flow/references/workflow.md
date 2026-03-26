@@ -28,13 +28,16 @@
 
 ## 2. 标准目录
 
-推荐在目标仓库落这些文件：
+推荐在目标仓库落这些文件。注意分两种模式：
+
+- GSD 仓库：放 `.planning/dev_parallel/`
+- 普通仓库：放 `.codex_parallel/`
 
 ```text
-.planning/dev_parallel/
+<parallel-root>/
 ├── PROVIDER_PROTOCOL.md
 ├── PARALLEL_WORKTREE.md
-├── parallel_workstreams.json
+├── provider_workstreams.json
 ├── provider_manifests/
 │   └── *.json
 ```
@@ -43,7 +46,7 @@
 
 - `PROVIDER_PROTOCOL.md` 写边界
 - `PARALLEL_WORKTREE.md` 写怎么开、怎么分波次
-- `parallel_workstreams.json` 写 registry
+- `provider_workstreams.json` 写 registry
 - `provider_manifests/*.json` 写每条 lane 的交付契约
 
 ## 3. 开工顺序
@@ -58,7 +61,18 @@ git commit -m "chore: baseline before parallel worktrees"
 git push origin <base-branch>
 ```
 
-### Step 2. 写 registry
+### Step 2. 先识别仓库模式，再写 registry
+
+如果仓库有 `.planning`：
+
+- 本次并行应挂到当前 GSD milestone / phase
+- 并行目录放 `.planning/dev_parallel/`
+
+如果仓库没有 `.planning`：
+
+- 不要强行引入 GSD
+- 并行目录放 `.codex_parallel/`
+- 由 integration 分支和 registry 充当状态真相源
 
 先不要追求“列全所有想法”，而是先列第一波值得启动的 lane。
 

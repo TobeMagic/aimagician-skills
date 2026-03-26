@@ -1,0 +1,2 @@
+paper_title,year,venue,theme,must_read,direct_relevance,innovation_type,can_steal_module,risk,notes
+Example Paper,2025,Example Venue,Scene graph,true,high,graph_reasoning,scene_graph_prompting,medium,Replace this row with real triage notes

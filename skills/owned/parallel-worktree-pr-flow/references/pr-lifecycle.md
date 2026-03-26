@@ -82,6 +82,8 @@ provider branch 合入 integration 后，integration 再做：
 - shared surface 注册
 - `.env.example` 补变量
 - README / SETUP / TROUBLESHOOTING 更新
+- GSD repo：`.planning` 的 PROJECT / ROADMAP / STATE / SUMMARY 写回
+- plain repo：repo-local coordination truth source 写回，例如 `.codex_parallel/provider_workstreams.json`、`STATUS.md`、`INTEGRATION_NOTES.md`
 - 总 smoke test
 
 provider 分支本身不负责这些。
@@ -96,6 +98,13 @@ provider 分支本身不负责这些。
 4. integration 再提一个汇总 PR 到主分支
 
 这能把“局部实现验收”和“共享面接入”分成两个层次，风险更低。
+
+如果仓库没有 `.planning`，汇总 PR 仍应至少带上：
+
+- 最新 registry 状态
+- integration 已合入 lanes 列表
+- 当前仍阻塞的 streams
+- 下一波 planned/running 列表
 
 ## 8. 常见异常
 

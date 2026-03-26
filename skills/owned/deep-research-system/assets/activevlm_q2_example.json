@@ -1,0 +1,110 @@
+{
+  "meta": {
+    "project": "ActiveVLM",
+    "focus": "Q2-worthy innovations beyond current AVS-only and plain CoT",
+    "from_year": 2021,
+    "to_year": 2026,
+    "openalex_per_query": 40,
+    "openalex_pages": 2,
+    "arxiv_max_results": 20,
+    "crossref_rows": 20
+  },
+  "queries": [
+    {
+      "id": "active_view_selection",
+      "theme": "Local active perception / next-best-view",
+      "question": "How should ActiveVLM move beyond fixed frontier arrival views?",
+      "openalex": "active view selection robot navigation",
+      "arxiv": "all:\"active view selection\" AND all:robot AND all:navigation",
+      "crossref": "active view selection robot navigation"
+    },
+    {
+      "id": "next_best_view",
+      "theme": "Local active perception / next-best-view",
+      "question": "What NBV ideas are portable from active perception into semantic exploration?",
+      "openalex": "next best view robot exploration active perception",
+      "arxiv": "all:\"next best view\" AND all:robot AND all:exploration",
+      "crossref": "next best view robot exploration active perception"
+    },
+    {
+      "id": "scene_graph_grounding",
+      "theme": "Grounded CoT / scene graph reasoning",
+      "question": "How can task refinement be grounded in room-object relations rather than free-form text only?",
+      "openalex": "scene graph object navigation llm robot",
+      "arxiv": "all:\"scene graph\" AND all:\"object navigation\" AND all:robot",
+      "crossref": "scene graph object navigation robot llm"
+    },
+    {
+      "id": "cot_task_grounding",
+      "theme": "Grounded CoT / task refinement",
+      "question": "How are recent embodied agents refining goals or plans online with LLM reasoning?",
+      "openalex": "chain of thought embodied navigation robot task grounding",
+      "arxiv": "all:\"chain of thought\" AND all:embodied AND all:navigation",
+      "crossref": "chain of thought embodied navigation robot task grounding"
+    },
+    {
+      "id": "memory_backtracking",
+      "theme": "Memory / backtracking / re-perception",
+      "question": "What mechanisms help revisit uncertain evidence instead of committing to one-shot detections?",
+      "openalex": "memory backtracking object navigation vision language",
+      "arxiv": "all:memory AND all:\"object navigation\" AND all:\"vision language\"",
+      "crossref": "memory backtracking object navigation vision language"
+    },
+    {
+      "id": "world_model_navigation",
+      "theme": "World model / long-horizon planning",
+      "question": "What modules improve SPL and long-horizon decision quality beyond local semantic scoring?",
+      "openalex": "world model object navigation robot",
+      "arxiv": "all:\"world model\" AND all:\"object navigation\"",
+      "crossref": "world model object navigation robot"
+    },
+    {
+      "id": "uncertainty_termination",
+      "theme": "Reliability / uncertainty / stop verification",
+      "question": "How are recent papers reducing false positives and bad stop decisions?",
+      "openalex": "uncertainty termination object navigation vision language",
+      "arxiv": "all:uncertainty AND all:\"object navigation\" AND all:termination",
+      "crossref": "uncertainty termination object navigation vision language"
+    },
+    {
+      "id": "floor_aware_navigation",
+      "theme": "Multi-floor / room hierarchy",
+      "question": "What helps on long indoor routes, stairs, and multi-floor search?",
+      "openalex": "multi floor indoor robot navigation object search",
+      "arxiv": "all:\"multi-floor\" AND all:robot AND all:navigation",
+      "crossref": "multi floor indoor robot navigation object search"
+    },
+    {
+      "id": "function_affordance_priors",
+      "theme": "Function / affordance-centric grounding",
+      "question": "How can target search reason over room function and affordances instead of nouns only?",
+      "openalex": "function affordance object navigation robot",
+      "arxiv": "all:function AND all:affordance AND all:\"object navigation\"",
+      "crossref": "function affordance object navigation robot"
+    },
+    {
+      "id": "spatial_reasoning_benchmarks",
+      "theme": "Spatial reasoning benchmarks",
+      "question": "How strong are current MLLMs on spatial reasoning, and where do they fail for navigation?",
+      "openalex": "spatial reasoning benchmark embodied navigation multimodal llm",
+      "arxiv": "all:\"spatial reasoning\" AND all:benchmark AND all:navigation",
+      "crossref": "spatial reasoning benchmark embodied navigation multimodal llm"
+    },
+    {
+      "id": "service_robot_language_navigation",
+      "theme": "Service robotics / language-guided search",
+      "question": "Which innovation directions are more likely to land in application-facing robotics venues?",
+      "openalex": "service robot language navigation indoor target search",
+      "arxiv": "all:\"service robot\" AND all:navigation AND all:language",
+      "crossref": "service robot language navigation indoor target search"
+    },
+    {
+      "id": "embodied_nav_benchmarks",
+      "theme": "Embodied navigation evaluation",
+      "question": "Which recent papers or benchmarks shape the current embodied navigation evaluation narrative?",
+      "openalex": "embodied navigation benchmark object navigation hm3d",
+      "arxiv": "all:\"embodied navigation\" AND all:benchmark AND all:HM3D",
+      "crossref": "embodied navigation benchmark object navigation hm3d"
+    }
+  ]
+}

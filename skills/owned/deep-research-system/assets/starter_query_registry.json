@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "project": "replace_with_project_name",
+    "focus": "replace_with_research_goal",
+    "from_year": 2021,
+    "to_year": 2026,
+    "openalex_per_query": 40,
+    "openalex_pages": 2,
+    "arxiv_max_results": 20,
+    "crossref_rows": 20
+  },
+  "queries": [
+    {
+      "id": "core_method",
+      "theme": "Core method",
+      "question": "What are the closest direct-method papers for the current project?",
+      "openalex": "replace with a plain-language OpenAlex query",
+      "arxiv": "replace with an arXiv boolean query",
+      "crossref": "replace with a plain-language Crossref query"
+    },
+    {
+      "id": "failure_mode_module",
+      "theme": "Failure-mode-specific modules",
+      "question": "Which modules directly attack the current bottleneck or failure mode?",
+      "openalex": "replace with a query about the failure mode",
+      "arxiv": "replace with an arXiv query about the failure mode",
+      "crossref": "replace with a Crossref query about the failure mode"
+    },
+    {
+      "id": "evaluation_benchmarks",
+      "theme": "Benchmarks and evaluation",
+      "question": "Which papers define the evaluation protocol, baseline set, or reporting standard?",
+      "openalex": "replace with a benchmark query",
+      "arxiv": "replace with a benchmark arXiv query",
+      "crossref": "replace with a benchmark Crossref query"
+    }
+  ]
+}

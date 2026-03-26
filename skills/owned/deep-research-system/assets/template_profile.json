@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "project": "replace_with_your_project_name",
+    "focus": "replace_with_your_research_goal",
+    "from_year": 2021,
+    "to_year": 2026,
+    "openalex_per_query": 40,
+    "openalex_pages": 2,
+    "arxiv_max_results": 20,
+    "crossref_rows": 20
+  },
+  "queries": [
+    {
+      "id": "theme_slug",
+      "theme": "Theme Name",
+      "question": "What exactly are you trying to learn from this topic?",
+      "openalex": "plain language search query for OpenAlex",
+      "arxiv": "arXiv boolean search query",
+      "crossref": "plain language search query for Crossref"
+    }
+  ]
+}
