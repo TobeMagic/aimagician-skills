@@ -1,0 +1,9 @@
+sources:
+  - id: ui-ux-pro-max-skill
+    type: github
+    enabled: true
+    description: UI/UX Pro Max skills from nextlevelbuilder/ui-ux-pro-max-skill
+    github:
+      repo: nextlevelbuilder/ui-ux-pro-max-skill
+      ref: main
+      path: .claude/skills

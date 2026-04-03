@@ -1,0 +1,11 @@
+sources:
+  - id: deep-research-prompt
+    type: github
+    enabled: true
+    description: Root-level skill from Raymond-Hear/deep-research-prompt
+    github:
+      repo: Raymond-Hear/deep-research-prompt
+      ref: main
+    assets:
+      - id: deep-research-prompt
+        path: SKILL.md
