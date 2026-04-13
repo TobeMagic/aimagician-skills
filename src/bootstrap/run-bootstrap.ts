@@ -7,6 +7,7 @@ import {
 } from "../shared/platform";
 import {
   executeCommandSkillSources,
+  materializeGeneratedCommandSkillSources,
   previewCommandSkillSources,
   type CommandSourceReport
 } from "./command-sources";
@@ -104,13 +105,21 @@ export async function runBootstrap(
   const retainedManagedInstalls = previousManifest?.managedInstalls.filter(
     (install) => !selectedTargets.includes(install.target)
   ) ?? [];
+  const generatedCommandSkillSources = await materializeGeneratedCommandSkillSources({
+    normalizedAssets: prepared.normalizedAssets,
+    selectedTargets,
+    workspaceRoot: workspace.rootDir,
+    platformContext,
+    targetHomes
+  });
   const skillInstalls = await resolveManagedSkillInstalls({
     catalog: prepared.catalog,
     normalizedAssets: prepared.normalizedAssets,
     workspaceRoot: workspace.rootDir,
     selectedTargets,
     targetHomes,
-    githubRepoOverrides: options.githubRepoOverrides
+    githubRepoOverrides: options.githubRepoOverrides,
+    materializedCommandSourceDirs: generatedCommandSkillSources.materializedDirs
   });
   const pluginResolution = await resolvePluginInstalls({
     normalizedAssets: prepared.normalizedAssets,
@@ -125,13 +134,17 @@ export async function runBootstrap(
     installs: [...skillInstalls, ...pluginResolution.installs],
     previousInstalls: previousManifest?.managedInstalls ?? []
   });
-  const commandReports = await executeCommandSkillSources({
+  const directCommandReports = await executeCommandSkillSources({
     normalizedAssets: prepared.normalizedAssets,
     selectedTargets,
     workspaceRoot: workspace.rootDir,
     platformContext,
     targetHomes
   });
+  const commandReports = [
+    ...generatedCommandSkillSources.reports,
+    ...directCommandReports
+  ].sort((left, right) => left.sourceId.localeCompare(right.sourceId));
   const nextManifest = createManifest(
     prepared.plan,
     options.now,

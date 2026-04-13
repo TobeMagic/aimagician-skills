@@ -18,6 +18,7 @@ export interface ResolveManagedSkillInstallsOptions {
   selectedTargets: SupportedTarget[];
   targetHomes: ResolvedTargetHomes;
   githubRepoOverrides?: Record<string, string>;
+  materializedCommandSourceDirs?: Map<string, Partial<Record<SupportedTarget, string>>>;
 }
 
 export interface ResolvedManagedInstall {
@@ -55,7 +56,7 @@ export async function resolveManagedSkillInstalls(
   }
 
   for (const asset of options.normalizedAssets) {
-    if (asset.kind !== "skill" || asset.locator.type !== "github") {
+    if (asset.kind !== "skill") {
       continue;
     }
 
@@ -67,29 +68,64 @@ export async function resolveManagedSkillInstalls(
       continue;
     }
 
-    const cacheKey =
-      `${asset.sourceId}:${asset.locator.github.repo}:${asset.locator.github.ref ?? "HEAD"}`;
-    let checkoutRoot = checkoutRoots.get(cacheKey);
+    if (asset.locator.type === "github") {
+      const cacheKey =
+        `${asset.sourceId}:${asset.locator.github.repo}:${asset.locator.github.ref ?? "HEAD"}`;
+      let checkoutRoot = checkoutRoots.get(cacheKey);
 
-    if (!checkoutRoot) {
-      checkoutRoot = await materializeGithubSource(
-        asset.sourceId,
-        asset.locator.github.repo,
-        asset.locator.github.ref,
-        options.workspaceRoot,
-        options.githubRepoOverrides
+      if (!checkoutRoot) {
+        checkoutRoot = await materializeGithubSource(
+          asset.sourceId,
+          asset.locator.github.repo,
+          asset.locator.github.ref,
+          options.workspaceRoot,
+          options.githubRepoOverrides
+        );
+        checkoutRoots.set(cacheKey, checkoutRoot);
+      }
+
+      const sourceDir = await resolveGithubAssetSourceDir(
+        checkoutRoot,
+        asset.locator.github.path,
+        asset.relativePath,
+        asset.id
       );
-      checkoutRoots.set(cacheKey, checkoutRoot);
+
+      for (const target of selectedTargets) {
+        const install = await createExternalSkillInstall(
+          asset.id,
+          asset.sourceId,
+          sourceDir,
+          target,
+          options.targetHomes,
+          options.workspaceRoot
+        );
+
+        if (install) {
+          installs.push(install);
+        }
+      }
+
+      continue;
     }
 
-    const sourceDir = await resolveGithubAssetSourceDir(
-      checkoutRoot,
-      asset.locator.github.path,
-      asset.relativePath,
-      asset.id
-    );
+    if (asset.locator.type !== "command" || asset.locator.command.adapter?.type !== "generated-skills") {
+      continue;
+    }
+
+    const generatedDirs = options.materializedCommandSourceDirs?.get(asset.sourceId);
+
+    if (!generatedDirs) {
+      throw new Error(`Missing materialized command source output for ${asset.sourceId}`);
+    }
 
     for (const target of selectedTargets) {
+      const sourceDir = generatedDirs[target];
+
+      if (!sourceDir) {
+        continue;
+      }
+
       const install = await createExternalSkillInstall(
         asset.id,
         asset.sourceId,

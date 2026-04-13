@@ -26,6 +26,10 @@ export interface CommandLocator {
   run: string;
   shell?: string;
   cwd?: string;
+  adapter?: {
+    type: "generated-skills";
+    paths: Partial<Record<SupportedTarget, string>>;
+  };
 }
 
 export interface NormalizedTargetState {

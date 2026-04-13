@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { access, constants, mkdir, rm } from "node:fs/promises";
 import { isAbsolute, join, win32 } from "node:path";
 import { promisify } from "node:util";
 import type { NormalizedAsset } from "../model/assets";
@@ -25,6 +26,11 @@ export interface ExecuteCommandSkillSourcesOptions {
   targetHomes: ResolvedTargetHomes;
 }
 
+export interface MaterializeGeneratedCommandSkillSourcesResult {
+  materializedDirs: Map<string, Partial<Record<SupportedTarget, string>>>;
+  reports: CommandSourceReport[];
+}
+
 interface CommandSourceGroup {
   sourceId: string;
   assetIds: Set<string>;
@@ -33,6 +39,10 @@ interface CommandSourceGroup {
     run: string;
     shell?: string;
     cwd?: string;
+    adapter?: {
+      type: "generated-skills";
+      paths: Partial<Record<SupportedTarget, string>>;
+    };
   };
 }
 
@@ -58,6 +68,10 @@ export async function executeCommandSkillSources(
   const reports: CommandSourceReport[] = [];
 
   for (const [, group] of groups) {
+    if (isGeneratedSkillsAdapter(group.command)) {
+      continue;
+    }
+
     await runCommandGroup(group, options);
 
     reports.push({
@@ -70,6 +84,46 @@ export async function executeCommandSkillSources(
   }
 
   return reports;
+}
+
+export async function materializeGeneratedCommandSkillSources(
+  options: ExecuteCommandSkillSourcesOptions
+): Promise<MaterializeGeneratedCommandSkillSourcesResult> {
+  const groups = [...groupCommandSkillSources(options.normalizedAssets, options.selectedTargets)];
+  const materializedDirs = new Map<string, Partial<Record<SupportedTarget, string>>>();
+  const reports: CommandSourceReport[] = [];
+
+  for (const [, group] of groups) {
+    if (!isGeneratedSkillsAdapter(group.command)) {
+      continue;
+    }
+
+    const stagingRoot = await materializeGeneratedCommandGroup(group, options);
+    const resolvedDirs: Partial<Record<SupportedTarget, string>> = {};
+
+    for (const target of group.targets) {
+      const relativeDir = group.command.adapter.paths[target];
+
+      if (!relativeDir) {
+        continue;
+      }
+
+      const sourceDir = join(stagingRoot, relativeDir);
+      await assertSkillDirectory(sourceDir, `${group.sourceId}:${target}`);
+      resolvedDirs[target] = sourceDir;
+    }
+
+    materializedDirs.set(group.sourceId, resolvedDirs);
+    reports.push({
+      sourceId: group.sourceId,
+      assetIds: [...group.assetIds].sort(),
+      targets: [...group.targets].sort(),
+      command: group.command.run,
+      status: "executed"
+    });
+  }
+
+  return { materializedDirs, reports };
 }
 
 function groupCommandSkillSources(
@@ -140,12 +194,53 @@ async function runCommandGroup(
   }
 }
 
+async function materializeGeneratedCommandGroup(
+  group: CommandSourceGroup,
+  options: ExecuteCommandSkillSourcesOptions
+): Promise<string> {
+  const stagingRoot = join(options.workspaceRoot, "generated-command-sources", group.sourceId);
+
+  await rm(stagingRoot, { recursive: true, force: true });
+  await mkdir(stagingRoot, { recursive: true });
+
+  const env = createCommandEnvironment(group, options);
+
+  try {
+    if (options.platformContext.platform === "windows") {
+      await execFileAsync(group.command.shell ?? (process.env.ComSpec ?? "cmd.exe"), [
+        "/d",
+        "/s",
+        "/c",
+        group.command.run
+      ], { cwd: stagingRoot, env });
+    } else {
+      await execFileAsync(group.command.shell ?? "sh", ["-lc", group.command.run], {
+        cwd: stagingRoot,
+        env
+      });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown command failure";
+    throw new Error(`Failed to execute command source ${group.sourceId}: ${message}`);
+  }
+
+  return stagingRoot;
+}
+
 function resolveCommandCwd(commandCwd: string | undefined): string {
   if (!commandCwd) {
     return repositoryRoot;
   }
 
   return isAbsolute(commandCwd) ? commandCwd : join(repositoryRoot, commandCwd);
+}
+
+function isGeneratedSkillsAdapter(
+  command: CommandSourceGroup["command"]
+): command is CommandSourceGroup["command"] & {
+  adapter: { type: "generated-skills"; paths: Partial<Record<SupportedTarget, string>> };
+} {
+  return command.adapter?.type === "generated-skills";
 }
 
 function createCommandEnvironment(
@@ -185,6 +280,16 @@ function createCommandEnvironment(
     XDG_CONFIG_HOME: options.platformContext.configBaseDir,
     XDG_STATE_HOME: options.platformContext.stateBaseDir
   };
+}
+
+async function assertSkillDirectory(sourceDir: string, assetId: string): Promise<void> {
+  try {
+    await access(join(sourceDir, "SKILL.md"), constants.F_OK);
+  } catch {
+    throw new Error(
+      `Resolved generated skill directory for ${assetId} does not contain SKILL.md: ${sourceDir}`
+    );
+  }
 }
 
 function resolveWindowsHomeDrive(homeDir: string): string {

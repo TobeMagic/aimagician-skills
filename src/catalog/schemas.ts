@@ -105,7 +105,17 @@ function createCommandSourceSchema(section: CatalogSection) {
       .object({
         run: z.string().min(1),
         shell: z.string().min(1).optional(),
-        cwd: z.string().min(1).optional()
+        cwd: z.string().min(1).optional(),
+        adapter: z
+          .object({
+            type: z.literal("generated-skills"),
+            paths: z.partialRecord(
+              z.enum(supportedTargets),
+              z.string().min(1)
+            )
+          })
+          .strict()
+          .optional()
       })
       .strict(),
     assets: z.array(createAssetSchema(section)).min(1).optional()

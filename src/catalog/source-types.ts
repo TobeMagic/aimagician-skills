@@ -1,5 +1,5 @@
 import type { AssetKind, CatalogSection } from "../model/assets";
-import type { TargetSelection } from "../model/targets";
+import type { SupportedTarget, TargetSelection } from "../model/targets";
 
 export interface CatalogAssetInput {
   id?: string;
@@ -42,6 +42,10 @@ export interface CommandSourceInput extends BaseCatalogSourceInput {
     run: string;
     shell?: string;
     cwd?: string;
+    adapter?: {
+      type: "generated-skills";
+      paths: Partial<Record<SupportedTarget, string>>;
+    };
   };
 }
 

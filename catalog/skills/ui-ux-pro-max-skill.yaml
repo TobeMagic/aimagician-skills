@@ -1,9 +1,16 @@
 sources:
   - id: ui-ux-pro-max-skill
-    type: github
+    type: command
     enabled: true
-    description: UI/UX Pro Max skills from nextlevelbuilder/ui-ux-pro-max-skill
-    github:
-      repo: nextlevelbuilder/ui-ux-pro-max-skill
-      ref: main
-      path: .claude/skills
+    description: Install UI/UX Pro Max via official uipro CLI and sync generated outputs to user-level AI skill homes
+    command:
+      run: npm install -g --prefix "$HOME/.local" uipro-cli@latest && PATH="$HOME/.local/bin:$PATH" uipro init --ai all --force
+      adapter:
+        type: generated-skills
+        paths:
+          claude: .claude/skills/ui-ux-pro-max
+          codex: .codex/skills/ui-ux-pro-max
+          gemini: .gemini/skills/ui-ux-pro-max
+          opencode: .opencode/skills/ui-ux-pro-max
+    assets:
+      - id: ui-ux-pro-max
