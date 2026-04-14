@@ -138,6 +138,9 @@ async function inspectTarget(
       liveAssets.push(...await detectSkillDirectories(targetHomes.opencode.skillsDir, managedPaths));
       liveAssets.push(...await detectPluginFiles(targetHomes.opencode.pluginsDir, managedPaths));
       break;
+    case "hermes":
+      liveAssets.push(...await detectSkillDirectories(targetHomes.hermes.skillsDir, managedPaths));
+      break;
     case "gemini":
       liveAssets.push(...await detectGeminiExtensions(targetHomes.gemini.extensionsDir, managedPaths));
       break;
@@ -155,6 +158,7 @@ async function inspectTarget(
     status,
     skillsDir:
       target === "gemini" ? undefined :
+      target === "hermes" ? targetHomes.hermes.skillsDir :
       target === "opencode" ? targetHomes.opencode.skillsDir :
       target === "claude" ? targetHomes.claude.skillsDir :
       targetHomes.codex.skillsDir,

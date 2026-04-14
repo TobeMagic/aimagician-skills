@@ -3,6 +3,12 @@ sources:
     type: command
     enabled: true
     description: Install UI/UX Pro Max via official uipro CLI and sync generated outputs to user-level AI skill homes
+    targets:
+      include:
+        - codex
+        - claude
+        - opencode
+        - gemini
     command:
       run: npm install -g --prefix "$HOME/.local" uipro-cli@latest && PATH="$HOME/.local/bin:$PATH" uipro init --ai all --force
       adapter:

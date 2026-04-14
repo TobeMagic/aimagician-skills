@@ -274,6 +274,8 @@ function resolveReportLocations(
         skillsDir: targetHomes.opencode.skillsDir,
         pluginsDir: targetHomes.opencode.pluginsDir
       };
+    case "hermes":
+      return { skillsDir: targetHomes.hermes.skillsDir };
     case "gemini":
       return { extensionsDir: targetHomes.gemini.extensionsDir };
     default:
@@ -309,7 +311,8 @@ function createAllowedRootsByTarget(
     codex: [targetHomes.codex.skillsDir],
     claude: [targetHomes.claude.skillsDir],
     opencode: [targetHomes.opencode.skillsDir, targetHomes.opencode.pluginsDir],
-    gemini: [targetHomes.gemini.extensionsDir]
+    gemini: [targetHomes.gemini.extensionsDir],
+    hermes: [targetHomes.hermes.skillsDir]
   };
 }
 

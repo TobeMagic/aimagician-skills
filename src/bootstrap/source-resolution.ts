@@ -239,6 +239,12 @@ async function resolveSkillInstallDestination(
         destinationPath: join(targetHomes.opencode.skillsDir, assetId),
         installArea: "skills"
       };
+    case "hermes":
+      return {
+        sourcePath: sourceDir,
+        destinationPath: join(targetHomes.hermes.skillsDir, assetId),
+        installArea: "skills"
+      };
     case "gemini":
       return {
         sourcePath: await materializeGeminiExtension({

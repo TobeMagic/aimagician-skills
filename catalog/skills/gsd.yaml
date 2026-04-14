@@ -3,5 +3,11 @@ sources:
     type: command
     enabled: true
     description: Install or update Get Shit Done across Claude, Codex, OpenCode, and Gemini
+    targets:
+      include:
+        - codex
+        - claude
+        - opencode
+        - gemini
     command:
       run: npx get-shit-done-cc --all --global

@@ -149,7 +149,7 @@ function renderInspection(
 
 function renderHelp(): string {
   return [
-    "Usage: aimagician-skills <command> [--target claude] [--json]",
+    "Usage: aimagician-skills <command> [--target <codex|claude|opencode|gemini|hermes>] [--json]",
     "",
     "Commands:",
     "  bootstrap     Run the bootstrap workflow (default command)",

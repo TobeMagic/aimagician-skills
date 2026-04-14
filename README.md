@@ -24,6 +24,7 @@ This repo is your personal skills distribution layer:
 | Claude Code skills | supported | installs to `~/.claude/skills` |
 | OpenCode skills | supported | installs to `~/.config/opencode/skills` |
 | Gemini skills | supported | generated as native extensions under `~/.gemini/extensions` |
+| Hermes skills | supported | installs to `~/.hermes/skills` |
 | Plugin catalog | supported | declare under `catalog/plugins/*.yaml` |
 | OpenCode plugins | supported | GitHub-backed JavaScript or TypeScript file assets install to `~/.config/opencode/plugins` |
 | Claude plugins | explicit skip | bootstrap reports skip because the documented flow is marketplace- and consent-driven |
@@ -52,7 +53,7 @@ Bootstrap:
 ```bash
 npm run bootstrap
 node dist/cli/index.js bootstrap --target claude
-node dist/cli/index.js bootstrap --targets codex,claude,opencode,gemini --json
+node dist/cli/index.js bootstrap --targets codex,claude,opencode,gemini,hermes --json
 node dist/cli/index.js bootstrap --target claude --home /tmp/test-home
 ```
 
@@ -492,6 +493,7 @@ Supported target names:
 - `claude`
 - `opencode`
 - `gemini`
+- `hermes`
 
 ## Override Home
 
@@ -516,6 +518,7 @@ For command-based sources, `--home` also rewrites the process environment that i
 - `LOCALAPPDATA`
 - `XDG_CONFIG_HOME`
 - `XDG_STATE_HOME`
+- `AIMAGICIAN_HERMES_SKILLS_DIR`
 
 ## User-Level Locations
 
@@ -526,6 +529,7 @@ Bootstrap currently writes to these user-level locations:
 - OpenCode skills: `~/.config/opencode/skills`
 - OpenCode plugins: `~/.config/opencode/plugins`
 - Gemini generated skill extensions: `~/.gemini/extensions`
+- Hermes skills: `~/.hermes/skills`
 
 Bootstrap state is written to:
 
