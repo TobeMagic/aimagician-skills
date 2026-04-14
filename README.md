@@ -40,6 +40,14 @@ npm run build
 npm run bootstrap
 ```
 
+If you do not pass `--target` or `--targets`, bootstrap installs to all currently supported targets by default:
+
+- `codex`
+- `claude`
+- `opencode`
+- `gemini`
+- `hermes`
+
 If you publish this package, the intended operator flow is also:
 
 ```bash
