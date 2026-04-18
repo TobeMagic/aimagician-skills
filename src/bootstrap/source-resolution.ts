@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import type { LoadedCatalog } from "../catalog/source-types";
 import type { NormalizedAsset } from "../model/assets";
 import type { SupportedTarget } from "../model/targets";
+import { materializeCursorRule } from "./cursor-rule";
 import { materializeGeminiExtension } from "./gemini-extension";
 import type { ResolvedTargetHomes } from "./target-homes";
 
@@ -30,7 +31,7 @@ export interface ResolvedManagedInstall {
   sourcePath: string;
   destinationPath: string;
   installType: "directory" | "file";
-  installArea: "skills" | "plugins" | "extensions";
+  installArea: "skills" | "plugins" | "extensions" | "rules";
 }
 
 export async function resolveManagedSkillInstalls(
@@ -218,7 +219,7 @@ async function resolveSkillInstallDestination(
 ): Promise<{
   sourcePath: string;
   destinationPath: string;
-  installArea: "skills" | "extensions";
+  installArea: "skills" | "extensions" | "rules";
 } | null> {
   switch (target) {
     case "codex":
@@ -244,6 +245,16 @@ async function resolveSkillInstallDestination(
         sourcePath: sourceDir,
         destinationPath: join(targetHomes.hermes.skillsDir, assetId),
         installArea: "skills"
+      };
+    case "cursor":
+      return {
+        sourcePath: await materializeCursorRule({
+          assetId,
+          sourceDir,
+          workspaceRoot
+        }),
+        destinationPath: join(targetHomes.cursor.rulesDir, `${assetId}.mdc`),
+        installArea: "rules"
       };
     case "gemini":
       return {

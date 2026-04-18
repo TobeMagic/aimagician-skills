@@ -206,7 +206,7 @@ describe("direct target sync", () => {
       selectedTargets: ["claude", "opencode", "gemini"],
       catalog: fixture.catalog,
       platform: {
-        platform: "windows",
+        platform: "linux",
         homeDir,
         configBaseDir: join(homeDir, ".config"),
         stateBaseDir: fixture.root,
@@ -247,9 +247,8 @@ describe("direct target sync", () => {
     expect(envSnapshot).toMatchObject({
       AIMAGICIAN_HOME_DIR: homeDir,
       HOME: homeDir,
-      USERPROFILE: homeDir,
-      APPDATA: join(homeDir, ".config"),
-      LOCALAPPDATA: fixture.root,
+      XDG_CONFIG_HOME: join(homeDir, ".config"),
+      XDG_STATE_HOME: fixture.root,
       AIMAGICIAN_GEMINI_EXTENSIONS_DIR: join(homeDir, ".gemini", "extensions")
     });
   }, 15000);
@@ -339,6 +338,8 @@ async function createFixtureRepository(
       "  USERPROFILE: process.env.USERPROFILE,",
       "  APPDATA: process.env.APPDATA,",
       "  LOCALAPPDATA: process.env.LOCALAPPDATA,",
+      "  XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME,",
+      "  XDG_STATE_HOME: process.env.XDG_STATE_HOME,",
       "  AIMAGICIAN_GEMINI_EXTENSIONS_DIR: process.env.AIMAGICIAN_GEMINI_EXTENSIONS_DIR",
       "}, null, 2), 'utf8');",
       "const homes = {",

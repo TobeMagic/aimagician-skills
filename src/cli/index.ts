@@ -149,7 +149,7 @@ function renderInspection(
 
 function renderHelp(): string {
   return [
-    "Usage: aimagician-skills <command> [--target <codex|claude|opencode|gemini|hermes>] [--json]",
+    "Usage: aimagician-skills <command> [--target <codex|claude|opencode|gemini|hermes|cursor>] [--json]",
     "",
     "Commands:",
     "  bootstrap     Run the bootstrap workflow (default command)",
@@ -179,6 +179,7 @@ function renderTargetReport(
 
   const location =
     report.skillsDir ? ` @ ${report.skillsDir}` :
+    report.rulesDir ? ` @ ${report.rulesDir}` :
     report.extensionsDir ? ` @ ${report.extensionsDir}` :
     "";
   const pluginSummary =
@@ -241,6 +242,7 @@ function renderInspect(
       `  skills dir: ${target.skillsDir ?? "-"}`,
       `  plugins dir: ${target.pluginsDir ?? "-"}`,
       `  extensions dir: ${target.extensionsDir ?? "-"}`,
+      `  rules dir: ${target.rulesDir ?? "-"}`,
       `  managed installs: ${target.managedInstalls.length}`,
       `  command installs: ${target.commandInstalls.length > 0 ? target.commandInstalls.map((install) => install.sourceId).join(", ") : "none"}`,
       `  detected assets: ${target.detectedAssets.length}`,

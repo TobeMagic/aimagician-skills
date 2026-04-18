@@ -19,7 +19,7 @@ describe("parseCli", () => {
   it("defaults to bootstrap and all supported targets", () => {
     expect(parseCli([])).toEqual({
       command: "bootstrap",
-      targets: ["codex", "claude", "opencode", "gemini"],
+      targets: ["codex", "claude", "opencode", "gemini", "hermes", "cursor"],
       dryRun: false,
       json: false,
       help: false
@@ -66,7 +66,7 @@ describe("parseCli", () => {
     });
     expect(parseCli(["doctor"])).toEqual({
       command: "doctor",
-      targets: ["codex", "claude", "opencode", "gemini"],
+      targets: ["codex", "claude", "opencode", "gemini", "hermes", "cursor"],
       json: false,
       help: false
     });

@@ -44,7 +44,7 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "windows", homeDir: fixture.root, configBaseDir: join(fixture.root, ".config"), stateBaseDir: fixture.root, workspaceRoot },
+      platform: { platform: "linux", homeDir: fixture.root, configBaseDir: join(fixture.root, ".config"), stateBaseDir: fixture.root, workspaceRoot },
       now: "2026-03-14T01:00:00Z"
     });
 
@@ -53,7 +53,7 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "windows", homeDir: fixture.root, configBaseDir: join(fixture.root, ".config"), stateBaseDir: fixture.root, workspaceRoot },
+      platform: { platform: "linux", homeDir: fixture.root, configBaseDir: join(fixture.root, ".config"), stateBaseDir: fixture.root, workspaceRoot },
       now: "2026-03-14T01:00:00Z"
     });
 
@@ -70,7 +70,7 @@ describe("runBootstrap", () => {
 
     expect(firstRun.changed).toBe(true);
     expect(secondRun.changed).toBe(false);
-    expect(plan.selectedTargets).toEqual(["codex", "claude", "opencode", "gemini"]);
+    expect(plan.selectedTargets).toEqual(["codex", "claude", "opencode", "gemini", "hermes", "cursor"]);
     expect(plan.ownedSkillIds).toEqual(["daily-ops"]);
     expect(manifest.version).toBe(3);
     expect(manifest.assets.map((asset) => asset.id)).toEqual([
@@ -98,8 +98,12 @@ describe("runBootstrap", () => {
       { target: "claude", assetId: "daily-ops", kind: "skill", installArea: "skills" },
       { target: "codex", assetId: "claude-sync", kind: "skill", installArea: "skills" },
       { target: "codex", assetId: "daily-ops", kind: "skill", installArea: "skills" },
+      { target: "cursor", assetId: "claude-sync", kind: "skill", installArea: "rules" },
+      { target: "cursor", assetId: "daily-ops", kind: "skill", installArea: "rules" },
       { target: "gemini", assetId: "claude-sync", kind: "skill", installArea: "extensions" },
       { target: "gemini", assetId: "daily-ops", kind: "skill", installArea: "extensions" },
+      { target: "hermes", assetId: "claude-sync", kind: "skill", installArea: "skills" },
+      { target: "hermes", assetId: "daily-ops", kind: "skill", installArea: "skills" },
       { target: "opencode", assetId: "claude-sync", kind: "skill", installArea: "skills" },
       { target: "opencode", assetId: "daily-ops", kind: "skill", installArea: "skills" }
     ]);

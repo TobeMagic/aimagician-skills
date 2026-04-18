@@ -1,4 +1,4 @@
-export const supportedTargets = ["codex", "claude", "opencode", "gemini", "hermes"] as const;
+export const supportedTargets = ["codex", "claude", "opencode", "gemini", "hermes", "cursor"] as const;
 
 export type SupportedTarget = (typeof supportedTargets)[number];
 

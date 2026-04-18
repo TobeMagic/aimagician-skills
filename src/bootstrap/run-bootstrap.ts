@@ -50,6 +50,7 @@ export interface BootstrapTargetReport {
   skillsDir?: string;
   pluginsDir?: string;
   extensionsDir?: string;
+  rulesDir?: string;
   reason?: string;
 }
 
@@ -263,7 +264,7 @@ function createAppliedTargetReports(
 function resolveReportLocations(
   targetHomes: ResolvedTargetHomes,
   target: SupportedTarget
-): Pick<BootstrapTargetReport, "skillsDir" | "pluginsDir" | "extensionsDir"> {
+): Pick<BootstrapTargetReport, "skillsDir" | "pluginsDir" | "extensionsDir" | "rulesDir"> {
   switch (target) {
     case "codex":
       return { skillsDir: targetHomes.codex.skillsDir };
@@ -276,6 +277,8 @@ function resolveReportLocations(
       };
     case "hermes":
       return { skillsDir: targetHomes.hermes.skillsDir };
+    case "cursor":
+      return { rulesDir: targetHomes.cursor.rulesDir };
     case "gemini":
       return { extensionsDir: targetHomes.gemini.extensionsDir };
     default:
@@ -312,7 +315,8 @@ function createAllowedRootsByTarget(
     claude: [targetHomes.claude.skillsDir],
     opencode: [targetHomes.opencode.skillsDir, targetHomes.opencode.pluginsDir],
     gemini: [targetHomes.gemini.extensionsDir],
-    hermes: [targetHomes.hermes.skillsDir]
+    hermes: [targetHomes.hermes.skillsDir],
+    cursor: [targetHomes.cursor.rulesDir]
   };
 }
 

@@ -17,7 +17,7 @@ import {
 export interface LiveTargetAsset {
   id: string;
   kind: "skill" | "plugin";
-  installArea: "skills" | "plugins" | "extensions";
+  installArea: "skills" | "plugins" | "extensions" | "rules";
   path: string;
   managed: boolean;
 }
@@ -25,7 +25,7 @@ export interface LiveTargetAsset {
 export interface TargetManagedInstallStatus {
   assetId: string;
   kind: "skill" | "plugin";
-  installArea: "skills" | "plugins" | "extensions";
+  installArea: "skills" | "plugins" | "extensions" | "rules";
   destinationPath: string;
   present: boolean;
 }
@@ -43,6 +43,7 @@ export interface TargetInspection {
   skillsDir?: string;
   pluginsDir?: string;
   extensionsDir?: string;
+  rulesDir?: string;
   detectedAssets: LiveTargetAsset[];
   managedInstalls: TargetManagedInstallStatus[];
   commandInstalls: TargetCommandInstallStatus[];
@@ -141,6 +142,9 @@ async function inspectTarget(
     case "hermes":
       liveAssets.push(...await detectSkillDirectories(targetHomes.hermes.skillsDir, managedPaths));
       break;
+    case "cursor":
+      liveAssets.push(...await detectCursorRules(targetHomes.cursor.rulesDir, managedPaths));
+      break;
     case "gemini":
       liveAssets.push(...await detectGeminiExtensions(targetHomes.gemini.extensionsDir, managedPaths));
       break;
@@ -157,13 +161,14 @@ async function inspectTarget(
     target,
     status,
     skillsDir:
-      target === "gemini" ? undefined :
+      target === "gemini" || target === "cursor" ? undefined :
       target === "hermes" ? targetHomes.hermes.skillsDir :
       target === "opencode" ? targetHomes.opencode.skillsDir :
       target === "claude" ? targetHomes.claude.skillsDir :
       targetHomes.codex.skillsDir,
     pluginsDir: target === "opencode" ? targetHomes.opencode.pluginsDir : undefined,
     extensionsDir: target === "gemini" ? targetHomes.gemini.extensionsDir : undefined,
+    rulesDir: target === "cursor" ? targetHomes.cursor.rulesDir : undefined,
     detectedAssets: liveAssets.sort(compareLiveAsset),
     managedInstalls: managedStatuses,
     commandInstalls: targetCommandInstalls,
@@ -223,6 +228,38 @@ async function detectGeminiExtensions(
       id: entry.name,
       kind: "skill",
       installArea: "extensions",
+      path: assetPath,
+      managed: managedPaths.has(assetPath)
+    });
+  }
+
+  return assets;
+}
+
+async function detectCursorRules(
+  rootDir: string,
+  managedPaths: Set<string>
+): Promise<LiveTargetAsset[]> {
+  const entries = await safeReadDir(rootDir);
+  const assets: LiveTargetAsset[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isFile()) {
+      continue;
+    }
+
+    const extension = extname(entry.name).toLowerCase();
+
+    if (extension !== ".mdc") {
+      continue;
+    }
+
+    const assetPath = join(rootDir, entry.name);
+
+    assets.push({
+      id: basename(entry.name, extension),
+      kind: "skill",
+      installArea: "rules",
       path: assetPath,
       managed: managedPaths.has(assetPath)
     });

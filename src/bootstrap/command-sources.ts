@@ -259,6 +259,7 @@ function createCommandEnvironment(
     AIMAGICIAN_OPENCODE_SKILLS_DIR: options.targetHomes.opencode.skillsDir,
     AIMAGICIAN_GEMINI_EXTENSIONS_DIR: options.targetHomes.gemini.extensionsDir,
     AIMAGICIAN_HERMES_SKILLS_DIR: options.targetHomes.hermes.skillsDir,
+    AIMAGICIAN_CURSOR_RULES_DIR: options.targetHomes.cursor.rulesDir,
     HOME: options.platformContext.homeDir
   };
 

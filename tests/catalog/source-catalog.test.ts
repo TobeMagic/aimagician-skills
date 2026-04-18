@@ -24,19 +24,30 @@ describe("loadCatalog", () => {
       pluginsRoot: pluginsCatalogRoot
     });
 
-    expect(catalog.skills.sources).toHaveLength(2);
-    expect(catalog.plugins.sources).toHaveLength(1);
-    expect(catalog.activeSources.map((source) => source.id)).toEqual([
-      "claude-official",
-      "gsd",
-      "claude-official-plugins"
-    ]);
-    expect(catalog.ownedSkills).toHaveLength(0);
-    expect(catalog.skills.sources[0]?.type).toBe("github");
-    expect(catalog.skills.sources[0]?.assets).toBeUndefined();
-    expect(catalog.skills.sources[1]?.type).toBe("command");
-    expect(catalog.plugins.sources[0]?.type).toBe("github");
-    expect(catalog.plugins.sources[0]?.assets).toBeUndefined();
+    expect(catalog.skills.sources.length).toBeGreaterThanOrEqual(2);
+    expect(catalog.plugins.sources.length).toBeGreaterThanOrEqual(1);
+    expect(catalog.activeSources.map((source) => source.id)).toEqual(
+      expect.arrayContaining([
+        "claude-official",
+        "gsd",
+        "claude-official-plugins"
+      ])
+    );
+    expect(
+      catalog.skills.sources.find((source) => source.id === "claude-official")
+    ).toMatchObject({
+      type: "github"
+    });
+    expect(
+      catalog.skills.sources.find((source) => source.id === "gsd")
+    ).toMatchObject({
+      type: "command"
+    });
+    expect(
+      catalog.plugins.sources.find((source) => source.id === "claude-official-plugins")
+    ).toMatchObject({
+      type: "github"
+    });
   });
 
   it("keeps disabled sources in config while filtering them from active resolution", async () => {

@@ -31,6 +31,12 @@ export interface HermesTargetHome extends DirectTargetHome {
   target: "hermes";
 }
 
+export interface CursorTargetHome {
+  target: "cursor";
+  rootDir: string;
+  rulesDir: string;
+}
+
 export interface GeminiTargetHome {
   target: "gemini";
   rootDir: string;
@@ -43,6 +49,7 @@ export interface ResolvedTargetHomes {
   opencode: OpenCodeTargetHome;
   gemini: GeminiTargetHome;
   hermes: HermesTargetHome;
+  cursor: CursorTargetHome;
 }
 
 export function isDirectSkillTarget(
@@ -67,6 +74,7 @@ export function resolveTargetHomes(
   const opencodeRoot = pathApi.join(platformContext.configBaseDir, "opencode");
   const geminiRoot = pathApi.join(platformContext.homeDir, ".gemini");
   const hermesRoot = pathApi.join(platformContext.homeDir, ".hermes");
+  const cursorRoot = pathApi.join(platformContext.homeDir, ".cursor");
 
   return {
     codex: {
@@ -95,6 +103,11 @@ export function resolveTargetHomes(
       target: "hermes",
       rootDir: hermesRoot,
       skillsDir: pathApi.join(hermesRoot, "skills")
+    },
+    cursor: {
+      target: "cursor",
+      rootDir: cursorRoot,
+      rulesDir: pathApi.join(cursorRoot, "rules")
     }
   };
 }

@@ -17,7 +17,7 @@ export interface BootstrapManifestManagedInstall {
   sourceId?: string;
   destinationPath: string;
   installType: "directory" | "file";
-  installArea: "skills" | "plugins" | "extensions";
+  installArea: "skills" | "plugins" | "extensions" | "rules";
 }
 
 export interface BootstrapManifestCommandInstall {

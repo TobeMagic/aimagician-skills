@@ -25,10 +25,16 @@ This repo is your personal skills distribution layer:
 | OpenCode skills | supported | installs to `~/.config/opencode/skills` |
 | Gemini skills | supported | generated as native extensions under `~/.gemini/extensions` |
 | Hermes skills | supported | installs to `~/.hermes/skills` |
+| Cursor rules | supported via adapter | generates Cursor `.mdc` rules under `~/.cursor/rules` |
 | Plugin catalog | supported | declare under `catalog/plugins/*.yaml` |
 | OpenCode plugins | supported | GitHub-backed JavaScript or TypeScript file assets install to `~/.config/opencode/plugins` |
 | Claude plugins | explicit skip | bootstrap reports skip because the documented flow is marketplace- and consent-driven |
 | Gemini plugin catalog assets | explicit skip | Phase 4 Gemini support is for generated skill extensions, not plugin catalog installs |
+
+Cursor note:
+
+- Cursor officially documents project-scoped `.cursor/rules` and Settings-based User Rules rather than a repository-style user-level skills directory.
+- This repo therefore installs Cursor support as generated `.mdc` rules under `~/.cursor/rules`, which is the closest stable filesystem adapter to the official rules model.
 
 ## Quick Start
 
@@ -47,6 +53,7 @@ If you do not pass `--target` or `--targets`, bootstrap installs to all currentl
 - `opencode`
 - `gemini`
 - `hermes`
+- `cursor`
 
 If you publish this package, the intended operator flow is also:
 
@@ -61,7 +68,7 @@ Bootstrap:
 ```bash
 npm run bootstrap
 node dist/cli/index.js bootstrap --target claude
-node dist/cli/index.js bootstrap --targets codex,claude,opencode,gemini,hermes --json
+node dist/cli/index.js bootstrap --targets codex,claude,opencode,gemini,hermes,cursor --json
 node dist/cli/index.js bootstrap --target claude --home /tmp/test-home
 ```
 
@@ -502,6 +509,7 @@ Supported target names:
 - `opencode`
 - `gemini`
 - `hermes`
+- `cursor`
 
 ## Override Home
 
@@ -527,6 +535,7 @@ For command-based sources, `--home` also rewrites the process environment that i
 - `XDG_CONFIG_HOME`
 - `XDG_STATE_HOME`
 - `AIMAGICIAN_HERMES_SKILLS_DIR`
+- `AIMAGICIAN_CURSOR_RULES_DIR`
 
 ## User-Level Locations
 
@@ -538,6 +547,7 @@ Bootstrap currently writes to these user-level locations:
 - OpenCode plugins: `~/.config/opencode/plugins`
 - Gemini generated skill extensions: `~/.gemini/extensions`
 - Hermes skills: `~/.hermes/skills`
+- Cursor generated rules: `~/.cursor/rules`
 
 Bootstrap state is written to:
 
