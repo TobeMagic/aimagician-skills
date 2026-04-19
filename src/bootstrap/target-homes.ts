@@ -34,7 +34,7 @@ export interface HermesTargetHome extends DirectTargetHome {
 export interface CursorTargetHome {
   target: "cursor";
   rootDir: string;
-  rulesDir: string;
+  skillsDir: string;
 }
 
 export interface GeminiTargetHome {
@@ -107,7 +107,7 @@ export function resolveTargetHomes(
     cursor: {
       target: "cursor",
       rootDir: cursorRoot,
-      rulesDir: pathApi.join(cursorRoot, "rules")
+      skillsDir: pathApi.join(cursorRoot, "skills")
     }
   };
 }

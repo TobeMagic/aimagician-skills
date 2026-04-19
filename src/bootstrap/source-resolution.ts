@@ -6,7 +6,6 @@ import { promisify } from "node:util";
 import type { LoadedCatalog } from "../catalog/source-types";
 import type { NormalizedAsset } from "../model/assets";
 import type { SupportedTarget } from "../model/targets";
-import { materializeCursorRule } from "./cursor-rule";
 import { materializeGeminiExtension } from "./gemini-extension";
 import type { ResolvedTargetHomes } from "./target-homes";
 
@@ -248,13 +247,9 @@ async function resolveSkillInstallDestination(
       };
     case "cursor":
       return {
-        sourcePath: await materializeCursorRule({
-          assetId,
-          sourceDir,
-          workspaceRoot
-        }),
-        destinationPath: join(targetHomes.cursor.rulesDir, `${assetId}.mdc`),
-        installArea: "rules"
+        sourcePath: sourceDir,
+        destinationPath: join(targetHomes.cursor.skillsDir, assetId),
+        installArea: "skills"
       };
     case "gemini":
       return {

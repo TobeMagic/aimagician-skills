@@ -143,7 +143,7 @@ async function inspectTarget(
       liveAssets.push(...await detectSkillDirectories(targetHomes.hermes.skillsDir, managedPaths));
       break;
     case "cursor":
-      liveAssets.push(...await detectCursorRules(targetHomes.cursor.rulesDir, managedPaths));
+      liveAssets.push(...await detectSkillDirectories(targetHomes.cursor.skillsDir, managedPaths));
       break;
     case "gemini":
       liveAssets.push(...await detectGeminiExtensions(targetHomes.gemini.extensionsDir, managedPaths));
@@ -161,14 +161,15 @@ async function inspectTarget(
     target,
     status,
     skillsDir:
-      target === "gemini" || target === "cursor" ? undefined :
+      target === "gemini" ? undefined :
+      target === "cursor" ? targetHomes.cursor.skillsDir :
       target === "hermes" ? targetHomes.hermes.skillsDir :
       target === "opencode" ? targetHomes.opencode.skillsDir :
       target === "claude" ? targetHomes.claude.skillsDir :
       targetHomes.codex.skillsDir,
     pluginsDir: target === "opencode" ? targetHomes.opencode.pluginsDir : undefined,
     extensionsDir: target === "gemini" ? targetHomes.gemini.extensionsDir : undefined,
-    rulesDir: target === "cursor" ? targetHomes.cursor.rulesDir : undefined,
+    rulesDir: undefined,
     detectedAssets: liveAssets.sort(compareLiveAsset),
     managedInstalls: managedStatuses,
     commandInstalls: targetCommandInstalls,
@@ -228,38 +229,6 @@ async function detectGeminiExtensions(
       id: entry.name,
       kind: "skill",
       installArea: "extensions",
-      path: assetPath,
-      managed: managedPaths.has(assetPath)
-    });
-  }
-
-  return assets;
-}
-
-async function detectCursorRules(
-  rootDir: string,
-  managedPaths: Set<string>
-): Promise<LiveTargetAsset[]> {
-  const entries = await safeReadDir(rootDir);
-  const assets: LiveTargetAsset[] = [];
-
-  for (const entry of entries) {
-    if (!entry.isFile()) {
-      continue;
-    }
-
-    const extension = extname(entry.name).toLowerCase();
-
-    if (extension !== ".mdc") {
-      continue;
-    }
-
-    const assetPath = join(rootDir, entry.name);
-
-    assets.push({
-      id: basename(entry.name, extension),
-      kind: "skill",
-      installArea: "rules",
       path: assetPath,
       managed: managedPaths.has(assetPath)
     });
