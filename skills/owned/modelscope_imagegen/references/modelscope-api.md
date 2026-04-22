@@ -8,6 +8,8 @@ This file captures the official source-backed behavior used by `modelscope_image
   `https://www.modelscope.cn/docs/model-service/API-Inference/intro`
 - ModelScope model page for Qwen-Image-2512:
   `https://www.modelscope.cn/models/Qwen/Qwen-Image-2512`
+- ModelScope model page for Qwen-Image-Edit-2511:
+  `https://www.modelscope.cn/models/Qwen/Qwen-Image-Edit-2511`
 - Qwen model page README as mirrored on ModelScope:
   `https://www.modelscope.cn/models/Qwen/Qwen-Image-2512`
 - Qwen image blog:
@@ -108,8 +110,35 @@ Based on official examples, official model card content, and live API acceptance
 - `num_inference_steps`
 - `seed`
 - `loras`
+- `image_url`
 
 The exact full server-side schema is not published in a stable public OpenAPI page that was directly retrievable here, so keep unknown-field handling permissive and prefer server error messages for unsupported fields.
+
+## Image Editing Notes (`Qwen/Qwen-Image-Edit-2511`)
+
+ModelScope model metadata for `Qwen/Qwen-Image-Edit-2511` confirms:
+
+- task includes `image-to-image`
+- API-Inference flow remains `POST /v1/images/generations` + async task polling
+
+Practical payload shape for edit:
+
+```json
+{
+  "model": "Qwen/Qwen-Image-Edit-2511",
+  "prompt": "edit instruction",
+  "image_url": [
+    "https://.../image-a.png",
+    "https://.../image-b.png"
+  ]
+}
+```
+
+Notes:
+
+- `image_url` can be a single-item array for single-image edit
+- multi-image edit uses multiple entries in `image_url`
+- edit quality is strongly affected by prompt clarity about preserved vs changed regions
 
 ## Qwen-Image-2512 Official Model Defaults
 

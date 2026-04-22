@@ -1,9 +1,9 @@
 ---
 name: modelscope_imagegen
 description: |
-  Generate images through ModelScope API-Inference, especially for Qwen/Qwen-Image-2512 and other ModelScope-hosted text-to-image or LoRA image models.
+  Generate and edit images through ModelScope API-Inference, especially for Qwen/Qwen-Image-2512 (text-to-image) and Qwen/Qwen-Image-Edit-2511 (image-to-image edit).
 
-  Use this skill whenever the user asks to generate images with ModelScope, Qwen-Image, Qwen-Image-2512, ModelScope API-Inference, or wants a hosted image generation flow that uses a ModelScope token instead of local diffusion weights. Also use it when the user mentions async image generation with task polling, ModelScope LoRA image models, or wants Python or curl examples for ModelScope image APIs.
+  Use this skill whenever the user asks to generate images with ModelScope, edit an existing image with ModelScope, use Qwen-Image/Qwen-Image-Edit, call ModelScope API-Inference, or wants a hosted image workflow with token auth instead of local diffusion weights. Also use it when the user mentions async task polling, LoRA image models, single-image or multi-image edit, or wants Python/curl examples for ModelScope image APIs.
 
   Prefer environment variable MODELSCOPE_API_KEY. Do not hardcode tokens into source files, commits, logs, or screenshots.
 compatibility:
@@ -11,13 +11,17 @@ compatibility:
   requires: Python 3, requests, Pillow
 ---
 
-# ModelScope Image Generation
+# ModelScope Image Generation and Editing
 
-This skill is for hosted image generation through ModelScope API-Inference.
+This skill is for hosted image generation and image editing through ModelScope API-Inference.
 
 Default target:
 
 - `Qwen/Qwen-Image-2512`
+
+Default image-edit target:
+
+- `Qwen/Qwen-Image-Edit-2511`
 
 Also works for:
 
@@ -35,6 +39,7 @@ Use [modelscope_imagegen.py](./scripts/modelscope_imagegen.py) instead of retypi
 3. Confirm the target model ID if the user names a specific ModelScope model. Otherwise default to `Qwen/Qwen-Image-2512`.
 4. Decide whether you need:
    - single image generation
+   - image editing from one or more input images
    - multiple LoRAs
    - explicit width and height
    - deterministic output via `seed`
@@ -100,6 +105,27 @@ python ~/.codex/skills/modelscope_imagegen/scripts/modelscope_imagegen.py \
   --output ./hero.jpg
 ```
 
+Image edit (图生图): single input image URL:
+
+```bash
+python ~/.codex/skills/modelscope_imagegen/scripts/modelscope_imagegen.py \
+  --model "Qwen/Qwen-Image-Edit-2511" \
+  --prompt "给图中的狗戴上一个生日帽，写实风格，保留原图构图" \
+  --image-url "https://modelscope.oss-cn-beijing.aliyuncs.com/Dog.png" \
+  --output ./dog-birthday.jpg
+```
+
+Image edit (multi-image composition):
+
+```bash
+python ~/.codex/skills/modelscope_imagegen/scripts/modelscope_imagegen.py \
+  --model "Qwen/Qwen-Image-Edit-2511" \
+  --prompt "写实风格，生成图一中的狗去追图二中的飞盘" \
+  --image-url "https://modelscope.oss-cn-beijing.aliyuncs.com/Dog.png" \
+  --image-url "https://modelscope.oss-cn-beijing.aliyuncs.com/Frisbee.png" \
+  --output ./dog-frisbee.jpg
+```
+
 ## Parameters
 
 Required:
@@ -115,6 +141,7 @@ Common optional fields:
 - `num_inference_steps`
 - `seed`
 - `loras`
+- `image_url`: one or more input image URLs for image-to-image editing (`--image-url` can be repeated)
 
 Operational controls:
 
@@ -139,6 +166,12 @@ For `Qwen/Qwen-Image-2512`, prefer:
   - `1056x1584`
 
 If you are using hosted API-Inference rather than local diffusers, `1024x1024` is also a pragmatic default and was accepted in live API validation.
+
+For `Qwen/Qwen-Image-Edit-2511`, prefer:
+
+- explicitly provide one or more `image_url` inputs
+- keep prompt instruction specific about what to preserve and what to modify
+- for multi-image editing, list image URLs in semantic order used by the prompt
 
 ## Failure Handling
 
@@ -165,5 +198,6 @@ If image download fails:
 - Keep prompts explicit about composition, style, camera, lighting, text, and layout.
 - Use English prompts for broad visual control unless Chinese text rendering is itself the goal.
 - If the user needs Chinese or bilingual poster text, Qwen-Image family is a strong default.
+- For image editing, ask the user to specify "what to keep unchanged" to avoid over-editing.
 - Never commit `MODELSCOPE_API_KEY`.
 - When generating assets for the current repo, save outputs outside the skill directory unless the user explicitly wants examples committed.

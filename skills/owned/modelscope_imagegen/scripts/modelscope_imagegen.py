@@ -31,7 +31,7 @@ class ModelScopeTaskTimeout(TimeoutError):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate images with ModelScope API-Inference."
+        description="Generate or edit images with ModelScope API-Inference."
     )
     parser.add_argument("--prompt", required=True, help="Main text prompt.")
     parser.add_argument(
@@ -58,6 +58,15 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Optional LoRA config. Either a plain repo id string or a JSON object, "
             'for example \'{"owner/lora-a": 0.6, "owner/lora-b": 0.4}\'.'
+        ),
+    )
+    parser.add_argument(
+        "--image-url",
+        action="append",
+        dest="image_urls",
+        help=(
+            "Optional input image URL for image editing. "
+            "Repeat this flag to pass multiple image URLs."
         ),
     )
     parser.add_argument(
@@ -129,6 +138,7 @@ def build_payload(args: argparse.Namespace) -> dict[str, Any]:
         "num_inference_steps": args.num_inference_steps,
         "seed": args.seed,
         "loras": parse_loras(args.loras),
+        "image_url": args.image_urls if args.image_urls else None,
     }
 
     for key, value in optional_fields.items():
