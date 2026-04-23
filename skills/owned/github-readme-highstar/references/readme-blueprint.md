@@ -4,6 +4,7 @@
 
 - Title
 - One-sentence positioning
+- Hero cover image (recommended)
 - 3-5 badges max
 - First CTA: quick start link
 
@@ -18,6 +19,20 @@ Example:
 
 Quick start: [Installation](#installation) · [Usage](#usage)
 ```
+
+Cover embed example:
+
+```md
+<p align="center">
+  <img src="./docs/assets/readme-cover.webp" alt="Project cover" width="100%" />
+</p>
+```
+
+Cover generation guidance:
+
+- Prefer image-generation skills (`modelscope_imagegen` or `cloudflare-image-gen`).
+- Recommended size: `1600x896`.
+- Keep cover mostly visual; avoid dense text inside the image.
 
 ## B. Table of contents (required for long docs)
 
@@ -53,4 +68,5 @@ Quick start: [Installation](#installation) · [Usage](#usage)
 - All command blocks are copy-paste safe.
 - All links/anchors resolve.
 - README has explicit target audience and use case.
+- README cover exists and is referenced by a relative path.
 - README ends with contribution + license + contact entry.

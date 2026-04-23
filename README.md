@@ -3,10 +3,25 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
 
+<p align="center">
+  <img src="./docs/assets/readme-cover.webp" alt="AImagician Skills cover" width="100%" />
+</p>
+
+> 面向 Codex / Claude / OpenCode / Gemini / Hermes / Cursor 的个人 skills 仓库与一键部署工具。
+
 默认中文文档。  
 English quick doc: [docs/README.en.md](./docs/README.en.md)
 
 这是一个面向多 AI CLI 的个人 skills 仓库与一键部署工具，目标是把技能统一安装到用户级目录，让 Codex / Claude / OpenCode / Gemini / Hermes / Cursor 开箱可用。
+
+快速入口：
+
+- [快速开始](#快速开始)
+- [常用命令](#常用命令)
+- [文生图--图生图直接可用](#文生图--图生图直接可用)
+- [当前支持矩阵](#当前支持矩阵)
+- [用户级安装路径](#用户级安装路径)
+- [验证与排障](#验证与排障)
 
 ## 核心能力
 
@@ -25,7 +40,7 @@ npm run build
 npm run bootstrap
 ```
 
-如果不传 `--target` / `--targets`，默认安装到全部支持目标：
+如果不传 `--target` / `--targets`，默认安装到全部支持目标（包含 OpenCode 与 Hermes）：
 
 - `codex`
 - `claude`
@@ -38,6 +53,12 @@ npm run bootstrap
 
 ```bash
 npx aimagician-skills@latest bootstrap
+```
+
+默认 targets 等价于：
+
+```bash
+node dist/cli/index.js bootstrap --targets codex,claude,opencode,gemini,hermes,cursor
 ```
 
 ## 常用命令
@@ -64,6 +85,19 @@ node dist/cli/index.js doctor
 ## 文生图 / 图生图（直接可用）
 
 仓库已包含图像能力 skill，可直接走脚本调用。
+
+### README 封面生图（本仓库示例）
+
+```bash
+export MODELSCOPE_API_KEY="ms-your-token"
+python skills/owned/modelscope_imagegen/scripts/modelscope_imagegen.py \
+  --model "Qwen/Qwen-Image-2512" \
+  --prompt "A cinematic AI developer workspace with multi-CLI terminals, skill cards floating in a grid, neon cyan and amber accents, clean GitHub README cover composition, no text" \
+  --width 1600 \
+  --height 896 \
+  --num-inference-steps 8 \
+  --output ./docs/assets/readme-cover.webp
+```
 
 ### ModelScope 文生图
 

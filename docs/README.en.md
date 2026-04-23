@@ -21,6 +21,12 @@ Default bootstrap target set:
 - `hermes`
 - `cursor`
 
+Equivalent explicit command:
+
+```bash
+node dist/cli/index.js bootstrap --targets codex,claude,opencode,gemini,hermes,cursor
+```
+
 Published package flow:
 
 ```bash

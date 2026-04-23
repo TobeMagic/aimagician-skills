@@ -29,6 +29,7 @@ Reference:
 - 用户要求“重写项目首页，支持目录锚点和跳转”
 - 用户要求“中英文 README 统一样式”
 - 用户要求“补充徽章、截图、贡献流程、许可证”
+- 用户要求“README 封面图 / hero cover / 首屏视觉图”
 
 ## Workflow
 
@@ -40,12 +41,22 @@ Reference:
    - 先定目录结构和锚点，再填内容
    - 长文档必须有 TOC（Table of Contents）
 3. 视觉统一
+   - 顶部优先放封面图（hero cover）
    - 仅保留少量高价值徽章（版本、许可证、CI）
    - 用截图、卡片、对照表替代冗长段落
 4. 入口优化
    - 顶部给出快速开始路径
    - 中部给出功能与架构入口
    - 尾部给出贡献、许可证、联系方式
+
+## Cover Generation Guidance (Must Include)
+
+当用户明确要“高星风格 README”时，默认包含封面图流程：
+
+1. 使用生图 skill 生成封面（优先 `modelscope_imagegen`，可选 `cloudflare-image-gen`）。
+2. 推荐尺寸：`1600x896`（16:9），避免在图内写密集小字。
+3. 输出路径建议：`./docs/assets/readme-cover.webp`。
+4. 在 README 顶部通过 Markdown 或 HTML `<img>` 引入封面。
 
 ## Recommended Section Order
 
@@ -73,6 +84,7 @@ Reference:
 
 交付 README 时，至少满足：
 
+- 有封面图（如用户未禁用视觉元素）
 - 有一句话定位
 - 有 TOC
 - 有快速开始
