@@ -4,11 +4,12 @@ Primary source:
 
 - `https://github.com/VoltAgent/awesome-design-md`
 
-Observation used in this skill:
+Snapshot policy used in this skill:
 
-- The repository organizes brand folders under `design-md/<brand>/`.
-- Many folders currently point to hosted `getdesign.md` pages from their `README.md`.
-- Therefore this skill fetches DESIGN.md content through:
-  - `https://getdesign.md/design-md/{brand}/DESIGN.md`
+- 该 skill 当前使用本地静态快照，不依赖在线拉取。
+- 已将常用品牌 DESIGN.md 直接放入 `./references/design-md/`。
+- 品牌索引在 `./references/brands.json`。
 
-This keeps the flow stable when the upstream repository stores pointers instead of local DESIGN.md files.
+Maintenance note:
+
+- 若后续要跟进上游变化，采用“人工批量更新快照”策略，不在 skill 内提供自动下载脚本。

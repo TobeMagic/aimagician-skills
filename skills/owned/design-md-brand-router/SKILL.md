@@ -1,12 +1,12 @@
 ---
 name: design-md-brand-router
 description: |
-  管理并应用品牌化 DESIGN.md 风格规范，支持从 awesome-design-md 对应品牌源批量或按需拉取 DESIGN.md，并用于指导项目 UI 产出。
-  当用户提到 DESIGN.md、brand style、品牌化 UI、按某公司风格出界面、选择多个品牌融合时必须触发。
-  该技能包含强制 discuss：先确定品牌和融合策略，再落地文件。
+  管理并应用品牌化 DESIGN.md 风格规范。该 skill 内置全量品牌 DESIGN.md 资产，开箱即可按品牌选择前端风格。
+  当用户提到“请帮我前端风格设计”“用 Apple 风格做页面”“按某品牌做 UI”“DESIGN.md”“brand style”时必须触发。
+  默认行为是从 skill 的 references 中直接选品牌文件，不使用任何下载脚本或在线更新流程。
 compatibility:
-  tools: [bash, python]
-  requires: Python 3
+  tools: [bash]
+  requires: 无额外依赖
 ---
 
 # Design.md Brand Router
@@ -16,10 +16,18 @@ Reference:
 - `https://github.com/VoltAgent/awesome-design-md`
 
 This skill routes brand design specifications into your project as `DESIGN.md` inputs.
+It is primarily for frontend visual style decision and brand-style alignment.
 
-## Mandatory Discuss (Do Not Skip)
+## Built-in Asset Pack (No Script)
 
-执行前先和用户确认：
+本 skill 已包含全量品牌 DESIGN.md，位于：
+
+- `./references/design-md/*.DESIGN.md`
+- `./references/brands.json`
+
+因此日常使用不需要先联网下载，不需要脚本更新。
+
+## 保留的交互逻辑（先确认再落地）
 
 1. 目标品牌
    - 单品牌还是多品牌混合？
@@ -32,71 +40,18 @@ This skill routes brand design specifications into your project as `DESIGN.md` i
 5. 约束项
    - 字体可替换范围、动效强度、响应式优先级、品牌禁用色。
 
-未确认前，不要直接覆盖已有 `DESIGN.md`。
-
-## Available Brand Catalog
-
-Brand ids are maintained in:
-
-- `./assets/brands.json`
-
-Use script for discovery:
-
-```bash
-python ~/.codex/skills/design-md-brand-router/scripts/fetch_design_md.py --list
-```
-
-## Fetch Commands
-
-Single brand to project root:
-
-```bash
-python ~/.codex/skills/design-md-brand-router/scripts/fetch_design_md.py \
-  --brand claude \
-  --output ./DESIGN.md
-```
-
-Single brand to custom file:
-
-```bash
-python ~/.codex/skills/design-md-brand-router/scripts/fetch_design_md.py \
-  --brand cursor \
-  --output ./design/brands/cursor.DESIGN.md
-```
-
-Multiple brands to directory:
-
-```bash
-python ~/.codex/skills/design-md-brand-router/scripts/fetch_design_md.py \
-  --brand claude \
-  --brand vercel \
-  --brand stripe \
-  --dest-dir ./design/brands
-```
-
-Fetch all known brands:
-
-```bash
-python ~/.codex/skills/design-md-brand-router/scripts/fetch_design_md.py \
-  --all \
-  --dest-dir ./design/brands
-```
-
-Preview without download:
-
-```bash
-python ~/.codex/skills/design-md-brand-router/scripts/fetch_design_md.py \
-  --brand claude \
-  --brand cursor \
-  --dry-run
-```
-
 ## Recommended Integration Pattern
 
-1. 拉取候选品牌文件到 `./design/brands/`
-2. 和用户确认主品牌与辅品牌
-3. 生成最终 `./DESIGN.md`（可只保留一份最终版）
-4. 再让前端生成任务读取该 `DESIGN.md`
+1. 用户点名品牌（例如 `apple` / `vercel` / `stripe`）
+2. 从 `./references/design-md/<brand>.DESIGN.md` 选择对应文件
+3. 复制到项目根 `./DESIGN.md`
+4. 前端实现阶段强制读取该 `DESIGN.md`
+
+例子：
+
+```bash
+cp ./skills/owned/design-md-brand-router/references/design-md/apple.DESIGN.md ./DESIGN.md
+```
 
 ## Guardrails
 
