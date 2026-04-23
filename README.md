@@ -34,34 +34,28 @@ English quick doc: [docs/README.en.md](./docs/README.en.md)
 export MODELSCOPE_API_KEY="ms-your-token"
 python skills/owned/modelscope_imagegen/scripts/modelscope_imagegen.py \
   --model "Qwen/Qwen-Image-2512" \
-  --prompt "Futuristic software engineering command center, multi-CLI agent orchestration dashboard, glowing terminal windows, elegant dark-neutral background with cyan and amber accents, premium open-source README hero banner style, no text, ultra clean composition" \
+  --prompt "Flat vector style hero cover, full-bleed geometric illustration, clean modern shapes, blocks and lines representing AI CLI workflows, cyan orange gray palette, minimal, no text, 16:9 composition" \
   --width 1600 \
   --height 896 \
   --num-inference-steps 8 \
   --output ./docs/assets/readme-cover.raw.png
 ```
 
-将原图转成 README 头图（固定 16:9）：
+将原图转成 README 头图（固定 16:9 全铺满）：
 
 ```bash
 python - <<'PY'
-from PIL import Image, ImageOps, ImageFilter, ImageEnhance
+from PIL import Image, ImageOps
 src = "docs/assets/readme-cover.raw.png"
 out = "docs/assets/readme-cover.webp"
 img = Image.open(src).convert("RGB")
-canvas = (1600, 896)
-bg = ImageOps.fit(img, canvas, method=Image.Resampling.LANCZOS)
-bg = ImageEnhance.Brightness(bg.filter(ImageFilter.GaussianBlur(18))).enhance(0.58)
-fg_h = int(canvas[1] * 0.9)
-fg_w = int(img.width * (fg_h / img.height))
-fg = img.resize((fg_w, fg_h), Image.Resampling.LANCZOS)
-shadow = Image.new("RGBA", (fg_w + 24, fg_h + 24), (0, 0, 0, 0))
-shadow.paste(Image.new("RGBA", (fg_w, fg_h), (0, 0, 0, 150)), (12, 12))
-shadow = shadow.filter(ImageFilter.GaussianBlur(10))
-base = bg.convert("RGBA")
-base.alpha_composite(shadow, ((canvas[0] - fg_w) // 2 - 12, (canvas[1] - fg_h) // 2 - 12))
-base.alpha_composite(fg.convert("RGBA"), ((canvas[0] - fg_w) // 2, (canvas[1] - fg_h) // 2))
-base.convert("RGB").save(out, format="WEBP", quality=86, method=6)
+cover = ImageOps.fit(
+    img,
+    (1600, 896),
+    method=Image.Resampling.LANCZOS,
+    centering=(0.5, 0.5),
+)
+cover.save(out, format="WEBP", quality=86, method=6)
 print("saved:", out)
 PY
 ```
