@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 896" role="img" aria-labelledby="title desc">
+  <title id="title">AImagician Skills Repository Cover</title>
+  <desc id="desc">Branded cover showing one-command bootstrap from owned and catalog skills to multiple CLI targets.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1422" />
+      <stop offset="55%" stop-color="#0F1A2B" />
+      <stop offset="100%" stop-color="#101F34" />
+    </linearGradient>
+    <linearGradient id="accentA" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22D4FF" />
+      <stop offset="100%" stop-color="#3EA4FF" />
+    </linearGradient>
+    <linearGradient id="accentB" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFB14A" />
+      <stop offset="100%" stop-color="#FF6A20" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#000000" flood-opacity="0.28" />
+    </filter>
+    <marker id="arrowA" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <polygon points="0,0 9,4.5 0,9" fill="#53D8FF" />
+    </marker>
+    <marker id="arrowB" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <polygon points="0,0 9,4.5 0,9" fill="#FFA44B" />
+    </marker>
+  </defs>
+
+  <rect width="1600" height="896" fill="url(#bg)" />
+
+  <g opacity="0.08" stroke="#A9D8FF">
+    <path d="M0 120H1600M0 240H1600M0 360H1600M0 480H1600M0 600H1600M0 720H1600" />
+    <path d="M120 0V896M320 0V896M520 0V896M720 0V896M920 0V896M1120 0V896M1320 0V896M1520 0V896" />
+  </g>
+
+  <circle cx="1280" cy="152" r="210" fill="#2E89FF" opacity="0.10" />
+  <circle cx="1480" cy="710" r="260" fill="#FF8B2F" opacity="0.10" />
+  <circle cx="210" cy="760" r="180" fill="#2FD4FF" opacity="0.08" />
+
+  <g filter="url(#shadow)">
+    <rect x="72" y="64" width="720" height="768" rx="36" fill="#0E1A2A" fill-opacity="0.86" stroke="#2E4A66" />
+    <rect x="836" y="64" width="692" height="768" rx="36" fill="#0D1A2A" fill-opacity="0.86" stroke="#2E4A66" />
+  </g>
+
+  <g transform="translate(120 108)">
+    <rect x="0" y="0" width="96" height="96" rx="24" fill="#0F1726" stroke="#3A6185" />
+    <polygon points="48,16 78,34 78,69 48,86 18,69 18,34" fill="#14283D" />
+    <polygon points="48,16 48,86 18,69 18,34" fill="url(#accentA)" />
+    <polygon points="48,16 48,86 78,69 78,34" fill="url(#accentB)" />
+    <text x="48" y="58" text-anchor="middle" fill="#EAF6FF" font-size="24" font-weight="700" font-family="Segoe UI, Inter, Arial, sans-serif">AI</text>
+  </g>
+
+  <g font-family="Segoe UI, Inter, Arial, sans-serif" fill="#EAF5FF">
+    <text x="242" y="160" font-size="64" font-weight="760" letter-spacing="0.5">AImagician Skills</text>
+    <text x="120" y="216" font-size="28" fill="#B2D8F7">Personal skills repository + one-command bootstrap toolkit</text>
+    <text x="120" y="254" font-size="24" fill="#8FC3EC">Owned skills + external catalogs + command sources</text>
+  </g>
+
+  <g transform="translate(120 292)" font-family="Consolas, SFMono-Regular, Menlo, monospace">
+    <rect x="0" y="0" width="620" height="62" rx="16" fill="#091423" stroke="#365A7D" />
+    <text x="24" y="39" font-size="26" fill="#9BE6FF">npx aimagician-skills@latest bootstrap</text>
+  </g>
+
+  <g transform="translate(120 382)" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="20" fill="#D9F0FF">
+    <rect x="0" y="0" width="96" height="42" rx="12" fill="#12304A" stroke="#3C6E98" />
+    <text x="48" y="28" text-anchor="middle">codex</text>
+    <rect x="108" y="0" width="106" height="42" rx="12" fill="#12304A" stroke="#3C6E98" />
+    <text x="161" y="28" text-anchor="middle">claude</text>
+    <rect x="226" y="0" width="134" height="42" rx="12" fill="#12304A" stroke="#3C6E98" />
+    <text x="293" y="28" text-anchor="middle">opencode</text>
+    <rect x="372" y="0" width="112" height="42" rx="12" fill="#12304A" stroke="#3C6E98" />
+    <text x="428" y="28" text-anchor="middle">gemini</text>
+    <rect x="496" y="0" width="112" height="42" rx="12" fill="#12304A" stroke="#3C6E98" />
+    <text x="552" y="28" text-anchor="middle">hermes</text>
+    <rect x="620" y="0" width="100" height="42" rx="12" fill="#2E2836" stroke="#7A5A85" />
+    <text x="670" y="28" text-anchor="middle">cursor</text>
+  </g>
+
+  <g transform="translate(120 466)" font-family="Segoe UI, Inter, Arial, sans-serif">
+    <rect x="0" y="0" width="314" height="110" rx="18" fill="#112437" stroke="#3B6388" />
+    <text x="22" y="36" font-size="22" fill="#D5EEFF" font-weight="700">skills/owned/*</text>
+    <text x="22" y="72" font-size="18" fill="#95C4E5">Private and custom skills</text>
+
+    <rect x="362" y="0" width="358" height="110" rx="18" fill="#15253A" stroke="#446787" />
+    <text x="384" y="36" font-size="22" fill="#D5EEFF" font-weight="700">catalog/skills/*.yaml</text>
+    <text x="384" y="72" font-size="18" fill="#95C4E5">Third-party skill sources</text>
+  </g>
+
+  <g transform="translate(868 122)" font-family="Segoe UI, Inter, Arial, sans-serif">
+    <rect x="0" y="0" width="286" height="106" rx="16" fill="#14273A" stroke="#3D6A92" />
+    <text x="22" y="38" font-size="24" fill="#D9F0FF" font-weight="700">Input Sources</text>
+    <text x="22" y="72" font-size="18" fill="#96C8EA">owned + catalog + commands</text>
+
+    <rect x="360" y="0" width="288" height="106" rx="16" fill="#1C2D40" stroke="#6C7892" />
+    <text x="382" y="38" font-size="24" fill="#E6F3FF" font-weight="700">Bootstrap Engine</text>
+    <text x="382" y="72" font-size="18" fill="#A9C5DF">plan / sync / validate</text>
+
+    <line x1="286" y1="53" x2="360" y2="53" stroke="#59D8FF" stroke-width="4" marker-end="url(#arrowA)" />
+  </g>
+
+  <g transform="translate(868 292)" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="18">
+    <rect x="0" y="0" width="306" height="70" rx="14" fill="#14304A" stroke="#3E729E" />
+    <text x="20" y="43" fill="#D9F0FF">~/.codex/skills</text>
+
+    <rect x="340" y="0" width="306" height="70" rx="14" fill="#14304A" stroke="#3E729E" />
+    <text x="360" y="43" fill="#D9F0FF">~/.claude/skills</text>
+
+    <rect x="0" y="94" width="306" height="70" rx="14" fill="#14304A" stroke="#3E729E" />
+    <text x="20" y="137" fill="#D9F0FF">~/.config/opencode/skills</text>
+
+    <rect x="340" y="94" width="306" height="70" rx="14" fill="#14304A" stroke="#3E729E" />
+    <text x="360" y="137" fill="#D9F0FF">~/.gemini/extensions</text>
+
+    <rect x="0" y="188" width="306" height="70" rx="14" fill="#2B3042" stroke="#7D6794" />
+    <text x="20" y="231" fill="#F0DFFF">~/.hermes/skills</text>
+
+    <rect x="340" y="188" width="306" height="70" rx="14" fill="#2B3042" stroke="#7D6794" />
+    <text x="360" y="231" fill="#F0DFFF">~/.cursor/skills</text>
+  </g>
+
+  <g stroke-width="4" fill="none">
+    <path d="M1228 176 C1260 176,1290 188,1310 216 C1330 244,1340 270,1340 292" stroke="#57D9FF" marker-end="url(#arrowA)" />
+    <path d="M1228 176 C1268 176,1310 196,1370 232 C1434 272,1456 292,1456 292" stroke="#FFAB4F" marker-end="url(#arrowB)" />
+  </g>
+
+  <g transform="translate(884 708)" font-family="Segoe UI, Inter, Arial, sans-serif">
+    <rect x="0" y="0" width="624" height="90" rx="16" fill="#101D2F" stroke="#365A7D" />
+    <text x="24" y="39" font-size="22" fill="#DFF2FF" font-weight="700">Repository Branding</text>
+    <text x="24" y="69" font-size="18" fill="#9EC8E6">Dedicated logo + dedicated cover, versioned with the repository</text>
+  </g>
+</svg>

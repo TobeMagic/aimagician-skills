@@ -4,7 +4,11 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
 
 <p align="center">
-  <img src="./docs/assets/readme-cover.webp" alt="AImagician Skills cover" width="100%" />
+  <img src="./docs/assets/aimagician-skills-logo.svg" alt="AImagician Skills logo" width="120" />
+</p>
+
+<p align="center">
+  <img src="./docs/assets/readme-cover.svg" alt="AImagician Skills repository cover" width="100%" />
 </p>
 
 > Personal skills repository and one-command bootstrap toolkit for Codex / Claude / OpenCode / Gemini / Hermes / Cursor.
@@ -18,7 +22,7 @@ English quick doc: [docs/README.en.md](./docs/README.en.md)
 
 快速入口：
 
-- [封面生成脚本](#封面生成脚本)
+- [品牌视觉资产](#品牌视觉资产)
 - [快速开始](#快速开始)
 - [常用命令](#常用命令)
 - [文生图--图生图直接可用](#文生图--图生图直接可用)
@@ -26,39 +30,18 @@ English quick doc: [docs/README.en.md](./docs/README.en.md)
 - [用户级安装路径](#用户级安装路径)
 - [验证与排障](#验证与排障)
 
-## 封面生成脚本
+## 品牌视觉资产
 
-当前 README 顶部封面由仓库内生图脚本生成，命令如下：
+仓库使用专属品牌视觉，已纳入版本管理：
 
-```bash
-export MODELSCOPE_API_KEY="ms-your-token"
-python skills/owned/modelscope_imagegen/scripts/modelscope_imagegen.py \
-  --model "Qwen/Qwen-Image-2512" \
-  --prompt "Flat vector style hero cover, full-bleed geometric illustration, clean modern shapes, blocks and lines representing AI CLI workflows, cyan orange gray palette, minimal, no text, 16:9 composition" \
-  --width 1600 \
-  --height 896 \
-  --num-inference-steps 8 \
-  --output ./docs/assets/readme-cover.raw.png
-```
+- Logo: `./docs/assets/aimagician-skills-logo.svg`
+- README cover: `./docs/assets/readme-cover.svg`
 
-将原图转成 README 头图（固定 16:9 全铺满）：
+设计目标：
 
-```bash
-python - <<'PY'
-from PIL import Image, ImageOps
-src = "docs/assets/readme-cover.raw.png"
-out = "docs/assets/readme-cover.webp"
-img = Image.open(src).convert("RGB")
-cover = ImageOps.fit(
-    img,
-    (1600, 896),
-    method=Image.Resampling.LANCZOS,
-    centering=(0.5, 0.5),
-)
-cover.save(out, format="WEBP", quality=86, method=6)
-print("saved:", out)
-PY
-```
+- 一眼看出这是“多 CLI skills 分发 + 一键安装”仓库
+- 视觉元素直接映射仓库结构（owned/catalog/bootstrap/targets）
+- 封面默认 full-bleed，适配 GitHub README 顶部展示
 
 ## 核心能力
 
