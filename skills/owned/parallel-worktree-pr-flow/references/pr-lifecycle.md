@@ -50,7 +50,7 @@ parallel/provider-integration
 如果要自动开 PR，建议统一走脚本而不是手动点网页：
 
 ```bash
-export GITHUB_TOKEN=ghp_xxx
+export GITHUB_TOKEN=<your-github-token>
 python scripts/github_pr_flow.py \
   --repo-root <repo-root> \
   --head feat/example-lane \

@@ -25,7 +25,7 @@ English quick doc: [docs/README.en.md](./docs/README.en.md)
 - [品牌视觉资产](#品牌视觉资产)
 - [快速开始](#快速开始)
 - [常用命令](#常用命令)
-- [文生图--图生图直接可用](#文生图--图生图直接可用)
+- [当前-skill-全量清单](#当前-skill-全量清单)
 - [当前支持矩阵](#当前支持矩阵)
 - [用户级安装路径](#用户级安装路径)
 - [验证与排障](#验证与排障)
@@ -102,49 +102,90 @@ node dist/cli/index.js inspect --target codex
 node dist/cli/index.js doctor
 ```
 
-## 文生图 / 图生图（直接可用）
+## 当前 Skill 全量清单
 
-仓库已包含图像能力 skill，可直接走脚本调用。
+本仓库当前 skills 由三部分组成：
 
-### ModelScope 文生图
+1. `skills/owned/*`（仓库自带）
+2. `catalog/skills/*.yaml`（第三方仓库或命令源）
+3. `bootstrap --dry-run --json` 解析后的可安装 skill 列表（按默认 targets 的并集）
+
+### Owned Skills（11）
+
+- `cloudflare-image-gen`
+- `deep-research-system`
+- `design-md-brand-router`
+- `github-readme-highstar`
+- `infinite-research-loop`
+- `karpathy-coding-principles`
+- `modelscope_imagegen`
+- `modelscope_video_ops`
+- `multilingual-diversity-loop`
+- `parallel-worktree-pr-flow`
+- `repo-to-resume`
+
+### Catalog Skill Sources（7）
+
+- `awesome-claude-skills`（`content-research-writer`、`image-enhancer`）
+- `claude-official`（Anthropic 官方 skills，源路径 `anthropics/skills`）
+- `deep-research-prompt`
+- `gsd`（command source）
+- `playwright-skill`
+- `slavingia-skills`
+- `ui-ux-pro-max-skill`（command source）
+
+### Resolved Skills（44, 默认 targets 并集）
+
+- `algorithmic-art`
+- `brand-guidelines`
+- `canvas-design`
+- `claude-api`
+- `cloudflare-image-gen`
+- `company-values`
+- `content-research-writer`
+- `deep-research-prompt`
+- `deep-research-system`
+- `design-md-brand-router`
+- `doc-coauthoring`
+- `docx`
+- `find-community`
+- `first-customers`
+- `frontend-design`
+- `github-readme-highstar`
+- `grow-sustainably`
+- `gsd`
+- `image-enhancer`
+- `infinite-research-loop`
+- `internal-comms`
+- `karpathy-coding-principles`
+- `marketing-plan`
+- `mcp-builder`
+- `minimalist-review`
+- `modelscope_imagegen`
+- `modelscope_video_ops`
+- `multilingual-diversity-loop`
+- `mvp`
+- `parallel-worktree-pr-flow`
+- `pdf`
+- `playwright-skill`
+- `pptx`
+- `pricing`
+- `processize`
+- `repo-to-resume`
+- `skill-creator`
+- `slack-gif-creator`
+- `theme-factory`
+- `ui-ux-pro-max`
+- `validate-idea`
+- `web-artifacts-builder`
+- `webapp-testing`
+- `xlsx`
+
+如需重新生成该清单（防止文档过期）：
 
 ```bash
-export MODELSCOPE_API_KEY="ms-your-token"
-python skills/owned/modelscope_imagegen/scripts/modelscope_imagegen.py \
-  --model "Qwen/Qwen-Image-2512" \
-  --prompt "A cinematic developer workspace, volumetric light, high detail" \
-  --output ./result.jpg
+node dist/cli/index.js bootstrap --dry-run --json
 ```
-
-### ModelScope 图生图（编辑）
-
-```bash
-export MODELSCOPE_API_KEY="ms-your-token"
-python skills/owned/modelscope_imagegen/scripts/modelscope_imagegen.py \
-  --model "Qwen/Qwen-Image-Edit-2511" \
-  --prompt "给图中的狗戴上一个生日帽，写实风格，保持主体构图" \
-  --image-url "https://modelscope.oss-cn-beijing.aliyuncs.com/Dog.png" \
-  --output ./dog-edit.jpg
-```
-
-多图编辑可重复 `--image-url`：
-
-```bash
-python skills/owned/modelscope_imagegen/scripts/modelscope_imagegen.py \
-  --model "Qwen/Qwen-Image-Edit-2511" \
-  --prompt "图一的狗去追图二的飞盘，写实风格" \
-  --image-url "https://modelscope.oss-cn-beijing.aliyuncs.com/Dog.png" \
-  --image-url "https://modelscope.oss-cn-beijing.aliyuncs.com/Frisbee.png" \
-  --output ./dog-frisbee.jpg
-```
-
-Cloudflare 文生图请参考：
-
-- [skills/owned/cloudflare-image-gen/SKILL.md](./skills/owned/cloudflare-image-gen/SKILL.md)
-
-ModelScope 图像技能说明请参考：
-
-- [skills/owned/modelscope_imagegen/SKILL.md](./skills/owned/modelscope_imagegen/SKILL.md)
 
 ## 当前支持矩阵
 
