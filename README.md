@@ -7,7 +7,9 @@
   <img src="./docs/assets/readme-cover.webp" alt="AImagician Skills cover" width="100%" />
 </p>
 
-> 面向 Codex / Claude / OpenCode / Gemini / Hermes / Cursor 的个人 skills 仓库与一键部署工具。
+> Personal skills repository and one-command bootstrap toolkit for Codex / Claude / OpenCode / Gemini / Hermes / Cursor.
+>
+> 中文：面向多 AI CLI 的个人 skills 仓库与一键部署工具。
 
 默认中文文档。  
 English quick doc: [docs/README.en.md](./docs/README.en.md)
@@ -16,12 +18,53 @@ English quick doc: [docs/README.en.md](./docs/README.en.md)
 
 快速入口：
 
+- [封面生成脚本](#封面生成脚本)
 - [快速开始](#快速开始)
 - [常用命令](#常用命令)
 - [文生图--图生图直接可用](#文生图--图生图直接可用)
 - [当前支持矩阵](#当前支持矩阵)
 - [用户级安装路径](#用户级安装路径)
 - [验证与排障](#验证与排障)
+
+## 封面生成脚本
+
+当前 README 顶部封面由仓库内生图脚本生成，命令如下：
+
+```bash
+export MODELSCOPE_API_KEY="ms-your-token"
+python skills/owned/modelscope_imagegen/scripts/modelscope_imagegen.py \
+  --model "Qwen/Qwen-Image-2512" \
+  --prompt "Futuristic software engineering command center, multi-CLI agent orchestration dashboard, glowing terminal windows, elegant dark-neutral background with cyan and amber accents, premium open-source README hero banner style, no text, ultra clean composition" \
+  --width 1600 \
+  --height 896 \
+  --num-inference-steps 8 \
+  --output ./docs/assets/readme-cover.raw.png
+```
+
+将原图转成 README 头图（固定 16:9）：
+
+```bash
+python - <<'PY'
+from PIL import Image, ImageOps, ImageFilter, ImageEnhance
+src = "docs/assets/readme-cover.raw.png"
+out = "docs/assets/readme-cover.webp"
+img = Image.open(src).convert("RGB")
+canvas = (1600, 896)
+bg = ImageOps.fit(img, canvas, method=Image.Resampling.LANCZOS)
+bg = ImageEnhance.Brightness(bg.filter(ImageFilter.GaussianBlur(18))).enhance(0.58)
+fg_h = int(canvas[1] * 0.9)
+fg_w = int(img.width * (fg_h / img.height))
+fg = img.resize((fg_w, fg_h), Image.Resampling.LANCZOS)
+shadow = Image.new("RGBA", (fg_w + 24, fg_h + 24), (0, 0, 0, 0))
+shadow.paste(Image.new("RGBA", (fg_w, fg_h), (0, 0, 0, 150)), (12, 12))
+shadow = shadow.filter(ImageFilter.GaussianBlur(10))
+base = bg.convert("RGBA")
+base.alpha_composite(shadow, ((canvas[0] - fg_w) // 2 - 12, (canvas[1] - fg_h) // 2 - 12))
+base.alpha_composite(fg.convert("RGBA"), ((canvas[0] - fg_w) // 2, (canvas[1] - fg_h) // 2))
+base.convert("RGB").save(out, format="WEBP", quality=86, method=6)
+print("saved:", out)
+PY
+```
 
 ## 核心能力
 
@@ -85,19 +128,6 @@ node dist/cli/index.js doctor
 ## 文生图 / 图生图（直接可用）
 
 仓库已包含图像能力 skill，可直接走脚本调用。
-
-### README 封面生图（本仓库示例）
-
-```bash
-export MODELSCOPE_API_KEY="ms-your-token"
-python skills/owned/modelscope_imagegen/scripts/modelscope_imagegen.py \
-  --model "Qwen/Qwen-Image-2512" \
-  --prompt "A cinematic AI developer workspace with multi-CLI terminals, skill cards floating in a grid, neon cyan and amber accents, clean GitHub README cover composition, no text" \
-  --width 1600 \
-  --height 896 \
-  --num-inference-steps 8 \
-  --output ./docs/assets/readme-cover.webp
-```
 
 ### ModelScope 文生图
 
