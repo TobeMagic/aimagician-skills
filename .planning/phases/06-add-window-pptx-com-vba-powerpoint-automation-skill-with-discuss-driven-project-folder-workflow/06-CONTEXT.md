@@ -79,9 +79,46 @@ Defer to later iterations:
 - advanced animation timelines
 - transition choreography
 - master/theme surgery beyond template reuse
-- COM add-in enable/disable flows
+- COM add-in enable/disable flows beyond read-only discovery
 - direct invocation of vendor-specific add-in APIs
 - Office JavaScript web add-in lifecycle management
+
+## Plugin Strategy: iSlide / OKPlus / Other PowerPoint Add-ins
+
+The user wants to know whether existing PowerPoint plugins such as iSlide and OKPlus can be used.
+
+Working answer:
+
+- Yes, if the plugin is installed in the same Windows PowerPoint environment.
+- The skill can discover installed COM add-ins through `PowerPoint.Application.COMAddIns`.
+- The skill can inspect fields such as description, ProgID, GUID, and connection state.
+- Some COM add-ins can be enabled or disabled through the `Connect` property.
+- Stable feature invocation is only possible if the plugin exposes a documented COM automation interface, VBA macro entrypoint, ProgID, or otherwise callable public object model.
+- If a plugin only exposes Ribbon/UI buttons and no automation API, the first version should not depend on it. UI automation can be treated as a later, less reliable fallback.
+- Office JavaScript web add-ins are a separate category. COM can open and edit presentations that contain them, but cannot fully control the add-in's internal JS lifecycle.
+
+MVP policy:
+
+- Core PPT generation must work without iSlide / OKPlus.
+- `REQUEST.md` can include an optional section such as `## Preferred Plugins`.
+- The skill should first run a local discovery script that lists available PowerPoint add-ins.
+- If iSlide / OKPlus are detected, the agent may use them only when there is a known callable interface or an explicit user-provided workflow.
+- If no callable interface is available, use native PowerPoint COM operations to reproduce the desired result.
+
+Suggested discovery output:
+
+```text
+PowerPoint COM Add-ins:
+- Description
+- ProgID
+- GUID
+- Connect
+
+PowerPoint AddIns:
+- Name
+- FullName
+- Loaded
+```
 
 ## Important Constraints
 
