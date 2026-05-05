@@ -110,3 +110,13 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 | 3. Direct Skill Targets | 3/3 | Complete    | 2026-03-14 |
 | 4. Gemini and Plugins | 3/3 | Complete    | 2026-03-14 |
 | 5. Verification and Release UX | 2/2 | Complete    | 2026-03-14 |
+
+### Phase 6: Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 6 to break down)

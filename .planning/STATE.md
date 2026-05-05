@@ -62,6 +62,10 @@ Progress: 100%
 - [Phase 5]: The CLI now exposes `list`, `inspect`, and `doctor` commands backed by live-home and manifest inspection
 - [Phase 5]: README now documents the final bootstrap and verification flow instead of the intermediate Phase 3 state
 
+### Roadmap Evolution
+
+- Phase 6 added: Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow
+
 ### Blockers/Concerns
 
 - No blocking milestone gaps remain
