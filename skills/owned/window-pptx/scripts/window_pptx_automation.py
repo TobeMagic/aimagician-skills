@@ -9,6 +9,7 @@ import platform
 import shutil
 import sys
 import tempfile
+import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,92 @@ PP_LAYOUT_BLANK = 12
 MSO_TEXT_ORIENTATION_HORIZONTAL = 1
 PP_FIXED_FORMAT_TYPE_PDF = 2
 PP_FIXED_FORMAT_INTENT_PRINT = 2
+REQUEST_TEMPLATE = """# PowerPoint Request
+
+## Goal
+
+Describe the final deck, audience, and success outcome.
+
+## Inputs
+
+- Project folder:
+- Template/source deck:
+- Assets:
+- Data:
+- Notes/references:
+
+## Output
+
+- Output PPTX:
+- Export PDF: yes/no
+- Overwrite source deck: no
+
+## Edit Requirements
+
+1.
+2.
+3.
+
+## Visual Constraints
+
+- Aspect ratio:
+- Brand colors:
+- Fonts:
+- Must preserve:
+- Must avoid:
+
+## Preferred Plugins
+
+- native PowerPoint COM only
+
+## Macro Policy
+
+- macros disabled
+
+## Add-in Policy
+
+- discovery only
+
+## Acceptance Check
+
+- Expected slide count:
+- Required slide titles:
+- Required assets/charts:
+- Speaker notes required: yes/no
+- PDF export required: yes/no
+- Visual review required: yes/no
+"""
+
+SLIDE_MAP_TEMPLATE = """# Slide Map
+
+Use this file to classify the source deck before heavy edits.
+
+## Role Vocabulary
+
+- instruction
+- material
+- reference-result
+- output
+- cover
+- directory
+- section
+- body
+- ending
+
+## Mapping
+
+| Slide | Current Role | Target Role | Action | Assets Needed | Notes |
+|---|---|---|---|---|---|
+| 1 |  |  |  |  |  |
+| 2 |  |  |  |  |  |
+
+## Output Plan
+
+- Slides to keep:
+- Slides to rebuild:
+- Slides to append:
+- Reference-only slides:
+"""
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,6 +118,33 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--request", default="REQUEST.md", help="Request file name or path.")
     parser.add_argument("--template", help="Template/source deck path. Defaults to auto-detect.")
     parser.add_argument("--output", default="output/final.pptx", help="Output PPTX path.")
+    parser.add_argument(
+        "--init-project",
+        action="store_true",
+        help="Create standard window-pptx workspace folders plus REQUEST.md and SLIDE-MAP.md if missing.",
+    )
+    parser.add_argument(
+        "--extract-media",
+        action="store_true",
+        help="Extract ppt/media assets from the template/source deck into .window-pptx/media or --media-dir.",
+    )
+    parser.add_argument(
+        "--media-dir",
+        help="Directory for extracted media. Defaults to .window-pptx/media under the project.",
+    )
+    parser.add_argument(
+        "--export-slides",
+        help="Comma-separated slide numbers/ranges to export to PNG, e.g. 4,6,8-10.",
+    )
+    parser.add_argument(
+        "--export-dir",
+        help="Directory for exported slide PNGs. Defaults to .window-pptx/exports under the project.",
+    )
+    parser.add_argument(
+        "--make-ascii-temp-copy",
+        action="store_true",
+        help="Copy the template/source deck to an ASCII temp filename under .window-pptx/temp before COM work.",
+    )
     parser.add_argument("--list-addins", action="store_true", help="Print PowerPoint add-in inventory.")
     parser.add_argument(
         "--probe-plugin-apis",
@@ -143,6 +257,97 @@ def choose_template(project_dir: Path, explicit_template: str | None) -> Path | 
             + ", ".join(str(path.name) for path in sorted(candidates))
         )
     return None
+
+
+def init_project_workspace(project_dir: Path) -> dict[str, Any]:
+    created_dirs: list[str] = []
+    created_files: list[str] = []
+
+    for rel in [
+        "assets",
+        "data",
+        "notes",
+        "output",
+        ".window-pptx",
+        ".window-pptx/media",
+        ".window-pptx/exports",
+        ".window-pptx/temp",
+        ".window-pptx/logs",
+    ]:
+        path = project_dir / rel
+        if not path.exists():
+            path.mkdir(parents=True, exist_ok=True)
+            created_dirs.append(str(path))
+
+    request_path = project_dir / "REQUEST.md"
+    if not request_path.exists():
+        request_path.write_text(REQUEST_TEMPLATE, encoding="utf-8")
+        created_files.append(str(request_path))
+
+    slide_map_path = project_dir / "SLIDE-MAP.md"
+    if not slide_map_path.exists():
+        slide_map_path.write_text(SLIDE_MAP_TEMPLATE, encoding="utf-8")
+        created_files.append(str(slide_map_path))
+
+    return {"project_dir": str(project_dir), "created_dirs": created_dirs, "created_files": created_files}
+
+
+def parse_slide_spec(spec: str) -> list[int]:
+    result: list[int] = []
+    for chunk in spec.split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        if "-" in chunk:
+            left, right = chunk.split("-", 1)
+            start = int(left.strip())
+            end = int(right.strip())
+            if end < start:
+                start, end = end, start
+            result.extend(range(start, end + 1))
+        else:
+            result.append(int(chunk))
+    seen: set[int] = set()
+    ordered: list[int] = []
+    for item in result:
+        if item not in seen:
+            ordered.append(item)
+            seen.add(item)
+    return ordered
+
+
+def ensure_ascii_temp_copy(project_dir: Path, source: Path) -> Path:
+    temp_dir = project_dir / ".window-pptx" / "temp"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    target = temp_dir / "deck_temp_ascii.pptx"
+    shutil.copy2(source, target)
+    return target
+
+
+def extract_media_from_deck(deck_path: Path, media_dir: Path) -> dict[str, Any]:
+    media_dir.mkdir(parents=True, exist_ok=True)
+    extracted: list[str] = []
+    with zipfile.ZipFile(deck_path) as zf:
+        for name in zf.namelist():
+            if not name.startswith("ppt/media/") or name.endswith("/"):
+                continue
+            target = media_dir / Path(name).name
+            target.write_bytes(zf.read(name))
+            extracted.append(str(target))
+    return {"deck": str(deck_path), "media_dir": str(media_dir), "count": len(extracted), "files": extracted}
+
+
+def export_slides_to_png(presentation: Any, slide_numbers: list[int], export_dir: Path) -> dict[str, Any]:
+    export_dir.mkdir(parents=True, exist_ok=True)
+    exported: list[str] = []
+    max_count = int(presentation.Slides.Count)
+    for slide_number in slide_numbers:
+        if slide_number < 1 or slide_number > max_count:
+            continue
+        target = export_dir / f"slide-{slide_number}.png"
+        presentation.Slides(slide_number).Export(str(target), "PNG", 1600, 900)
+        exported.append(str(target))
+    return {"export_dir": str(export_dir), "slides": slide_numbers, "files": exported}
 
 
 def get_attr(obj: Any, name: str) -> Any:
@@ -591,11 +796,33 @@ def main() -> None:
 
     project_dir = Path(args.project_dir).resolve()
     if not project_dir.exists():
-        die(f"Project folder not found: {project_dir}")
+        if args.init_project:
+            project_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            die(f"Project folder not found: {project_dir}")
+
+    init_result: dict[str, Any] | None = None
+    if args.init_project:
+        init_result = init_project_workspace(project_dir)
 
     output_path = resolve_path(project_dir, args.output)
     if output_path is None:
         die("Output path could not be resolved.")
+
+    if args.init_project and args.no_save and not any(
+        [
+            args.list_addins,
+            args.probe_plugin_apis,
+            args.extract_media,
+            args.export_slides,
+        ]
+    ):
+        if args.json:
+            print(json.dumps({"init_project": init_result}, ensure_ascii=False, indent=2))
+        else:
+            print("Project workspace initialized")
+            print(json.dumps(init_result, ensure_ascii=False, indent=2))
+        return
 
     app = None
     presentation = None
@@ -631,6 +858,25 @@ def main() -> None:
 
         request_path, request_text = read_request(project_dir, args.request)
         template = choose_template(project_dir, args.template)
+        effective_template = template
+
+        if args.extract_media:
+            if template is None:
+                die("No template/source deck available for --extract-media. Pass --template explicitly.")
+            media_dir = resolve_path(project_dir, args.media_dir) or (project_dir / ".window-pptx" / "media")
+            media_result = extract_media_from_deck(template, media_dir)
+            if args.no_save and not args.export_slides:
+                if args.json:
+                    print(json.dumps({"media_extraction": media_result}, ensure_ascii=False, indent=2))
+                else:
+                    print("Media extraction complete")
+                    print(json.dumps(media_result, ensure_ascii=False, indent=2))
+                return
+
+        if args.make_ascii_temp_copy:
+            if template is None:
+                die("No template/source deck available for --make-ascii-temp-copy. Pass --template explicitly.")
+            effective_template = ensure_ascii_temp_copy(project_dir, template)
 
         if args.list_addins:
             inventory_dir = project_dir / ".window-pptx"
@@ -641,8 +887,17 @@ def main() -> None:
             )
             print_addins(addins, args.json)
 
-        presentation = open_or_create_presentation(app, template, args.visible)
+        presentation = open_or_create_presentation(app, effective_template, args.visible)
         add_request_summary_slide(presentation, request_text, template)
+
+        export_result: dict[str, Any] | None = None
+        if args.export_slides:
+            export_dir = resolve_path(project_dir, args.export_dir) or (project_dir / ".window-pptx" / "exports")
+            export_result = export_slides_to_png(
+                presentation,
+                parse_slide_spec(args.export_slides),
+                export_dir,
+            )
 
         outputs: dict[str, str] = {}
         if not args.no_save:
@@ -650,10 +905,13 @@ def main() -> None:
 
         result = {
             "project_dir": str(project_dir),
+            "init_project": init_result,
             "request": str(request_path),
             "template": str(template) if template else None,
+            "effective_template": str(effective_template) if effective_template else None,
             "outputs": outputs,
             "addins_inventory_written": bool(args.list_addins),
+            "slide_export": export_result,
         }
         if args.json:
             print(json.dumps(result, ensure_ascii=False, indent=2))

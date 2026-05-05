@@ -7,6 +7,7 @@ This contract lets an agent turn a local folder into a reproducible PowerPoint a
 ```text
 ppt-project/
   REQUEST.md
+  SLIDE-MAP.md
   template.pptx
   source.pptx
   assets/
@@ -19,24 +20,61 @@ ppt-project/
     outline.md
   output/
   .window-pptx/
+    media/
+    exports/
+    temp/
+    logs/
+    addins.json
+    automate_deck.py
+    plugin_api_probe.json
 ```
 
 ## Required File
 
 `REQUEST.md` is the source of truth. If chat and `REQUEST.md` conflict, ask before editing.
 
+## Recommended Planning File
+
+`SLIDE-MAP.md` is the operator-facing planning sheet for project-style slide work.
+
+Use it to map:
+
+- slide number
+- current role
+- target role
+- action: keep / reference / rebuild / append / overwrite
+- assets needed
+- notes
+
+Recommended role vocabulary:
+
+- `instruction`
+- `material`
+- `reference-result`
+- `output`
+- `cover`
+- `directory`
+- `section`
+- `body`
+- `ending`
+
 ## Recognized Inputs
 
 | Path | Meaning |
 |---|---|
 | `REQUEST.md` | User requirements and run policy |
+| `SLIDE-MAP.md` | Working slide-role map and output plan |
 | `template.pptx` / `template.pptm` / `template.potx` / `template.potm` | Preferred visual template |
 | `source.pptx` / other decks | Existing material to copy or edit |
 | `assets/` | Images, icons, logos, screenshots, backgrounds |
 | `data/` | Tables, chart data, JSON, CSV, Excel |
 | `notes/` | Speaker notes, copy, references, outlines |
 | `output/` | Generated deck and exports |
-| `.window-pptx/` | Generated scripts, inventory, logs |
+| `.window-pptx/media/` | Raw media extracted from `ppt/media/*` |
+| `.window-pptx/exports/` | PNG slide exports for review |
+| `.window-pptx/temp/` | ASCII temp deck copies for stable COM reruns |
+| `.window-pptx/logs/` | Run logs and scratch outputs |
+| `.window-pptx/` | Generated scripts, inventory, logs, probes |
 
 ## REQUEST.md Sections
 
@@ -119,9 +157,14 @@ Use `.window-pptx/` for generated implementation files:
 
 ```text
 .window-pptx/
+  media/
+  exports/
+  temp/
+  logs/
   addins.json
   run.log
   automate_deck.py
+  plugin_api_probe.json
 ```
 
 Keep `output/` for user-facing results only.

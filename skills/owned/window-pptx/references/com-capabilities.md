@@ -27,6 +27,26 @@ presentation = app.Presentations.Open(r"C:\deck\template.pptx", -1, -1, 0)
 | Add-ins | `Application.COMAddIns`, `Application.AddIns` | Inspect available add-ins |
 | Output | `Presentation.SaveAs`, `ExportAsFixedFormat` | Save deck or export PDF |
 
+## Animation Verification
+
+For animation tasks, inspect `Slide.TimeLine.MainSequence` after saving the deck. Record at least:
+
+- `Effect.Shape.Name`
+- `Effect.EffectType`
+- `Effect.Timing.TriggerType`
+- `Effect.Timing.Duration`
+- `Effect.Timing.TriggerDelayTime`
+
+This matters because static PNG/PDF exports cannot prove animation behavior. A valid verification report should show the ordered effect list, not only the number of animations.
+
+Example interpretation:
+
+- Fade effect on a light shape
+- Motion-path-right effect on the same light shape
+- Wipe effect on the title text triggered with previous
+- Disappear effect on the light shape
+- Slide transition effect set when the requirement asks for transitions
+
 ## Add-in Types
 
 ### COM Add-ins

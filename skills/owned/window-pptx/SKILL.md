@@ -158,6 +158,24 @@ Prefer the bundled helper script for deterministic checks:
 py ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py --project-dir C:\ppt-project --list-addins --json
 ```
 
+Initialize a new project workspace with stable review folders and planning files:
+
+```powershell
+py ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
+  --project-dir C:\ppt-project `
+  --init-project `
+  --no-save
+```
+
+This creates:
+
+- `REQUEST.md`
+- `SLIDE-MAP.md`
+- `.window-pptx/media/`
+- `.window-pptx/exports/`
+- `.window-pptx/temp/`
+- `.window-pptx/logs/`
+
 Probe iSlide / OKPlus or other add-in automation surfaces without invoking their business methods:
 
 ```powershell
@@ -212,6 +230,39 @@ The helper is intentionally conservative. For a real one-to-one deck, generate a
 10. Export PNG previews for target slides when visual work is involved.
 11. Verify acceptance criteria with COM object checks and rendered previews.
 12. Report generated files, unresolved ambiguities, and any plugin limitations.
+
+## Design-Task Guardrails
+
+When the request is "complete slides from provided materials" rather than simple text edits:
+
+1. Separate slides by role before editing:
+   - `instruction slides`: describe homework, rules, acceptance check, timing
+   - `material slides`: list logo, colors, fonts, screenshots, raw photos, copy blocks
+   - `reference result slides`: already-designed examples that show target polish or layout
+   - `output slides`: the slides that should actually be created, overwritten, or appended
+   - `cover slides`: title / opening summary slides
+   - `directory slides`: agenda / table-of-contents slides
+   - `section slides`: chapter divider / section opener slides
+   - `body slides`: normal content/detail slides
+   - `ending slides`: closing / thanks / summary-ending slides
+2. Do not treat a polished reference result slide as a reusable source asset unless the user explicitly asks for reproduction.
+3. Prefer extracting raw assets from `ppt/media/*` and rebuilding layouts from those assets.
+4. If the user manually fixes one page as the "correct format", export that page to PNG first and use it as the structural target before editing other pages.
+5. For visual work, always run at least one export-and-review cycle after generation.
+
+Read [windows-pptx-lessons.md](./references/windows-pptx-lessons.md) when the task involves:
+
+- Chinese paths or filenames
+- locked `.pptx` files
+- COM instability across multiple reruns
+- extracting assets from an input deck
+- judging whether a slide is a material page or an already-designed reference page
+
+Useful helper actions from the bundled script:
+
+- `--extract-media` to dump `ppt/media/*` into a folder
+- `--export-slides 4,6,8-10` to render selected slides to PNG
+- `--make-ascii-temp-copy` before repeated COM reruns on Chinese filenames
 
 ## Native COM Capabilities
 
@@ -279,6 +330,18 @@ Use checks that match the request:
 - template visual style is preserved
 - notes are present when requested
 - PDF export exists if requested
+
+For animation homework or animation-sensitive decks, do not validate by animation count alone. Export a structured effect table for each required slide:
+
+- animation sequence index
+- target shape name
+- effect type
+- trigger type
+- duration
+- delay
+- transition effect when slide transitions are required
+
+Then compare the effect table against the user-visible requirement. Example: "fade in + left-to-right motion path + disappear" must appear as distinct effects on the light shape, while the title text must have a wipe effect triggered with the light.
 
 For visual fidelity, export PDF or images and ask the user to inspect them. Do not claim pixel-perfect verification from COM object checks alone.
 
