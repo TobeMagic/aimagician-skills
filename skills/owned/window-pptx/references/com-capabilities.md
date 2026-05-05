@@ -109,10 +109,21 @@ Interpretation: treat it as a connected VSTO UI add-in unless a separate automat
 - Windows only.
 - Requires installed desktop PowerPoint.
 - Native Windows Python is preferred.
-- WSL cannot directly host PowerPoint COM execution.
+- WSL cannot directly host PowerPoint COM execution, but it can launch Windows `powershell.exe` or `cmd.exe`; the actual COM automation must then run inside Windows Python against the logged-in desktop PowerPoint session.
 - Trust Center, macro policy, and enterprise security policies can block macro/add-in behavior.
 - UI-only add-ins may require user interaction and are not reliable for unattended runs.
 - Broken `gen_py` / makepy caches can break COM wrapping. Clear the user's temp `gen_py` cache or use late-bound `win32com.client.dynamic.Dispatch`.
+
+## WSL Bridge Checklist
+
+Use this when the repo lives in WSL but PowerPoint is installed on Windows:
+
+1. Convert paths from `/mnt/d/...` to `D:\...`.
+2. Invoke `powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "python ..."` from WSL.
+3. Verify `python -c "import sys, win32com.client; print(sys.executable)"` reports a Windows Python path.
+4. Run scripts that write UTF-8 files themselves instead of relying on PowerShell `>` redirection.
+5. Keep PowerPoint visible for debugging if UI/add-ins are involved.
+6. Do not assume WSL packages, virtualenvs, or environment variables exist in Windows Python.
 
 ## Official References
 

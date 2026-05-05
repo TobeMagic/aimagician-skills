@@ -114,6 +114,42 @@ If the repository is inside WSL under `/mnt/d/...`, call the script using a Wind
 py D:\Growth_up_youth\repo\skills\skills\owned\window-pptx\scripts\window_pptx_automation.py --project-dir D:\ppt-project --list-addins
 ```
 
+## WSL to Windows Bridge Mode
+
+WSL can launch Windows executables through interop, but PowerPoint COM automation is still executed by Windows processes.
+
+Valid bridge pattern from WSL:
+
+```bash
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \
+  "python 'D:\Growth_up_youth\repo\skills\skills\owned\window-pptx\scripts\window_pptx_automation.py' --project-dir 'D:\ppt-project' --list-addins"
+```
+
+What this means:
+
+- WSL is only the caller/orchestrator.
+- Windows `powershell.exe` runs the command.
+- Windows `python.exe` imports `win32com.client`.
+- PowerPoint COM runs inside the logged-in Windows desktop session.
+- Paths passed to the script must be Windows paths such as `D:\...`, not `/mnt/d/...`.
+
+Before running real work from WSL, verify the Windows runtime:
+
+```bash
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \
+  "python -c \"import sys, win32com.client; print(sys.executable); print('pywin32 ok')\""
+```
+
+Known bridge caveats:
+
+- PowerShell stdout redirection may produce UTF-16 files; prefer scripts that write UTF-8 JSON directly.
+- Chinese paths may display mojibake in terminal output even when file access is correct.
+- `py` launcher may be absent; use `python` if Windows Python is on PATH.
+- PowerPoint must be installed and available in the current interactive Windows desktop session.
+- This is not suitable for pure headless WSL, Linux cron, or SSH-only Windows sessions.
+- WSL and Windows have different Python packages, PATH, environment variables, and current directories.
+- File locks can occur if PowerPoint keeps a deck open; close presentations in `finally` blocks.
+
 ## Bundled Helper Script
 
 Prefer the bundled helper script for deterministic checks:
