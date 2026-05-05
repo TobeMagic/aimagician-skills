@@ -57,8 +57,52 @@ Use this decision tree:
 1. List add-ins.
 2. Check whether iSlide/OKPlus appears in `COMAddIns` or `AddIns`.
 3. If detected, look for a known ProgID, macro, or documented automation API.
-4. If a callable entrypoint exists, use it carefully and log the exact call.
-5. If only Ribbon/UI behavior exists, do not depend on it; reproduce the result with native COM or ask for a manual export/material from the plugin.
+4. Probe the plugin surface without invoking business methods:
+   - Office add-in registry under `Software\Microsoft\Office\PowerPoint\Addins\<ProgID>`
+   - `HKCR\<ProgID>\CLSID`
+   - direct `Dispatch("<ProgID>")`
+   - `Application.COMAddIns.Item("<ProgID>").Object`
+   - `ITypeInfo` method/property names
+5. If a callable entrypoint exists, use it carefully and log the exact call.
+6. If only Ribbon/UI behavior or lifecycle methods exist, do not depend on it; reproduce the result with native COM or ask for a manual export/material from the plugin.
+
+## Observed iSlide / OKPlus Probe Results
+
+These are examples from one Windows PowerPoint environment and should not be treated as universal guarantees.
+
+### iSlide
+
+Observed:
+
+- `COMAddIns` entry: `iSlideTools.Public`
+- CLSID: `{2B92539D-351A-44C2-858A-BF50963536A8}`
+- Inproc server: `D:\software\iSlide Tools\iSlideTools.Loader64.dll`
+- Office add-in registry `LoadBehavior=3`
+- `COMAddIn.Object` exists
+- direct `Dispatch("iSlideTools.Public")` succeeds
+- exposed dispatch interface: `_IDTExtensibility2`
+
+Visible methods:
+
+- `OnConnection`
+- `OnDisconnection`
+- `OnAddInsUpdate`
+- `OnStartupComplete`
+- `OnBeginShutdown`
+
+Interpretation: this exposes the add-in lifecycle interface, not a stable public design API. Do not call lifecycle methods to trigger features.
+
+### OKPlus / OneKeyTools Plus
+
+Observed:
+
+- `COMAddIns` entry: `Slibe.OKPlus`
+- Friendly name: `OneKeyTools_Plus`
+- Office add-in registry contains a VSTO manifest path such as `...\OneKeyToolsPlus.vsto|vstolocal`
+- `COMAddIn.Object` is `None`
+- direct `Dispatch("Slibe.OKPlus")` fails with invalid class string
+
+Interpretation: treat it as a connected VSTO UI add-in unless a separate automation object or documented macro/API is provided.
 
 ## Known Runtime Constraints
 
@@ -68,6 +112,7 @@ Use this decision tree:
 - WSL cannot directly host PowerPoint COM execution.
 - Trust Center, macro policy, and enterprise security policies can block macro/add-in behavior.
 - UI-only add-ins may require user interaction and are not reliable for unattended runs.
+- Broken `gen_py` / makepy caches can break COM wrapping. Clear the user's temp `gen_py` cache or use late-bound `win32com.client.dynamic.Dispatch`.
 
 ## Official References
 

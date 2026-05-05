@@ -6,7 +6,9 @@ from __future__ import annotations
 import argparse
 import json
 import platform
+import shutil
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -30,6 +32,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--template", help="Template/source deck path. Defaults to auto-detect.")
     parser.add_argument("--output", default="output/final.pptx", help="Output PPTX path.")
     parser.add_argument("--list-addins", action="store_true", help="Print PowerPoint add-in inventory.")
+    parser.add_argument(
+        "--probe-plugin-apis",
+        action="store_true",
+        help="Read COM registration/type information for add-in ProgIDs without invoking business methods.",
+    )
+    parser.add_argument(
+        "--plugin-progid",
+        action="append",
+        default=[],
+        help="Add-in ProgID to probe. Can be repeated. Defaults to iSlideTools.Public and Slibe.OKPlus when probing.",
+    )
+    parser.add_argument(
+        "--clear-com-cache",
+        action="store_true",
+        help="Remove the current user's temp gen_py cache before creating COM objects.",
+    )
     parser.add_argument("--export-pdf", action="store_true", help="Export a PDF next to the PPTX.")
     parser.add_argument("--visible", action="store_true", help="Open the presentation window visibly.")
     parser.add_argument(
@@ -67,6 +85,12 @@ def import_win32com() -> Any:
         die("Missing pywin32. Install with: py -m pip install pywin32")
         raise exc
     return win32com.client
+
+
+def maybe_clear_com_cache() -> None:
+    cache_root = Path(tempfile.gettempdir()) / "gen_py"
+    if cache_root.exists():
+        shutil.rmtree(cache_root, ignore_errors=True)
 
 
 def resolve_path(base: Path, value: str | None) -> Path | None:
@@ -200,11 +224,259 @@ def list_powerpoint_addins(app: Any) -> list[dict[str, Any]]:
     return rows
 
 
+def import_probe_modules() -> tuple[Any, Any, Any]:
+    try:
+        import pythoncom  # type: ignore
+        import win32com.client.dynamic  # type: ignore
+        import winreg  # type: ignore
+    except ImportError as exc:
+        die(f"Missing Windows COM probe dependency: {exc}")
+        raise exc
+    return pythoncom, win32com.client.dynamic, winreg
+
+
+def registry_get(winreg: Any, root: Any, path: str, value_name: str = "") -> Any:
+    try:
+        with winreg.OpenKey(root, path) as key:
+            value, _ = winreg.QueryValueEx(key, value_name)
+            return value
+    except Exception:
+        return None
+
+
+def registry_key_values(winreg: Any, root: Any, path: str) -> dict[str, Any] | None:
+    try:
+        with winreg.OpenKey(root, path) as key:
+            values: dict[str, Any] = {}
+            index = 0
+            while True:
+                try:
+                    name, value, _ = winreg.EnumValue(key, index)
+                    values[name or "(Default)"] = value
+                    index += 1
+                except OSError:
+                    break
+            return values
+    except Exception:
+        return None
+
+
+def clsid_registry_snapshot(winreg: Any, progid: str) -> dict[str, Any]:
+    clsid = registry_get(winreg, winreg.HKEY_CLASSES_ROOT, rf"{progid}\CLSID")
+    result: dict[str, Any] = {"progid": progid, "clsid": clsid}
+    if not clsid:
+        return result
+
+    clsid_key = rf"CLSID\{clsid}"
+    result.update(
+        {
+            "friendly_name": registry_get(winreg, winreg.HKEY_CLASSES_ROOT, clsid_key),
+            "typelib": registry_get(winreg, winreg.HKEY_CLASSES_ROOT, rf"{clsid_key}\TypeLib"),
+            "version": registry_get(winreg, winreg.HKEY_CLASSES_ROOT, rf"{clsid_key}\Version"),
+            "local_server32": registry_get(
+                winreg, winreg.HKEY_CLASSES_ROOT, rf"{clsid_key}\LocalServer32"
+            ),
+            "inproc_server32": registry_get(
+                winreg, winreg.HKEY_CLASSES_ROOT, rf"{clsid_key}\InprocServer32"
+            ),
+        }
+    )
+    return result
+
+
+def office_addin_registry_snapshot(winreg: Any, progid: str) -> list[dict[str, Any]]:
+    rows = []
+    roots = [
+        ("HKCU", winreg.HKEY_CURRENT_USER),
+        ("HKLM", winreg.HKEY_LOCAL_MACHINE),
+    ]
+    paths = [
+        rf"Software\Microsoft\Office\PowerPoint\Addins\{progid}",
+        rf"Software\WOW6432Node\Microsoft\Office\PowerPoint\Addins\{progid}",
+    ]
+    for root_name, root in roots:
+        for path in paths:
+            values = registry_key_values(winreg, root, path)
+            if values is not None:
+                rows.append({"root": root_name, "path": path, "values": values})
+    return rows
+
+
+def invoke_kind_name(pythoncom: Any, value: int) -> str:
+    names = {
+        pythoncom.INVOKE_FUNC: "method",
+        pythoncom.INVOKE_PROPERTYGET: "property_get",
+        pythoncom.INVOKE_PROPERTYPUT: "property_put",
+        pythoncom.INVOKE_PROPERTYPUTREF: "property_putref",
+    }
+    return names.get(value, str(value))
+
+
+def type_kind_name(pythoncom: Any, value: int) -> str:
+    names = {
+        pythoncom.TKIND_ENUM: "enum",
+        pythoncom.TKIND_RECORD: "record",
+        pythoncom.TKIND_MODULE: "module",
+        pythoncom.TKIND_INTERFACE: "interface",
+        pythoncom.TKIND_DISPATCH: "dispatch",
+        pythoncom.TKIND_COCLASS: "coclass",
+        pythoncom.TKIND_ALIAS: "alias",
+        pythoncom.TKIND_UNION: "union",
+    }
+    return names.get(value, str(value))
+
+
+def member_flags(pythoncom: Any, value: int) -> list[str]:
+    mapping = {
+        "restricted": getattr(pythoncom, "FUNCFLAG_FRESTRICTED", 1),
+        "source": getattr(pythoncom, "FUNCFLAG_FSOURCE", 2),
+        "bindable": getattr(pythoncom, "FUNCFLAG_FBINDABLE", 4),
+        "request_edit": getattr(pythoncom, "FUNCFLAG_FREQUESTEDIT", 8),
+        "display_bind": getattr(pythoncom, "FUNCFLAG_FDISPLAYBIND", 16),
+        "default_bind": getattr(pythoncom, "FUNCFLAG_FDEFAULTBIND", 32),
+        "hidden": getattr(pythoncom, "FUNCFLAG_FHIDDEN", 64),
+        "uses_get_last_error": getattr(pythoncom, "FUNCFLAG_FUSESGETLASTERROR", 128),
+        "default_collelem": getattr(pythoncom, "FUNCFLAG_FDEFAULTCOLLELEM", 256),
+        "uidefault": getattr(pythoncom, "FUNCFLAG_FUIDEFAULT", 512),
+        "nonbrowsable": getattr(pythoncom, "FUNCFLAG_FNONBROWSABLE", 1024),
+        "replaceable": getattr(pythoncom, "FUNCFLAG_FREPLACEABLE", 2048),
+        "immediate_bind": getattr(pythoncom, "FUNCFLAG_FIMMEDIATEBIND", 4096),
+    }
+    return [name for name, bit in mapping.items() if value & bit]
+
+
+def inspect_typeinfo_from_dispatch(pythoncom: Any, obj: Any) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "available": False,
+        "methods": [],
+        "properties": [],
+        "variables": [],
+        "errors": [],
+    }
+
+    try:
+        typeinfo = obj._oleobj_.GetTypeInfo()
+    except Exception as exc:
+        result["errors"].append(f"GetTypeInfo failed: {exc}")
+        return result
+
+    try:
+        typeattr = typeinfo.GetTypeAttr()
+        result["available"] = True
+        result["guid"] = str(typeattr.iid)
+        result["type_kind"] = type_kind_name(pythoncom, typeattr.typekind)
+        result["function_count"] = int(typeattr.cFuncs)
+        result["variable_count"] = int(typeattr.cVars)
+    except Exception as exc:
+        result["errors"].append(f"GetTypeAttr failed: {exc}")
+        return result
+
+    try:
+        documentation = typeinfo.GetDocumentation(-1)
+        result["documentation"] = {
+            "name": documentation[0],
+            "doc": documentation[1],
+            "help_context": documentation[2],
+            "help_file": documentation[3],
+        }
+    except Exception as exc:
+        result["errors"].append(f"GetDocumentation failed: {exc}")
+
+    for index in range(int(result.get("function_count", 0))):
+        try:
+            desc = typeinfo.GetFuncDesc(index)
+            names = typeinfo.GetNames(desc.memid)
+            row = {
+                "memid": int(desc.memid),
+                "name": names[0] if names else f"memid_{desc.memid}",
+                "args": names[1:],
+                "invoke_kind": invoke_kind_name(pythoncom, desc.invkind),
+                "param_count": len(desc.args),
+                "optional_param_count": int(desc.cParamsOpt),
+                "flags": member_flags(pythoncom, int(desc.wFuncFlags)),
+            }
+            if row["invoke_kind"] == "method":
+                result["methods"].append(row)
+            else:
+                result["properties"].append(row)
+        except Exception as exc:
+            result["errors"].append(f"GetFuncDesc[{index}] failed: {exc}")
+
+    for index in range(int(result.get("variable_count", 0))):
+        try:
+            desc = typeinfo.GetVarDesc(index)
+            names = typeinfo.GetNames(desc.memid)
+            result["variables"].append(
+                {
+                    "memid": int(desc.memid),
+                    "name": names[0] if names else f"var_{desc.memid}",
+                }
+            )
+        except Exception as exc:
+            result["errors"].append(f"GetVarDesc[{index}] failed: {exc}")
+
+    return result
+
+
+def probe_direct_dispatch(dynamic: Any, pythoncom: Any, progid: str) -> dict[str, Any]:
+    result: dict[str, Any] = {"progid": progid, "created": False}
+    try:
+        obj = dynamic.Dispatch(progid)
+        result["created"] = True
+        result["typeinfo"] = inspect_typeinfo_from_dispatch(pythoncom, obj)
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+def probe_addin_object(app: Any, pythoncom: Any, progid: str) -> dict[str, Any]:
+    result: dict[str, Any] = {"progid": progid, "has_object": False}
+    try:
+        addin = app.COMAddIns.Item(progid)
+        result["description"] = str(get_attr(addin, "Description"))
+        result["connect"] = boolish(get_attr(addin, "Connect"))
+        result["guid"] = str(get_attr(addin, "Guid"))
+        obj = addin.Object
+        if obj is None:
+            result["object_is_none"] = True
+            return result
+        result["has_object"] = True
+        result["typeinfo"] = inspect_typeinfo_from_dispatch(pythoncom, obj)
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+def probe_plugin_apis(app: Any, progids: list[str]) -> dict[str, Any]:
+    pythoncom, dynamic, winreg = import_probe_modules()
+    return {
+        "probed_progids": progids,
+        "registry": {progid: clsid_registry_snapshot(winreg, progid) for progid in progids},
+        "office_addin_registry": {
+            progid: office_addin_registry_snapshot(winreg, progid) for progid in progids
+        },
+        "direct_dispatch": {
+            progid: probe_direct_dispatch(dynamic, pythoncom, progid) for progid in progids
+        },
+        "addin_object": {progid: probe_addin_object(app, pythoncom, progid) for progid in progids},
+        "notes": [
+            "This probe only reads COM registration and type information.",
+            "It does not invoke business methods exposed by the add-ins.",
+        ],
+    }
+
+
 def dispatch_powerpoint(win32com: Any, attach_existing: bool, visible: bool) -> Any:
-    if attach_existing:
-        app = win32com.Dispatch("PowerPoint.Application")
-    else:
-        app = win32com.DispatchEx("PowerPoint.Application")
+    try:
+        if attach_existing:
+            app = win32com.Dispatch("PowerPoint.Application")
+        else:
+            app = win32com.DispatchEx("PowerPoint.Application")
+    except Exception:
+        # Fall back to late binding when a broken makepy/gen_py cache prevents wrapping.
+        import win32com.client.dynamic  # type: ignore
+
+        app = win32com.client.dynamic.Dispatch("PowerPoint.Application")
 
     if visible:
         try:
@@ -313,6 +585,8 @@ def print_addins(addins: dict[str, Any], as_json: bool) -> None:
 def main() -> None:
     args = parse_args()
     require_windows()
+    if args.clear_com_cache:
+        maybe_clear_com_cache()
     win32com = import_win32com()
 
     project_dir = Path(args.project_dir).resolve()
@@ -333,6 +607,23 @@ def main() -> None:
             "com_addins": list_com_addins(app),
             "powerpoint_addins": list_powerpoint_addins(app),
         }
+
+        if args.probe_plugin_apis:
+            progids = args.plugin_progid or ["iSlideTools.Public", "Slibe.OKPlus"]
+            probe = probe_plugin_apis(app, progids)
+            inventory_dir = project_dir / ".window-pptx"
+            inventory_dir.mkdir(parents=True, exist_ok=True)
+            (inventory_dir / "plugin_api_probe.json").write_text(
+                json.dumps(probe, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            if args.json:
+                print(json.dumps(probe, ensure_ascii=False, indent=2))
+            else:
+                print("PowerPoint plugin API probe:")
+                print(json.dumps(probe, ensure_ascii=False, indent=2))
+            if args.no_save:
+                return
 
         if args.list_addins and args.no_save:
             print_addins(addins, args.json)
