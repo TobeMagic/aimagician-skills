@@ -42,28 +42,30 @@ node dist/cli/index.js inspect --target codex
 node dist/cli/index.js doctor
 ```
 
-## Direct Image Workflows
+## Included Owned Skills
 
-### Text-to-image (ModelScope)
+Current owned skills include:
 
-```bash
-export MODELSCOPE_API_KEY="ms-your-token"
-python skills/owned/modelscope_imagegen/scripts/modelscope_imagegen.py \
-  --model "Qwen/Qwen-Image-2512" \
-  --prompt "A cinematic developer workspace, volumetric light, high detail" \
-  --output ./result.jpg
-```
+- `cloudflare-image-gen`
+- `deep-research-system`
+- `design-md-brand-router`
+- `github-readme-highstar`
+- `infinite-research-loop`
+- `karpathy-coding-principles`
+- `modelscope_imagegen`
+- `modelscope_video_ops`
+- `multilingual-diversity-loop`
+- `parallel-worktree-pr-flow`
+- `repo-to-resume`
+- `window-pptx`
 
-### Image-to-image edit (ModelScope)
+## Highlighted Workflows
 
-```bash
-export MODELSCOPE_API_KEY="ms-your-token"
-python skills/owned/modelscope_imagegen/scripts/modelscope_imagegen.py \
-  --model "Qwen/Qwen-Image-Edit-2511" \
-  --prompt "Put a birthday hat on the dog while preserving composition" \
-  --image-url "https://modelscope.oss-cn-beijing.aliyuncs.com/Dog.png" \
-  --output ./dog-edit.jpg
-```
+- ModelScope text-to-image and image-to-image through `modelscope_imagegen`
+- Cloudflare Workers AI image generation through `cloudflare-image-gen`
+- Windows desktop PowerPoint COM/VBA automation through `window-pptx`
+- High-star GitHub README authoring through `github-readme-highstar`
+- GSD-compatible autonomous research loops through `infinite-research-loop`
 
 ## Docs
 

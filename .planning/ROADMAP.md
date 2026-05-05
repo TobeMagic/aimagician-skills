@@ -2,7 +2,7 @@
 
 ## Overview
 
-AImagician Skills will move from a repository concept to a reliable personal bootstrap system in five phases: define a clean asset and source model, build the one-command install core, land direct skill adapters for Codex/Claude/OpenCode, handle Gemini and plugin differences explicitly, and finish with verification and operator-facing UX. The roadmap is ordered to remove ambiguity first, then add target-specific behavior on top of a stable install engine.
+AImagician Skills will move from a repository concept to a reliable personal bootstrap system through staged work: define a clean asset and source model, build the one-command install core, land direct skill adapters for Codex/Claude/OpenCode, handle Gemini and plugin differences explicitly, finish verification and operator-facing UX, then grow the owned skill library with high-value personal workflows such as Windows PowerPoint COM/VBA automation. The roadmap is ordered to remove ambiguity first, then add target-specific behavior and owned skills on top of a stable install engine.
 
 ## Phases
 
@@ -17,6 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Direct Skill Targets** - Install skills into Codex, Claude Code, and OpenCode user-level locations (completed 2026-03-14)
 - [x] **Phase 4: Gemini and Plugins** - Add Gemini-native output plus capability-aware plugin and extension handling (completed 2026-03-14)
 - [x] **Phase 5: Verification and Release UX** - Add doctor/list/report flows and finish the bootstrap experience (completed 2026-03-14)
+- [x] **Phase 6: Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow** - Add an owned Windows PowerPoint automation skill based on `REQUEST.md`, templates, assets, optional add-in discovery, and native COM execution (completed 2026-05-05)
 
 ## Phase Details
 
@@ -101,7 +102,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -110,13 +111,19 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 | 3. Direct Skill Targets | 3/3 | Complete    | 2026-03-14 |
 | 4. Gemini and Plugins | 3/3 | Complete    | 2026-03-14 |
 | 5. Verification and Release UX | 2/2 | Complete    | 2026-03-14 |
+| 6. Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow | 1/1 | Complete | 2026-05-05 |
 
 ### Phase 6: Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow
 
-**Goal:** [To be planned]
+**Goal:** Add an owned `window-pptx` skill that guides Windows desktop PowerPoint COM/VBA automation from a project folder containing `REQUEST.md`, templates, assets, data, notes, and output requirements
 **Requirements**: TBD
 **Depends on:** Phase 5
-**Plans:** 0 plans
+**Success Criteria** (what must be TRUE):
+  1. User can prepare a folder with `REQUEST.md`, templates, assets, and data for a PowerPoint automation job
+  2. The skill forces or reuses a discuss pass before real PPT edits to confirm source deck, output policy, macro/add-in policy, and acceptance checks
+  3. The skill provides a Windows-native pywin32 helper for add-in discovery and minimal COM smoke editing
+  4. iSlide/OKPlus are documented as optional discovered add-ins, while native PowerPoint COM remains the default execution path
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 6 to break down)
+- [x] 06-01: Add window-pptx skill, helper script, folder contract, and bootstrap documentation

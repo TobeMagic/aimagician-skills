@@ -51,6 +51,7 @@ English quick doc: [docs/README.en.md](./docs/README.en.md)
 - 按目标 CLI 安装到用户目录（默认全目标）
 - 支持 Gemini 扩展生成、OpenCode 插件安装
 - 支持安装结果检查：`list / inspect / doctor`
+- 支持 Windows PowerPoint COM/VBA 自动化 skill（`window-pptx`）
 
 ## 快速开始
 
@@ -110,7 +111,7 @@ node dist/cli/index.js doctor
 2. `catalog/skills/*.yaml`（第三方仓库或命令源）
 3. `bootstrap --dry-run --json` 解析后的可安装 skill 列表（按默认 targets 的并集）
 
-### Owned Skills（11）
+### Owned Skills（12）
 
 - `cloudflare-image-gen`
 - `deep-research-system`
@@ -123,6 +124,7 @@ node dist/cli/index.js doctor
 - `multilingual-diversity-loop`
 - `parallel-worktree-pr-flow`
 - `repo-to-resume`
+- `window-pptx`
 
 ### Catalog Skill Sources（7）
 
@@ -134,7 +136,7 @@ node dist/cli/index.js doctor
 - `slavingia-skills`
 - `ui-ux-pro-max-skill`（command source）
 
-### Resolved Skills（44, 默认 targets 并集）
+### Resolved Skills（45, 默认 targets 并集）
 
 - `algorithmic-art`
 - `brand-guidelines`
@@ -179,6 +181,7 @@ node dist/cli/index.js doctor
 - `validate-idea`
 - `web-artifacts-builder`
 - `webapp-testing`
+- `window-pptx`
 - `xlsx`
 
 如需重新生成该清单（防止文档过期）：
