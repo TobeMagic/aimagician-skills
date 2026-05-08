@@ -258,6 +258,8 @@ Read [windows-pptx-lessons.md](./references/windows-pptx-lessons.md) when the ta
 - extracting assets from an input deck
 - judging whether a slide is a material page or an already-designed reference page
 
+Read [ppt-homework-execution-playbook.md](./references/ppt-homework-execution-playbook.md) when the task is a full homework / training deck workflow with instruction slides, material slides, reference result slides, fonts, GIF/video animation references, or multiple assignments to complete.
+
 Useful helper actions from the bundled script:
 
 - `--extract-media` to dump `ppt/media/*` into a folder

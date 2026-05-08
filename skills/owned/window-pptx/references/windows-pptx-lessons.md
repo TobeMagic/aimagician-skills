@@ -2,6 +2,8 @@
 
 Short notes distilled from real PowerPoint automation work on Windows. Load this file when the task is a project-style deck build, especially with Chinese paths, user-edited sample pages, or repeated COM reruns.
 
+For a complete multi-assignment homework workflow, also load `ppt-homework-execution-playbook.md`. That playbook covers the full chain: classify slides, extract raw assets, rebuild output slides, preserve fonts, implement animation requirements, export QA previews, and keep deterministic rerunnable scripts.
+
 ## 1. Classify Slides Before Editing
 
 Do not assume every non-empty slide is meant to be edited.
@@ -164,3 +166,17 @@ Benefits:
 - easier patching after user feedback
 - lower chance of accidental manual drift
 - reusable for future slide variants
+
+## 11. Font Audit and Font Preservation
+
+PowerPoint COM can inspect fonts already used inside a deck. Use `Presentation.Fonts` when available, and also traverse slide shapes with `Shape.TextFrame.TextRange.Font.Name` because grouped shapes and tables can be missed by a single high-level collection.
+
+Do not rely on PowerPoint COM as the best source for the full installed font list. Query Windows fonts directly, for example through `System.Drawing.Text.InstalledFontCollection` or the Windows font registry. PowerPoint uses those installed Windows font families when rendering text.
+
+For design homework or client-facing decks where the recipient may not have the same fonts:
+
+- use the user's explicit font workflow first, such as Chinese title font, Chinese body font, and English font
+- verify required fonts against Windows installed fonts before generating final slides
+- if a required font exists only as a local `.ttf` / `.otf`, use the font file directly when rasterizing title/body text assets
+- for large decorative titles or typography-sensitive text, convert text to an image or vector-like asset before placing it in PowerPoint
+- keep normal editable text only where fallback risk is acceptable
