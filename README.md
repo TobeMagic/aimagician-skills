@@ -111,8 +111,9 @@ node dist/cli/index.js doctor
 2. `catalog/skills/*.yaml`（第三方仓库或命令源）
 3. `bootstrap --dry-run --json` 解析后的可安装 skill 列表（按默认 targets 的并集）
 
-### Owned Skills（12）
+### Owned Skills（13）
 
+- `academic-paper-workflow`
 - `cloudflare-image-gen`
 - `deep-research-system`
 - `design-md-brand-router`
@@ -136,8 +137,9 @@ node dist/cli/index.js doctor
 - `slavingia-skills`
 - `ui-ux-pro-max-skill`（command source）
 
-### Resolved Skills（45, 默认 targets 并集）
+### Resolved Skills（46, 默认 targets 并集）
 
+- `academic-paper-workflow`
 - `algorithmic-art`
 - `brand-guidelines`
 - `canvas-design`
