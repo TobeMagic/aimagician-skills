@@ -18,6 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Gemini and Plugins** - Add Gemini-native output plus capability-aware plugin and extension handling (completed 2026-03-14)
 - [x] **Phase 5: Verification and Release UX** - Add doctor/list/report flows and finish the bootstrap experience (completed 2026-03-14)
 - [x] **Phase 6: Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow** - Add an owned Windows PowerPoint automation skill based on `REQUEST.md`, templates, assets, optional add-in discovery, and native COM execution (completed 2026-05-05)
+- [ ] **Phase 7: Integrate Skill Repository** - Integrate the existing skill repository into a broader system.
 
 ## Phase Details
 
@@ -102,7 +103,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -112,6 +113,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 4. Gemini and Plugins | 3/3 | Complete    | 2026-03-14 |
 | 5. Verification and Release UX | 2/2 | Complete    | 2026-03-14 |
 | 6. Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow | 1/1 | Complete | 2026-05-05 |
+| 7. Integrate Skill Repository | 0/0 | Not Started | (pending) |
 
 ### Phase 6: Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow
 
@@ -127,3 +129,16 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 Plans:
 - [x] 06-01: Add window-pptx skill, helper script, folder contract, and bootstrap documentation
+
+### Phase 7: Integrate Skill Repository
+**Goal**: Integrate the existing skill repository into a broader system.
+**Depends on**: Phase 6
+**Requirements**: []
+**Success Criteria** (what must be TRUE):
+  1. The skill repository can be consumed by other systems or applications.
+  2. Skills are discoverable and usable through a defined interface.
+  3. Integration is robust and handles new/updated skills gracefully.
+**Plans**: 0 plans
+
+Plans:
+- [ ] 07-01: [To be planned]
