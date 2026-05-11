@@ -70,7 +70,7 @@ describe("runBootstrap", () => {
 
     expect(firstRun.changed).toBe(true);
     expect(secondRun.changed).toBe(false);
-    expect(plan.selectedTargets).toEqual(["codex", "claude", "opencode", "gemini", "hermes", "cursor"]);
+    expect(plan.selectedTargets).toEqual(["codex", "claude", "opencode", "gemini", "hermes", "cursor", "copilot"]);
     expect(plan.ownedSkillIds).toEqual(["daily-ops"]);
     expect(manifest.version).toBe(3);
     expect(manifest.assets.map((asset) => asset.id)).toEqual([

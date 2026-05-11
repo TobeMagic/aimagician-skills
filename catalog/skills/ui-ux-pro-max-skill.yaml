@@ -1,7 +1,7 @@
 sources:
   - id: ui-ux-pro-max-skill
     type: command
-    enabled: true
+    enabled: false
     description: Install UI/UX Pro Max via official uipro CLI and sync generated outputs to user-level AI skill homes
     targets:
       include:
@@ -9,14 +9,15 @@ sources:
         - claude
         - opencode
         - gemini
-    command:
-      run: npm install -g --prefix "$HOME/.local" uipro-cli@latest && PATH="$HOME/.local/bin:$PATH" uipro init --ai all --force
-      adapter:
-        type: generated-skills
-        paths:
-          claude: .claude/skills/ui-ux-pro-max
-          codex: .codex/skills/ui-ux-pro-max
-          gemini: .gemini/skills/ui-ux-pro-max
-          opencode: .opencode/skills/ui-ux-pro-max
+    # Command source disabled: ui-ux-pro-max installation is intentionally commented out to prevent automatic installs.
+    # command:
+    #  run: npm install -g --prefix "$HOME/.local" uipro-cli@latest && PATH="$HOME/.local/bin:$PATH" uipro init --ai all --force
+    #  adapter:
+    #    type: generated-skills
+    #    paths:
+    #      claude: .claude/skills/ui-ux-pro-max
+    #      codex: .codex/skills/ui-ux-pro-max
+    #      gemini: .gemini/skills/ui-ux-pro-max
+    #      opencode: .opencode/skills/ui-ux-pro-max
     assets:
       - id: ui-ux-pro-max

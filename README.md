@@ -69,6 +69,7 @@ npm run bootstrap
 - `gemini`
 - `hermes`
 - `cursor`
+- `copilot`
 
 发布后可直接：
 
@@ -111,7 +112,7 @@ node dist/cli/index.js doctor
 2. `catalog/skills/*.yaml`（第三方仓库或命令源）
 3. `bootstrap --dry-run --json` 解析后的可安装 skill 列表（按默认 targets 的并集）
 
-### Owned Skills（13）
+### Owned Skills（11）
 
 - `academic-paper-workflow`
 - `cloudflare-image-gen`
@@ -121,38 +122,38 @@ node dist/cli/index.js doctor
 - `infinite-research-loop`
 - `karpathy-coding-principles`
 - `modelscope_imagegen`
-- `modelscope_video_ops`
 - `multilingual-diversity-loop`
 - `parallel-worktree-pr-flow`
-- `repo-to-resume`
 - `window-pptx`
 
-### Catalog Skill Sources（7）
+### Catalog Skill Sources（5）
 
 - `awesome-claude-skills`（`content-research-writer`、`image-enhancer`）
 - `claude-official`（Anthropic 官方 skills，源路径 `anthropics/skills`）
-- `deep-research-prompt`
 - `gsd`（command source）
+- `obra-superpowers`（GitHub source, `obra/superpowers`）
 - `playwright-skill`
 - `slavingia-skills`
-- `ui-ux-pro-max-skill`（command source）
 
-### Resolved Skills（46, 默认 targets 并集）
+### Resolved Skills（56, 默认 targets 并集）
 
 - `academic-paper-workflow`
 - `algorithmic-art`
+- `brainstorming`
 - `brand-guidelines`
 - `canvas-design`
 - `claude-api`
 - `cloudflare-image-gen`
 - `company-values`
 - `content-research-writer`
-- `deep-research-prompt`
 - `deep-research-system`
 - `design-md-brand-router`
+- `dispatching-parallel-agents`
 - `doc-coauthoring`
 - `docx`
+- `executing-plans`
 - `find-community`
+- `finishing-a-development-branch`
 - `first-customers`
 - `frontend-design`
 - `github-readme-highstar`
@@ -166,7 +167,6 @@ node dist/cli/index.js doctor
 - `mcp-builder`
 - `minimalist-review`
 - `modelscope_imagegen`
-- `modelscope_video_ops`
 - `multilingual-diversity-loop`
 - `mvp`
 - `parallel-worktree-pr-flow`
@@ -175,15 +175,23 @@ node dist/cli/index.js doctor
 - `pptx`
 - `pricing`
 - `processize`
-- `repo-to-resume`
+- `receiving-code-review`
+- `requesting-code-review`
 - `skill-creator`
 - `slack-gif-creator`
+- `subagent-driven-development`
+- `systematic-debugging`
+- `test-driven-development`
 - `theme-factory`
-- `ui-ux-pro-max`
+- `using-git-worktrees`
+- `using-superpowers`
 - `validate-idea`
+- `verification-before-completion`
 - `web-artifacts-builder`
 - `webapp-testing`
 - `window-pptx`
+- `writing-plans`
+- `writing-skills`
 - `xlsx`
 
 如需重新生成该清单（防止文档过期）：

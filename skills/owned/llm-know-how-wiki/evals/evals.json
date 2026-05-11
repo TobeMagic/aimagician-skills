@@ -1,0 +1,30 @@
+{
+  "skill_name": "llm-know-how-wiki",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "在当前项目初始化一个 LLM-know-how-wiki，用工程上下文作为默认 domain。",
+      "expected_output": "Creates a project-local LLM-know-how-wiki with raw/wiki directories, SCHEMA.md, README.md, wiki/index.md, wiki/log.md, and wiki/overview.md.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "请 Ingest raw/linear_luckee_2_0.md，生成 Luckee 2.0 工程状态页，并更新 index/log。",
+      "expected_output": "Reads the specified raw file, creates or updates a project status page under wiki/project, updates wiki/index.md, appends wiki/log.md, and runs lint/sensitive scan.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "请 Answer：Luckee 2.0 当前最大的工程风险是什么？只基于 wiki 回答。",
+      "expected_output": "Reads wiki/index.md and relevant wiki pages, answers with page-path citations, and does not modify files.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "请 Lint 当前 LLM-know-how-wiki，并把报告写入 wiki/digest。",
+      "expected_output": "Runs wiki_lint.py with --write-report and scan_sensitive.py, creates a lint report under wiki/digest, and appends wiki/log.md.",
+      "files": []
+    }
+  ]
+}
+

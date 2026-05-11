@@ -1,0 +1,9 @@
+sources:
+  - id: obra-superpowers
+    type: github
+    enabled: true
+    description: Superpowers skill framework from obra/superpowers repository
+    github:
+      repo: obra/superpowers
+      ref: main
+      path: skills

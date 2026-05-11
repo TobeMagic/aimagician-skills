@@ -20,6 +20,7 @@ Default bootstrap target set:
 - `gemini`
 - `hermes`
 - `cursor`
+- `copilot`
 
 Equivalent explicit command:
 
@@ -53,10 +54,8 @@ Current owned skills include:
 - `infinite-research-loop`
 - `karpathy-coding-principles`
 - `modelscope_imagegen`
-- `modelscope_video_ops`
 - `multilingual-diversity-loop`
 - `parallel-worktree-pr-flow`
-- `repo-to-resume`
 - `window-pptx`
 
 ## Highlighted Workflows
