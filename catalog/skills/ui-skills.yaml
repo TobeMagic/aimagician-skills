@@ -1,0 +1,64 @@
+sources:
+  # UI Skills from ibelick/ui-skills (4 skills)
+  - id: ibelick-ui-skills
+    type: github
+    enabled: true
+    description: Selected UI skills from ibelick/ui-skills
+    github:
+      repo: ibelick/ui-skills
+      ref: main
+      path: skills
+    assets:
+      - path: baseline-ui
+      - path: fixing-accessibility
+      - path: fixing-metadata
+      - path: fixing-motion-performance
+
+  # wcag-audit-patterns from wshobson/agents
+  - id: wcag-audit-patterns
+    type: github
+    enabled: true
+    description: WCAG 2.2 compliance audit skill
+    github:
+      repo: wshobson/agents
+      ref: main
+      path: plugins/accessibility-compliance/skills
+    assets:
+      - path: wcag-audit-patterns
+
+  # make-interfaces-feel-better from jakubkrehel
+  - id: make-interfaces-feel-better
+    type: github
+    enabled: true
+    description: Make interfaces feel better - micro-interactions and visual details
+    github:
+      repo: jakubkrehel/make-interfaces-feel-better
+      ref: main
+      path: skills
+    assets:
+      - path: make-interfaces-feel-better
+
+  # design-lab from 0xdesign/design-plugin
+  - id: design-lab
+    type: github
+    enabled: true
+    description: Design workshop flow - interview requirements, generate variants, iterate UI
+    github:
+      repo: 0xdesign/design-plugin
+      ref: main
+      path: design-and-refine/skills
+    assets:
+      - path: design-lab
+
+  # impeccable from pbakaus
+  - id: pbakaus-impeccable
+    type: github
+    enabled: true
+    description: Impeccable - production-grade frontend design language
+    github:
+      repo: pbakaus/impeccable
+      ref: main
+      path: .
+    assets:
+      - path: skill
+        id: impeccable

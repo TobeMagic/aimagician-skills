@@ -7,11 +7,19 @@ Use this reference when creating or updating `SCHEMA.md` and curated wiki pages.
 ```text
 LLM-know-how-wiki/
   raw/
+    external_reference_repos/
+    gcloud_inventory/
+    workflow_activity/
+  external_reference_repos/
+    README.md
+    manifest.json
+    open_source/
   wiki/
     service/
     architecture/
     api/
     project/
+    reference/
     runbook/
     decision/
     digest/
@@ -31,7 +39,7 @@ Every curated wiki page should start with:
 ```yaml
 ---
 title: Page Title
-type: service | architecture | api | project | runbook | decision | digest | index | log
+type: service | architecture | api | project | reference | runbook | decision | digest | index | log
 status: active | variant | archive | unknown
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -48,6 +56,7 @@ repo_path: <relative or absolute path>
 repo_remote: <origin URL or unknown>
 current_branch: <branch or unknown>
 cloud_run: []
+deploy_triggers: []
 ```
 
 Use `confidence: high` only for well-supported, source-backed claims. Use `medium` for single-source but plausible synthesis. Use `low` when the page is a starting map or contains unresolved uncertainty.
@@ -112,19 +121,39 @@ Sections:
 - Related
 - Sources
 
+### Reference
+
+Use for external open-source repositories and architecture comparisons.
+
+Sections:
+
+- Purpose
+- Source repositories
+- Architecture patterns
+- Useful ideas
+- Differences from this project
+- Risks or non-transferable parts
+- Related
+- Sources
+
 ### Runbook
 
-Use for repeated operational actions.
+Use for repeated project-local operational actions. Runbooks are where repository-specific or company-specific operating context belongs: cloud resource maps, local dev setup, deployment checks, troubleshooting, incident response, and escalation paths.
 
 Sections:
 
 - When to use
+- Scope and prerequisites
 - Commands or checks
 - Expected result
 - Failure modes
 - Escalation
 - Related
 - Sources
+
+Project-specific infrastructure context should be a runbook, not a reusable skill reference. Keep generic command safety in skills and put resource names, regions, namespaces, service maps, and local conventions in `wiki/runbook/`.
+
+Deployment branch-to-environment mappings should live in `wiki/runbook/deployment_mapping.md`, `wiki/runbook/deployment_overview.md`, or the relevant `wiki/service/<service>.md`. Use `references/deployment-metadata.md` for the recommended fields.
 
 ### Decision
 
@@ -172,7 +201,7 @@ Recommended entry:
   - notes: One concise sentence.
 ```
 
-Use operation labels: `INIT`, `RAW_IMPORT`, `INGEST`, `ANSWER_FILED`, `LINT`, `SAFETY_REDACTION`, `ARCHIVE`.
+Use operation labels: `INIT`, `RAW_IMPORT`, `INGEST`, `ANSWER_FILED`, `LINT`, `SAFETY_REDACTION`, `REFERENCE_REPO`, `REFERENCE_REPO_REFRESH`, `REFERENCE_REPO_SNAPSHOT`, `LINEAR_WORKFLOW`, `GITHUB_PR_WORKFLOW`, `WORKFLOW_ACTIVITY`, `ARCHIVE`.
 
 ## Link Rules
 
@@ -190,6 +219,7 @@ Useful engineering tags:
 - architecture
 - api
 - project
+- reference
 - frontend
 - backend
 - agent
@@ -212,5 +242,14 @@ Useful engineering tags:
 - websocket
 - sse
 - ads
+- opensource
+- external
+- github
+- workflow
+- gcloud
+- cloud-run
+- gke
+- cloud-sql
+- cloud-storage
+- vpc
 - unknown
-

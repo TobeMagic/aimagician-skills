@@ -1,9 +1,18 @@
 sources:
-  - id: claude-official
+  - id: anthropics-skills-selected
     type: github
     enabled: true
-    description: Anthropic official skills from anthropics/skills
+    description: Selected Anthropic official skills (docx, frontend-design, mcp-builder, pdf, pptx, skill-creator, webapp-testing, xlsx)
     github:
       repo: anthropics/skills
       ref: main
       path: skills
+    assets:
+      - path: docx
+      - path: frontend-design
+      - path: mcp-builder
+      - path: pdf
+      - path: pptx
+      - path: skill-creator
+      - path: webapp-testing
+      - path: xlsx

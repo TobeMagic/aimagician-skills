@@ -13,11 +13,12 @@ Use this skill to create and operate a project-local compiled knowledge base ins
 
 ## Core Model
 
-Every wiki has three layers:
+Every wiki has three core layers plus one optional external-reference area:
 
 - `raw/`: append-only evidence such as repository snapshots, Feishu exports, Linear snapshots, meeting notes, APIs, PDFs, CSVs, screenshots, and imported docs.
 - `wiki/`: curated, agent-maintained Markdown pages with frontmatter, links, summaries, architecture notes, API contracts, project status, runbooks, decisions, and digests.
 - `SCHEMA.md`: the behavior contract that tells agents how to maintain this specific wiki: page types, tags, naming, update rules, safety rules, and operation modes.
+- `external_reference_repos/open_source/`: third-party open-source repositories used only for architecture and implementation reference. Do not treat these as company services or deployment targets.
 
 The navigation backbone is:
 
@@ -57,6 +58,54 @@ This prevents duplicates, broken conventions, and stale assumptions.
 
 ## Operating Modes
 
+### Refresh Repos
+
+Use Refresh Repos before repository-based Ingest when the user wants current code context across a multi-repo workspace.
+
+Run the bundled script:
+
+```bash
+python <skill>/scripts/refresh_repos.py --workspace <workspace-root>
+```
+
+Default behavior:
+
+- discovers git repositories under the workspace
+- runs `git fetch --all --prune --tags` in each repo with `GIT_TERMINAL_PROMPT=0`
+- does not run `git pull`
+- does not checkout, merge, rebase, or alter the working tree
+- writes a raw snapshot to `raw/repo_snapshots/<timestamp>-git-fetch.md` when a wiki root is available
+- appends `wiki/log.md`
+
+For preview:
+
+```bash
+python <skill>/scripts/refresh_repos.py --workspace <workspace-root> --dry-run --no-write-raw
+```
+
+After Refresh Repos, use Ingest to compile the snapshot into service or project pages if the status changes matter.
+
+### Reference Repos
+
+Use Reference Repos when the user wants to pull, update, or compare external open-source projects.
+
+Run the bundled script:
+
+```bash
+python <skill>/scripts/external_reference_repos.py --wiki-root <wiki-root> add https://github.com/owner/repo.git
+python <skill>/scripts/external_reference_repos.py --wiki-root <wiki-root> snapshot github__owner__repo
+```
+
+Default behavior:
+
+- clones external repositories into `external_reference_repos/open_source/<host>__<owner>__<repo>/`
+- stores source URL, path, ref, head, and license file metadata in `external_reference_repos/manifest.json`
+- writes shallow raw inventories to `raw/external_reference_repos/`
+- appends `wiki/log.md`
+- does not create service pages for external repositories
+
+Curated architecture comparisons belong under `wiki/reference/`, usually after one or more snapshots have been captured.
+
 ### Init
 
 Use Init when the project has no wiki or the user asks to create one.
@@ -92,6 +141,21 @@ Use Ingest when the user provides raw files, folders, repo context, Feishu expor
 9. Report changed files and verification results.
 
 Raw files are normally append-only. If a safety scan finds passwords, tokens, cookies, private keys, signed download URLs, or credential-like account data, redact them and record the redaction in metadata/log.
+
+### Workflow Activity Record
+
+Use this when another skill or workflow needs to leave an audit trail without creating a curated wiki page.
+
+```bash
+python <skill>/scripts/record_activity.py --wiki-root <wiki-root> \
+  --operation LINEAR_WORKFLOW \
+  --issue LUC-123 \
+  --repo owner/repo \
+  --branch LUC-123-short-title \
+  --summary "Started issue from latest dev branch"
+```
+
+The script writes `raw/workflow_activity/<timestamp>-<slug>.md` and appends `wiki/log.md`. Use it after Linear state changes, branch creation, PR creation, reviewer-bot review checks, merge decisions, and final status updates.
 
 ### Answer
 
@@ -136,12 +200,31 @@ Default engineering page types:
 - `architecture`: cross-service flow, runtime model, protocol, system design
 - `api`: API contract, endpoint inventory, event/message schema
 - `project`: Linear/Feishu/project status, roadmap, delivery context
-- `runbook`: operations, local dev, deployment, troubleshooting
+- `reference`: external open-source reference projects and architecture comparisons
+- `runbook`: project-local operating procedures such as local dev, deployment, cloud infrastructure, troubleshooting, incident checks, and repeated commands
 - `decision`: ADRs and trade-offs
 - `digest`: periodic or thematic synthesis
 - `index` and `log`: navigation and audit files
 
 Use [`references/wiki-schema-guide.md`](./references/wiki-schema-guide.md) for page templates and tag rules.
+
+## Project Runbooks
+
+Runbooks belong in `wiki/runbook/`, not in reusable skills. A skill can define a generic workflow, but project-specific resource names, service maps, regions, namespaces, URLs, and escalation paths should live in the project wiki.
+
+Good runbook topics:
+
+- `local_development.md`
+- `deployment_overview.md`
+- `deployment_mapping.md`
+- `environment_variables.md`
+- `gcloud_infra_playbook.md`
+- `<service>_operations.md`
+- `troubleshooting.md`
+
+When another skill asks for project-specific context, read `wiki/index.md` and the relevant runbook pages before acting.
+
+For deployment-trigger and environment mapping metadata, use [`references/deployment-metadata.md`](./references/deployment-metadata.md). This gives Linear, GitHub, and gcloud workflows a shared project-local source of truth before they fall back to repo config or cloud live state.
 
 ## Source Adapters
 
@@ -152,6 +235,7 @@ Use [`references/source-adapters.md`](./references/source-adapters.md) when inge
 - Linear issue snapshots
 - Cloud Run or deployment metadata
 - API docs
+- external open-source reference repositories
 - screenshots or binary assets
 
 Do not live-inspect Cloud Run or external systems unless the user explicitly asks. If deployment metadata is imported from docs, store only service name and URL unless the schema permits more.
@@ -174,6 +258,21 @@ python <skill>/scripts/init_wiki.py --domain "engineering context"
 # Find wiki root from the current project
 python <skill>/scripts/init_wiki.py --print-root --no-create
 
+# Fetch latest remote refs for all repos and record raw snapshot
+python <skill>/scripts/refresh_repos.py --workspace <workspace-root>
+
+# Preview repository discovery without fetching
+python <skill>/scripts/refresh_repos.py --workspace <workspace-root> --dry-run --no-write-raw
+
+# Add an external open-source reference repository
+python <skill>/scripts/external_reference_repos.py --wiki-root <wiki-root> add https://github.com/owner/repo.git
+
+# Capture a shallow raw inventory for later comparison
+python <skill>/scripts/external_reference_repos.py --wiki-root <wiki-root> snapshot github__owner__repo
+
+# Record workflow activity into raw/ and wiki/log.md
+python <skill>/scripts/record_activity.py --wiki-root <wiki-root> --operation WORKFLOW_ACTIVITY --summary "Recorded activity"
+
 # Lint structure and links
 python <skill>/scripts/wiki_lint.py <wiki-root>
 
@@ -189,4 +288,4 @@ python <skill>/scripts/scan_sensitive.py <wiki-root>
 - [`references/ingest-answer-lint.md`](./references/ingest-answer-lint.md): detailed workflows
 - [`references/wiki-schema-guide.md`](./references/wiki-schema-guide.md): schema, frontmatter, page templates
 - [`references/source-adapters.md`](./references/source-adapters.md): source-specific ingest rules
-
+- [`references/deployment-metadata.md`](./references/deployment-metadata.md): repo deployment mappings, triggers, environments, and provenance fields

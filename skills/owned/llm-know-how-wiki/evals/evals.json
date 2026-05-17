@@ -24,7 +24,30 @@
       "prompt": "请 Lint 当前 LLM-know-how-wiki，并把报告写入 wiki/digest。",
       "expected_output": "Runs wiki_lint.py with --write-report and scan_sensitive.py, creates a lint report under wiki/digest, and appends wiki/log.md.",
       "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "在当前多仓库 workspace 里刷新所有仓库的远端引用，但不要 pull，然后把结果记录进 LLM-know-how-wiki/raw。",
+      "expected_output": "Runs refresh_repos.py so each discovered git repo gets git fetch --all --prune --tags, writes a raw repo snapshot, appends wiki/log.md, and does not alter working tree branches.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "把 https://github.com/openai/codex.git 加入当前 wiki 的外部开源参考仓库目录，并生成一个浅层 raw snapshot。",
+      "expected_output": "Clones the repository under external_reference_repos/open_source, updates external_reference_repos/manifest.json, writes a raw snapshot under raw/external_reference_repos, and appends wiki/log.md without creating a company service page.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "记录一次 LUC-123 已从最新 dev 创建分支的工作流活动到当前 LLM-know-how-wiki。",
+      "expected_output": "Runs record_activity.py, writes a raw workflow activity Markdown file under raw/workflow_activity, and appends wiki/log.md with a LINEAR_WORKFLOW or WORKFLOW_ACTIVITY entry.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "把当前仓库的 dev/main 部署触发规则整理进 LLM-know-how-wiki，后续给 Linear 和 gcloud workflow 使用。",
+      "expected_output": "Creates or updates a deployment metadata runbook such as wiki/runbook/deployment_mapping.md using wiki-first source priority, records branch-to-environment mappings, deploy triggers, GCP project/region/service/URL, provenance fields, conflicts, sources, index, and log without storing secrets.",
+      "files": []
     }
   ]
 }
-

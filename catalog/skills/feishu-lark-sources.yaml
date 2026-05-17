@@ -1,9 +1,9 @@
 sources:
-  - id: feishu-lark-official
+  - id: feishu-lark-cli
     type: github
     enabled: false
-    description: "Placeholder for Feishu / Lark CLI skills source. Set github.repo to the chosen repo to enable."
+    description: "Feishu / Lark CLI official skill collection (lark-* skills)"
     github:
-      repo: ""
-      ref: "main"
-      path: "skills"
+      repo: larksuite/lark-cli
+      ref: main
+      path: skills

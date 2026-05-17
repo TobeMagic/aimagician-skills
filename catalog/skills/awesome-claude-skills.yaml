@@ -1,7 +1,7 @@
 sources:
   - id: awesome-claude-skills
     type: github
-    enabled: true
+    enabled: false
     description: Selected skills from ComposioHQ/awesome-claude-skills
     github:
       repo: ComposioHQ/awesome-claude-skills

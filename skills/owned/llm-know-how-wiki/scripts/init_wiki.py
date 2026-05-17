@@ -67,12 +67,18 @@ def init_wiki(root: Path, domain: str) -> dict[str, list[str]]:
     dirs = [
         "raw",
         "raw/repo_snapshots",
+        "raw/external_reference_repos",
+        "raw/gcloud_inventory",
+        "raw/workflow_activity",
         "raw/imports",
+        "external_reference_repos",
+        "external_reference_repos/open_source",
         "wiki",
         "wiki/service",
         "wiki/architecture",
         "wiki/api",
         "wiki/project",
+        "wiki/reference",
         "wiki/runbook",
         "wiki/decision",
         "wiki/digest",
@@ -88,6 +94,7 @@ def init_wiki(root: Path, domain: str) -> dict[str, list[str]]:
     files = {
         "README.md": "README.md.tpl",
         "SCHEMA.md": "SCHEMA.md.tpl",
+        "external_reference_repos/README.md": "external_reference_repos_README.md.tpl",
         "wiki/index.md": "wiki_index.md.tpl",
         "wiki/log.md": "wiki_log.md.tpl",
         "wiki/overview.md": "wiki_overview.md.tpl",
@@ -130,4 +137,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

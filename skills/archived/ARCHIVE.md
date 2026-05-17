@@ -6,6 +6,8 @@ Archived IDs:
 - deep-research-prompt (catalog)
 - modelscope_video_ops (owned)
 - repo-to-resume (owned)
+- karpathy-coding-principles (owned, 2026-05-11)
+- infinite-research-loop (owned, 2026-05-11)
 
 Notes:
 - These entries will not be installed by bootstrap; catalog entries were removed/disabled.

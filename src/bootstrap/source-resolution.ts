@@ -261,6 +261,12 @@ async function resolveSkillInstallDestination(
         destinationPath: join(targetHomes.gemini.extensionsDir, assetId),
         installArea: "extensions"
       };
+    case "copilot":
+      return {
+        sourcePath: sourceDir,
+        destinationPath: join(targetHomes.copilot.skillsDir, assetId),
+        installArea: "skills"
+      };
     default:
       return null;
   }

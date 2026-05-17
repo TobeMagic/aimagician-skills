@@ -12,7 +12,18 @@ from pathlib import Path
 
 WIKI_DIR_NAME = "LLM-know-how-wiki"
 WIKILINK_RE = re.compile(r"\[\[([^\]]+)\]\]")
-ALLOWED_TYPES = {"service", "architecture", "api", "project", "runbook", "decision", "digest", "index", "log"}
+ALLOWED_TYPES = {
+    "service",
+    "architecture",
+    "api",
+    "project",
+    "reference",
+    "runbook",
+    "decision",
+    "digest",
+    "index",
+    "log",
+}
 REQUIRED_KEYS = {"title", "type", "status", "created", "updated", "tags", "sources", "confidence"}
 
 
@@ -251,4 +262,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

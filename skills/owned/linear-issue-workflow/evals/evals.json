@@ -1,0 +1,29 @@
+{
+  "skill_name": "linear-issue-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "开始处理 Linear issue LUC-123，先建立分支。",
+      "expected_output": "Reads the issue through Linear MCP, confirms repo/base/acceptance criteria, fetches origin/dev, creates a LUC-123 slug branch from origin/dev, and records a LINEAR_WORKFLOW entry in LLM-know-how-wiki.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "这个 PR 已经开了，可以把 Linear 关掉吗？",
+      "expected_output": "Checks GitHub PR status, CI, reviewer-bot, and required reviews through the related GitHub workflow before allowing Linear closure; records the check in the wiki.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "LUC-123 已经开发并测试通过，后面流程怎么走？",
+      "expected_output": "Pushes the issue branch, creates a GitHub PR against dev titled from the Linear issue as [LUC-123] <Linear issue title>, links the PR back to Linear, moves Linear to In Review, adds a Linear comment with PR URL/branch/tests/risks, and records the workflow activity in LLM-know-how-wiki.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "我刚 push 了一版 review fix，之后 merge 到 main 会触发 prod，Linear 需要更新什么？",
+      "expected_output": "Adds a Linear code-update comment for the pushed commit with branch/commit/summary/tests/PR/risk; after merge or push to the deploy-triggering branch, resolves environment mapping from LLM-know-how-wiki first, then repo CI/CD config, then live cloud config, using main/master -> prod only as fallback; verifies build/deploy provenance, comments the verdict or conflict on Linear, and records the activity in LLM-know-how-wiki.",
+      "files": []
+    }
+  ]
+}

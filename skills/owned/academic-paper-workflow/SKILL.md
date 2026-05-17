@@ -32,6 +32,7 @@ Choose the smallest reference set needed:
 - [`references/paper-writing-figures-workflow.md`](./references/paper-writing-figures-workflow.md): paper story, structure imitation, three core figures, polish
 - [`references/venue-selection-workflow.md`](./references/venue-selection-workflow.md): journal/conference ranking, SCI/EI/Chinese core/CCF/OA, fallback ladder
 - [`references/submission-revision-workflow.md`](./references/submission-revision-workflow.md): author guideline checklist, submission package, reviewer response
+- [`references/reviewer-response-workflow.md`](./references/reviewer-response-workflow.md): post-review triage, manuscript self-audit, point-by-point response, 10 most dangerous review issues
 - [`references/integrity-and-risk-controls.md`](./references/integrity-and-risk-controls.md): academic integrity, predatory venue checks, paper-mill refusal
 
 If the user needs real paper retrieval or a reusable literature system, also use the `deep-research-system` skill if available.

@@ -316,7 +316,8 @@ function createAllowedRootsByTarget(
     opencode: [targetHomes.opencode.skillsDir, targetHomes.opencode.pluginsDir],
     gemini: [targetHomes.gemini.extensionsDir],
     hermes: [targetHomes.hermes.skillsDir],
-    cursor: [targetHomes.cursor.skillsDir]
+    cursor: [targetHomes.cursor.skillsDir],
+    copilot: [targetHomes.copilot?.skillsDir || ""]
   };
 }
 

@@ -5,7 +5,7 @@ import {
   type PlatformContext
 } from "../shared/platform";
 
-export const directSkillTargets = ["codex", "claude", "opencode", "hermes"] as const;
+export const directSkillTargets = ["codex", "claude", "opencode", "hermes", "copilot"] as const;
 export const pluginFileTargets = ["opencode"] as const;
 
 export type DirectSkillTarget = (typeof directSkillTargets)[number];
@@ -50,6 +50,7 @@ export interface ResolvedTargetHomes {
   gemini: GeminiTargetHome;
   hermes: HermesTargetHome;
   cursor: CursorTargetHome;
+  copilot: DirectTargetHome;
 }
 
 export function isDirectSkillTarget(
@@ -75,6 +76,7 @@ export function resolveTargetHomes(
   const geminiRoot = pathApi.join(platformContext.homeDir, ".gemini");
   const hermesRoot = pathApi.join(platformContext.homeDir, ".hermes");
   const cursorRoot = pathApi.join(platformContext.homeDir, ".cursor");
+  const copilotRoot = pathApi.join(platformContext.homeDir, ".copilot");
 
   return {
     codex: {
@@ -108,6 +110,11 @@ export function resolveTargetHomes(
       target: "cursor",
       rootDir: cursorRoot,
       skillsDir: pathApi.join(cursorRoot, "skills")
+    },
+    copilot: {
+      target: "copilot",
+      rootDir: copilotRoot,
+      skillsDir: pathApi.join(copilotRoot, "skills")
     }
   };
 }
@@ -121,6 +128,7 @@ export function resolveDirectTargetHomes(
     codex: homes.codex,
     claude: homes.claude,
     opencode: homes.opencode,
-    hermes: homes.hermes
+    hermes: homes.hermes,
+    copilot: homes.copilot
   };
 }

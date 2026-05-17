@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Gemini and Plugins** - Add Gemini-native output plus capability-aware plugin and extension handling (completed 2026-03-14)
 - [x] **Phase 5: Verification and Release UX** - Add doctor/list/report flows and finish the bootstrap experience (completed 2026-03-14)
 - [x] **Phase 6: Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow** - Add an owned Windows PowerPoint automation skill based on `REQUEST.md`, templates, assets, optional add-in discovery, and native COM execution (completed 2026-05-05)
-- [ ] **Phase 7: Integrate Skill Repository** - Integrate the existing skill repository into a broader system.
+- [x] **Phase 7: Bootstrap copilot fix and multi-target skill audit** - Fix copilot bootstrap (missing case "copilot"), audit all 7 CLI targets, confirm llm-know-how-wiki everywhere, record historical leftovers (completed 2026-05-11)
 
 ## Phase Details
 
@@ -113,7 +113,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 4. Gemini and Plugins | 3/3 | Complete    | 2026-03-14 |
 | 5. Verification and Release UX | 2/2 | Complete    | 2026-03-14 |
 | 6. Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow | 1/1 | Complete | 2026-05-05 |
-| 7. Integrate Skill Repository | 0/0 | Not Started | (pending) |
+| 7. Bootstrap copilot fix and multi-target skill audit | 1/1 | Complete | 2026-05-11 |
 
 ### Phase 6: Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow
 
@@ -130,15 +130,17 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 Plans:
 - [x] 06-01: Add window-pptx skill, helper script, folder contract, and bootstrap documentation
 
-### Phase 7: Integrate Skill Repository
-**Goal**: Integrate the existing skill repository into a broader system.
-**Depends on**: Phase 6
-**Requirements**: []
+### Phase 7: Bootstrap copilot fix and multi-target skill audit
+
+**Goal:** Fix copilot bootstrap install bug and audit all 7 CLI targets' skill installations
+**Depends on:** Phase 6
+**Requirements**: N/A (bug fix and audit)
 **Success Criteria** (what must be TRUE):
-  1. The skill repository can be consumed by other systems or applications.
-  2. Skills are discoverable and usable through a defined interface.
-  3. Integration is robust and handles new/updated skills gracefully.
-**Plans**: 0 plans
+  1. Copilot target receives full bootstrap installs (all owned + catalog skills)
+  2. All 7 CLI targets verified: skills installed, manifest synced, llm-know-how-wiki present
+  3. Historical leftovers documented per target
+  4. Feishu/Lark skill source configured with larksuite/lark-cli, default disabled
+**Plans:** 1 plan
 
 Plans:
-- [ ] 07-01: [To be planned]
+- [x] 07-01: Fix copilot bootstrap, audit targets, record context in .planning

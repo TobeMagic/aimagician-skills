@@ -1,0 +1,17 @@
+{
+  "skill_name": "github-pr-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "检查 https://github.com/motse-ai/gke-agent-manager/pull/12 是否可以结束 LUC-123。",
+      "expected_output": "Uses gh to inspect PR state, checks, reviews, reviewer-bot output, and unresolved threads; refuses closure if any gate is missing; records GITHUB_PR_WORKFLOW activity in LLM-know-how-wiki.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "为当前 LUC-123 分支创建 PR。",
+      "expected_output": "Creates a PR against dev with title [LUC-123] <Linear issue title>, includes the Linear link, records the PR URL in the wiki, and instructs the Linear workflow to move the issue to In Review and comment with the PR URL.",
+      "files": []
+    }
+  ]
+}

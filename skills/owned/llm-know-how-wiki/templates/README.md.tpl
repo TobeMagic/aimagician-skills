@@ -5,6 +5,7 @@ This is a project-local compiled knowledge base.
 ## Core idea
 
 - `raw/` stores append-only source evidence.
+- `external_reference_repos/` stores third-party repositories used only as reference material.
 - `wiki/` stores curated, agent-maintained Markdown pages.
 - `SCHEMA.md` defines how agents maintain the wiki.
 - `wiki/index.md` is the navigation catalog.
@@ -18,7 +19,8 @@ This is a project-local compiled knowledge base.
 4. Ask questions in Answer mode using the compiled wiki.
 5. Run Lint periodically.
 
+External open-source repositories belong under `external_reference_repos/open_source/`; they are not local company services. Curated comparisons should be written under `wiki/reference/`.
+
 ## Domain
 
 {{DOMAIN}}
-

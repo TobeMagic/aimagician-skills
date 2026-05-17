@@ -1,0 +1,23 @@
+{
+  "skill_name": "code-guidelines",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我修这个登录 bug。",
+      "expected_output": "Clarifies missing target details if needed, reads relevant code before editing, makes a focused change, and verifies with a targeted test or command.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "加一个可配置的通用插件系统，顺便重构一下相关代码。",
+      "expected_output": "Pushes back on speculative configurability and unrelated refactor, asks for the current concrete need, and proposes the smallest implementation that satisfies the actual requirement.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "处理 LUC-123，开 PR 前按规范来。",
+      "expected_output": "Applies code guidelines, uses the related Linear issue workflow for issue/branch handling, uses the GitHub PR workflow for PR readiness, and records durable activity through the LLM wiki when appropriate.",
+      "files": []
+    }
+  ]
+}

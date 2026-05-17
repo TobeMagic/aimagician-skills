@@ -13,6 +13,8 @@ confidence: medium
 
 ## When to use
 
+## Scope and prerequisites
+
 ## Commands or checks
 
 ## Expected result
@@ -24,4 +26,3 @@ confidence: medium
 ## Related
 
 ## Sources
-
