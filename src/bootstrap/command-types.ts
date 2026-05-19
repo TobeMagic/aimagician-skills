@@ -10,6 +10,7 @@ export interface BaseCliCommand {
 export interface BootstrapCommand extends BaseCliCommand {
   command: "bootstrap";
   dryRun: boolean;
+  clean?: boolean;
 }
 
 export interface ListCommand extends BaseCliCommand {

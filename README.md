@@ -95,6 +95,9 @@ node dist/cli/index.js bootstrap --target claude
 # 指定多个目标
 node dist/cli/index.js bootstrap --targets codex,claude,opencode,gemini,hermes,cursor
 
+# 清空目标目录后重新安装
+node dist/cli/index.js bootstrap --clean
+
 # 只看计划，不落盘
 node dist/cli/index.js bootstrap --dry-run --json
 

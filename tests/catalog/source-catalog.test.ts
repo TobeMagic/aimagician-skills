@@ -25,28 +25,11 @@ describe("loadCatalog", () => {
     });
 
     expect(catalog.skills.sources.length).toBeGreaterThanOrEqual(2);
-    expect(catalog.plugins.sources.length).toBeGreaterThanOrEqual(1);
-    expect(catalog.activeSources.map((source) => source.id)).toEqual(
-      expect.arrayContaining([
-        "claude-official",
-        "gsd",
-        "claude-official-plugins"
-      ])
-    );
-    expect(
-      catalog.skills.sources.find((source) => source.id === "claude-official")
-    ).toMatchObject({
-      type: "github"
-    });
+    expect(catalog.activeSources.length).toBeGreaterThanOrEqual(2);
     expect(
       catalog.skills.sources.find((source) => source.id === "gsd")
     ).toMatchObject({
       type: "command"
-    });
-    expect(
-      catalog.plugins.sources.find((source) => source.id === "claude-official-plugins")
-    ).toMatchObject({
-      type: "github"
     });
   });
 

@@ -56,7 +56,8 @@ describe("normalizeSources", () => {
       "opencode",
       "gemini",
       "hermes",
-      "cursor"
+      "cursor",
+      "copilot"
     ]);
     expect(sourceDefault?.effectiveTargets).toEqual(["claude", "opencode"]);
     expect(geminiNative?.effectiveTargets).toEqual(["gemini"]);

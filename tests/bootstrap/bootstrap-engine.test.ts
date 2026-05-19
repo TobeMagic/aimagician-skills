@@ -98,6 +98,8 @@ describe("runBootstrap", () => {
       { target: "claude", assetId: "daily-ops", kind: "skill", installArea: "skills" },
       { target: "codex", assetId: "claude-sync", kind: "skill", installArea: "skills" },
       { target: "codex", assetId: "daily-ops", kind: "skill", installArea: "skills" },
+      { target: "copilot", assetId: "claude-sync", kind: "skill", installArea: "skills" },
+      { target: "copilot", assetId: "daily-ops", kind: "skill", installArea: "skills" },
       { target: "cursor", assetId: "claude-sync", kind: "skill", installArea: "skills" },
       { target: "cursor", assetId: "daily-ops", kind: "skill", installArea: "skills" },
       { target: "gemini", assetId: "claude-sync", kind: "skill", installArea: "extensions" },

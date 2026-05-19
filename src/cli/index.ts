@@ -21,6 +21,7 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
       const result = await runBootstrap({
         selectedTargets: parsed.targets,
         dryRun: parsed.dryRun,
+        clean: parsed.clean,
         platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
       });
 
@@ -162,6 +163,7 @@ function renderHelp(): string {
     "  --target      Single target override (repeatable)",
     "  --home        Override the effective home directory (default: current ~/)",
     "  --dry-run     Print bootstrap intent without applying changes (bootstrap only)",
+    "  --clean       Wipe all target skill/plugin dirs before install (bootstrap only)",
     "  --json        Render machine-readable output",
     "  -h, --help    Show command help"
   ].join("\n");

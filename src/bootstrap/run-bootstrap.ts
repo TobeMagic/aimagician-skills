@@ -1,4 +1,4 @@
-import { writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import type { CatalogLoadOptions } from "../catalog/load-catalog";
 import { type SupportedTarget, supportedTargets } from "../model/targets";
 import {
@@ -36,6 +36,7 @@ import { ensureBootstrapWorkspace, resolveBootstrapWorkspace } from "./workspace
 export interface RunBootstrapOptions {
   selectedTargets?: SupportedTarget[];
   dryRun?: boolean;
+  clean?: boolean;
   now?: string;
   catalog?: CatalogLoadOptions;
   platform?: Partial<PlatformContext>;
@@ -129,8 +130,21 @@ export async function runBootstrap(
     workspaceRoot: workspace.rootDir,
     githubRepoOverrides: options.githubRepoOverrides
   });
+  const allowedRootsByTarget = createAllowedRootsByTarget(targetHomes);
+
+  if (options.clean) {
+    for (const target of selectedTargets) {
+      const roots = allowedRootsByTarget[target];
+
+      for (const root of roots.filter(Boolean)) {
+        await rm(root, { recursive: true, force: true });
+        await mkdir(root, { recursive: true });
+      }
+    }
+  }
+
   const managedSyncResults = await syncManagedInstalls({
-    allowedRootsByTarget: createAllowedRootsByTarget(targetHomes),
+    allowedRootsByTarget,
     selectedTargets,
     installs: [...skillInstalls, ...pluginResolution.installs],
     previousInstalls: previousManifest?.managedInstalls ?? []

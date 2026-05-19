@@ -20,6 +20,7 @@ export function parseCli(argv: string[]): ParsedCli {
 
   const targetSelections: SupportedTarget[] = [];
   let dryRun = false;
+  let clean = false;
   let json = false;
   let help = false;
   let homeDir: string | undefined;
@@ -33,6 +34,12 @@ export function parseCli(argv: string[]): ParsedCli {
           throw new Error(`Unsupported argument for ${command}: ${argument}`);
         }
         dryRun = true;
+        break;
+      case "--clean":
+        if (command !== "bootstrap") {
+          throw new Error(`Unsupported argument for ${command}: ${argument}`);
+        }
+        clean = true;
         break;
       case "--json":
         json = true;
@@ -65,6 +72,7 @@ export function parseCli(argv: string[]): ParsedCli {
       return {
         command,
         dryRun,
+        ...(clean ? { clean: true } : {}),
         ...base
       } satisfies BootstrapCommand;
     case "list":
