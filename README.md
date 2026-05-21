@@ -15,33 +15,18 @@
 >
 > 中文：面向多 AI CLI 的个人 skills 仓库与一键部署工具。
 
-默认中文文档。  
 English quick doc: [docs/README.en.md](./docs/README.en.md)
 
 这是一个面向多 AI CLI 的个人 skills 仓库与一键部署工具，目标是把技能统一安装到用户级目录，让 Codex / Claude / OpenCode / Gemini / Hermes / Cursor 开箱可用。
 
 快速入口：
 
-- [品牌视觉资产](#品牌视觉资产)
 - [快速开始](#快速开始)
 - [常用命令](#常用命令)
 - [当前-skill-全量清单](#当前-skill-全量清单)
 - [当前支持矩阵](#当前支持矩阵)
 - [用户级安装路径](#用户级安装路径)
 - [验证与排障](#验证与排障)
-
-## 品牌视觉资产
-
-仓库使用专属品牌视觉，已纳入版本管理：
-
-- Logo: `./docs/assets/aimagician-skills-logo.svg`
-- README cover: `./docs/assets/readme-cover.svg`
-
-设计目标：
-
-- 一眼看出这是“多 CLI skills 分发 + 一键安装”仓库
-- 视觉元素直接映射仓库结构（owned/catalog/bootstrap/targets）
-- 封面默认 full-bleed，适配 GitHub README 顶部展示
 
 ## 核心能力
 
