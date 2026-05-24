@@ -13,6 +13,7 @@ Create a 12-slide investor update deck from the provided template and quarterly 
 - Project folder:
 - Template/source deck:
 - Assets:
+- Downloaded stock assets:
 - Data:
 - Notes/references:
 
@@ -30,13 +31,40 @@ List exact slide-level or deck-level changes.
 2.
 3.
 
+## Module Plan
+
+Use this section for a short summary. Put detailed module rows in `MODULES.md`.
+
+- cover:
+- directory:
+- section:
+- body:
+- comparison:
+- timeline:
+- awards:
+- team:
+- ending:
+
 ## Visual Constraints
 
 - Aspect ratio:
 - Brand colors:
 - Fonts:
+- Style direction:
+- Master watermark: none / Slide Master / specific layout
+- Layout density:
 - Must preserve:
 - Must avoid:
+
+## Asset Search
+
+- Use Pixabay: yes/no
+- Search keywords:
+- Image type: all/photo/illustration/vector
+- Orientation: all/horizontal/vertical
+- Required source attribution in notes/logs: yes
+
+Use `PIXABAY_API_KEY` in the environment. Do not paste API keys into this file.
 
 ## Preferred Plugins
 
@@ -71,6 +99,9 @@ Choose one:
 - Speaker notes required: yes/no
 - PDF export required: yes/no
 - Visual review required: yes/no
+- PNG export required: yes/no
+- Deck audit required: yes/no
+- Animation effect table required: yes/no
 
 ## Extra Notes
 

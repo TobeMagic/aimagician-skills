@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
+import re
 import shutil
 import sys
 import tempfile
@@ -13,6 +15,8 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 
 MISSING = "<unavailable>"
@@ -33,6 +37,7 @@ Describe the final deck, audience, and success outcome.
 - Project folder:
 - Template/source deck:
 - Assets:
+- Downloaded stock assets:
 - Data:
 - Notes/references:
 
@@ -48,13 +53,38 @@ Describe the final deck, audience, and success outcome.
 2.
 3.
 
+## Module Plan
+
+List deck modules here and keep implementation detail in `MODULES.md`.
+
+- cover:
+- directory:
+- section:
+- body:
+- comparison:
+- timeline:
+- awards:
+- team:
+- ending:
+
 ## Visual Constraints
 
 - Aspect ratio:
 - Brand colors:
 - Fonts:
+- Style direction:
+- Master watermark:
+- Layout density:
 - Must preserve:
 - Must avoid:
+
+## Asset Search
+
+- Use Pixabay: yes/no
+- Search keywords:
+- Image type: all/photo/illustration/vector
+- Orientation: all/horizontal/vertical
+- Required source attribution in notes/logs: yes
 
 ## Preferred Plugins
 
@@ -76,6 +106,50 @@ Describe the final deck, audience, and success outcome.
 - Speaker notes required: yes/no
 - PDF export required: yes/no
 - Visual review required: yes/no
+"""
+
+MODULES_TEMPLATE = """# Module Plan
+
+Use this file to manage deck-level modules before writing project-specific automation code.
+
+## Module Vocabulary
+
+- cover
+- directory
+- section
+- body
+- comparison
+- timeline
+- process
+- data-chart
+- awards
+- team
+- closing
+
+## Module Table
+
+| Module ID | Type | Target Slides | Purpose | Inputs | Visual Strategy | Script Function | QA Notes |
+|---|---|---|---|---|---|---|---|
+| M01 | cover | 1 |  |  |  | build_cover |  |
+| M02 | body | 2-3 |  |  |  | build_body |  |
+
+## Design System
+
+- Theme:
+- Primary color:
+- Accent color:
+- Title font:
+- Body font:
+- Master watermark:
+- Reusable components:
+
+## Asset Manifest
+
+Keep downloaded or generated assets traceable:
+
+| Asset | Source | License/Page URL | Used In | Notes |
+|---|---|---|---|---|
+|  |  |  |  |  |
 """
 
 SLIDE_MAP_TEMPLATE = """# Slide Map
@@ -109,6 +183,29 @@ Use this file to classify the source deck before heavy edits.
 - Reference-only slides:
 """
 
+PROJECT_RUNNER_TEMPLATE = '''#!/usr/bin/env python3
+"""Project-specific entrypoint for window-pptx automation.
+
+Run this file from Windows Python when real PowerPoint COM work is needed.
+Keep project-specific layout code here and reusable helpers in the installed
+window-pptx skill script or copied project helpers.
+"""
+
+from pathlib import Path
+
+
+PROJECT_DIR = Path(__file__).resolve().parents[2]
+
+
+def main() -> None:
+    print(f"Project runner placeholder: {PROJECT_DIR}")
+    print("Replace this with project-specific PowerPoint COM build steps.")
+
+
+if __name__ == "__main__":
+    main()
+'''
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -121,7 +218,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--init-project",
         action="store_true",
-        help="Create standard window-pptx workspace folders plus REQUEST.md and SLIDE-MAP.md if missing.",
+        help="Create standard window-pptx workspace folders plus planning files if missing.",
     )
     parser.add_argument(
         "--extract-media",
@@ -163,6 +260,72 @@ def parse_args() -> argparse.Namespace:
         help="Remove the current user's temp gen_py cache before creating COM objects.",
     )
     parser.add_argument("--export-pdf", action="store_true", help="Export a PDF next to the PPTX.")
+    parser.add_argument(
+        "--search-images",
+        help="Search Pixabay images with PIXABAY_API_KEY and write a source manifest. Does not require PowerPoint COM.",
+    )
+    parser.add_argument(
+        "--download-image",
+        help="Download one image URL into assets/downloads/pixabay and update the asset manifest.",
+    )
+    parser.add_argument(
+        "--download-top-image",
+        action="store_true",
+        help="After --search-images, download the first available largeImageURL/webformatURL result.",
+    )
+    parser.add_argument("--image-lang", default="zh", help="Pixabay language code. Default: zh.")
+    parser.add_argument(
+        "--image-type",
+        default="all",
+        choices=["all", "photo", "illustration", "vector"],
+        help="Pixabay image_type filter.",
+    )
+    parser.add_argument(
+        "--image-orientation",
+        default="all",
+        choices=["all", "horizontal", "vertical"],
+        help="Pixabay orientation filter.",
+    )
+    parser.add_argument("--image-category", help="Pixabay category filter.")
+    parser.add_argument("--image-colors", help="Pixabay colors filter.")
+    parser.add_argument(
+        "--image-order",
+        default="popular",
+        choices=["popular", "latest"],
+        help="Pixabay result order.",
+    )
+    parser.add_argument("--image-page", type=int, default=1, help="Pixabay result page.")
+    parser.add_argument(
+        "--image-per-page",
+        type=int,
+        default=20,
+        help="Pixabay results per page, 3-200.",
+    )
+    parser.add_argument(
+        "--unsafe-image-search",
+        action="store_true",
+        help="Disable Pixabay safesearch. Keep disabled by default for presentation work.",
+    )
+    parser.add_argument(
+        "--add-master-watermark",
+        help="Add or replace a master-level text watermark on the Slide Master.",
+    )
+    parser.add_argument(
+        "--watermark-opacity",
+        type=float,
+        default=0.16,
+        help="Desired watermark opacity from 0 to 1. Implemented as light gray text for broad COM compatibility.",
+    )
+    parser.add_argument(
+        "--export-qa",
+        action="store_true",
+        help="Export all slides to .window-pptx/exports/qa for visual QA.",
+    )
+    parser.add_argument(
+        "--audit-deck",
+        action="store_true",
+        help="Write .window-pptx/audits/deck_audit.json with slide, font, shape, and animation metadata.",
+    )
     parser.add_argument("--visible", action="store_true", help="Open the presentation window visibly.")
     parser.add_argument(
         "--attach-existing",
@@ -265,14 +428,20 @@ def init_project_workspace(project_dir: Path) -> dict[str, Any]:
 
     for rel in [
         "assets",
+        "assets/downloads",
+        "assets/downloads/pixabay",
         "data",
         "notes",
         "output",
         ".window-pptx",
         ".window-pptx/media",
+        ".window-pptx/scripts",
+        ".window-pptx/generated_assets",
         ".window-pptx/exports",
+        ".window-pptx/audits",
         ".window-pptx/temp",
         ".window-pptx/logs",
+        ".window-pptx/cache",
     ]:
         path = project_dir / rel
         if not path.exists():
@@ -288,6 +457,16 @@ def init_project_workspace(project_dir: Path) -> dict[str, Any]:
     if not slide_map_path.exists():
         slide_map_path.write_text(SLIDE_MAP_TEMPLATE, encoding="utf-8")
         created_files.append(str(slide_map_path))
+
+    modules_path = project_dir / "MODULES.md"
+    if not modules_path.exists():
+        modules_path.write_text(MODULES_TEMPLATE, encoding="utf-8")
+        created_files.append(str(modules_path))
+
+    runner_path = project_dir / ".window-pptx" / "scripts" / "run_project.py"
+    if not runner_path.exists():
+        runner_path.write_text(PROJECT_RUNNER_TEMPLATE, encoding="utf-8")
+        created_files.append(str(runner_path))
 
     return {"project_dir": str(project_dir), "created_dirs": created_dirs, "created_files": created_files}
 
@@ -348,6 +527,297 @@ def export_slides_to_png(presentation: Any, slide_numbers: list[int], export_dir
         presentation.Slides(slide_number).Export(str(target), "PNG", 1600, 900)
         exported.append(str(target))
     return {"export_dir": str(export_dir), "slides": slide_numbers, "files": exported}
+
+
+def export_all_slides_to_png(presentation: Any, export_dir: Path) -> dict[str, Any]:
+    return export_slides_to_png(
+        presentation,
+        list(range(1, int(presentation.Slides.Count) + 1)),
+        export_dir,
+    )
+
+
+def rgb(r: int, g: int, b: int) -> int:
+    return int(r) + (int(g) << 8) + (int(b) << 16)
+
+
+def sanitize_filename(value: str, fallback: str = "asset") -> str:
+    clean = re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip(".-")
+    return clean[:96] or fallback
+
+
+def read_json_file(path: Path, default: Any) -> Any:
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return default
+
+
+def append_asset_manifest(project_dir: Path, rows: list[dict[str, Any]]) -> Path:
+    manifest_path = project_dir / ".window-pptx" / "asset_manifest.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest = read_json_file(manifest_path, {"assets": []})
+    if not isinstance(manifest, dict):
+        manifest = {"assets": []}
+    assets = manifest.setdefault("assets", [])
+    if not isinstance(assets, list):
+        manifest["assets"] = []
+        assets = manifest["assets"]
+    assets.extend(rows)
+    manifest["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    return manifest_path
+
+
+def pixabay_search(args: argparse.Namespace, project_dir: Path) -> dict[str, Any]:
+    api_key = os.environ.get("PIXABAY_API_KEY")
+    if not api_key:
+        die("Missing PIXABAY_API_KEY. Set it in the Windows/user environment; do not commit it.")
+    if args.image_per_page < 3 or args.image_per_page > 200:
+        die("--image-per-page must be between 3 and 200.")
+
+    params: dict[str, Any] = {
+        "key": api_key,
+        "q": args.search_images,
+        "lang": args.image_lang,
+        "image_type": args.image_type,
+        "orientation": args.image_orientation,
+        "safesearch": "false" if args.unsafe_image_search else "true",
+        "order": args.image_order,
+        "page": args.image_page,
+        "per_page": args.image_per_page,
+    }
+    if args.image_category:
+        params["category"] = args.image_category
+    if args.image_colors:
+        params["colors"] = args.image_colors
+
+    safe_params = {key: value for key, value in params.items() if key != "key"}
+    request = Request(
+        "https://pixabay.com/api/?" + urlencode(params),
+        headers={"User-Agent": "window-pptx-skill/1.0"},
+    )
+    with urlopen(request, timeout=30) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    hits = payload.get("hits", [])
+    normalized_hits: list[dict[str, Any]] = []
+    for hit in hits:
+        normalized_hits.append(
+            {
+                "id": hit.get("id"),
+                "tags": hit.get("tags"),
+                "type": hit.get("type"),
+                "pageURL": hit.get("pageURL"),
+                "previewURL": hit.get("previewURL"),
+                "webformatURL": hit.get("webformatURL"),
+                "largeImageURL": hit.get("largeImageURL"),
+                "fullHDURL": hit.get("fullHDURL"),
+                "imageURL": hit.get("imageURL"),
+                "vectorURL": hit.get("vectorURL"),
+                "imageWidth": hit.get("imageWidth"),
+                "imageHeight": hit.get("imageHeight"),
+                "downloads": hit.get("downloads"),
+                "likes": hit.get("likes"),
+                "user": hit.get("user"),
+                "user_id": hit.get("user_id"),
+            }
+        )
+
+    result = {
+        "source": "pixabay",
+        "query": args.search_images,
+        "params": safe_params,
+        "total": payload.get("total"),
+        "totalHits": payload.get("totalHits"),
+        "hits": normalized_hits,
+        "notes": [
+            "Do not hotlink Pixabay result URLs in the final deck.",
+            "Download selected assets locally and keep pageURL/user attribution in asset_manifest.json.",
+        ],
+    }
+    cache_dir = project_dir / ".window-pptx" / "cache" / "pixabay"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    target = cache_dir / f"search-{stamp}-{sanitize_filename(args.search_images)}.json"
+    target.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    result["manifest_path"] = str(target)
+    return result
+
+
+def download_image(project_dir: Path, url: str, source_row: dict[str, Any] | None = None) -> dict[str, Any]:
+    downloads_dir = project_dir / "assets" / "downloads" / "pixabay"
+    downloads_dir.mkdir(parents=True, exist_ok=True)
+    stem = sanitize_filename(str((source_row or {}).get("id") or Path(url).stem or "pixabay-image"))
+    suffix = Path(url.split("?", 1)[0]).suffix
+    if suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp", ".svg"}:
+        suffix = ".jpg"
+    target = downloads_dir / f"{stem}{suffix}"
+    counter = 2
+    while target.exists():
+        target = downloads_dir / f"{stem}-{counter}{suffix}"
+        counter += 1
+
+    request = Request(url, headers={"User-Agent": "window-pptx-skill/1.0"})
+    with urlopen(request, timeout=60) as response:
+        target.write_bytes(response.read())
+
+    row = {
+        "provider": "pixabay",
+        "local_path": str(target),
+        "downloaded_at": datetime.now().isoformat(timespec="seconds"),
+        "source_url": url,
+        "pageURL": (source_row or {}).get("pageURL"),
+        "user": (source_row or {}).get("user"),
+        "tags": (source_row or {}).get("tags"),
+        "license_note": "Pixabay API asset. Keep source page/user in the project manifest.",
+    }
+    manifest_path = append_asset_manifest(project_dir, [row])
+    return {"downloaded": row, "asset_manifest": str(manifest_path)}
+
+
+def add_master_watermark(presentation: Any, text: str, opacity: float) -> dict[str, Any]:
+    master = presentation.SlideMaster
+    width = float(presentation.PageSetup.SlideWidth)
+    height = float(presentation.PageSetup.SlideHeight)
+    shape_name = "AIMAGICIAN_MASTER_WATERMARK"
+    clamped_opacity = max(0.0, min(1.0, opacity))
+
+    try:
+        for index in range(int(master.Shapes.Count), 0, -1):
+            shape = master.Shapes(index)
+            if str(get_attr(shape, "Name")) == shape_name:
+                shape.Delete()
+    except Exception:
+        pass
+
+    box = master.Shapes.AddTextbox(
+        MSO_TEXT_ORIENTATION_HORIZONTAL,
+        width * 0.08,
+        height * 0.38,
+        width * 0.84,
+        height * 0.16,
+    )
+    box.Name = shape_name
+    box.Rotation = -28
+    box.TextFrame.TextRange.Text = text
+    font = box.TextFrame.TextRange.Font
+    font.Size = max(36, int(width / 13))
+    font.Bold = MSO_TRUE
+    gray = int(255 - (145 * clamped_opacity))
+    font.Color.RGB = rgb(gray, gray, gray)
+    try:
+        box.Fill.Visible = MSO_FALSE
+        box.Line.Visible = MSO_FALSE
+    except Exception:
+        pass
+    return {
+        "watermark": text,
+        "shape_name": shape_name,
+        "location": "SlideMaster",
+        "opacity_requested": opacity,
+        "opacity_used": clamped_opacity,
+        "note": "Implemented as light gray master text for broad PowerPoint COM compatibility.",
+    }
+
+
+def iter_slide_shapes(slide: Any) -> list[Any]:
+    shapes: list[Any] = []
+    try:
+        count = int(slide.Shapes.Count)
+    except Exception:
+        return shapes
+    for index in range(1, count + 1):
+        try:
+            shapes.append(slide.Shapes(index))
+        except Exception:
+            continue
+    return shapes
+
+
+def shape_text(shape: Any) -> str:
+    try:
+        if not shape.HasTextFrame:
+            return ""
+        if not shape.TextFrame.HasText:
+            return ""
+        return str(shape.TextFrame.TextRange.Text)
+    except Exception:
+        return ""
+
+
+def audit_presentation(presentation: Any, project_dir: Path) -> dict[str, Any]:
+    fonts: set[str] = set()
+    slides: list[dict[str, Any]] = []
+    animation_rows: list[dict[str, Any]] = []
+
+    for slide_index in range(1, int(presentation.Slides.Count) + 1):
+        slide = presentation.Slides(slide_index)
+        texts: list[str] = []
+        picture_count = 0
+        shape_count = 0
+        for shape in iter_slide_shapes(slide):
+            shape_count += 1
+            text = shape_text(shape).strip()
+            if text:
+                texts.append(text[:200])
+                try:
+                    fonts.add(str(shape.TextFrame.TextRange.Font.Name))
+                except Exception:
+                    pass
+            try:
+                if int(get_attr(shape, "Type")) == 13:
+                    picture_count += 1
+            except Exception:
+                pass
+
+        try:
+            sequence = slide.TimeLine.MainSequence
+            for effect_index in range(1, int(sequence.Count) + 1):
+                effect = sequence(effect_index)
+                animation_rows.append(
+                    {
+                        "slide": slide_index,
+                        "index": effect_index,
+                        "shape": str(get_attr(effect.Shape, "Name")),
+                        "effect_type": get_attr(effect, "EffectType"),
+                        "trigger_type": get_attr(effect.Timing, "TriggerType"),
+                        "duration": get_attr(effect.Timing, "Duration"),
+                        "delay": get_attr(effect.Timing, "TriggerDelayTime"),
+                    }
+                )
+        except Exception:
+            pass
+
+        slides.append(
+            {
+                "slide": slide_index,
+                "name": str(get_attr(slide, "Name")),
+                "shape_count": shape_count,
+                "picture_count": picture_count,
+                "text_samples": texts[:5],
+            }
+        )
+
+    result = {
+        "audited_at": datetime.now().isoformat(timespec="seconds"),
+        "slide_count": int(presentation.Slides.Count),
+        "page_size": {
+            "width": float(presentation.PageSetup.SlideWidth),
+            "height": float(presentation.PageSetup.SlideHeight),
+        },
+        "fonts_seen": sorted(font for font in fonts if font and font != MISSING),
+        "slides": slides,
+        "animations": animation_rows,
+    }
+    audit_dir = project_dir / ".window-pptx" / "audits"
+    audit_dir.mkdir(parents=True, exist_ok=True)
+    audit_path = audit_dir / "deck_audit.json"
+    audit_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    result["audit_path"] = str(audit_path)
+    return result
 
 
 def get_attr(obj: Any, name: str) -> Any:
@@ -789,11 +1259,6 @@ def print_addins(addins: dict[str, Any], as_json: bool) -> None:
 
 def main() -> None:
     args = parse_args()
-    require_windows()
-    if args.clear_com_cache:
-        maybe_clear_com_cache()
-    win32com = import_win32com()
-
     project_dir = Path(args.project_dir).resolve()
     if not project_dir.exists():
         if args.init_project:
@@ -809,20 +1274,57 @@ def main() -> None:
     if output_path is None:
         die("Output path could not be resolved.")
 
-    if args.init_project and args.no_save and not any(
+    non_com_results: dict[str, Any] = {}
+
+    search_result: dict[str, Any] | None = None
+    if args.search_images:
+        search_result = pixabay_search(args, project_dir)
+        non_com_results["pixabay_search"] = search_result
+        if args.download_top_image:
+            first = next((hit for hit in search_result.get("hits", []) if hit.get("largeImageURL") or hit.get("webformatURL")), None)
+            if first is None:
+                die("No downloadable image URL found in Pixabay results.")
+            non_com_results["pixabay_download"] = download_image(
+                project_dir,
+                str(first.get("largeImageURL") or first.get("webformatURL")),
+                first,
+            )
+
+    if args.download_image:
+        non_com_results["pixabay_download"] = download_image(project_dir, args.download_image)
+
+    com_needed = any(
         [
             args.list_addins,
             args.probe_plugin_apis,
-            args.extract_media,
             args.export_slides,
+            args.add_master_watermark,
+            args.export_qa,
+            args.audit_deck,
         ]
-    ):
+    ) or not args.no_save
+
+    if args.extract_media and args.no_save and not args.export_slides:
+        template = choose_template(project_dir, args.template)
+        if template is None:
+            die("No template/source deck available for --extract-media. Pass --template explicitly.")
+        media_dir = resolve_path(project_dir, args.media_dir) or (project_dir / ".window-pptx" / "media")
+        media_result = extract_media_from_deck(template, media_dir)
+        non_com_results["media_extraction"] = media_result
+
+    if not com_needed:
+        result = {"init_project": init_result, **non_com_results}
         if args.json:
-            print(json.dumps({"init_project": init_result}, ensure_ascii=False, indent=2))
+            print(json.dumps(result, ensure_ascii=False, indent=2))
         else:
-            print("Project workspace initialized")
-            print(json.dumps(init_result, ensure_ascii=False, indent=2))
+            print("window-pptx non-COM run complete")
+            print(json.dumps(result, ensure_ascii=False, indent=2))
         return
+
+    require_windows()
+    if args.clear_com_cache:
+        maybe_clear_com_cache()
+    win32com = import_win32com()
 
     app = None
     presentation = None
@@ -856,7 +1358,8 @@ def main() -> None:
             print_addins(addins, args.json)
             return
 
-        request_path, request_text = read_request(project_dir, args.request)
+        request_path: Path | None = None
+        request_text = ""
         template = choose_template(project_dir, args.template)
         effective_template = template
 
@@ -888,7 +1391,26 @@ def main() -> None:
             print_addins(addins, args.json)
 
         presentation = open_or_create_presentation(app, effective_template, args.visible)
-        add_request_summary_slide(presentation, request_text, template)
+
+        should_add_summary = not any(
+            [
+                args.add_master_watermark,
+                args.audit_deck,
+                args.export_qa,
+                args.export_slides,
+            ]
+        )
+        if should_add_summary:
+            request_path, request_text = read_request(project_dir, args.request)
+            add_request_summary_slide(presentation, request_text, template)
+
+        watermark_result: dict[str, Any] | None = None
+        if args.add_master_watermark:
+            watermark_result = add_master_watermark(
+                presentation,
+                args.add_master_watermark,
+                args.watermark_opacity,
+            )
 
         export_result: dict[str, Any] | None = None
         if args.export_slides:
@@ -899,6 +1421,17 @@ def main() -> None:
                 export_dir,
             )
 
+        qa_export_result: dict[str, Any] | None = None
+        if args.export_qa:
+            qa_export_result = export_all_slides_to_png(
+                presentation,
+                project_dir / ".window-pptx" / "exports" / "qa",
+            )
+
+        audit_result: dict[str, Any] | None = None
+        if args.audit_deck:
+            audit_result = audit_presentation(presentation, project_dir)
+
         outputs: dict[str, str] = {}
         if not args.no_save:
             outputs = save_outputs(presentation, output_path, args.export_pdf)
@@ -906,12 +1439,16 @@ def main() -> None:
         result = {
             "project_dir": str(project_dir),
             "init_project": init_result,
-            "request": str(request_path),
+            **non_com_results,
+            "request": str(request_path) if request_path else None,
             "template": str(template) if template else None,
             "effective_template": str(effective_template) if effective_template else None,
             "outputs": outputs,
             "addins_inventory_written": bool(args.list_addins),
             "slide_export": export_result,
+            "qa_export": qa_export_result,
+            "deck_audit": audit_result,
+            "master_watermark": watermark_result,
         }
         if args.json:
             print(json.dumps(result, ensure_ascii=False, indent=2))

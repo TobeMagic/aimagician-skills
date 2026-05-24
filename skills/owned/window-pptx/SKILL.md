@@ -3,7 +3,7 @@ name: window-pptx
 description: |
   Automate Windows desktop PowerPoint through COM/VBA-compatible object models from a project folder containing REQUEST.md, templates, assets, data, and output requirements.
 
-  Use this skill whenever the user asks to create, edit, batch-update, reproduce, or polish PowerPoint decks on Windows using COM, VBA, pywin32, PowerPoint.Application, iSlide/OKPlus add-in discovery, or a "folder with requirements + PPT/materials" workflow. Also use it when the user wants one-to-one PowerPoint implementation from a template or needs animation/notes/add-in-aware operations beyond pure pptx libraries.
+  Use this skill whenever the user asks to create, edit, batch-update, reproduce, or polish PowerPoint decks on Windows using COM, VBA, pywin32, PowerPoint.Application, iSlide/OKPlus add-in discovery, or a "folder with requirements + PPT/materials" workflow. Also use it when the user wants one-to-one PowerPoint implementation from a template, advanced PPT production, master-level watermarks, reusable slide modules, design systems, award/team/government/technology style layouts, stock image search, animation/notes/add-in-aware operations, or anything beyond pure pptx libraries.
 
   This skill has a discuss gate: before executing real deck edits, confirm or read from REQUEST.md the project folder, source/template deck, output policy, macro/add-in policy, and acceptance check.
 compatibility:
@@ -24,7 +24,7 @@ Use it for high-fidelity PowerPoint work where pure `.pptx` libraries are too li
 - export to PDF when the local PowerPoint install supports it
 - discover installed PowerPoint add-ins such as iSlide / OKPlus
 
-Do not use this as a cross-platform PPT library. Real automation must run from native Windows, not WSL.
+Do not use this as a cross-platform PPT library. Real PowerPoint automation must run from native Windows. WSL is only an orchestration bridge that can call Windows PowerShell/Python.
 
 ## Required Discuss Gate
 
@@ -45,23 +45,36 @@ Default folder shape:
 ```text
 ppt-project/
   REQUEST.md
+  MODULES.md
+  SLIDE-MAP.md
   template.pptx
   assets/
+    downloads/
+      pixabay/
   data/
   notes/
   output/
   .window-pptx/
+    scripts/
+    generated_assets/
+    exports/
+    audits/
+    logs/
+    cache/
 ```
 
 Recognize these inputs:
 
 - `REQUEST.md`: primary user requirements
+- `MODULES.md`: deck-level module and design-system plan
+- `SLIDE-MAP.md`: slide-level role/action map
 - `*.pptx`, `*.pptm`, `*.potx`, `*.potm`: templates or source decks
 - `assets/` or `images/`: logos, screenshots, photos, icons, backgrounds
+- `assets/downloads/pixabay/`: downloaded stock assets
 - `data/`: CSV, JSON, Excel, chart data, tables
 - `notes/`: speaker notes, outlines, references
 - `output/`: generated decks and exports
-- `.window-pptx/`: generated scripts, run logs, add-in inventory
+- `.window-pptx/`: generated scripts, assets, exports, audits, logs, add-in inventory, API search caches
 
 If no template is specified, prefer files named `template.pptx`, `template.pptm`, `template.potx`, or `template.potm`. Otherwise ask which deck to use if multiple candidate decks exist.
 
@@ -172,7 +185,10 @@ This creates:
 - `REQUEST.md`
 - `SLIDE-MAP.md`
 - `.window-pptx/media/`
+- `.window-pptx/scripts/`
+- `.window-pptx/generated_assets/`
 - `.window-pptx/exports/`
+- `.window-pptx/audits/`
 - `.window-pptx/temp/`
 - `.window-pptx/logs/`
 
@@ -212,24 +228,73 @@ py ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py --project-dir C
 
 The helper is intentionally conservative. For a real one-to-one deck, generate a project-specific Python COM script under `.window-pptx/`, using the helper as the base for environment setup, add-in discovery, open/save/export, and safe cleanup.
 
+Search and download stock images through Pixabay without committing API keys:
+
+```powershell
+# Set PIXABAY_API_KEY in the Windows/user environment before running.
+python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
+  --project-dir C:\ppt-project `
+  --search-images "technology background" `
+  --image-type photo `
+  --image-orientation horizontal `
+  --download-top-image `
+  --no-save `
+  --json
+```
+
+Add a master-level watermark instead of repeated per-slide text:
+
+```powershell
+python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
+  --project-dir C:\ppt-project `
+  --template template.pptx `
+  --add-master-watermark "Confidential" `
+  --output output\watermarked.pptx
+```
+
+Export review previews and deck audit metadata:
+
+```powershell
+python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
+  --project-dir C:\ppt-project `
+  --template output\final.pptx `
+  --export-qa `
+  --audit-deck `
+  --no-save `
+  --json
+```
+
 ## Execution Workflow
 
 1. Read `REQUEST.md`.
-2. Inventory project files.
-3. Confirm missing discuss-gate items.
-4. Run add-in discovery if the request mentions plugins or if the user asks whether iSlide/OKPlus can be used.
-5. If plugin use is desired, run `--probe-plugin-apis` and inspect:
+2. Read or create `MODULES.md` for deck-level module planning.
+3. Read or create `SLIDE-MAP.md` for slide-level role/action mapping.
+4. Inventory project files and asset sources.
+5. Confirm missing discuss-gate items.
+6. Run add-in discovery if the request mentions plugins or if the user asks whether iSlide/OKPlus can be used.
+7. If plugin use is desired, run `--probe-plugin-apis` and inspect:
    - Office add-in registry values
    - direct `Dispatch(progID)` result
    - `Application.COMAddIns.Item(progID).Object`
    - exposed type library / dispatch members
-6. Choose native COM implementation first unless a documented plugin method is actually discoverable.
-7. Generate a concrete Windows Python script in `.window-pptx/`.
-8. Execute the script from Windows PowerShell or CMD.
-9. Save outputs under `output/`.
-10. Export PNG previews for target slides when visual work is involved.
-11. Verify acceptance criteria with COM object checks and rendered previews.
-12. Report generated files, unresolved ambiguities, and any plugin limitations.
+8. Choose native COM implementation first unless a documented plugin method is actually discoverable.
+9. Generate a concrete Windows Python script in `.window-pptx/scripts/`.
+10. Execute the script from Windows PowerShell or CMD.
+11. Save outputs under `output/`.
+12. Export PNG previews for target slides when visual work is involved.
+13. Write audits under `.window-pptx/audits/`.
+14. Verify acceptance criteria with COM object checks and rendered previews.
+15. Report generated files, unresolved ambiguities, and any plugin limitations.
+
+## Advanced Production References
+
+Read [advanced-ppt-production-handbook.md](./references/advanced-ppt-production-handbook.md) for serious visual work: slide masters, layouts, design systems, action titles, awards pages, team pages, government/party style, technology style, charts, motion, and QA.
+
+Read [project-module-management.md](./references/project-module-management.md) when the deck needs module planning with `MODULES.md`.
+
+Read [script-management-workflow.md](./references/script-management-workflow.md) when creating `.window-pptx/scripts/run_project.py` or splitting reusable helper code from project-specific code.
+
+Read [asset-library-workflow.md](./references/asset-library-workflow.md) when the project needs stock images or downloaded design assets. Use `PIXABAY_API_KEY` from the environment only. Never commit API keys or hotlink Pixabay result URLs in the final deck.
 
 ## Design-Task Guardrails
 
@@ -265,6 +330,10 @@ Useful helper actions from the bundled script:
 - `--extract-media` to dump `ppt/media/*` into a folder
 - `--export-slides 4,6,8-10` to render selected slides to PNG
 - `--make-ascii-temp-copy` before repeated COM reruns on Chinese filenames
+- `--search-images` / `--download-image` for local traceable stock assets
+- `--add-master-watermark` for removable master-level watermarking
+- `--export-qa` to render all slides for visual review
+- `--audit-deck` to write shape/font/animation metadata
 
 ## Native COM Capabilities
 
