@@ -1,15 +1,18 @@
-# AImagician Skills
+# AImagician Skills （Skillbee）
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
 
-<p align="center">
+<!-- <p align="center">
   <img src="./docs/assets/aimagician-skills-logo.svg" alt="AImagician Skills logo" width="120" />
-</p>
+</p> -->
 
 <p align="center">
   <img src="./docs/assets/readme-cover.svg" alt="AImagician Skills repository cover" width="100%" />
 </p>
+
+<img width="2560" height="1600" alt="image" src="https://github.com/user-attachments/assets/3ff668d5-4f98-4fb4-86b9-3d4221a345dd" />
+
 
 > Personal skills repository and one-command bootstrap toolkit for Codex / Claude / OpenCode / Gemini / Hermes / Cursor.
 >
