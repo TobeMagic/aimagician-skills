@@ -81,6 +81,7 @@ export interface OwnedSkillRecord {
   id: string;
   skillDir: string;
   skillFile: string;
+  archived?: boolean;
 }
 
 export interface LoadedCatalogFile {
@@ -100,6 +101,7 @@ export interface LoadedCatalogSection {
 
 export interface LoadedCatalog {
   ownedSkills: OwnedSkillRecord[];
+  archivedSkills: OwnedSkillRecord[];
   skills: LoadedCatalogSection;
   plugins: LoadedCatalogSection;
   sources: CatalogSourceRecord[];

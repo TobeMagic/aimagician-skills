@@ -1,4 +1,5 @@
 import { posix, win32 } from "node:path";
+import type { InstallScope } from "../model/scopes";
 import type { SupportedTarget } from "../model/targets";
 import {
   resolvePlatformContext,
@@ -53,6 +54,11 @@ export interface ResolvedTargetHomes {
   copilot: DirectTargetHome;
 }
 
+export interface ResolveTargetHomesOptions extends Partial<PlatformContext> {
+  scope?: InstallScope;
+  projectDir?: string;
+}
+
 export function isDirectSkillTarget(
   target: SupportedTarget
 ): target is DirectSkillTarget {
@@ -66,17 +72,24 @@ export function isPluginFileTarget(
 }
 
 export function resolveTargetHomes(
-  overrides: Partial<PlatformContext> = {}
+  overrides: ResolveTargetHomesOptions = {}
 ): ResolvedTargetHomes {
   const platformContext = resolvePlatformContext(overrides);
   const pathApi = platformContext.platform === "windows" ? win32 : posix;
-  const codexRoot = pathApi.join(platformContext.homeDir, ".codex");
-  const claudeRoot = pathApi.join(platformContext.homeDir, ".claude");
-  const opencodeRoot = pathApi.join(platformContext.configBaseDir, "opencode");
-  const geminiRoot = pathApi.join(platformContext.homeDir, ".gemini");
-  const hermesRoot = pathApi.join(platformContext.homeDir, ".hermes");
-  const cursorRoot = pathApi.join(platformContext.homeDir, ".cursor");
-  const copilotRoot = pathApi.join(platformContext.homeDir, ".copilot");
+  const baseDir = overrides.scope === "project"
+    ? overrides.projectDir ?? process.cwd()
+    : platformContext.homeDir;
+  const codexRoot = pathApi.join(baseDir, ".codex");
+  const claudeRoot = pathApi.join(baseDir, ".claude");
+  const opencodeRoot = overrides.scope === "project"
+    ? pathApi.join(baseDir, ".opencode")
+    : pathApi.join(platformContext.configBaseDir, "opencode");
+  const geminiRoot = pathApi.join(baseDir, ".gemini");
+  const hermesRoot = pathApi.join(baseDir, ".hermes");
+  const cursorRoot = pathApi.join(baseDir, ".cursor");
+  const copilotRoot = overrides.scope === "project"
+    ? pathApi.join(baseDir, ".github")
+    : pathApi.join(baseDir, ".copilot");
 
   return {
     codex: {
@@ -120,7 +133,7 @@ export function resolveTargetHomes(
 }
 
 export function resolveDirectTargetHomes(
-  overrides: Partial<PlatformContext> = {}
+  overrides: ResolveTargetHomesOptions = {}
 ): Record<DirectSkillTarget, DirectTargetHome> {
   const homes = resolveTargetHomes(overrides);
 

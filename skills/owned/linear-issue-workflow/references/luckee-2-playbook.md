@@ -18,6 +18,7 @@ If Linear and Feishu disagree, do not silently merge them. Call out the conflict
 - Team and project.
 - Assignee and priority.
 - Acceptance criteria or expected behavior.
+- Parent issue and child/sub-issues, including assignee and state.
 - Target repo and likely service page in the wiki.
 - Existing linked branch or PR.
 - Risk area: agent runtime, frontend, GKE/OpenClaw, Feishu IM, ads, data-provider, or product shell.
@@ -38,9 +39,9 @@ If the repo has no `origin/dev`, stop and confirm whether to use `develop`, `mai
 - Backlog/Todo: planning only.
 - In Progress: implementation has started on a branch.
 - In Review: PR is open and ready for review.
-- Done: PR is merged or human explicitly says to close.
+- Done: PR is merged or human explicitly says to close, required child/sub-issues are terminal, and parent acceptance criteria have no remaining unfinished requirements.
 
-Do not move to Done while CI, reviewer-bot, or required reviews are unresolved.
+Do not move to Done while child/sub-issues, CI, reviewer-bot, required reviews, or deployment verification are unresolved.
 
 ## Wiki Records To Write
 
@@ -51,5 +52,5 @@ Record these as `LINEAR_WORKFLOW`:
 - scope changed or blocker discovered;
 - PR created and linked;
 - reviewer-bot checked;
+- child/sub-issue plan created or child issue completed;
 - PR merged or Linear closed.
-

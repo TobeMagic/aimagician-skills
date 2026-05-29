@@ -115,6 +115,9 @@ After a push or merge to a deploy-triggering branch:
 
 The issue is not complete until:
 
+- all required child/sub-issues are terminal, or explicitly marked not required with rationale;
+- child/sub-issues assigned to the current Linear user are complete;
+- parent acceptance criteria and latest comments have been rechecked for unfinished requirements;
 - PR exists and is linked to Linear;
 - CI/checks are green or explicitly waived by a human;
 - reviewer-bot output has been read;

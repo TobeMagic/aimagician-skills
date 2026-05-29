@@ -4,6 +4,7 @@ export const repositoryRoot = normalize(join(__dirname, "..", ".."));
 
 export const skillsRoot = join(repositoryRoot, "skills");
 export const ownedSkillsRoot = join(skillsRoot, "owned");
+export const archivedSkillsRoot = join(skillsRoot, "archived");
 
 export const catalogRoot = join(repositoryRoot, "catalog");
 export const skillsCatalogRoot = join(catalogRoot, "skills");
@@ -16,6 +17,7 @@ export const repositoryRoots = {
   repositoryRoot,
   skillsRoot,
   ownedSkillsRoot,
+  archivedSkillsRoot,
   catalogRoot,
   skillsCatalogRoot,
   pluginsCatalogRoot,

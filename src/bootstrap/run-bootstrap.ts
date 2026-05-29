@@ -221,6 +221,7 @@ function createManifest(
       origin: asset.origin,
       kind: asset.kind,
       sourceId: asset.sourceId,
+      ...(asset.archived ? { archived: true } : {}),
       selectedTargets: asset.selectedTargets
     })),
     managedInstalls: [...managedInstalls].sort(compareManagedInstall),

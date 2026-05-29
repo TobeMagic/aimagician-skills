@@ -45,17 +45,37 @@
 - [x] **VER-02**: User can see which targets succeeded, failed, or were skipped in the latest setup run
 - [x] **VER-03**: User can use a doctor or verification command to confirm that configured targets are wired correctly
 
-## v2 Requirements
+## v2 Requirements (Skillbee V2 功能深化)
 
-### Installation UX
+### User Config & Groups
 
-- **INST-06**: User can run a dry-run command that shows the planned file and target changes before applying them
-- **INST-07**: User can choose link mode instead of copy mode for supported local setups
+- [x] **UCG-01**: User can define custom tags per skill and see them merged into skill search results
+- [x] **UCG-02**: User can create, edit, and delete custom groups of skills persisted to disk
+- [x] **UCG-03**: User can archive and unarchive skills from TUI, hiding them by default
 
-### Source Management
+### TUI Branding
 
-- **SRC-05**: User can lock external sources to resolved revisions and update them intentionally
-- **SRC-06**: User can cache previously fetched external sources for faster repeated installs
+- [x] **TUI-01**: TUI features bee-themed branding with lively colors
+- [x] **TUI-02**: Skill detail panel shows richer information including custom tags, install matrix, related skills, SKILL.md preview
+
+### Selection & Filtering
+
+- [x] **SEL-01**: User can select multiple CLI targets simultaneously in TUI
+- [x] **SEL-02**: User can combine install status, target, and tag filters
+
+### Batch Operations
+
+- [x] **BAT-01**: User can install selected skills to all selected targets in one action
+- [x] **BAT-02**: Post-install report summarizes results per target per skill
+
+### Overview
+
+- [x] **OVW-01**: User can switch to a matrix overview of skills × targets installation status
+
+### Theming
+
+- [x] **THM-01**: User can switch between multiple color themes (bee/monokai/nord) with `T` key
+- [x] **THM-02**: Theme preference persisted in user-config.yaml and applied at startup
 
 ## Out of Scope
 
@@ -100,6 +120,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Mapped to phases: 22
 - Unmapped: 0
 
+| Requirement | V2 Phase | Status |
+|-------------|----------|--------|
+| UCG-01 | Phase 1 | Complete |
+| UCG-02 | Phase 1 | Complete |
+| UCG-03 | Phase 1 | Complete |
+| TUI-01 | Phase 2 | Complete |
+| TUI-02 | Phase 2 | Complete |
+| SEL-01 | Phase 3 | Complete |
+| SEL-02 | Phase 3 | Complete |
+| BAT-01 | Phase 4 | Complete |
+| BAT-02 | Phase 4 | Complete |
+| OVW-01 | Phase 5 | Complete |
+| THM-01 | Phase 5 | Complete |
+| THM-02 | Phase 5 | Complete |
+
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-03-14 after Phase 5 completion*
+*Last updated: 2026-05-27 after V2 Phase 3 completion*

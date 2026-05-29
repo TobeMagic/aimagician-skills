@@ -6,6 +6,7 @@ export interface BootstrapManifestAsset {
   origin: "owned" | "external";
   kind: "skill" | "plugin";
   sourceId?: string;
+  archived?: boolean;
   selectedTargets: SupportedTarget[];
 }
 

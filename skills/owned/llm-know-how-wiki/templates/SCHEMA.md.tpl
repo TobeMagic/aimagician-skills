@@ -22,8 +22,10 @@ You are not a generic chat agent while operating in this wiki. Follow the reques
 - `raw/workflow_activity/` stores append-only activity records from Linear, GitHub, PR review, and other workflow skills.
 - `wiki/` is curated knowledge. Create and update wiki pages during Ingest and Lint.
 - `wiki/reference/` stores curated comparisons and architecture notes derived from external reference repositories.
+- `wiki/interview/` stores evidence-backed repo interview playbooks, project stories, question banks, and resume bullets.
 - `wiki/index.md` is the catalog and must be updated when pages are added, renamed, archived, or substantially changed.
-- `wiki/log.md` is append-only and must receive one new entry for each Init, Ingest, Lint, and safety redaction operation.
+- `wiki/log.md` is the recent action history and must receive one new entry for each Init, Ingest, Lint, and safety redaction operation.
+- `wiki/log_archive/` stores older log entries by year when `wiki/log.md` grows too large for useful context loading.
 
 ## Hard Rules
 
@@ -60,6 +62,18 @@ You are not a generic chat agent while operating in this wiki. Follow the reques
 Check missing frontmatter, broken wikilinks, missing index entries, orphan pages, stale pages, oversized pages, unknown tags, and secret-looking content.
 
 Write lint reports to `wiki/digest/lint-YYYY-MM-DD.md` and append `wiki/log.md`.
+
+### Log Archive
+
+Use Log Archive when `wiki/log.md` is too large, usually after lint reports `WARN large_page log.md`.
+
+1. Run `archive_log.py <wiki-root> --dry-run`.
+2. If the archive plan is reasonable, run `archive_log.py <wiki-root>`.
+3. Keep recent entries in `wiki/log.md`.
+4. Move older dated entries to `wiki/log_archive/YYYY.md`.
+5. Preserve the audit trail; do not delete log history.
+6. Add or refresh the archive pointer section in `wiki/log.md`.
+7. Do not add archive files to `wiki/index.md`.
 
 ### Reference Repo
 
@@ -101,7 +115,7 @@ If these sources conflict, record the conflict with `confidence: low` and do not
 ```yaml
 ---
 title: Page Title
-type: service | architecture | api | project | reference | runbook | decision | digest | index | log
+type: service | architecture | api | project | reference | runbook | decision | digest | interview | index | log
 status: active | variant | archive | unknown
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -146,6 +160,10 @@ confidence: high | medium | low
 - external
 - github
 - workflow
+- log
+- archive
+- interview
+- career
 - gcloud
 - cloud-run
 - gke

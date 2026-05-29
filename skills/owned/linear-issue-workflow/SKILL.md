@@ -1,6 +1,6 @@
 ---
 name: linear-issue-workflow
-description: Use when starting, implementing, tracking, or closing a Linear issue, especially Luckee 2.0 work that needs Linear MCP context, a fresh dev-based branch, GitHub PR linkage, reviewer-bot gates, or LLM wiki activity records.
+description: Use when starting, implementing, tracking, splitting, or closing a Linear issue, especially Luckee 2.0 work that needs Linear MCP context, parent/sub-issue completion gates, a fresh dev-based branch, GitHub PR linkage, reviewer-bot gates, or LLM wiki activity records.
 metadata:
   related_skills:
     - github-pr-workflow
@@ -19,6 +19,7 @@ Use this skill for one issue from intake to closure. Linear is the work-state so
 - For Luckee 2.0 specifics, read [`references/luckee-2-playbook.md`](./references/luckee-2-playbook.md).
 - For Linear MCP usage, read [`references/linear-mcp-chain.md`](./references/linear-mcp-chain.md).
 - For branch, PR, status, and reviewer gates, read [`references/branch-pr-status-rules.md`](./references/branch-pr-status-rules.md).
+- For parent/sub-issue planning and completion gates, read [`references/sub-issue-planning.md`](./references/sub-issue-planning.md).
 
 ## Core Rules
 
@@ -28,6 +29,8 @@ Use this skill for one issue from intake to closure. Linear is the work-state so
 - Default base branch is latest `origin/dev`.
 - Branch name format: `<ISSUE-ID>-<short-slug>`, for example `LUC-123-fix-feishu-qr-pending`.
 - One Linear issue maps to one working branch and one primary PR unless the human explicitly approves a multi-repo split.
+- Fetch parent and child/sub-issue relationships before planning and before closure. Do not close a parent issue while required child issues remain incomplete.
+- If the issue is large, collaborative, multi-service, or naturally sequential, decompose it into child issues with clear acceptance criteria. Default new child issue assignee is the current Linear user unless the human specifies another owner.
 - After implementation and verification, create a GitHub PR targeting `dev` before claiming the development handoff is complete, unless the human explicitly says not to open a PR.
 - PR title must be based on the Linear issue: `[<ISSUE-ID>] <Linear issue title>`.
 - Immediately after PR creation, update Linear to In Review or the repo/team's review-equivalent state and add a Linear comment with PR URL, branch, test result, and remaining risk.
@@ -40,28 +43,36 @@ Use this skill for one issue from intake to closure. Linear is the work-state so
 
 1. **Intake**
    - Resolve the Linear issue through MCP.
-   - Capture identifier, title, URL, team, project, state, assignee, priority, labels, description, comments, and linked PRs.
+   - Capture identifier, title, URL, team, project, state, assignee, priority, labels, description, comments, parent issue, child/sub-issues, and linked PRs.
    - Read the project wiki for context: `wiki/index.md`, relevant service pages, and Luckee 2.0 project pages.
 
 2. **Plan**
    - State the repo, base branch, working branch, acceptance criteria, and test plan.
+   - Summarize existing parent/child issue relationships and identify incomplete child issues assigned to the current Linear user.
+   - If the issue should be split, propose a child-issue plan with title, scope, owner, acceptance criteria, and dependency order before creating children.
    - If any of these are missing, ask a narrow question before branching.
    - Move Linear to In Progress only when actual implementation starts.
 
-3. **Branch**
+3. **Sub-Issue Work Queue**
+   - If the current issue has incomplete child issues assigned to the current Linear user, treat those child issues as the execution queue.
+   - Work child issues one by one unless dependencies or human direction require a different order.
+   - After each child issue is completed, update the child and parent with a compact status comment.
+   - When all assigned child issues are terminal, re-read the parent issue and check whether parent acceptance criteria or comments still contain unfinished requirements.
+
+4. **Branch**
    - Run `git fetch origin dev --prune`.
    - Create the branch from `origin/dev`: `git switch -c LUC-123-short-slug origin/dev`.
    - If `origin/dev` does not exist, stop and confirm the correct base branch.
    - Record the branch event in `LLM-know-how-wiki`.
 
-4. **Implement**
+5. **Implement**
    - Make scoped changes for the issue.
    - Run focused tests and relevant lint/typecheck/build commands.
    - Comment on Linear when scope changes, a blocker appears, or implementation reaches PR readiness.
    - After each push or PR update, add a Linear comment with branch, commit SHA, summary, tests, PR URL if available, and risk/follow-up.
    - Do not stop at local implementation when the work is PR-ready; continue into the PR step.
 
-5. **PR**
+6. **PR**
    - Use `github-pr-workflow` for PR creation, checks, reviews, reviewer-bot, and merge readiness.
    - Push the issue branch and create a PR against `dev`.
    - PR title should be `[<ISSUE-ID>] <Linear issue title>`, for example `[LUC-123] Fix Feishu QR pending state`.
@@ -71,13 +82,13 @@ Use this skill for one issue from intake to closure. Linear is the work-state so
    - Add a Linear comment containing the PR URL, branch name, summary, test result, and known follow-up/risk.
    - Record PR creation and Linear update in `LLM-know-how-wiki`.
 
-6. **Review Gate**
+7. **Review Gate**
    - Read CI, human reviews, and reviewer-bot output before claiming completion.
    - Fix blocking comments and re-check.
    - Comment on Linear after pushed review fixes or changed check/test results.
    - Record reviewer-bot and final review state in the wiki.
 
-7. **Deployment Verification**
+8. **Deployment Verification**
    - If merge or push triggers automatic deployment, use `gcloud-ops-workflow` to verify build/deploy provenance.
    - Determine environment from configured branch mapping in this order: project wiki deployment metadata/runbooks, repo CI/CD config, live cloud config, fallback defaults.
    - If wiki expectations conflict with CI/CD or live cloud state, report the conflict and do not silently choose one.
@@ -85,9 +96,11 @@ Use this skill for one issue from intake to closure. Linear is the work-state so
    - Add a Linear comment with environment, expected commit, build ID/status, deployed revision/image, URL, and verdict: MATCH, MISMATCH, or UNKNOWN.
    - Record deployment verification in `LLM-know-how-wiki`.
 
-8. **Close**
-   - Only move Linear to Done or equivalent after merge or explicit human instruction.
-   - Final Linear comment should summarize PR, tests, review result, and any follow-up.
+9. **Close**
+   - Re-fetch the parent issue, child/sub-issues, linked PRs, and latest comments before moving anything to Done.
+   - Only move Linear to Done or equivalent after merge or explicit human instruction, all required child issues are terminal, and parent acceptance criteria have no remaining unfinished requirements.
+   - If child issues assigned to the current Linear user are incomplete, do not close the parent; comment with the remaining child issue list and next action.
+   - Final Linear comment should summarize child issue status, PR, tests, review result, deployment verification if applicable, and any follow-up.
    - Record final activity in the wiki.
 
 ## Wiki Activity Record
@@ -111,6 +124,8 @@ If the wiki is unavailable, say that the workflow audit trail could not be writt
 
 - Starting from a stale local branch instead of `origin/dev`.
 - Closing Linear when code is pushed but reviewer-bot has not been read.
+- Closing a parent issue while required child/sub-issues remain incomplete.
+- Creating large child issue sets without clear acceptance criteria, ownership, and dependency order.
 - Pushing commits or review fixes without adding a Linear update comment.
 - Assuming deployment mapping from branch names without checking `LLM-know-how-wiki` first.
 - Ignoring conflicts between wiki deployment metadata, repo CI/CD config, and live cloud triggers.

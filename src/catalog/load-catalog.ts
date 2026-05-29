@@ -4,6 +4,7 @@ import fg from "fast-glob";
 import { parse } from "yaml";
 import type { CatalogSection } from "../model/assets";
 import {
+  archivedSkillsRoot,
   ownedSkillsRoot,
   pluginsCatalogRoot,
   skillsCatalogRoot
@@ -18,6 +19,7 @@ import { parseCatalogFile } from "./schemas";
 
 export interface CatalogLoadOptions {
   ownedSkillsRoot?: string;
+  archivedSkillsRoot?: string;
   skillsRoot?: string;
   pluginsRoot?: string;
 }
@@ -28,7 +30,14 @@ export async function loadCatalog(
   const ownedSkills = await discoverOwnedSkills(
     options.ownedSkillsRoot ??
       process.env.AIMAGICIAN_OWNED_SKILLS_ROOT ??
-      ownedSkillsRoot
+      ownedSkillsRoot,
+    false
+  );
+  const archivedSkills = await discoverOwnedSkills(
+    options.archivedSkillsRoot ??
+      process.env.AIMAGICIAN_ARCHIVED_SKILLS_ROOT ??
+      archivedSkillsRoot,
+    true
   );
   const skills = await loadCatalogSection(
     "skills",
@@ -48,6 +57,7 @@ export async function loadCatalog(
 
   return {
     ownedSkills,
+    archivedSkills,
     skills,
     plugins,
     sources,
@@ -56,7 +66,8 @@ export async function loadCatalog(
 }
 
 export async function discoverOwnedSkills(
-  rootDir: string = ownedSkillsRoot
+  rootDir: string = ownedSkillsRoot,
+  archived = false
 ): Promise<OwnedSkillRecord[]> {
   const matches = await fg(["*/SKILL.md"], {
     cwd: rootDir,
@@ -71,7 +82,8 @@ export async function discoverOwnedSkills(
     return {
       id: basename(skillDir),
       skillDir,
-      skillFile
+      skillFile,
+      ...(archived ? { archived: true } : {})
     };
   });
 }

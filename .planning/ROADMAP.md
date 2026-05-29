@@ -100,9 +100,35 @@ Plans:
 - [x] 05-01: Implement list, inspect, and doctor commands
 - [x] 05-02: Add final reporting, verification UX, and setup documentation
 
+## Milestone v2.0 — Skillbee V2 功能深化
+
+### Phase 1: 数据模型与配置基建 (2026-05-27)
+**Requirements:** [UCG-01, UCG-02, UCG-03]
+- [x] F4: ManagerSkillRecord 扩展 customTags 字段
+- [x] F5: user-config.yaml 持久化（groups / archivedIds / customTags）
+- [x] F5: TUI 自定义分组展示（`@ ` 前缀）
+- [x] F9: TUI 归档/取消归档（`x` 键）
+- [x] Tests: user-config 模块 6 个单元测试通过
+
+### Phase 2: TUI 品牌重塑 (Complete 2026-05-27)
+- [x] F1: 蜜蜂主题 Header/配色/布局 (theme.ts, brand colors, bee ASCII, yellow accents, panel labels)
+- [x] F8: 详情面板强化 (install matrix, SKILL.md preview, related skills, command panel overlay)
+
+### Phase 3: 多选与筛选 (Complete 2026-05-27)
+- [x] F2: 多 Target 选择器 (t key opens target panel, space toggle, a/A select all/none, tab cycles primaryTarget)
+- [x] F6: 多维筛选器 (f key opens filter panel, ↑/↓ dimension, ←/→ cycle, status/target/tag filters)
+
+### Phase 4: 批量操作与报告 (Complete 2026-05-27)
+- [x] F3: 批量安装/卸载 — multi-target from Phase 3 enables one-action batch operations; report overlay confirms per-target results
+- [x] F10: 安装报告 — modal overlay after install/uninstall shows per-target × per-skill grouped results (✓/○/✗ with skip reasons)
+
+### Phase 5: 概览与打磨 (Complete 2026-05-27)
+- [x] F7: 安装概览视图 — `v` toggles list/matrix view; matrix shows skills × selectedTargets with ✓/○/— cells; selection/batch ops work in matrix mode
+- [x] P2: 多主题系统 — `T` cycles bee/monokai/nord themes; theme stored in user-config.yaml; border colors update on switch
+
 ## Progress
 
-**Execution Order:**
+**Execution Order (V1):**
 Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
@@ -114,6 +140,16 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 5. Verification and Release UX | 2/2 | Complete    | 2026-03-14 |
 | 6. Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow | 1/1 | Complete | 2026-05-05 |
 | 7. Bootstrap copilot fix and multi-target skill audit | 1/1 | Complete | 2026-05-11 |
+
+**Execution Order (V2):**
+
+| Phase | Feature | Status | Completed |
+|-------|---------|--------|-----------|
+| 1. 数据模型与配置基建 | F4/F5/F9 | Complete | 2026-05-27 |
+| 2. TUI 品牌重塑 | F1/F8 | Complete | 2026-05-27 |
+| 3. 多选与筛选 | F2/F6 | Complete | 2026-05-27 |
+| 4. 批量操作与报告 | F3/F10 | Complete | 2026-05-27 |
+| 5. 概览与打磨 | F7/P2 | Complete | 2026-05-27 |
 
 ### Phase 6: Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow
 

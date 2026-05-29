@@ -24,6 +24,18 @@
       "prompt": "我刚 push 了一版 review fix，之后 merge 到 main 会触发 prod，Linear 需要更新什么？",
       "expected_output": "Adds a Linear code-update comment for the pushed commit with branch/commit/summary/tests/PR/risk; after merge or push to the deploy-triggering branch, resolves environment mapping from LLM-know-how-wiki first, then repo CI/CD config, then live cloud config, using main/master -> prod only as fallback; verifies build/deploy provenance, comments the verdict or conflict on Linear, and records the activity in LLM-know-how-wiki.",
       "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "LUC-123 的 PR 已经 merge 了，可以把父 issue 关掉吗？它下面还有几个 sub-issue。",
+      "expected_output": "Re-fetches the parent issue, child/sub-issues, linked PRs, and latest comments through Linear MCP; refuses to close the parent while required child issues remain incomplete, especially child issues assigned to the current Linear user; comments the remaining child issue list and next actions; only allows closure after child gates, parent acceptance criteria, PR/review/deploy gates, and wiki activity records are satisfied.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "这个 Linear issue 太大，需要拆几个 sub-issue 给我逐个做。",
+      "expected_output": "Proposes a child issue plan with titles, scope, acceptance criteria, dependencies, and owners; resolves the current Linear user and assigns new child issues to that user by default unless another owner is specified; links children to the parent, comments the plan on Linear, and records the planning activity in LLM-know-how-wiki.",
+      "files": []
     }
   ]
 }

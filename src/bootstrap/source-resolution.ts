@@ -3,6 +3,8 @@ import { constants } from "node:fs";
 import { access, mkdir, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 import type { LoadedCatalog } from "../catalog/source-types";
 import type { NormalizedAsset } from "../model/assets";
 import type { SupportedTarget } from "../model/targets";
@@ -19,6 +21,7 @@ export interface ResolveManagedSkillInstallsOptions {
   targetHomes: ResolvedTargetHomes;
   githubRepoOverrides?: Record<string, string>;
   materializedCommandSourceDirs?: Map<string, Partial<Record<SupportedTarget, string>>>;
+  includeArchived?: boolean;
 }
 
 export interface ResolvedManagedInstall {
@@ -39,7 +42,11 @@ export async function resolveManagedSkillInstalls(
   const installs: ResolvedManagedInstall[] = [];
   const checkoutRoots = new Map<string, string>();
 
-  for (const skill of options.catalog.ownedSkills) {
+  const ownedSkills = options.includeArchived
+    ? [...options.catalog.ownedSkills, ...options.catalog.archivedSkills]
+    : options.catalog.ownedSkills;
+
+  for (const skill of ownedSkills) {
     for (const target of options.selectedTargets) {
       const install = await createOwnedSkillInstall(
         skill.id,
@@ -291,22 +298,39 @@ export async function materializeGithubSource(
   await rm(checkoutRoot, { recursive: true, force: true });
   await mkdir(sourcesRoot, { recursive: true });
 
-  try {
-    await execFileAsync("git", [
-      "clone",
-      "--quiet",
-      `https://github.com/${repo}.git`,
-      checkoutRoot
-    ]);
+  let lastError: Error | undefined;
 
-    if (ref) {
-      await execFileAsync("git", ["checkout", "--quiet", ref], {
-        cwd: checkoutRoot
-      });
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await execFileAsync("git", [
+        "clone",
+        "--quiet",
+        `https://github.com/${repo}.git`,
+        checkoutRoot
+      ]);
+
+      if (ref) {
+        await execFileAsync("git", ["checkout", "--quiet", ref], {
+          cwd: checkoutRoot
+        });
+      }
+
+      lastError = undefined;
+      break;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("unknown git error");
+
+      if (attempt < 3) {
+        await rm(checkoutRoot, { recursive: true, force: true });
+        await sleep(1000 * attempt);
+      }
     }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "unknown git error";
-    throw new Error(`Failed to resolve GitHub source ${repo}: ${message}`);
+  }
+
+  if (lastError) {
+    throw new Error(
+      `Failed to resolve GitHub source ${repo} after 3 attempts: ${lastError.message}`
+    );
   }
 
   return checkoutRoot;

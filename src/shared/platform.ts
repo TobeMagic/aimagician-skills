@@ -1,6 +1,12 @@
 import { homedir, platform as getNodePlatform } from "node:os";
 import { posix, win32 } from "node:path";
 
+function warnIfSpaces(label: string, path: string): void {
+  if (path.includes(" ")) {
+    console.error(`[skillbee] Warning: ${label} path contains spaces — ${path}`);
+  }
+}
+
 export type BootstrapPlatform = "windows" | "linux";
 
 export interface PlatformContext {
@@ -26,17 +32,24 @@ export function resolvePlatformContext(
     process.env.AIMAGICIAN_STATE_BASE_DIR ??
     resolveStateBaseDir(platform, homeDir);
 
+  const workspaceRoot =
+    overrides.workspaceRoot ??
+    process.env.AIMAGICIAN_WORKSPACE_ROOT ??
+    (platform === "windows"
+      ? win32.join(stateBaseDir, "aimagician-skills")
+      : posix.join(stateBaseDir, "aimagician-skills"));
+
+  warnIfSpaces("workspace root", workspaceRoot);
+  warnIfSpaces("home", homeDir);
+  warnIfSpaces("config", configBaseDir);
+  warnIfSpaces("state", stateBaseDir);
+
   return {
     platform,
     homeDir,
     configBaseDir,
     stateBaseDir,
-    workspaceRoot:
-      overrides.workspaceRoot ??
-      process.env.AIMAGICIAN_WORKSPACE_ROOT ??
-      (platform === "windows"
-        ? win32.join(stateBaseDir, "aimagician-skills")
-        : posix.join(stateBaseDir, "aimagician-skills"))
+    workspaceRoot
   };
 }
 

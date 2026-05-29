@@ -1,49 +1,50 @@
 # Experiment Workflow
 
-Use this workflow for comparison experiments, ablation, qualitative case analysis, metrics, and experiment logs.
+Use this for comparison experiments, ablation, qualitative case analysis, metrics, robustness, and reproducibility logs.
+
+## Evidence Before Claims
+
+Start from the contribution-evidence map:
+
+```text
+claim -> required evidence -> dataset/split -> metric -> baseline -> figure/table
+```
+
+Do not write claims first and hunt for selective support later.
 
 ## Experiment Package
 
-A small publishable paper usually needs:
+A publishable empirical paper usually needs:
 
-- comparison experiments
+- main comparison experiments
 - ablation experiments
-- case studies or qualitative analysis
-- optional robustness/efficiency/sensitivity experiments
+- qualitative cases or error analysis
+- robustness, sensitivity, efficiency, or statistical analysis when the target venue expects it
+- reproducibility details
 
-The experiment plan must connect directly to the paper claims.
+The venue ladder determines depth. Stronger venues require stronger comparisons, clearer protocols, and more transparent limitations.
 
 ## Comparison Experiments
-
-Purpose: prove the full method is competitive.
 
 Define:
 
 - datasets and splits
 - metrics
 - comparison methods
-- source of each number: paper-reported or locally reproduced
+- source of each number: paper-reported, official leaderboard, or locally reproduced
 - tuning budget
 - hardware/software environment
+- inclusion/exclusion criteria
 
-Comparison selection should be fair:
+Fair comparison rules:
 
-- include recent relevant methods
-- include strong known baselines
-- include target-venue expectations
+- include recent relevant methods and strong known baselines where feasible
+- label reproduced vs paper-reported numbers
 - explain exclusions explicitly
-- do not call the set "SOTA comparison" unless it actually covers the strongest methods
-
-Venue-aware comparison intensity:
-
-- top/PhD target: recent top papers and strong baselines are required
-- SCI/Q2-Q3 or equivalent: include recent higher-level and same-level methods where possible
-- graduation-safe lower-level target: include enough recognized baselines to establish validity
-- EI/short papers: may use fewer comparisons, but claims must be narrower
+- use comparable tuning budgets
+- do not call the comparison SOTA or comprehensive unless the set actually supports that claim
 
 ## Ablation Experiments
-
-Purpose: prove each component contributes.
 
 Default matrix:
 
@@ -55,44 +56,33 @@ Default matrix:
 | +A+B | yes | yes | no | | | |
 | Full | yes | yes | yes | | | |
 
-If components interact:
+If components interact, explain the interaction and why independent ablation is not meaningful.
 
-- explain the interaction
-- group components only when there is a real conceptual reason
-- include a note saying why independent ablation is not meaningful if that is true
+## Case Study and Error Analysis
 
-## Case Study / Qualitative Analysis
-
-Purpose: show examples where the method helps.
-
-Choose cases with a stated criterion:
+Choose cases by stated criteria:
 
 - representative typical cases
 - hard cases
-- failure cases
 - improvement cases
+- failure cases
 
-Do not claim random selection unless it was actually random.
+Do not call cases random unless they were sampled randomly. Include at least one limitation or failure case when making broad claims.
 
-Recommended case package:
+## Metrics and Statistics
 
-- input
-- baseline result
-- proposed method result
-- ground truth if available
-- short explanation of why the proposed result is better
-- at least one limitation or failure case for stronger papers
-
-## Metrics
-
-Use field-standard metrics first.
-
-If no standard metric exists:
+Use field-standard metrics first. If no standard exists:
 
 - borrow from adjacent tasks
-- justify why the metric matches the goal
-- add human evaluation or qualitative analysis if needed
-- do not invent a metric without explaining validity
+- justify validity
+- add qualitative or human evaluation if appropriate
+- state limitations of the metric
+
+For statistical claims:
+
+- state N, split, seed, and test where relevant
+- avoid "significant" unless a test supports it
+- keep a source of truth for numbers
 
 ## Reproducibility Log
 
@@ -114,20 +104,16 @@ notes:
 failure:
 ```
 
-Record failed runs. You do not need to publish every failure, but final claims must not contradict known failures.
+Record failed runs. Final claims must not contradict known failures.
 
-## Integrity Rules
-
-- Do not deliberately under-tune baselines.
-- Do not mix paper-reported and reproduced numbers without labeling.
-- Do not omit a stronger baseline while implying comprehensive comparison.
-- Do not change metrics after seeing results without documenting why.
-- Do not cherry-pick case studies while calling them random.
-- Do not fabricate missing experiments.
+## Weak Results Route
 
 If results are weak:
 
-- reduce target venue ambition
+- reduce venue ambition
 - narrow claims
-- add analysis explaining where the method helps
+- add error analysis
 - choose a more appropriate baseline or dataset
+- convert to a finding, limitation, or application paper if defensible
+
+Do not hide material failures while making contradicted claims.

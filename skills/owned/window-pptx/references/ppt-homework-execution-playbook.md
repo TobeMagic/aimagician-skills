@@ -69,6 +69,10 @@ Avoid:
 - stretching people or product photos to fit a box
 - placing opaque masks over text without checking the exported PNG
 
+When a user says the rendered/image version is visually correct but the final deck must be editable, load `editable-deliverable-rebuild.md` and treat that rendered page as a gold reference only. Rebuild the deliverable from independent picture assets plus native PPT text boxes, shapes, masks, cards, timelines, and lines.
+
+If the user says "only change layout", preserve the original title colors, brand colors, typography role, and content hierarchy. Do not import another slide or template if it changes those visual constants.
+
 For image clipping / Boolean-like work:
 
 - PowerPoint COM shape operations can be fragile and version-dependent
@@ -244,6 +248,13 @@ If the user says a page is unsatisfactory, do not patch blindly:
 3. rerun the full generation
 4. regenerate PNG/contact sheet
 5. show the updated artifact paths
+
+For editable rebuild work, add a structural QA step:
+
+1. unpack or inspect the generated `.pptx`
+2. verify completed slides do not contain a full-slide picture named like `full_slide_image`
+3. verify completed slides contain multiple `shape/text/picture` objects
+4. verify reference/instruction pages are the only pages allowed to use full-slide screenshots
 
 ## 8. Plugin Policy During Homework
 

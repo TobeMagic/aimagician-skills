@@ -1,104 +1,119 @@
 ---
 name: academic-paper-workflow
-description: |
-  Build an end-to-end academic paper workflow for graduate students: literature search and reading, topic positioning, baseline/model or method selection, experiment planning, comparison/ablation/case-study design, paper story and figure planning, journal/conference selection, submission checklist, and revision response. Use this skill whenever the user mentions 学术论文, 小论文, SCI, EI, 中文核心, 选刊, 投稿, 返修, 文献调研, 做实验, baseline, 消融实验, 开题, 研究生论文, or asks how to turn research work into a publishable paper. This skill should also trigger when the user wants a pragmatic graduate-paper survival plan, even if they only mention one part such as “帮我选期刊” or “实验怎么设计”.
+description: Use when the user asks about academic papers, paper ideas, literature review, baseline or module design, method synthesis, contribution framing, evidence planning, experiments, manuscript structure, journal or conference selection, SCI, EI, 中文核心, CCF, CSSCI, OA, submission, revision, reviewer response, or light thesis integration.
 compatibility:
   tools: [bash, python, git]
-  requires: Optional network access for live journal/paper lookup; optional use of deep-research-system for large-scale retrieval
+  requires: Optional network access for live paper, venue, policy, and indexing checks
 ---
 
 # Academic Paper Workflow
 
-Use this skill as a standalone operating system for academic-paper work. It provides reusable workflows, reference checklists, and decision routes for:
+Use this skill as a discuss-driven operating system for academic-paper publication. The route is:
 
-- literature search and reading
-- topic positioning
-- baseline and method construction
-- experiment design
-- paper story and figures
-- journal/conference selection
-- submission and revision
+```text
+paper goal -> field map -> idea selection -> method synthesis -> contribution-evidence map -> experiment plan -> venue ladder -> manuscript package -> submission -> revision
+```
 
-Do not help fabricate results, misrepresent baselines, hide material failures, plagiarize text, use paper mills, or game review dishonestly. When the user needs speed or graduation safety, reduce venue ambition or scope instead of weakening academic integrity.
+The workflow is about publishable papers, not career planning. It supports professional research design by default and a resource-constrained strategy mode when time, budget, data, or venue requirements are tight. Speed, venue level, and evidence depth are strategy tradeoffs; they are never permission to fabricate, hide failures, copy text, manipulate baselines, use unverified third-party manuscript services, or mislead reviewers.
+
+## Discuss-Driven Rule
+
+Start with the smallest useful question and keep the chain moving. Ask only for missing high-impact information; if the user says to proceed, infer conservative defaults and mark assumptions.
+
+Every substantive response should include:
+
+- `Current paper state`
+- `Recommended route`
+- `Missing decisions`
+- `Next discuss question`
+- `Concrete deliverable`
+
+If the user only wants advice, answer inline. Write files under `docs/academic_paper_workflow/` only when the user asks for artifacts.
+
+## Method Essence
+
+Translate paper-craft needs into professional academic operations:
+
+| User need | Workflow meaning |
+|---|---|
+| idea / 选题 | publishable problem choice scored by field fit, novelty room, baseline/data availability, evidence cost, and venue fit |
+| method improvement | baseline + modular additions, method transfer, protocol adaptation, or benchmark/resource contribution with traceable sources |
+| contribution framing | problem-gap-method-evidence-limitation chain, often using CARS-style introduction logic |
+| innovation / 创新点 | novelty + usefulness + evidence + clear boundary, not inflated wording |
+| venue selection / 选刊 | scope fit + recognition/indexing + review speed + APC/OA + warning-list risk + fallback ladder |
+| revision / 返修 | point-by-point issue triage, added evidence where material, exact manuscript change log |
 
 ## Reference Router
 
-Choose the smallest reference set needed:
+Load the smallest relevant reference:
 
-- [`references/workflow-index.md`](./references/workflow-index.md): route the task and decide deliverables
-- [`references/literature-workflow.md`](./references/literature-workflow.md): search, access, review papers, reading matrix
-- [`references/topic-baseline-module-workflow.md`](./references/topic-baseline-module-workflow.md): topic positioning, baseline choice, module bank, method rationale
-- [`references/experiment-workflow.md`](./references/experiment-workflow.md): comparison, ablation, case study, metrics, experiment logs
-- [`references/paper-writing-figures-workflow.md`](./references/paper-writing-figures-workflow.md): paper story, structure imitation, three core figures, polish
-- [`references/venue-selection-workflow.md`](./references/venue-selection-workflow.md): journal/conference ranking, SCI/EI/Chinese core/CCF/OA, fallback ladder
-- [`references/submission-revision-workflow.md`](./references/submission-revision-workflow.md): author guideline checklist, submission package, reviewer response
-- [`references/reviewer-response-workflow.md`](./references/reviewer-response-workflow.md): post-review triage, manuscript self-audit, point-by-point response, 10 most dangerous review issues
-- [`references/integrity-and-risk-controls.md`](./references/integrity-and-risk-controls.md): academic integrity, predatory venue checks, paper-mill refusal
+- [`references/workflow-index.md`](./references/workflow-index.md): task router and deliverable map
+- [`references/discuss-driven-router.md`](./references/discuss-driven-router.md): exact question chain and strategy modes
+- [`references/literature-workflow.md`](./references/literature-workflow.md): search strategy, reading matrix, field map
+- [`references/idea-selection-workflow.md`](./references/idea-selection-workflow.md): idea scoring, strategy route, topic rescue
+- [`references/method-synthesis-workflow.md`](./references/method-synthesis-workflow.md): baseline choice, modular method design, target-venue adaptation
+- [`references/contribution-evidence-workflow.md`](./references/contribution-evidence-workflow.md): contribution framing, CARS, innovation, claim-evidence map
+- [`references/experiment-workflow.md`](./references/experiment-workflow.md): comparison, ablation, case study, metrics, reproducibility
+- [`references/paper-writing-figures-workflow.md`](./references/paper-writing-figures-workflow.md): IMRaD structure, figures, tables, polishing
+- [`references/venue-selection-workflow.md`](./references/venue-selection-workflow.md): SCI/EI/OA/中文核心/CCF/CSSCI venue ladder and official checks
+- [`references/submission-revision-workflow.md`](./references/submission-revision-workflow.md): author-guide checklist, submission package, revision handling
+- [`references/reviewer-response-workflow.md`](./references/reviewer-response-workflow.md): review triage, response letter, resubmission audit
+- [`references/thesis-integration-workflow.md`](./references/thesis-integration-workflow.md): light thesis integration, chapter structure, formatting, similarity checks
+- [`references/integrity-and-risk-controls.md`](./references/integrity-and-risk-controls.md): boundaries, risk conversion, venue safety
 
-If the user needs real paper retrieval or a reusable literature system, also use the `deep-research-system` skill if available.
+## Default Deliverables
 
-## Default Output Contract
-
-Unless the user requests another location, create or update:
+For a full workflow, produce an adaptive package:
 
 ```text
 docs/academic_paper_workflow/
   00-context.md
   01-literature-map.md
-  02-reading-matrix.csv
-  03-baseline-and-module-map.md
-  04-experiment-plan.md
-  05-paper-story-and-figures.md
-  06-journal-shortlist.csv
-  07-submission-checklist.md
-  08-revision-response-plan.md
+  02-idea-scorecard.md
+  03-method-synthesis-map.md
+  04-contribution-evidence-map.md
+  05-experiment-plan.md
+  06-venue-ladder.md
+  07-writing-submission-checklist.md
+  08-revision-plan.md
+  09-thesis-integration-checklist.md
 ```
 
-If the task is only advisory, return the same structure inline.
+For short tasks, produce only the needed artifact, such as a venue ladder, contribution-evidence map, reviewer response table, or experiment matrix.
 
-## Discuss Gate
+## First Discuss Gate
 
-Before building a full plan, collect or infer these items. Ask only for missing high-impact items:
+Collect or infer these, in this order:
 
-- field and topic keywords
-- degree/graduation requirement: no paper, EI conference, Chinese core, SCI, CCF, school-specific A/B/C/D, or unknown
-- goal: graduate, job-oriented, PhD/academic track, award/scholarship, or uncertain
-- time budget: months until submission or graduation
-- current assets: dataset, code, baseline, preliminary results, draft, target journal, advisor requirement
-- constraints: budget/APC, open access allowed or not, warning list, school recognition rules
-- integrity stance: reproducible experiments and truthful reporting
+1. Paper target: rapid recognition, steady publication, high-quality target, or fallback/rescue.
+2. Hard constraints: required tier, deadline, recognition rules, APC/OA budget, language, article type.
+3. Current assets: idea, keywords, literature, dataset, baseline, code, results, draft, target venue, reviews.
+4. Field map: recent papers, datasets, metrics, baselines, accepted venue patterns.
+5. Missing bottleneck: idea, method, contribution, evidence, venue, submission, revision, or thesis integration.
 
-If the user is urgent and says to proceed, assume:
-
-- prioritize graduation and time safety
-- use public literature and reproducible baselines
-- target the lowest journal/conference level that satisfies the hard requirement unless the user says they want PhD/top-tier outcomes
+If urgent, assume: public data, reproducible baseline, narrow claims, official venue checks, and the lowest venue level that satisfies the stated paper requirement.
 
 ## Workflow
 
-1. Route the task with `workflow-index.md`.
-2. Build or update the context file.
-3. Run literature workflow if the direction is not already mapped.
-4. Build baseline/module map if method is unclear.
-5. Build experiment matrix before writing claims.
-6. Build paper story and figure/table plan.
-7. Select target venue and fallback ladder before final writing.
-8. Prepare submission checklist.
-9. On revision, prepare point-by-point response and marked manuscript plan.
-10. Keep integrity and risk controls active throughout.
+1. Route the request with `workflow-index.md` and `discuss-driven-router.md`.
+2. Build a context snapshot and identify the next missing decision.
+3. If direction is unclear, run literature mapping before recommending a method.
+4. If method is unclear, score ideas and build a method synthesis map.
+5. If the paper has results, build the contribution-evidence map before venue selection.
+6. Select venue ladder before final polishing; venue taste changes contribution scale, length, figures, and experiments.
+7. Before submission, verify author guide, ethics/AI/data/code statements, formatting, and duplicate-submission rules.
+8. On reviews, triage issues before drafting responses.
+9. For thesis work, integrate existing paper outputs into a thesis structure and formatting checklist without turning this skill into career planning.
+10. Keep integrity controls active throughout.
 
 ## Final Response Format
 
-For planning tasks, return:
+Use concise Chinese by default, preserving standard English terms. For planning or advice-only work:
 
-- `Current state`
-- `Recommended route`
-- `Literature plan`
-- `Baseline/method plan`
-- `Experiment plan`
-- `Paper story and figures`
-- `Journal/conference ladder`
-- `Submission/revision actions`
-- `Risks and next actions`
+- `当前状态`
+- `推荐路线`
+- `关键缺口`
+- `下一步讨论问题`
+- `本轮交付`
 
-For file-producing tasks, include generated paths and what each file contains.
+For file-producing work, include the generated paths and what each file contains.

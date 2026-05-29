@@ -16,11 +16,10 @@ afterEach(async () => {
 });
 
 describe("parseCli", () => {
-  it("defaults to bootstrap and all supported targets", () => {
+  it("defaults to the dashboard and all supported targets", () => {
     expect(parseCli([])).toEqual({
-      command: "bootstrap",
+      command: "tui",
       targets: ["codex", "claude", "opencode", "gemini", "hermes", "cursor", "copilot"],
-      dryRun: false,
       json: false,
       help: false
     });
@@ -55,19 +54,76 @@ describe("parseCli", () => {
     expect(parseCli(["list", "--target", "gemini", "--json"])).toEqual({
       command: "list",
       targets: ["gemini"],
+      scope: "global",
       json: true,
       help: false
     });
     expect(parseCli(["inspect", "--targets", "codex,claude"])).toEqual({
       command: "inspect",
       targets: ["codex", "claude"],
+      scope: "global",
       json: false,
       help: false
     });
     expect(parseCli(["doctor"])).toEqual({
       command: "doctor",
       targets: ["codex", "claude", "opencode", "gemini", "hermes", "cursor", "copilot"],
+      scope: "global",
       json: false,
+      help: false
+    });
+  });
+
+  it("supports manager search, install, and uninstall commands", () => {
+    expect(parseCli(["search", "paper", "--scope", "project", "--project", "/repo", "--json"])).toEqual({
+      command: "search",
+      query: "paper",
+      targets: ["codex", "claude", "opencode", "gemini", "hermes", "cursor", "copilot"],
+      scope: "project",
+      projectDir: "/repo",
+      json: true,
+      help: false
+    });
+    expect(parseCli(["install", "daily-ops", "external-helper", "--target", "claude", "--scope", "project"])).toEqual({
+      command: "install",
+      assetIds: ["daily-ops", "external-helper"],
+      targets: ["claude"],
+      scope: "project",
+      json: false,
+      help: false
+    });
+    expect(parseCli(["uninstall", "daily-ops", "--target", "claude", "--scope", "global"])).toEqual({
+      command: "uninstall",
+      assetIds: ["daily-ops"],
+      targets: ["claude"],
+      scope: "global",
+      json: false,
+      help: false
+    });
+  });
+
+  it("supports cursor reset across global and project scopes", () => {
+    expect(parseCli([
+      "reset",
+      "--target",
+      "cursor",
+      "--scope",
+      "all",
+      "--project",
+      "/repo",
+      "--install-all",
+      "--yes",
+      "--dry-run",
+      "--json"
+    ])).toEqual({
+      command: "reset",
+      targets: ["cursor"],
+      scope: "all",
+      projectDir: "/repo",
+      installAll: true,
+      yes: true,
+      dryRun: true,
+      json: true,
       help: false
     });
   });
@@ -79,6 +135,12 @@ describe("parseCli", () => {
     expect(() => parseCli(["list", "--dry-run"])).toThrow(
       "Unsupported argument for list: --dry-run"
     );
+    expect(() => parseCli(["install", "daily-ops", "--target", "claude"])).toThrow(
+      "Missing required --scope for install"
+    );
+    expect(() => parseCli(["search", "--scope", "all"])).toThrow(
+      "Scope all is only supported for reset"
+    );
   });
 });
 
@@ -87,11 +149,11 @@ describe("runCli", () => {
     const fixture = await createBootstrapFixture();
 
     await withFixtureEnv(fixture, async () => {
-      const result = await runCli(["--dry-run", "--target", "claude"]);
+      const result = await runCli(["bootstrap", "--dry-run", "--target", "claude"]);
 
       expect(result.exitCode).toBe(0);
       expect(result.stderr).toBe("");
-      expect(result.stdout).toContain("AImagician Skills bootstrap");
+      expect(result.stdout).toContain("Skillbee bootstrap");
       expect(result.stdout).toContain("Mode: dry-run");
       expect(result.stdout).toContain("Targets: claude");
       expect(result.stdout).toContain("Planned assets: 1");
@@ -104,14 +166,14 @@ describe("runCli", () => {
     await withFixtureEnv(fixture, async () => {
       const listResult = await runCli(["list", "--targets", "codex,opencode"]);
       expect(listResult.exitCode).toBe(0);
-      expect(listResult.stdout).toContain("AImagician Skills list");
+      expect(listResult.stdout).toContain("Skillbee list");
       expect(listResult.stdout).toContain("daily-ops");
       expect(listResult.stdout).toContain("audit-helper");
       expect(listResult.stdout).toContain("command sources: none");
 
       const inspectResult = await runCli(["inspect", "--target", "gemini"]);
       expect(inspectResult.exitCode).toBe(0);
-      expect(inspectResult.stdout).toContain("AImagician Skills inspect");
+      expect(inspectResult.stdout).toContain("Skillbee inspect");
       expect(inspectResult.stdout).toContain(".gemini");
       expect(inspectResult.stdout).toContain("command installs: gsd");
 
@@ -132,7 +194,11 @@ describe("runCli", () => {
     const result = await runCli(["--help"]);
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("Usage: aimagician-skills");
+    expect(result.stdout).toContain("Usage: skillbee");
+    expect(result.stdout).toContain("tui");
+    expect(result.stdout).toContain("install");
+    expect(result.stdout).toContain("uninstall");
+    expect(result.stdout).toContain("reset");
     expect(result.stdout).toContain("list");
     expect(result.stdout).toContain("doctor");
     expect(result.stdout).toContain("--home");

@@ -1,0 +1,47 @@
+{
+  "skill_name": "repo-interview-playbook",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "基于当前 workspace 的 data-provider 仓库，生成一份面试战斗版八股文，放进 LLM-know-how-wiki/wiki/interview/data-provider/。",
+      "expected_output": "Uses LLM-know-how-wiki first and collects repo evidence, but starts with a discuss-first evidence scan: candidate highlights, evidence strength, recommended first highlight, and confirmation questions. It should not write wiki files until the user confirms filing.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "我目标是字节 Java 后端，帮我把 luckee2.0 的项目经历整理成大厂面试题和追问链路。",
+      "expected_output": "Applies the ByteDance profile, scans wiki/repo evidence, proposes candidate highlights and high-frequency追问 directions, recommends the first highlight to polish, and avoids generating the full playbook before highlight selection.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "我目标是阿里云 AI Agent 后端，把 core-agent-loop-worker 生成项目介绍和面试问答。",
+      "expected_output": "Applies Alibaba/AI-agent-backend profile, proposes evidence-backed Agent runtime/tool/eval/guardrail highlights, asks the user to pick or confirms the strongest first highlight, and does not file wiki pages yet.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "只根据已有 interview playbook，帮我把 data-provider 改成简历 bullet，不要重新扫代码。",
+      "expected_output": "Reads the existing wiki/interview/data-provider playbook, produces conservative and confirmation-needed resume bullets, and does not run repo evidence collection unless the playbook is missing.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "先不要写文件，只和我 discuss data-provider 哪些项目亮点最值得准备面试。",
+      "expected_output": "Outputs only an evidence scan and candidate highlight table for data-provider, including interview value, evidence paths or evidence strength, missing ownership/impact questions, and a recommended first highlight. It does not create or modify wiki files.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "先打磨 data-provider 的 REST/MCP/Celery 三暴露层这个亮点。",
+      "expected_output": "Produces a single-highlight draft only for REST/MCP/Celery: scenario, design, code evidence, tradeoff, likely interviewer question, 30-second answer, deep follow-ups, basic 八股文 mapping, resume phrasing candidate, and do-not-overclaim boundary. It stops for feedback and does not generate unrelated highlights.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "这个亮点确认，写入 wiki。",
+      "expected_output": "Files only the confirmed highlight into wiki/interview/<repo>/ technical highlights, question bank, and evidence map as appropriate; updates wiki/index.md and wiki/log.md if needed; does not file unconfirmed drafts.",
+      "files": []
+    }
+  ]
+}

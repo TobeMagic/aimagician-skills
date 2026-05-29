@@ -1,7 +1,7 @@
 {
-  "name": "aimagician-skills",
-  "version": "0.1.0",
-  "description": "Personal skills repository and deployment toolkit for AI coding CLIs.",
+  "name": "skillbee",
+  "version": "1.0.0",
+  "description": "Skill manager, catalog, and deployment toolkit for AI coding CLIs.",
   "license": "MIT",
   "main": "./dist/cli/index.js",
   "exports": {
@@ -11,30 +11,40 @@
     "dist",
     "catalog",
     "skills",
-    "README.md"
+    "README.md",
+    "!**/__pycache__",
+    "!**/*.pyc"
   ],
   "bin": {
+    "skillbee": "./dist/cli/index.js",
     "aimagician-skills": "./dist/cli/index.js"
   },
   "scripts": {
     "bootstrap": "node ./dist/cli/index.js bootstrap",
-    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
   "keywords": [
     "skills",
+    "skillbee",
+    "skill-manager",
+    "tui",
     "bootstrap",
     "cli",
     "codex",
     "claude"
   ],
   "devDependencies": {
+    "@types/blessed": "^0.1.27",
     "@types/node": "^24.5.0",
     "typescript": "^5.9.2",
     "vitest": "^4.1.0"
   },
   "dependencies": {
+    "blessed": "^0.1.81",
     "fast-glob": "^3.3.3",
     "yaml": "^2.8.2",
     "zod": "^4.3.6"

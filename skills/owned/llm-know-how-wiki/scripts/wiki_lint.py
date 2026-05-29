@@ -21,6 +21,7 @@ ALLOWED_TYPES = {
     "runbook",
     "decision",
     "digest",
+    "interview",
     "index",
     "log",
 }
@@ -141,12 +142,18 @@ def lint(root: Path, stale_days: int, large_lines: int) -> tuple[list[str], dict
             elif age is not None and age > stale_days:
                 findings.append(f"WARN stale_page {rel}: updated {age} days ago")
 
-        if rel not in {"index.md", "log.md"} and f"[[{rel}]]" not in index_text:
+        if rel not in {"index.md", "log.md"} and not rel.startswith("log_archive/") and f"[[{rel}]]" not in index_text:
             findings.append(f"ERROR missing_index_entry {rel}")
 
         line_count = text.count("\n") + 1
-        if line_count > large_lines:
-            findings.append(f"WARN large_page {rel}: {line_count} lines")
+        if line_count > large_lines and not rel.startswith("log_archive/"):
+            if rel == "log.md":
+                findings.append(
+                    f"WARN large_page {rel}: {line_count} lines; "
+                    "run scripts/archive_log.py <wiki-root> --dry-run"
+                )
+            else:
+                findings.append(f"WARN large_page {rel}: {line_count} lines")
 
         for raw in WIKILINK_RE.findall(text):
             target = raw.split("|", 1)[0].split("#", 1)[0].strip()
@@ -164,7 +171,7 @@ def lint(root: Path, stale_days: int, large_lines: int) -> tuple[list[str], dict
 
     for page in pages:
         rel = page.relative_to(wiki).as_posix()
-        if rel in {"index.md", "log.md", "overview.md"}:
+        if rel in {"index.md", "log.md", "overview.md"} or rel.startswith("log_archive/"):
             continue
         if inbound[rel] == 0:
             findings.append(f"WARN orphan_page {rel}")

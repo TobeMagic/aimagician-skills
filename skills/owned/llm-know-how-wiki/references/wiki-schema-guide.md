@@ -23,6 +23,8 @@ LLM-know-how-wiki/
     runbook/
     decision/
     digest/
+    interview/
+    log_archive/
     index.md
     log.md
     overview.md
@@ -39,7 +41,7 @@ Every curated wiki page should start with:
 ```yaml
 ---
 title: Page Title
-type: service | architecture | api | project | reference | runbook | decision | digest | index | log
+type: service | architecture | api | project | reference | runbook | decision | digest | interview | index | log
 status: active | variant | archive | unknown
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -180,6 +182,18 @@ Sections:
 - Links
 - Sources
 
+### Interview
+
+Use for repo-backed interview preparation artifacts: project stories, technical highlights, question banks, resume bullets, and evidence maps.
+
+Sections depend on the concrete artifact, but every interview page should preserve:
+
+- target repo or service
+- target role or company profile when known
+- source paths and wiki pages
+- confidence or confirmation-needed notes
+- boundaries for claims that should not be overstated
+
 ## Index Rules
 
 `wiki/index.md` should list every curated wiki page except `wiki/log.md`. Each row should include path, one-line summary, and tags.
@@ -188,7 +202,7 @@ When a page is created, renamed, archived, or substantially changed, update the 
 
 ## Log Rules
 
-`wiki/log.md` is append-only.
+`wiki/log.md` is the recent hot log. Normal operations append to it. When it grows too large, use Log Archive mode to move older entries to `wiki/log_archive/YYYY.md` while preserving the audit trail.
 
 Recommended entry:
 
@@ -202,6 +216,23 @@ Recommended entry:
 ```
 
 Use operation labels: `INIT`, `RAW_IMPORT`, `INGEST`, `ANSWER_FILED`, `LINT`, `SAFETY_REDACTION`, `REFERENCE_REPO`, `REFERENCE_REPO_REFRESH`, `REFERENCE_REPO_SNAPSHOT`, `LINEAR_WORKFLOW`, `GITHUB_PR_WORKFLOW`, `WORKFLOW_ACTIVITY`, `ARCHIVE`.
+
+### Log Archive
+
+Archive old log entries when lint reports `WARN large_page log.md` or when loading the log consumes too much context.
+
+```bash
+python <skill>/scripts/archive_log.py <wiki-root> --dry-run
+python <skill>/scripts/archive_log.py <wiki-root>
+```
+
+Archive behavior:
+
+- Keep a recent window in `wiki/log.md` for fast orientation.
+- Move older dated entries into `wiki/log_archive/YYYY.md`.
+- Add an archive pointer section in `wiki/log.md`.
+- Append a `LOG_ARCHIVE` entry.
+- Do not list archive files in `wiki/index.md`; they are audit storage, not curated content.
 
 ## Link Rules
 
@@ -246,6 +277,10 @@ Useful engineering tags:
 - external
 - github
 - workflow
+- log
+- archive
+- interview
+- career
 - gcloud
 - cloud-run
 - gke

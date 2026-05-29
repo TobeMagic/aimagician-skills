@@ -1,0 +1,29 @@
+{
+  "skill_name": "opensource-architecture-research",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我想调研 multi-agent workspace IM，比较几个开源项目的架构，先不要直接写完整报告。",
+      "expected_output": "Starts with research setup, asks or confirms research objects, decision context, depth, output path, and taxonomy draft; refuses to write the full report before objects and taxonomy are confirmed.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "研究对象已经确认了，请先交付连接层 1.1/1.2/1.3。",
+      "expected_output": "Creates or updates the reference report under LLM-know-how-wiki/wiki/reference/<feature_slug>/, includes overview/scope taxonomy context, writes the first layer with layer summary table, fine-grained comparison tables, supplemental references, difference summaries, evidence paths, and stops for review before continuing.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "把这个开源架构对比报告放到 external_reference_repos/agent-platform-arch-comparison.md。",
+      "expected_output": "Explains that external_reference_repos is for third-party source checkouts and manifests, stores curated Markdown reports under wiki/reference/<feature_slug>/ instead, and uses llm-know-how-wiki to update index/log when writing.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "某个项目在消息层没什么资料，但连接层资料很多，报告里怎么处理？",
+      "expected_output": "Applies material/no-material rules per module: include the project in detailed connection-layer tables, mention it briefly or omit it from detailed message-layer tables when evidence is weak, and state evidence gaps explicitly.",
+      "files": []
+    }
+  ]
+}

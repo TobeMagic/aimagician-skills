@@ -80,6 +80,8 @@ If no template is specified, prefer files named `template.pptx`, `template.pptm`
 
 Read [project-folder-contract.md](./references/project-folder-contract.md) when you need the full folder and `REQUEST.md` rules.
 
+Read [editable-deliverable-rebuild.md](./references/editable-deliverable-rebuild.md) when a rendered/image version looks good but the final deliverable must remain editable. Do not use a full-slide screenshot as a completed page unless the user explicitly chooses raster output.
+
 ## REQUEST.md Template
 
 Use [templates/REQUEST.md](./templates/REQUEST.md) for new projects.

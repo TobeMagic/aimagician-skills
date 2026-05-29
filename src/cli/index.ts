@@ -3,6 +3,17 @@
 import type { CommandOutput, ParsedCli } from "../bootstrap/command-types";
 import { runBootstrap } from "../bootstrap/run-bootstrap";
 import { inspectInstallation } from "../inspection/inspect-installation";
+import {
+  installSkills,
+  resetSkills,
+  searchSkills,
+  uninstallSkills,
+  type InstallSkillsResult,
+  type ManagerSkillRecord,
+  type ResetSkillsResult,
+  type UninstallSkillsResult
+} from "../manager/manager";
+import { runDashboard } from "../tui/dashboard";
 import { parseCli } from "./parse-cli";
 
 export async function runCli(argv: string[]): Promise<CommandOutput> {
@@ -13,6 +24,14 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
       return {
         exitCode: 0,
         stdout: renderHelp(),
+        stderr: ""
+      };
+    }
+
+    if (parsed.command === "tui") {
+      return {
+        exitCode: 0,
+        stdout: renderTuiNotice(),
         stderr: ""
       };
     }
@@ -34,8 +53,86 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
       };
     }
 
+    if (parsed.command === "search") {
+      const result = await searchSkills({
+        query: parsed.query,
+        scope: parsed.scope,
+        projectDir: parsed.projectDir,
+        selectedTargets: parsed.targets,
+        includeArchived: parsed.includeArchived,
+        platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
+      });
+
+      return {
+        exitCode: 0,
+        stdout: parsed.json
+          ? JSON.stringify({ command: parsed.command, scope: parsed.scope, skills: result }, null, 2)
+          : renderSearch(result),
+        stderr: ""
+      };
+    }
+
+    if (parsed.command === "install") {
+      const result = await installSkills({
+        assetIds: parsed.assetIds,
+        scope: parsed.scope,
+        projectDir: parsed.projectDir,
+        selectedTargets: parsed.targets,
+        includeArchived: parsed.includeArchived,
+        platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
+      });
+
+      return {
+        exitCode: 0,
+        stdout: parsed.json
+          ? JSON.stringify({ command: parsed.command, ...result }, null, 2)
+          : renderInstall(result),
+        stderr: ""
+      };
+    }
+
+    if (parsed.command === "uninstall") {
+      const result = await uninstallSkills({
+        assetIds: parsed.assetIds,
+        scope: parsed.scope,
+        projectDir: parsed.projectDir,
+        selectedTargets: parsed.targets,
+        platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
+      });
+
+      return {
+        exitCode: 0,
+        stdout: parsed.json
+          ? JSON.stringify({ command: parsed.command, ...result }, null, 2)
+          : renderUninstall(result),
+        stderr: ""
+      };
+    }
+
+    if (parsed.command === "reset") {
+      const result = await resetSkills({
+        target: parsed.targets[0]!,
+        scope: parsed.scope,
+        projectDir: parsed.projectDir,
+        installAll: parsed.installAll,
+        yes: parsed.yes,
+        dryRun: parsed.dryRun,
+        platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
+      });
+
+      return {
+        exitCode: 0,
+        stdout: parsed.json
+          ? JSON.stringify({ command: parsed.command, ...result }, null, 2)
+          : renderReset(result),
+        stderr: ""
+      };
+    }
+
     const inspection = await inspectInstallation({
       selectedTargets: parsed.targets,
+      scope: parsed.scope,
+      projectDir: parsed.projectDir,
       platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
     });
 
@@ -56,6 +153,17 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
 }
 
 export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
+  const parsed = parseCli(argv);
+
+  if (parsed.command === "tui" && !parsed.help && process.stdin.isTTY && process.stdout.isTTY) {
+    await runDashboard({
+      selectedTargets: parsed.targets,
+      projectDir: parsed.projectDir,
+      platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
+    });
+    return;
+  }
+
   const result = await runCli(argv);
 
   if (result.stdout) {
@@ -93,6 +201,7 @@ function createInspectionPreview(
   if (command === "doctor") {
     return {
       command,
+      scope: inspection.scope,
       status: inspection.status,
       workspaceRoot: inspection.workspaceRoot,
       manifestPath: inspection.manifestPath,
@@ -121,7 +230,7 @@ function renderBootstrapPreview(
   const preview = createBootstrapPreview(parsed, result);
 
   return [
-    "AImagician Skills bootstrap",
+    "Skillbee bootstrap",
     `Mode: ${preview.mode}`,
     `Targets: ${preview.targets.join(", ")}`,
     `Workspace: ${preview.workspaceRoot}`,
@@ -150,22 +259,92 @@ function renderInspection(
 
 function renderHelp(): string {
   return [
-    "Usage: aimagician-skills <command> [--target <codex|claude|opencode|gemini|hermes|cursor>] [--json]",
+    "Usage: skillbee <command> [--target <codex|claude|opencode|gemini|hermes|cursor|copilot>] [--json]",
     "",
     "Commands:",
-    "  bootstrap     Run the bootstrap workflow (default command)",
-    "  list          Show detected assets per target",
+    "  tui           Open the skill manager dashboard (default command)",
+    "  search        Search local packaged skills",
+    "  install       Install selected skills (requires --scope)",
+    "  uninstall     Uninstall managed skills only (requires --scope)",
+    "  reset         Clear one target scope and reinstall all active skills",
+    "  bootstrap     Run the legacy all-selected bootstrap workflow",
+    "  list          Show detected assets per target and scope",
     "  inspect       Show detailed target inspection output",
     "  doctor        Verify managed installs against live target homes",
     "",
     "Options:",
     "  --targets     Comma-separated targets to include",
     "  --target      Single target override (repeatable)",
+    "  --scope       Scope for manager commands: global or project; reset also supports all",
+    "  --project     Project directory for project scope (default: current directory)",
     "  --home        Override the effective home directory (default: current ~/)",
-    "  --dry-run     Print bootstrap intent without applying changes (bootstrap only)",
+    "  --install-all Reset-only flag: reinstall every active skill after clearing",
+    "  --yes, -y     Confirm reset when applying changes",
+    "  --include-archived  Show or install archived owned skills",
+    "  --dry-run     Print bootstrap/reset intent without applying changes",
     "  --clean       Wipe all target skill/plugin dirs before install (bootstrap only)",
     "  --json        Render machine-readable output",
     "  -h, --help    Show command help"
+  ].join("\n");
+}
+
+function renderTuiNotice(): string {
+  return [
+    "Skillbee dashboard",
+    "Interactive dashboard support is available through the tui command in a terminal session.",
+    "Use search/install/uninstall for non-interactive workflows."
+  ].join("\n");
+}
+
+function renderSearch(skills: ManagerSkillRecord[]): string {
+  return [
+    "Skillbee search",
+    ...skills.map((skill) => {
+      const status = skill.installedTargets.length > 0
+        ? `installed: ${skill.installedTargets.join(",")}`
+        : "not installed";
+      const source = skill.sourceId ? ` from ${skill.sourceId}` : "";
+      const archiveStatus = skill.archived ? " archived" : "";
+
+      return `${skill.id} [${skill.group}${skill.subgroup ? `/${skill.subgroup}` : ""}] ${status}${source}${archiveStatus}`;
+    })
+  ].join("\n");
+}
+
+function renderInstall(result: InstallSkillsResult): string {
+  return [
+    "Skillbee install",
+    `Scope: ${result.scope}`,
+    `Workspace: ${result.workspaceRoot}`,
+    `Installed: ${result.installed.length > 0 ? result.installed.map((install) => `${install.assetId}->${install.target}`).join(", ") : "none"}`,
+    `Command sources: ${result.commandReports.length > 0 ? result.commandReports.map((report) => report.sourceId).join(", ") : "none"}`,
+    `Skipped: ${result.skipped.length > 0 ? result.skipped.map((skip) => `${skip.assetId} (${skip.reason})`).join(", ") : "none"}`
+  ].join("\n");
+}
+
+function renderUninstall(result: UninstallSkillsResult): string {
+  return [
+    "Skillbee uninstall",
+    `Scope: ${result.scope}`,
+    `Workspace: ${result.workspaceRoot}`,
+    `Removed: ${result.removed.length > 0 ? result.removed.map((install) => `${install.assetId}->${install.target}`).join(", ") : "none"}`,
+    `Skipped: ${result.skipped.length > 0 ? result.skipped.map((skip) => `${skip.assetId}->${skip.target} (${skip.reason})`).join(", ") : "none"}`
+  ].join("\n");
+}
+
+function renderReset(result: ResetSkillsResult): string {
+  return [
+    "Skillbee reset",
+    `Target: ${result.target}`,
+    `Mode: ${result.dryRun ? "dry-run" : "apply"}`,
+    ...result.scopes.flatMap((scopeResult) => [
+      `Scope: ${scopeResult.scope}`,
+      `  Workspace: ${scopeResult.workspaceRoot}`,
+      `  Removed roots: ${scopeResult.removedRoots.length > 0 ? scopeResult.removedRoots.join(", ") : "none"}`,
+      `  Installed: ${scopeResult.installed.length > 0 ? scopeResult.installed.map((install) => install.assetId).join(", ") : "none"}`,
+      `  Command sources: ${scopeResult.commandReports.length > 0 ? scopeResult.commandReports.map((report) => report.sourceId).join(", ") : "none"}`,
+      `  Skipped: ${scopeResult.skipped.length > 0 ? scopeResult.skipped.map((skip) => `${skip.assetId} (${skip.reason})`).join(", ") : "none"}`
+    ])
   ].join("\n");
 }
 
@@ -211,7 +390,8 @@ function renderList(
   inspection: Awaited<ReturnType<typeof inspectInstallation>>
 ): string {
   return [
-    "AImagician Skills list",
+    "Skillbee list",
+    `Scope: ${inspection.scope}`,
     `Workspace: ${inspection.workspaceRoot}`,
     `Manifest: ${inspection.manifestExists ? "present" : "missing"}`,
     ...inspection.targets.flatMap((target) => {
@@ -236,7 +416,8 @@ function renderInspect(
   inspection: Awaited<ReturnType<typeof inspectInstallation>>
 ): string {
   return [
-    "AImagician Skills inspect",
+    "Skillbee inspect",
+    `Scope: ${inspection.scope}`,
     `Workspace: ${inspection.workspaceRoot}`,
     `Manifest path: ${inspection.manifestPath}`,
     ...inspection.targets.flatMap((target) => [
@@ -257,7 +438,8 @@ function renderDoctor(
   inspection: Awaited<ReturnType<typeof inspectInstallation>>
 ): string {
   return [
-    "AImagician Skills doctor",
+    "Skillbee doctor",
+    `Scope: ${inspection.scope}`,
     `Status: ${inspection.status}`,
     `Manifest: ${inspection.manifestExists ? inspection.manifestPath : "missing"}`,
     ...inspection.targets.flatMap((target) => [

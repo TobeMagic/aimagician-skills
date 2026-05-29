@@ -1,0 +1,76 @@
+{
+  "skill_name": "academic-paper-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我有一个很模糊的论文方向，帮我确定 idea。",
+      "expected_output": "Uses the discuss-driven router, asks for paper target and current assets if missing, then returns an idea scorecard framework covering field fit, novelty room, baseline/data availability, evidence cost, venue fit, and timeline risk.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "我想尽快发一篇能被认可的论文，SCI/EI/中文核心都可以，怎么走？",
+      "expected_output": "Treats speed as a publication strategy tradeoff, asks for hard recognition rules and deadline, recommends public data, reproducible baseline, narrow claims, official venue checks, and a fallback venue ladder.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "这篇我想发好一点，不想只求过。",
+      "expected_output": "Routes to high-quality target strategy, recommends deeper literature mapping, stronger baselines, ablations, robustness, contribution-evidence mapping, target-venue accepted-paper analysis, and a fallback deadline.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "帮我设计一个 baseline 加模块的论文方法路线。",
+      "expected_output": "Uses method synthesis: returns baseline selection criteria, module bank schema, limitation-to-module-to-ablation chain, attribution rules, target-venue calibration, and contribution boundaries.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "我的方法和实验都有了，但不知道怎么提炼创新点和组织引言。",
+      "expected_output": "Builds a problem-gap-method-evidence-limitation chain, uses CARS-style introduction logic, creates a claim-evidence-limitation map, and drafts contribution wording with boundaries.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "帮我选刊：OA、EI、SCI、中文核心哪个更合适？",
+      "expected_output": "Collects hard rules first, distinguishes OA/EI/SCI/中文核心/CCF/CSSCI meanings, requires official source checks, considers APC, review speed, warning lists, scope fit, and outputs a venue ladder rather than one unsupported venue.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "审稿人说 novelty 不清楚，还要补 baseline，返修怎么回？",
+      "expected_output": "Routes to reviewer response, triages novelty and baseline as substantive issues, recommends added comparison or justified exclusion, reframes the core contribution, revises the manuscript, and prepares point-by-point response entries with change locations.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "实验结果一般，案例分析怎么选择才合规？",
+      "expected_output": "Requires stated case-selection criteria, includes representative/hard/failure cases where material, narrows claims, and suggests lower venue ambition or more evidence when results cannot support broad claims.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "我有两篇小论文和一批实验结果，帮我整理成学位论文结构。",
+      "expected_output": "Uses light thesis integration: creates a unified research question, chapter map, source-output mapping, formatting checklist, similarity/ethics checks, and consistency risks without turning the task into career planning.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "请基于我的草稿生成 docs/academic_paper_workflow 的完整工作流文件。",
+      "expected_output": "Creates only the adaptive package under docs/academic_paper_workflow when file output is explicitly requested: context, literature map, idea scorecard, method synthesis map, contribution-evidence map, experiment plan, venue ladder, writing/submission checklist, revision plan, and thesis integration checklist when needed.",
+      "files": [
+        "docs/academic_paper_workflow/00-context.md",
+        "docs/academic_paper_workflow/01-literature-map.md",
+        "docs/academic_paper_workflow/02-idea-scorecard.md",
+        "docs/academic_paper_workflow/03-method-synthesis-map.md",
+        "docs/academic_paper_workflow/04-contribution-evidence-map.md",
+        "docs/academic_paper_workflow/05-experiment-plan.md",
+        "docs/academic_paper_workflow/06-venue-ladder.md",
+        "docs/academic_paper_workflow/07-writing-submission-checklist.md",
+        "docs/academic_paper_workflow/08-revision-plan.md",
+        "docs/academic_paper_workflow/09-thesis-integration-checklist.md"
+      ]
+    }
+  ]
+}

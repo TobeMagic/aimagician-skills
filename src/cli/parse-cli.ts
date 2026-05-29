@@ -1,14 +1,30 @@
 import { supportedTargets, type SupportedTarget } from "../model/targets";
+import { isInstallScope, isResetScope, type InstallScope, type ResetScope } from "../model/scopes";
 import type {
   BootstrapCommand,
   DoctorCommand,
+  InstallCommand,
   InspectCommand,
   ListCommand,
-  ParsedCli
+  ParsedCli,
+  ResetCommand,
+  SearchCommand,
+  TuiCommand,
+  UninstallCommand
 } from "../bootstrap/command-types";
 
 const supportedTargetSet = new Set<SupportedTarget>(supportedTargets);
-const supportedCommands = ["bootstrap", "list", "inspect", "doctor"] as const;
+const supportedCommands = [
+  "tui",
+  "bootstrap",
+  "search",
+  "install",
+  "uninstall",
+  "reset",
+  "list",
+  "inspect",
+  "doctor"
+] as const;
 
 type SupportedCommand = (typeof supportedCommands)[number];
 
@@ -16,24 +32,49 @@ export function parseCli(argv: string[]): ParsedCli {
   const args = [...argv];
   const firstArg = args[0];
   const command =
-    !firstArg || firstArg.startsWith("-") ? "bootstrap" : consumeCommand(args.shift()!);
+    !firstArg || firstArg.startsWith("-") ? "tui" : consumeCommand(args.shift()!);
 
   const targetSelections: SupportedTarget[] = [];
   let dryRun = false;
   let clean = false;
   let json = false;
   let help = false;
+  let includeArchived = false;
+  let installAll = false;
+  let yes = false;
   let homeDir: string | undefined;
+  let scope: InstallScope | ResetScope | undefined;
+  let projectDir: string | undefined;
+  const positional: string[] = [];
 
   while (args.length > 0) {
     const argument = args.shift()!;
 
     switch (argument) {
       case "--dry-run":
-        if (command !== "bootstrap") {
+        if (command !== "bootstrap" && command !== "reset") {
           throw new Error(`Unsupported argument for ${command}: ${argument}`);
         }
         dryRun = true;
+        break;
+      case "--install-all":
+        if (command !== "reset") {
+          throw new Error(`Unsupported argument for ${command}: ${argument}`);
+        }
+        installAll = true;
+        break;
+      case "--yes":
+      case "-y":
+        if (command !== "reset") {
+          throw new Error(`Unsupported argument for ${command}: ${argument}`);
+        }
+        yes = true;
+        break;
+      case "--include-archived":
+        if (command !== "search" && command !== "install") {
+          throw new Error(`Unsupported argument for ${command}: ${argument}`);
+        }
+        includeArchived = true;
         break;
       case "--clean":
         if (command !== "bootstrap") {
@@ -52,11 +93,22 @@ export function parseCli(argv: string[]): ParsedCli {
       case "--target":
         targetSelections.push(...parseTargetArgument(args.shift(), argument));
         break;
+      case "--scope":
+        scope = command === "reset"
+          ? parseResetScopeArgument(args.shift(), argument)
+          : parseInstallScopeArgument(args.shift(), argument);
+        break;
+      case "--project":
+        projectDir = parsePathArgument(args.shift(), argument);
+        break;
       case "--home":
         homeDir = parsePathArgument(args.shift(), argument);
         break;
       default:
-        throw new Error(`Unsupported argument: ${argument}`);
+        if (argument.startsWith("-")) {
+          throw new Error(`Unsupported argument: ${argument}`);
+        }
+        positional.push(argument);
     }
   }
 
@@ -68,26 +120,82 @@ export function parseCli(argv: string[]): ParsedCli {
   };
 
   switch (command) {
+    case "tui":
+      return {
+        command,
+        ...base,
+        ...(projectDir ? { projectDir } : {})
+      } satisfies TuiCommand;
     case "bootstrap":
+      rejectScopeForBootstrap(scope, projectDir);
       return {
         command,
         dryRun,
         ...(clean ? { clean: true } : {}),
         ...base
       } satisfies BootstrapCommand;
-    case "list":
+    case "search":
+      assertInstallScopeForCommand(command, scope);
       return {
         command,
+        query: positional.length > 0 ? positional.join(" ") : undefined,
+        scope: scope ?? "global",
+        ...(projectDir ? { projectDir } : {}),
+        ...(includeArchived ? { includeArchived: true } : {}),
+        ...base
+      } satisfies SearchCommand;
+    case "install":
+      assertScopedMutation(command, scope, positional);
+      return {
+        command,
+        assetIds: positional,
+        scope,
+        ...(projectDir ? { projectDir } : {}),
+        ...(includeArchived ? { includeArchived: true } : {}),
+        ...base
+      } satisfies InstallCommand;
+    case "uninstall":
+      assertScopedMutation(command, scope, positional);
+      return {
+        command,
+        assetIds: positional,
+        scope,
+        ...(projectDir ? { projectDir } : {}),
+        ...base
+      } satisfies UninstallCommand;
+    case "reset":
+      assertResetCommand(scope, targetSelections.length, positional, installAll);
+      return {
+        command,
+        scope,
+        ...(projectDir ? { projectDir } : {}),
+        installAll,
+        yes,
+        dryRun,
+        ...base
+      } satisfies ResetCommand;
+    case "list":
+      assertInstallScopeForCommand(command, scope);
+      return {
+        command,
+        scope: scope ?? "global",
+        ...(projectDir ? { projectDir } : {}),
         ...base
       } satisfies ListCommand;
     case "inspect":
+      assertInstallScopeForCommand(command, scope);
       return {
         command,
+        scope: scope ?? "global",
+        ...(projectDir ? { projectDir } : {}),
         ...base
       } satisfies InspectCommand;
     case "doctor":
+      assertInstallScopeForCommand(command, scope);
       return {
         command,
+        scope: scope ?? "global",
+        ...(projectDir ? { projectDir } : {}),
         ...base
       } satisfies DoctorCommand;
   }
@@ -127,6 +235,93 @@ function parsePathArgument(value: string | undefined, flag: string): string {
   }
 
   return value;
+}
+
+function parseInstallScopeArgument(value: string | undefined, flag: string): InstallScope {
+  if (!value) {
+    throw new Error(`Missing value for ${flag}`);
+  }
+
+  if (value === "all") {
+    throw new Error("Scope all is only supported for reset");
+  }
+
+  if (!isInstallScope(value)) {
+    throw new Error(`Unsupported scope: ${value}`);
+  }
+
+  return value;
+}
+
+function parseResetScopeArgument(value: string | undefined, flag: string): ResetScope {
+  if (!value) {
+    throw new Error(`Missing value for ${flag}`);
+  }
+
+  if (!isResetScope(value)) {
+    throw new Error(`Unsupported scope: ${value}`);
+  }
+
+  return value;
+}
+
+function assertInstallScopeForCommand(
+  command: "search" | "list" | "inspect" | "doctor",
+  scope: InstallScope | ResetScope | undefined
+): asserts scope is InstallScope | undefined {
+  if (scope === "all") {
+    throw new Error("Scope all is only supported for reset");
+  }
+}
+
+function assertScopedMutation(
+  command: "install" | "uninstall",
+  scope: InstallScope | ResetScope | undefined,
+  assetIds: string[]
+): asserts scope is InstallScope {
+  if (!scope) {
+    throw new Error(`Missing required --scope for ${command}`);
+  }
+
+  if (scope === "all") {
+    throw new Error("Scope all is only supported for reset");
+  }
+
+  if (assetIds.length === 0) {
+    throw new Error(`Missing skill id for ${command}`);
+  }
+}
+
+function assertResetCommand(
+  scope: InstallScope | ResetScope | undefined,
+  selectedTargetCount: number,
+  positional: string[],
+  installAll: boolean
+): asserts scope is ResetScope {
+  if (!scope) {
+    throw new Error("Missing required --scope for reset");
+  }
+
+  if (selectedTargetCount !== 1) {
+    throw new Error("reset requires exactly one --target");
+  }
+
+  if (positional.length > 0) {
+    throw new Error("reset does not accept skill ids; use --install-all");
+  }
+
+  if (!installAll) {
+    throw new Error("reset requires --install-all");
+  }
+}
+
+function rejectScopeForBootstrap(
+  scope: InstallScope | ResetScope | undefined,
+  projectDir: string | undefined
+): void {
+  if (scope || projectDir) {
+    throw new Error("bootstrap does not support --scope or --project; use install/uninstall for scoped changes");
+  }
 }
 
 function dedupeTargets(targets: SupportedTarget[]): SupportedTarget[] {

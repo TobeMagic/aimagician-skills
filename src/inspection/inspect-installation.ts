@@ -9,6 +9,7 @@ import {
 import { resolveTargetHomes } from "../bootstrap/target-homes";
 import { resolveBootstrapWorkspace } from "../bootstrap/workspace";
 import { supportedTargets, type SupportedTarget } from "../model/targets";
+import type { InstallScope } from "../model/scopes";
 import {
   resolvePlatformContext,
   type PlatformContext
@@ -51,6 +52,7 @@ export interface TargetInspection {
 }
 
 export interface InstallationInspection {
+  scope: InstallScope;
   workspaceRoot: string;
   manifestPath: string;
   manifestExists: boolean;
@@ -61,16 +63,27 @@ export interface InstallationInspection {
 
 export interface InspectInstallationOptions {
   selectedTargets?: SupportedTarget[];
+  scope?: InstallScope;
+  projectDir?: string;
   platform?: Partial<PlatformContext>;
 }
 
 export async function inspectInstallation(
   options: InspectInstallationOptions = {}
 ): Promise<InstallationInspection> {
+  const scope = options.scope ?? "global";
   const platformContext = resolvePlatformContext(options.platform);
-  const workspace = resolveBootstrapWorkspace(platformContext);
+  const workspace = resolveBootstrapWorkspace({
+    ...platformContext,
+    scope,
+    projectDir: options.projectDir
+  });
   const manifest = await loadManifest(workspace.manifestPath);
-  const targetHomes = resolveTargetHomes(platformContext);
+  const targetHomes = resolveTargetHomes({
+    ...platformContext,
+    scope,
+    projectDir: options.projectDir
+  });
   const selectedTargets =
     options.selectedTargets ??
     manifest?.selectedTargets ??
@@ -92,6 +105,7 @@ export async function inspectInstallation(
     "healthy";
 
   return {
+    scope,
     workspaceRoot: workspace.rootDir,
     manifestPath: workspace.manifestPath,
     manifestExists: manifest !== null,
@@ -145,6 +159,9 @@ async function inspectTarget(
     case "cursor":
       liveAssets.push(...await detectSkillDirectories(targetHomes.cursor.skillsDir, managedPaths));
       break;
+    case "copilot":
+      liveAssets.push(...await detectSkillDirectories(targetHomes.copilot.skillsDir, managedPaths));
+      break;
     case "gemini":
       liveAssets.push(...await detectGeminiExtensions(targetHomes.gemini.extensionsDir, managedPaths));
       break;
@@ -163,6 +180,7 @@ async function inspectTarget(
     skillsDir:
       target === "gemini" ? undefined :
       target === "cursor" ? targetHomes.cursor.skillsDir :
+      target === "copilot" ? targetHomes.copilot.skillsDir :
       target === "hermes" ? targetHomes.hermes.skillsDir :
       target === "opencode" ? targetHomes.opencode.skillsDir :
       target === "claude" ? targetHomes.claude.skillsDir :

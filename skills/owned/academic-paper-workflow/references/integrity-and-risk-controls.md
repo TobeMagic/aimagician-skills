@@ -1,88 +1,89 @@
 # Integrity and Risk Controls
 
-Use this reference whenever the workflow touches shortcuts, weak venues, baseline comparison, selective reporting, paper services, OA/EI choices, plagiarism, or authorship.
+Use this whenever the workflow touches integrity-sensitive requests, high-risk venues, baseline comparison, selective reporting, third-party manuscript services, OA/EI choices, plagiarism, AI writing, or authorship.
 
 ## Non-Negotiable Boundaries
 
 Do not help with:
 
-- fabricated data or fabricated results
+- fabricated data or results
 - deliberate under-tuning of baselines
-- hiding material failures while making contradicted claims
-- plagiarism or text laundering
+- hidden material failures while making contradicted claims
+- plagiarism, text laundering, or copied figures
 - ghostwriting for deception
-- paper mills, guaranteed-acceptance services, or duplicate submission
-- false authorship or affiliation changes
-- claiming SOTA without adequate comparison
+- guaranteed-acceptance services, deceptive third-party manuscript services, duplicate submission
+- false authorship, affiliation, funding, or ethics statements
+- fake citations or unverifiable references
+- claiming SOTA, first, universal, causal, or significant without evidence
 
-If the user asks for these, refuse that part and offer a publishable alternative:
+Refuse that part and offer a publishable alternative:
 
-- lower target venue
+- lower venue level
 - narrower claim
-- more honest comparison scope
+- honest comparison scope
 - additional experiment
 - fallback venue ladder
-- graduation-safe route
+- application/benchmark/review route
 
 ## Safe Conversions
 
-| Risky impulse | Safe conversion |
+| Risk pattern | Safe conversion |
 |---|---|
-| Pick weak comparisons | Define explicit inclusion/exclusion criteria and state comparison scope |
-| Tune baselines badly | Use comparable tuning budgets and publish settings |
-| Only show good cases | State case-selection criteria and include limitations where appropriate |
-| Copy wording and lower similarity | Rebuild the argument from understanding and cite sources |
-| Use OA because fast | Check recognition, APC, warning list, publisher, review quality |
-| Use EI because easy | Check school recognition, indexing requirement, conference history |
-| Change authors in revision casually | Ask the editor before author/affiliation changes |
-| No standard metric | Borrow adjacent metrics and justify validity |
+| Venue chosen only for convenience | define minimum recognized venue + official risk checks |
+| Comparison set lacks criteria | define inclusion/exclusion criteria and comparable tuning budgets |
+| Case selection lacks criteria | state case-selection criteria and include limitations/failures where material |
+| Method adaptation lacks attribution | cite source, state adaptation, prove new context or component |
+| Similarity score becomes the only writing goal | rebuild argument from understanding and cite sources |
+| OA route chosen only for speed | check recognition, DOAJ/publisher transparency, APC, warning list, review process |
+| EI route chosen without indexing proof | check whether acceptance or indexing is required and whether the venue has history |
+| Authorship changes during revision | ask the editor and follow venue policy |
+| No standard metric exists | borrow adjacent metrics, justify validity, add qualitative/human evaluation |
 
-## Venue Risk Checklist
-
-Red flags:
+## Venue Risk Red Flags
 
 - guaranteed acceptance
-- no real peer-review description
+- no credible peer-review description
 - fake or unclear indexing
 - fake impact factor
 - broad unrelated scope
-- aggressive email solicitation
-- unclear APC
-- missing editorial board credibility
-- conference acceptance without clear proceedings/indexing
-- school warning-list match
+- aggressive solicitation
+- hidden APC or withdrawal fee
+- unverifiable editorial board
+- cloned website or confusing journal name
+- special issue with weak scope
+- warning-list or school blacklist match
 
 Required checks:
 
 - official venue website
-- indexing database
+- official indexing database
 - school recognition list
 - recent published papers
 - review timeline evidence
-- APC/fee
-- publisher identity
-- withdrawal policy
+- APC/fee and withdrawal policy
+- publisher or organizer identity
 
 ## Reporting Rules
 
-When writing plans or final papers:
+When planning or writing:
 
-- distinguish paper-reported numbers from reproduced numbers
-- state dataset splits
+- distinguish paper-reported, leaderboard, and reproduced numbers
+- state dataset splits and sample size
 - state implementation settings
 - state limitations
 - avoid universal claims from narrow experiments
 - preserve experiment logs
+- disclose AI assistance when the venue requires it
 
-## Practical Graduation Safety
+## Practical Time Safety
 
-Graduation pressure is real. The safe way to handle it:
+Deadline pressure is real. Handle it by:
 
-- choose a realistic venue level
-- choose a reproducible baseline
-- limit scope
-- prioritize known metrics/datasets
-- prepare fallback venues early
-- communicate timeline and requirements clearly with advisor
+- choosing a realistic venue level
+- choosing a reproducible baseline
+- limiting scope
+- prioritizing known metrics/datasets
+- preparing fallback venues early
+- using official recognition checks
 
 Do not solve time pressure by compromising integrity.

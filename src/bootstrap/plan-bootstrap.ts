@@ -23,6 +23,7 @@ export interface BuildBootstrapPlanOptions {
   catalog?: CatalogLoadOptions;
   workspaceRoot?: string;
   githubRepoOverrides?: Record<string, string>;
+  includeArchived?: boolean;
 }
 
 export interface PreparedBootstrapRun {
@@ -56,24 +57,30 @@ export async function prepareBootstrapRun(
     selectedTargets,
     catalog,
     normalizedAssets,
-    plan: createPlan(catalog, normalizedAssets, selectedTargets)
+    plan: createPlan(catalog, normalizedAssets, selectedTargets, options.includeArchived ?? false)
   };
 }
 
 function createPlan(
   catalog: LoadedCatalog,
   normalizedAssets: NormalizedAsset[],
-  selectedTargets: SupportedTarget[]
+  selectedTargets: SupportedTarget[],
+  includeArchived: boolean
 ): BootstrapPlan {
+  const ownedSkills = includeArchived
+    ? [...catalog.ownedSkills, ...catalog.archivedSkills]
+    : catalog.ownedSkills;
+
   return {
     selectedTargets,
-    ownedSkillIds: catalog.ownedSkills.map((skill) => skill.id).sort(),
+    ownedSkillIds: ownedSkills.map((skill) => skill.id).sort(),
     assets: [
-      ...catalog.ownedSkills.map<PlannedAsset>((skill) => ({
+      ...ownedSkills.map<PlannedAsset>((skill) => ({
         id: skill.id,
         origin: "owned",
         kind: "skill",
         selectedTargets,
+        ...(skill.archived ? { archived: true } : {}),
         warnings: []
       })),
       ...normalizedAssets

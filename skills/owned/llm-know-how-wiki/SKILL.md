@@ -2,6 +2,10 @@
 name: llm-know-how-wiki
 description: |
   Build, maintain, query, and lint a project-local LLM-know-how-wiki: a persistent, compiled Markdown knowledge base with raw evidence, curated wiki pages, schema rules, index, and log. Use this skill whenever the user asks to create an LLM wiki, ingest raw docs/repos/Feishu/Linear snapshots, answer from an existing wiki, lint/audit wiki health, or turn scattered engineering context into a durable knowledge base. This skill should trigger even if the user only says "wiki", "know-how", "ingest", "digest", "基于 wiki 回答", "把这些文档编译进知识库", or "维护 LLM-know-how-wiki".
+metadata:
+  related_skills:
+    - opensource-architecture-research
+    - repo-interview-playbook
 compatibility:
   tools: [bash, python, rg]
   requires: Write access to the current project when initializing or ingesting; read access is enough for Answer mode
@@ -23,7 +27,9 @@ Every wiki has three core layers plus one optional external-reference area:
 The navigation backbone is:
 
 - `wiki/index.md`: content catalog. Read this first for Answer mode.
-- `wiki/log.md`: append-only action history. Read recent entries before changing anything.
+- `wiki/log.md`: recent action history. Read recent entries before changing anything.
+- `wiki/log_archive/`: older log entries archived by year when `wiki/log.md` grows too large.
+- `wiki/interview/`: evidence-backed interview playbooks generated from local repos and wiki pages.
 
 ## Resolve The Wiki Root
 
@@ -105,6 +111,8 @@ Default behavior:
 - does not create service pages for external repositories
 
 Curated architecture comparisons belong under `wiki/reference/`, usually after one or more snapshots have been captured.
+
+For deep open-source architecture comparison with confirmed research objects, module taxonomy, heatmaps, and phased delivery, use the related `opensource-architecture-research` skill. Keep cloned source repositories under `external_reference_repos/open_source/` and put curated reports under `wiki/reference/<feature_slug>/`.
 
 ### Init
 
@@ -192,6 +200,33 @@ Check for:
 
 Lint reports go under `wiki/digest/lint-YYYY-MM-DD.md` and `wiki/log.md` should receive an entry.
 
+### Log Archive
+
+Use Log Archive when `wiki/log.md` grows too large, lint reports `WARN large_page log.md`, or recent context is hard to scan.
+
+Run a dry run first:
+
+```bash
+python <skill>/scripts/archive_log.py <wiki-root> --dry-run
+```
+
+Then archive if the plan is reasonable:
+
+```bash
+python <skill>/scripts/archive_log.py <wiki-root>
+```
+
+Default behavior:
+
+- keeps the most recent log entries in `wiki/log.md` using a default recent window of roughly 200 lines
+- moves older dated entries into `wiki/log_archive/YYYY.md`
+- preserves the audit trail instead of deleting history
+- adds an archive pointer section to `wiki/log.md`
+- appends a `LOG_ARCHIVE` entry describing what moved
+- does not add archive pages to `wiki/index.md`
+
+Use `--keep-lines <n>` when the project needs a larger or smaller recent window. Keep enough recent entries to understand the last active workflow, but do not keep months of old operational noise in the hot log.
+
 ## Page Types
 
 Default engineering page types:
@@ -204,6 +239,7 @@ Default engineering page types:
 - `runbook`: project-local operating procedures such as local dev, deployment, cloud infrastructure, troubleshooting, incident checks, and repeated commands
 - `decision`: ADRs and trade-offs
 - `digest`: periodic or thematic synthesis
+- `interview`: repo-backed interview playbooks, project stories, question banks, and resume bullets
 - `index` and `log`: navigation and audit files
 
 Use [`references/wiki-schema-guide.md`](./references/wiki-schema-guide.md) for page templates and tag rules.

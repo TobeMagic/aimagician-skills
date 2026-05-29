@@ -48,6 +48,12 @@
       "prompt": "把当前仓库的 dev/main 部署触发规则整理进 LLM-know-how-wiki，后续给 Linear 和 gcloud workflow 使用。",
       "expected_output": "Creates or updates a deployment metadata runbook such as wiki/runbook/deployment_mapping.md using wiki-first source priority, records branch-to-environment mappings, deploy triggers, GCP project/region/service/URL, provenance fields, conflicts, sources, index, and log without storing secrets.",
       "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "wiki/log.md 太大了，请归档旧日志，只保留最近上下文。",
+      "expected_output": "Runs archive_log.py with --dry-run first, then archives older dated log entries to wiki/log_archive/YYYY.md, keeps a recent window in wiki/log.md, appends a LOG_ARCHIVE entry, and does not add archive files to wiki/index.md.",
+      "files": []
     }
   ]
 }
