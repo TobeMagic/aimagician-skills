@@ -71,6 +71,19 @@ Use this section for a short summary. Put detailed module rows in `MODULES.md`.
 
 Use `PIXABAY_API_KEY` in the environment. Do not paste API keys into this file. Iconify does not require an API key; record exact icon ids such as `bi:tag-fill` when selected.
 
+
+## Template Library
+
+- Use built-in template library: yes/no
+- Library root: templates/template-library/reference
+- Reviewed workbook: templates/template-library/template-library-review.xlsx
+- Desired category: 封面模板 / 一段内容 / 人物介绍 / 六段内容 / other
+- Content structure:
+- Style/tone preferences:
+- Must-have visual elements:
+- Avoid:
+- Recommendation output: chat Top 5 + workbook Recommendations sheet
+
 ## Preferred Plugins
 
 Choose one:

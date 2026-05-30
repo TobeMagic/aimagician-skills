@@ -3,7 +3,7 @@ name: window-pptx
 description: |
   Automate Windows desktop PowerPoint through COM/VBA-compatible object models from a project folder containing REQUEST.md, templates, assets, data, and output requirements.
 
-  Use this skill whenever the user asks to create, edit, batch-update, reproduce, or polish PowerPoint decks on Windows using COM, VBA, pywin32, PowerPoint.Application, iSlide/OKPlus add-in discovery, or a "folder with requirements + PPT/materials" workflow. Also use it when the user wants one-to-one PowerPoint implementation from a template, advanced PPT production, master-level watermarks, reusable slide modules, design systems, award/team/government/technology style layouts, stock image search, Iconify icon search/download, animation/notes/add-in-aware operations, or anything beyond pure pptx libraries.
+  Use this skill whenever the user asks to create, edit, batch-update, reproduce, or polish PowerPoint decks on Windows using COM, VBA, pywin32, PowerPoint.Application, iSlide/OKPlus add-in discovery, or a "folder with requirements + PPT/materials" workflow. Also use it when the user wants one-to-one PowerPoint implementation from a template, advanced PPT production, master-level watermarks, reusable slide modules, design systems, award/team/government/technology style layouts, stock image search, Iconify icon search/download, template library retrieval/recommendation, animation/notes/add-in-aware operations, or anything beyond pure pptx libraries.
 
   This skill has a discuss gate: before executing real deck edits, confirm or read from REQUEST.md the project folder, source/template deck, output policy, macro/add-in policy, and acceptance check.
 compatibility:
@@ -73,6 +73,8 @@ Recognize these inputs:
 - `assets/` or `images/`: logos, screenshots, photos, icons, backgrounds
 - `assets/downloads/pixabay/`: downloaded stock photo/illustration assets
 - `assets/downloads/iconify/`: downloaded Iconify SVG icons organized by icon set prefix
+- `templates/template-library/reference/`: built-in category PPTX files for template recommendation
+- `templates/template-library/template-library-review.xlsx`: reviewed template index and recommendation log
 - `data/`: CSV, JSON, Excel, chart data, tables
 - `notes/`: speaker notes, outlines, references
 - `output/`: generated decks and exports
@@ -284,20 +286,38 @@ python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
   --json
 ```
 
+## Template Library Recommendation V1
+
+Use this when the user asks to find, choose, rank, compare, or recommend reusable slide templates from the built-in template library.
+
+V1 is documentation + workbook only:
+
+- Built-in sample library lives under `templates/template-library/reference/`.
+- Review workbook lives at `templates/template-library/template-library-review.xlsx`.
+- One category PPTX may contain 3-5 single-page templates.
+- The recommendation unit is one slide, not one deck.
+- Use the reviewed workbook first; only `已通过` rows are production-ready recommendations.
+- Output Top 5 recommendations in chat and in the workbook `Recommendations` sheet.
+- If fewer than five reviewed candidates exist, say so and return all available reviewed candidates.
+- Do not use macros, workbook buttons, automatic template intake, or automatic deck assembly in V1.
+
+Read [template-library-recommendation-workflow.md](./references/template-library-recommendation-workflow.md) for the full V1 workflow, category rules, workbook fields, and validation prompts.
+
 ## Execution Workflow
 
 1. Read `REQUEST.md`.
 2. Read or create `MODULES.md` for deck-level module planning.
 3. Read or create `SLIDE-MAP.md` for slide-level role/action mapping.
-4. Inventory project files and asset sources.
-5. Confirm missing discuss-gate items.
-6. Run add-in discovery if the request mentions plugins or if the user asks whether iSlide/OKPlus can be used.
-7. If plugin use is desired, run `--probe-plugin-apis` and inspect:
+4. Inventory project files, asset sources, and template-library inputs when template recommendation is requested.
+5. For template recommendation requests, consult `templates/template-library/template-library-review.xlsx` before designing from scratch.
+6. Confirm missing discuss-gate items.
+7. Run add-in discovery if the request mentions plugins or if the user asks whether iSlide/OKPlus can be used.
+8. If plugin use is desired, run `--probe-plugin-apis` and inspect:
    - Office add-in registry values
    - direct `Dispatch(progID)` result
    - `Application.COMAddIns.Item(progID).Object`
    - exposed type library / dispatch members
-8. Choose native COM implementation first unless a documented plugin method is actually discoverable.
+9. Choose native COM implementation first unless a documented plugin method is actually discoverable.
 9. Search/download required local assets first, including Iconify icons when the design calls for semantic labels, process nodes, flow arrows, UI symbols, or pictograms.
 10. Generate a concrete Windows Python script in `.window-pptx/scripts/`.
 11. Execute the script from Windows PowerShell or CMD.
@@ -315,7 +335,9 @@ Read [project-module-management.md](./references/project-module-management.md) w
 
 Read [script-management-workflow.md](./references/script-management-workflow.md) when creating `.window-pptx/scripts/run_project.py` or splitting reusable helper code from project-specific code.
 
-Read [asset-library-workflow.md](./references/asset-library-workflow.md) when the project needs stock images, Iconify icons, or downloaded design assets. Use `PIXABAY_API_KEY` from the environment only. Iconify does not require an API key. Never commit API keys or hotlink remote asset URLs in the final deck.
+Read [asset-library-workflow.md](./references/asset-library-workflow.md) when the project needs stock images, Iconify icons, or downloaded design assets.
+
+Read [template-library-recommendation-workflow.md](./references/template-library-recommendation-workflow.md) when selecting reusable slide templates from the skill template library. Use `PIXABAY_API_KEY` from the environment only. Iconify does not require an API key. Never commit API keys or hotlink remote asset URLs in the final deck.
 
 ## Design-Task Guardrails
 

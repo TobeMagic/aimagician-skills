@@ -233,3 +233,28 @@ Use `.window-pptx/` for generated implementation files:
 ```
 
 Keep `output/` for user-facing results only.
+
+
+## Template Library Inputs
+
+The skill may include a built-in template recommendation library under:
+
+```text
+templates/template-library/
+  reference/
+    封面模板.pptx
+    一段内容.pptx
+    人物介绍.pptx
+    六段内容.pptx
+  template-library-review.xlsx
+```
+
+Rules:
+
+- External `/project/ppt-design/reference` files are migration sources only, not runtime dependencies for the skill.
+- Category PPTX files are recommendation sources, not default source/template decks for generated deliverables.
+- One category PPTX can contain multiple single-page templates.
+- Each slide gets one workbook row and one stable `TemplateID` such as `一段内容::S001`.
+- The workbook is the source of truth for review status, tags, scores, and recommendation history.
+- Only reviewed rows should be treated as production-ready recommendations.
+```
