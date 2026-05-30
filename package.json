@@ -20,6 +20,7 @@
     "aimagician-skills": "./dist/cli/index.js"
   },
   "scripts": {
+    "start": "node ./dist/cli/index.js",
     "bootstrap": "node ./dist/cli/index.js bootstrap",
     "prepublishOnly": "npm run build",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",

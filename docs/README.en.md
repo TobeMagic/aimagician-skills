@@ -45,6 +45,41 @@ npx skillbee@latest bootstrap
 
 ---
 
+## Local Development
+
+Clone and run from source:
+
+```bash
+git clone https://github.com/TobeMagic/aimagician-skills.git
+cd aimagician-skills
+npm install
+npm run build
+
+# Launch the Dashboard TUI
+node .
+
+# Or install all skills to all targets
+npm run bootstrap
+```
+
+Development workflow:
+
+```bash
+npm run typecheck     # Fast type-check (no build)
+npm run build         # Full build (clean + compile)
+npm test              # Run unit tests
+npm link              # Make 'skillbee' available globally
+```
+
+After making changes, rebuild and test:
+
+```bash
+npm run build && npm test
+node .
+```
+
+---
+
 ## CLI Commands
 
 | Command | Description |
