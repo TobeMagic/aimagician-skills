@@ -1,6 +1,3 @@
-<p align="center">
-  <img src="./docs/assets/readme-cover.webp" alt="Skillbee cover" width="100%" />
-</p>
 
 <h1 align="center">🐝 Skillbee</h1>
 
