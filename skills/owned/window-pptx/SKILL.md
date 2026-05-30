@@ -3,7 +3,7 @@ name: window-pptx
 description: |
   Automate Windows desktop PowerPoint through COM/VBA-compatible object models from a project folder containing REQUEST.md, templates, assets, data, and output requirements.
 
-  Use this skill whenever the user asks to create, edit, batch-update, reproduce, or polish PowerPoint decks on Windows using COM, VBA, pywin32, PowerPoint.Application, iSlide/OKPlus add-in discovery, or a "folder with requirements + PPT/materials" workflow. Also use it when the user wants one-to-one PowerPoint implementation from a template, advanced PPT production, master-level watermarks, reusable slide modules, design systems, award/team/government/technology style layouts, stock image search, animation/notes/add-in-aware operations, or anything beyond pure pptx libraries.
+  Use this skill whenever the user asks to create, edit, batch-update, reproduce, or polish PowerPoint decks on Windows using COM, VBA, pywin32, PowerPoint.Application, iSlide/OKPlus add-in discovery, or a "folder with requirements + PPT/materials" workflow. Also use it when the user wants one-to-one PowerPoint implementation from a template, advanced PPT production, master-level watermarks, reusable slide modules, design systems, award/team/government/technology style layouts, stock image search, Iconify icon search/download, animation/notes/add-in-aware operations, or anything beyond pure pptx libraries.
 
   This skill has a discuss gate: before executing real deck edits, confirm or read from REQUEST.md the project folder, source/template deck, output policy, macro/add-in policy, and acceptance check.
 compatibility:
@@ -51,6 +51,7 @@ ppt-project/
   assets/
     downloads/
       pixabay/
+      iconify/
   data/
   notes/
   output/
@@ -70,7 +71,8 @@ Recognize these inputs:
 - `SLIDE-MAP.md`: slide-level role/action map
 - `*.pptx`, `*.pptm`, `*.potx`, `*.potm`: templates or source decks
 - `assets/` or `images/`: logos, screenshots, photos, icons, backgrounds
-- `assets/downloads/pixabay/`: downloaded stock assets
+- `assets/downloads/pixabay/`: downloaded stock photo/illustration assets
+- `assets/downloads/iconify/`: downloaded Iconify SVG icons organized by icon set prefix
 - `data/`: CSV, JSON, Excel, chart data, tables
 - `notes/`: speaker notes, outlines, references
 - `output/`: generated decks and exports
@@ -244,6 +246,22 @@ python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
   --json
 ```
 
+Search and download editable SVG icons through Iconify without an API key:
+
+```powershell
+python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
+  --project-dir C:\ppt-project `
+  --search-icons "flowchart" `
+  --icon-prefix mdi `
+  --icon-color "#FF5722" `
+  --icon-height 64 `
+  --download-top-icon `
+  --no-save `
+  --json
+```
+
+Use `--download-icon bi:tag-fill` when the exact icon id is known. The helper caches search results under `.window-pptx/cache/iconify/`, downloads SVGs under `assets/downloads/iconify/<prefix>/`, and records color/size/flip/rotate parameters in `.window-pptx/asset_manifest.json`.
+
 Add a master-level watermark instead of repeated per-slide text:
 
 ```powershell
@@ -280,13 +298,14 @@ python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
    - `Application.COMAddIns.Item(progID).Object`
    - exposed type library / dispatch members
 8. Choose native COM implementation first unless a documented plugin method is actually discoverable.
-9. Generate a concrete Windows Python script in `.window-pptx/scripts/`.
-10. Execute the script from Windows PowerShell or CMD.
-11. Save outputs under `output/`.
-12. Export PNG previews for target slides when visual work is involved.
-13. Write audits under `.window-pptx/audits/`.
-14. Verify acceptance criteria with COM object checks and rendered previews.
-15. Report generated files, unresolved ambiguities, and any plugin limitations.
+9. Search/download required local assets first, including Iconify icons when the design calls for semantic labels, process nodes, flow arrows, UI symbols, or pictograms.
+10. Generate a concrete Windows Python script in `.window-pptx/scripts/`.
+11. Execute the script from Windows PowerShell or CMD.
+12. Save outputs under `output/`.
+13. Export PNG previews for target slides when visual work is involved.
+14. Write audits under `.window-pptx/audits/`.
+15. Verify acceptance criteria with COM object checks and rendered previews.
+16. Report generated files, unresolved ambiguities, and any plugin limitations.
 
 ## Advanced Production References
 
@@ -296,7 +315,7 @@ Read [project-module-management.md](./references/project-module-management.md) w
 
 Read [script-management-workflow.md](./references/script-management-workflow.md) when creating `.window-pptx/scripts/run_project.py` or splitting reusable helper code from project-specific code.
 
-Read [asset-library-workflow.md](./references/asset-library-workflow.md) when the project needs stock images or downloaded design assets. Use `PIXABAY_API_KEY` from the environment only. Never commit API keys or hotlink Pixabay result URLs in the final deck.
+Read [asset-library-workflow.md](./references/asset-library-workflow.md) when the project needs stock images, Iconify icons, or downloaded design assets. Use `PIXABAY_API_KEY` from the environment only. Iconify does not require an API key. Never commit API keys or hotlink remote asset URLs in the final deck.
 
 ## Design-Task Guardrails
 
@@ -333,6 +352,7 @@ Useful helper actions from the bundled script:
 - `--export-slides 4,6,8-10` to render selected slides to PNG
 - `--make-ascii-temp-copy` before repeated COM reruns on Chinese filenames
 - `--search-images` / `--download-image` for local traceable stock assets
+- `--search-icons` / `--download-icon` for local traceable Iconify SVG assets with `--icon-color`, `--icon-width`, `--icon-height`, `--icon-flip`, and `--icon-rotate`
 - `--add-master-watermark` for removable master-level watermarking
 - `--export-qa` to render all slides for visual review
 - `--audit-deck` to write shape/font/animation metadata

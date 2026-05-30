@@ -1,6 +1,6 @@
 # Asset Library Workflow
 
-Use this workflow when a PPT project needs stock images, illustrations, vectors, backgrounds, or design references.
+Use this workflow when a PPT project needs stock images, Iconify SVG icons, illustrations, vectors, backgrounds, or design references.
 
 ## Principle
 
@@ -15,6 +15,7 @@ ppt-project/
   assets/
     downloads/
       pixabay/
+      iconify/
     icons/
     photos/
     backgrounds/
@@ -22,7 +23,38 @@ ppt-project/
     asset_manifest.json
     cache/
       pixabay/
+      iconify/
 ```
+
+## Iconify Setup
+
+Iconify SVG search and download does not require an API key. Use it for semantic PPT icons such as tags, labels, flowchart nodes, arrows, process steps, UI symbols, and pictograms.
+
+Search by keyword and optionally filter icon sets:
+
+```powershell
+python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
+  --project-dir C:\ppt-project `
+  --search-icons "flowchart" `
+  --icon-prefix mdi `
+  --icon-limit 50 `
+  --no-save `
+  --json
+```
+
+Download a known icon id with visual parameters:
+
+```powershell
+python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
+  --project-dir C:\ppt-project `
+  --download-icon bi:tag-fill `
+  --icon-color "#FF5722" `
+  --icon-height 64 `
+  --no-save `
+  --json
+```
+
+Supported SVG URL parameters include `color`, `width`, `height`, `flip`, and `rotate`. Download selected SVGs locally and insert local files into PowerPoint; if the local PowerPoint version cannot insert SVG directly, convert the local SVG to PNG/EMF first and keep the original SVG in the asset manifest.
 
 ## Pixabay Setup
 
@@ -135,5 +167,7 @@ Avoid:
 ## Pixabay API Notes
 
 Pixabay webformat URLs can be temporary. Download assets before use and do not rely on remote URLs during final deck generation.
+
+Iconify SVG URLs are deterministic but should still be downloaded locally for reproducible deck generation and offline editing.
 
 Official API reference: https://pixabay.com/api/docs/

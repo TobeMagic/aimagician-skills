@@ -1,5 +1,21 @@
 export const BEE_ASCII = "\u{1F41D}";
 
+export const BEE_SPLASH = [
+  "",
+  "",
+  "                      ╔═══╗",
+  "                      ║ 🐝 ║",
+  "                      ╚═╤═╝",
+  "              ╔═════════╧══════════╗",
+  "              ║  SKILLBEE  v1.0.1  ║",
+  "              ║  Personal Skill    ║",
+  "              ║  Manager for AI    ║",
+  "              ╚════════════════════╝",
+  "",
+  "         One command to rule your AI skills.",
+  ""
+];
+
 export const THEME_NAMES = ["bee", "monokai", "nord"] as const;
 export type ThemeName = (typeof THEME_NAMES)[number];
 
@@ -102,7 +118,11 @@ export function formatMatrixCell(
   isInstalled: boolean,
   _isManaged: boolean
 ): string {
-  if (!isAvailable) return " -";
-  if (isInstalled) return "\u25CF";
-  return "\u25CB";
+  if (!isAvailable) return "\u2014";
+  if (isInstalled) return "\u2714";
+  return "\u25E6";
 }
+
+export const INSTALLED_GLYPH = "\u2714";
+export const AVAILABLE_GLYPH = "\u25E6";
+export const UNAVAILABLE_GLYPH = "\u2014";

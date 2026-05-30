@@ -14,6 +14,7 @@ Create a 12-slide investor update deck from the provided template and quarterly 
 - Template/source deck:
 - Assets:
 - Downloaded stock assets:
+- Downloaded Iconify icons:
 - Data:
 - Notes/references:
 
@@ -62,9 +63,13 @@ Use this section for a short summary. Put detailed module rows in `MODULES.md`.
 - Search keywords:
 - Image type: all/photo/illustration/vector
 - Orientation: all/horizontal/vertical
+- Use Iconify: yes/no
+- Icon keywords:
+- Icon set prefix: mdi/bi/lucide/etc.
+- Icon color/size/flip/rotate:
 - Required source attribution in notes/logs: yes
 
-Use `PIXABAY_API_KEY` in the environment. Do not paste API keys into this file.
+Use `PIXABAY_API_KEY` in the environment. Do not paste API keys into this file. Iconify does not require an API key; record exact icon ids such as `bi:tag-fill` when selected.
 
 ## Preferred Plugins
 

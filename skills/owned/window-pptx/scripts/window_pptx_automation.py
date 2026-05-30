@@ -15,7 +15,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 
@@ -84,6 +84,10 @@ List deck modules here and keep implementation detail in `MODULES.md`.
 - Search keywords:
 - Image type: all/photo/illustration/vector
 - Orientation: all/horizontal/vertical
+- Use Iconify: yes/no
+- Icon keywords:
+- Icon set prefix: mdi/bi/lucide/etc.
+- Icon color/size:
 - Required source attribution in notes/logs: yes
 
 ## Preferred Plugins
@@ -307,6 +311,36 @@ def parse_args() -> argparse.Namespace:
         help="Disable Pixabay safesearch. Keep disabled by default for presentation work.",
     )
     parser.add_argument(
+        "--search-icons",
+        help="Search Iconify icons by keyword and cache results. Does not require PowerPoint COM.",
+    )
+    parser.add_argument(
+        "--icon-prefix",
+        action="append",
+        default=[],
+        help="Filter Iconify results by icon set prefix such as mdi or bi. Can be repeated.",
+    )
+    parser.add_argument(
+        "--icon-limit",
+        type=int,
+        default=50,
+        help="Iconify search result limit, 1-999.",
+    )
+    parser.add_argument(
+        "--download-icon",
+        help="Download one Iconify icon id such as bi:tag-fill into assets/downloads/iconify.",
+    )
+    parser.add_argument(
+        "--download-top-icon",
+        action="store_true",
+        help="After --search-icons, download the first matching Iconify result.",
+    )
+    parser.add_argument("--icon-color", help="Icon SVG color, e.g. #FF5722 or currentColor.")
+    parser.add_argument("--icon-width", help="Icon SVG width parameter, e.g. 64 or 1em.")
+    parser.add_argument("--icon-height", help="Icon SVG height parameter, e.g. 64 or 1em.")
+    parser.add_argument("--icon-flip", choices=["horizontal", "vertical"], help="Iconify SVG flip parameter.")
+    parser.add_argument("--icon-rotate", help="Iconify SVG rotate parameter, e.g. 90deg, 1, 2, or 3.")
+    parser.add_argument(
         "--add-master-watermark",
         help="Add or replace a master-level text watermark on the Slide Master.",
     )
@@ -430,6 +464,7 @@ def init_project_workspace(project_dir: Path) -> dict[str, Any]:
         "assets",
         "assets/downloads",
         "assets/downloads/pixabay",
+        "assets/downloads/iconify",
         "data",
         "notes",
         "output",
@@ -673,6 +708,134 @@ def download_image(project_dir: Path, url: str, source_row: dict[str, Any] | Non
         "user": (source_row or {}).get("user"),
         "tags": (source_row or {}).get("tags"),
         "license_note": "Pixabay API asset. Keep source page/user in the project manifest.",
+    }
+    manifest_path = append_asset_manifest(project_dir, [row])
+    return {"downloaded": row, "asset_manifest": str(manifest_path)}
+
+
+def normalize_icon_id(value: str) -> tuple[str, str]:
+    clean = value.strip().lstrip("/")
+    if ":" in clean:
+        prefix, name = clean.split(":", 1)
+    elif "/" in clean:
+        prefix, name = clean.split("/", 1)
+        name = name.removesuffix(".svg")
+    else:
+        die("Iconify icon id must look like bi:tag-fill or bi/tag-fill.svg.")
+    prefix = prefix.strip().lower()
+    name = name.strip().removesuffix(".svg")
+    if not prefix or not name:
+        die("Iconify icon id must include both prefix and icon name.")
+    return prefix, name
+
+
+def iconify_svg_url(icon_id: str, args: argparse.Namespace) -> str:
+    prefix, name = normalize_icon_id(icon_id)
+    params: dict[str, Any] = {}
+    if args.icon_color:
+        params["color"] = args.icon_color
+    if args.icon_width:
+        params["width"] = args.icon_width
+    if args.icon_height:
+        params["height"] = args.icon_height
+    if args.icon_flip:
+        params["flip"] = args.icon_flip
+    if args.icon_rotate:
+        params["rotate"] = args.icon_rotate
+    url = f"https://api.iconify.design/{quote(prefix)}/{quote(name)}.svg"
+    if params:
+        url += "?" + urlencode(params)
+    return url
+
+
+def normalize_icon_prefix(value: str) -> str:
+    prefix = value.strip().lower().removesuffix(":").removesuffix("/").removesuffix("-")
+    if not prefix:
+        die("Iconify icon prefix cannot be empty.")
+    return prefix
+
+
+def fetch_iconify_search(query: str, limit: int, prefix: str | None = None) -> dict[str, Any]:
+    params: dict[str, Any] = {"query": query, "limit": limit}
+    if prefix:
+        params["prefix"] = prefix
+    request = Request(
+        "https://api.iconify.design/search?" + urlencode(params),
+        headers={"User-Agent": "window-pptx-skill/1.0"},
+    )
+    with urlopen(request, timeout=30) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def iconify_search(args: argparse.Namespace, project_dir: Path) -> dict[str, Any]:
+    if args.icon_limit < 1 or args.icon_limit > 999:
+        die("--icon-limit must be between 1 and 999.")
+
+    prefixes = [normalize_icon_prefix(prefix) for prefix in args.icon_prefix]
+    payloads: list[dict[str, Any]] = []
+    icons: list[str] = []
+
+    if prefixes:
+        for prefix in prefixes:
+            payload = fetch_iconify_search(args.search_icons, args.icon_limit, prefix)
+            payloads.append({"prefix": prefix, "total": payload.get("total"), "collections": payload.get("collections", {})})
+            icons.extend(str(icon) for icon in payload.get("icons", []) if icon)
+    else:
+        payload = fetch_iconify_search(args.search_icons, args.icon_limit)
+        payloads.append({"total": payload.get("total"), "collections": payload.get("collections", {})})
+        icons.extend(str(icon) for icon in payload.get("icons", []) if icon)
+
+    deduped_icons = list(dict.fromkeys(icons))[: args.icon_limit]
+    result = {
+        "source": "iconify",
+        "query": args.search_icons,
+        "params": {"query": args.search_icons, "limit": args.icon_limit, "prefixes": prefixes},
+        "icons": deduped_icons,
+        "total": len(deduped_icons),
+        "api_payloads": payloads,
+        "notes": [
+            "Download selected SVG icons locally before inserting them into a deck.",
+            "Keep icon id, API URL, color, dimensions, flip, and rotate parameters in asset_manifest.json.",
+        ],
+    }
+    cache_dir = project_dir / ".window-pptx" / "cache" / "iconify"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    target = cache_dir / f"search-{stamp}-{sanitize_filename(args.search_icons)}.json"
+    target.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    result["manifest_path"] = str(target)
+    return result
+
+
+def download_icon(project_dir: Path, icon_id: str, args: argparse.Namespace) -> dict[str, Any]:
+    prefix, name = normalize_icon_id(icon_id)
+    downloads_dir = project_dir / "assets" / "downloads" / "iconify" / prefix
+    downloads_dir.mkdir(parents=True, exist_ok=True)
+    target = downloads_dir / f"{sanitize_filename(name, 'icon')}.svg"
+    counter = 2
+    while target.exists():
+        target = downloads_dir / f"{sanitize_filename(name, 'icon')}-{counter}.svg"
+        counter += 1
+
+    url = iconify_svg_url(f"{prefix}:{name}", args)
+    request = Request(url, headers={"User-Agent": "window-pptx-skill/1.0"})
+    with urlopen(request, timeout=30) as response:
+        target.write_bytes(response.read())
+
+    row = {
+        "provider": "iconify",
+        "local_path": str(target),
+        "downloaded_at": datetime.now().isoformat(timespec="seconds"),
+        "icon_id": f"{prefix}:{name}",
+        "source_url": url,
+        "params": {
+            "color": args.icon_color,
+            "width": args.icon_width,
+            "height": args.icon_height,
+            "flip": args.icon_flip,
+            "rotate": args.icon_rotate,
+        },
+        "license_note": "Iconify API SVG asset. Keep icon id and source URL in the project manifest.",
     }
     manifest_path = append_asset_manifest(project_dir, [row])
     return {"downloaded": row, "asset_manifest": str(manifest_path)}
@@ -1292,6 +1455,19 @@ def main() -> None:
 
     if args.download_image:
         non_com_results["pixabay_download"] = download_image(project_dir, args.download_image)
+
+    icon_search_result: dict[str, Any] | None = None
+    if args.search_icons:
+        icon_search_result = iconify_search(args, project_dir)
+        non_com_results["iconify_search"] = icon_search_result
+        if args.download_top_icon:
+            first_icon = next((icon for icon in icon_search_result.get("icons", []) if icon), None)
+            if first_icon is None:
+                die("No downloadable icon found in Iconify results.")
+            non_com_results["iconify_download"] = download_icon(project_dir, str(first_icon), args)
+
+    if args.download_icon:
+        non_com_results["iconify_download"] = download_icon(project_dir, args.download_icon, args)
 
     com_needed = any(
         [
