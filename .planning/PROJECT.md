@@ -2,13 +2,13 @@
 
 ## What This Is
 
-AImagician Skills is a personal skills repository and deployment toolkit for AI coding CLIs. It lets AImagician keep self-authored skills in-repo, register external skill sources from GitHub or install commands, and sync the supported skills into user-level directories for tools like Codex, Claude, OpenCode, and Gemini with a single command.
+AImagician Skills / Skillbee is a local-first personal skill configuration orchestrator for AI coding CLIs. It lets AImagician keep self-authored skills in-repo, register external skill sources from GitHub or install commands, persist user intent in YAML, preview safe sync plans, and install the resolved skill set into global or project-level CLI skill directories.
 
-The product is for one primary user first: AImagician. The goal is to make a fresh machine setup trivial: clone the repo, run one bootstrap command, and have the preferred skills loaded by default in every supported CLI.
+The product is for one primary user first: AImagician. The v3.0 goal is to make Skillbee trustworthy as a configuration console: catalog defaults remain searchable, user overrides decide what is eligible, project/global scopes are isolated, and real installs happen only after preview confirmation.
 
 ## Core Value
 
-After cloning the repo, one command installs and updates the right skills into each supported CLI's user-level location with as little manual setup as possible.
+Skillbee resolves catalog defaults plus user YAML overrides into safe, previewed, repeatable sync plans for the selected CLI targets and scope.
 
 ## Requirements
 
@@ -18,17 +18,31 @@ After cloning the repo, one command installs and updates the right skills into e
 
 ### Active
 
-- [ ] Keep self-authored skills inside this repository under `skills/`
-- [ ] Support external skill sources through configuration, including GitHub sources and command-based installers
-- [ ] Provide one bootstrap command to install or update supported skills for supported CLIs
-- [ ] Install to the current user's default skill locations so tools load them automatically
-- [ ] Support both Windows and Linux in the same project
+- [ ] Implement global/project independent scopes with separate override YAML and manifests
+- [ ] Resolve source enablement plus skill include/exclude into an explainable install eligibility set
+- [ ] Preserve searchable default-disabled sources such as `slavingia/skill` while preventing bulk install by default
+- [ ] Add preview-confirmed sync that touches only selected CLI targets and only Skillbee-managed items
+- [ ] Provide TUI controls for scope, source state, include/exclude, preview, and Target × Skill reports
+- [ ] Run unit, integration, TUI, project-scope, and real global-directory acceptance against the PRD
 
 ### Out of Scope
 
 - Unsupported CLI plugin installation - skip instead of forcing incompatible behavior
 - A hosted marketplace or web UI - local CLI-first workflow is the priority for v1
 - Deep plugin lifecycle management across every CLI - plugin support is conditional and secondary to skills deployment
+
+
+## Current Milestone: v3.0 Configuration Orchestration & Verified Sync
+
+**Goal:** Implement the full `docs/PRD.md` configuration-orchestration model and verify it end-to-end against project and real global CLI skill directories.
+
+**Target features:**
+- Layered config model: repo defaults, user override YAML, scope manifests, transient TUI state
+- Global and project scope isolation with CLI-specific target paths
+- Source visible/searchable state, default-disabled packages, and include/exclude resolution
+- Preview-confirmed sync that touches only selected CLI targets and only Skillbee-managed items
+- TUI controls and reports for scope, source state, eligibility reasons, preview, and Target × Skill outcomes
+- Automated and real acceptance for manual-file preservation, project/global isolation, command-source global-only behavior, and real global installs
 
 ## Context
 
@@ -51,10 +65,12 @@ The user expects all major targets to be covered in v1 because the integration i
 ## Constraints
 
 - **Platform**: Must work on Windows and Linux - the installer needs cross-platform path handling and shell-safe behavior
-- **Install Scope**: Must install into the current user's directories - skills should load by default without project-local setup
+- **Install Scope**: Must support both global user-level installs and project-level installs under the command's current working directory
 - **Target Diversity**: Codex, Claude, OpenCode, and Gemini may have different skill and plugin directory conventions - the system must normalize this through configuration
 - **Workflow**: Bootstrap should be one command after `git clone` - setup friction defeats the main purpose of the project
 - **Repository Shape**: External skills should usually stay config-driven rather than mirrored - reduces maintenance and keeps the repo focused on owned assets
+- **Safety**: Sync may only overwrite or remove Skillbee-managed items recorded in manifest or carrying a managed marker
+- **Execution Gate**: TUI configuration changes persist immediately, but filesystem writes require an explicit preview confirmation
 
 ## Key Decisions
 
@@ -66,6 +82,10 @@ The user expects all major targets to be covered in v1 because the integration i
 | v1 targets Codex, Claude, OpenCode, and Gemini | The user wants broad coverage immediately and expects the integration effort to be manageable | - Pending |
 | Plugins are conditional by target support | Prevents brittle installs on CLIs that do not expose plugin support | - Pending |
 | Verification is done by listing skills in each CLI | This matches the user's real acceptance test for successful installation | - Pending |
+| Real global acceptance is allowed after preview confirmation | The user wants true end-to-end validation against current-user CLI skills directories | - Pending |
+| `exclude` is the strongest eligibility rule | Prevents unwanted skills from being installed even when sources or includes would otherwise select them | - Pending |
+| Project and global scopes are independent | The user wants current-project installs such as `<project>/.claude/skills` without affecting global CLI homes | - Pending |
+| v3.0 treats Skillbee as configuration orchestration first | The PRD requires YAML intent, eligibility resolution, preview, and managed sync rather than direct install side effects | - Pending |
 
 ---
-*Last updated: 2026-03-13 after initialization*
+*Last updated: 2026-05-30 after starting v3.0 configuration orchestration milestone*

@@ -1,47 +1,47 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Skillbee V2 - 功能深化
-current_phase: 5
-current_phase_name: 概览与打磨
-current_plan: 1
-status: completed
-stopped_at: Phase 5 complete
-last_updated: "2026-05-27T19:20:00+08:00"
-last_activity: 2026-05-27
+milestone: v3.0
+milestone_name: Configuration Orchestration & Verified Sync
+current_phase: 9
+current_phase_name: Configuration Scope Foundation
+current_plan: 0
+status: defining-requirements
+stopped_at: Milestone v3.0 started; requirements and roadmap defined from docs/PRD.md
+last_updated: "2026-05-30T19:30:00+08:00"
+last_activity: 2026-05-30
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_phases: 13
+  completed_phases: 7
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: docs/PRD.md (updated 2026-05-27)
+See: docs/PRD.md (updated 2026-05-30)
 See: docs/DEV-WORKFLOW.md (updated 2026-05-27)
-See: .planning/PROJECT.md (updated 2026-03-13)
+See: .planning/PROJECT.md (updated 2026-05-30)
 
-**Core value:** After cloning the repo, one command installs and updates the right skills into each supported CLI's user-level location with as little manual setup as possible.
-**Current focus:** Skillbee V2 功能深化 complete (all 5 phases)
+**Core value:** Skillbee resolves catalog defaults plus user YAML overrides into safe, previewed, repeatable sync plans for the selected CLI targets and scope.
+**Current focus:** v3.0 Configuration Orchestration & Verified Sync — implement PRD configuration layers, project/global scopes, eligibility rules, preview-confirmed sync, and real acceptance.
 
 ## Current Position
 
-Milestone: v2.0
-Current Phase: 5
-Current Phase Name: 概览与打磨
-Total Plans in Phase: 1
-Total Phases: 5
-Phase: 5 of 5 (概览与打磨)
-Plan: 1 of 1
-Status: Complete
-Last Activity: 2026-05-27
-Last Activity Description: Phase 5 complete: F7 matrix view — `v` key toggles between list and matrix views; matrix shows skills × selectedTargets with ✓/○/— per cell using formatMatrixCell + targetShortLabel; row format: `[x] skill-id  Cd:✓ Oc:✓ Cr:○ Cp:-`; navigating/filtering/selection all work in matrix mode; detail panel unchanged. P2 multi-theme — `T` key cycles through bee/monokai/nord themes; theme stored in user-config.yaml `theme` field; applied at startup from config; border colors update on theme switch; header shows current theme name.
+Milestone: v3.0
+Current Phase: 9
+Current Phase Name: Configuration Scope Foundation
+Total Plans in Phase: 0
+Total Phases: 13
+Phase: 9 of 13 (Configuration Scope Foundation)
+Plan: —
+Status: Defining requirements / roadmap initialized
+Last Activity: 2026-05-30
+Last Activity Description: Started v3.0 milestone from docs/PRD.md configuration-orchestration requirements: global/project scopes, user override YAML, source default-disabled visibility, include/exclude priority, preview-confirmed managed sync, selected-target execution, command-source global-only behavior, real global acceptance, and Target × Skill reports.
 
-Progress: 100%
+Progress: 0%
 
 ## Accumulated Context
 
@@ -58,7 +58,7 @@ Progress: 100%
 - [V2 Phase 2]: theme.ts created with bee brand constants (COLORS, SELECTED_LIST_STYLE, formatMatrixCell, targetShortLabel)
 - [V2 Phase 2]: Header redesigned with 🐝 prefix + yellow color accents + status info (scope/target/archived/query/selected)
 - [V2 Phase 2]: All panel labels prefixed with 🐝, selected items use yellow highlight, installed=green, archived=cyan, unavailable=gray
-- [V2 Phase 2]: Detail panel shows cross-target install matrix (all 7 targets with ✓/○/- cells), related skills sorted by tag overlap, SKILL.md preview for owned skills (async read from skills/owned/{id}/SKILL.md)
+- [V2 Phase 2]: Detail panel shows cross-target install matrix (all 7 targets with ✓/○/- cells), related skills sorted by tag overlap, SKILL.md preview for owned skills
 - [V2 Phase 2]: ? and Ctrl+/ open keyboard shortcuts overlay with grouped command reference
 - [V2 Phase 2]: SKILL.md preview is async — loaded after initial render so the UI is never blocked
 - [V2 Phase 2]: ownedSkillsRoot from shared/paths.ts used for SKILL.md lookup; external/command skills skip preview
@@ -96,6 +96,15 @@ Progress: 100%
 - [Phase 7]: Historical skill leftovers: codex (GSD×36), claude (Lark×24), copilot (GSD×36), hermes (Lark×24 + 内置×25 + 系统×2); opencode/gemini/cursor clean
 - [Phase 7]: `llm-know-how-wiki` present in all 5 main CLI targets
 - [Phase 7]: Feishu/Lark skill source set to `larksuite/lark-cli` defaulting to disabled
+- [V3 Phase 8]: Hive panel shows predefined taxonomy groups (Coding/Research/Design/Documents/Operations/Business) instead of dynamic tags
+- [V3 Phase 8]: `slavingia-skills` source disabled by default — Business group skills (validate-idea, grow-sustainably, etc.) hidden
+- [V3 Phase 8]: Source toggle feature (S key) lists external sources with ✅/❌, persists to user-config.yaml `sourceOverrides`
+- [V3 Phase 8]: BEE_SPLASH fixed from broken `{amber}` tags to correct `{214-fg}` ANSI 256 syntax
+- [V3 Phase 8]: `SELECTED_LIST_STYLE` converted to `getSelectedListStyle(colors)` function for dynamic theme updates
+- [V3 Phase 8]: All panels now have explicit `bg: PALETTE.carbon` for consistent dark background
+- [V3 Phase 8]: `userConfig` cached in dashboard state to avoid async re-loading on every render
+- [V3 Phase 8]: `syncManagedInstalls()` replaces `copyManagedInstalls()` — cleans stale skills from target directories
+- [V3 Phase 8]: Taxonomy-based filtering: skills without taxonomy entries are hidden (except archived)
 
 ### Roadmap Evolution
 
@@ -103,15 +112,16 @@ Progress: 100%
 - Phase 6 completed: added `window-pptx`, bundled helper script, project template, and docs
 - Phase 7 added: Bootstrap copilot fix and multi-target skill audit
 - Phase 7 completed: fixed copilot install, audited all targets, recorded leftovers
+- Phase 8 added: 蜂巢 Dashboard V3 — group-based Hive, source toggle, ANSI 256 colors, install sync
 
 ### Blockers/Concerns
 
-- No blocking milestone gaps remain
+- User needs to verify TUI with `npm start` — splash color rendering, group-based Hive, source toggle
 - Full `window-pptx` runtime verification requires native Windows, desktop PowerPoint, and pywin32
 - A future milestone can focus on source caching, lockfiles, link mode, or richer plugin automation if needed
 
 ## Session Continuity
 
-Last session: 2026-05-27T19:20:00+08:00
-Stopped at: V2 milestone complete (all 5 phases)
+Last session: 2026-05-30T17:40:00+08:00
+Stopped at: V3 implementation complete, awaiting user TUI verification
 Resume file: .planning/ROADMAP.md

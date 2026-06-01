@@ -19,6 +19,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Verification and Release UX** - Add doctor/list/report flows and finish the bootstrap experience (completed 2026-03-14)
 - [x] **Phase 6: Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow** - Add an owned Windows PowerPoint automation skill based on `REQUEST.md`, templates, assets, optional add-in discovery, and native COM execution (completed 2026-05-05)
 - [x] **Phase 7: Bootstrap copilot fix and multi-target skill audit** - Fix copilot bootstrap (missing case "copilot"), audit all 7 CLI targets, confirm llm-know-how-wiki everywhere, record historical leftovers (completed 2026-05-11)
+- [ ] **Phase 8: 蜂巢 Dashboard V3** - Rewrite TUI with group-based Hive panel, source toggle, ANSI 256 colors, and clean install flow (in progress)
+- [ ] **Phase 9: Configuration Scope Foundation** - Implement layered override YAML and independent global/project manifests
+- [ ] **Phase 10: Source Eligibility Resolver** - Implement visible/searchable source states, default-disabled packages, include/exclude priority, and global-only command source rules
+- [ ] **Phase 11: Previewed Managed Sync Engine** - Generate and execute selected-target sync plans that touch only Skillbee-managed items after preview confirmation
+- [ ] **Phase 12: TUI Orchestration Console** - Expose scope, source, include/exclude, eligibility, preview, and Target × Skill report UX in the TUI
+- [ ] **Phase 13: End-to-End Acceptance & Real Global Verification** - Verify automated and real acceptance against PRD checklist, project scope, and true global CLI skills directories
 
 ## Phase Details
 
@@ -140,6 +146,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 5. Verification and Release UX | 2/2 | Complete    | 2026-03-14 |
 | 6. Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow | 1/1 | Complete | 2026-05-05 |
 | 7. Bootstrap copilot fix and multi-target skill audit | 1/1 | Complete | 2026-05-11 |
+| 8. 蜂巢 Dashboard V3 | 0/1 | In Progress | - |
 
 **Execution Order (V2):**
 
@@ -150,6 +157,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. 多选与筛选 | F2/F6 | Complete | 2026-05-27 |
 | 4. 批量操作与报告 | F3/F10 | Complete | 2026-05-27 |
 | 5. 概览与打磨 | F7/P2 | Complete | 2026-05-27 |
+| 8. 蜂巢 Dashboard V3 | Groups/Source/Sync | In Progress | - |
 
 ### Phase 6: Add window-pptx COM/VBA PowerPoint automation skill with discuss-driven project folder workflow
 
@@ -180,3 +188,118 @@ Plans:
 
 Plans:
 - [x] 07-01: Fix copilot bootstrap, audit targets, record context in .planning
+
+### Phase 8: 蜂巢 Dashboard V3
+
+**Goal:** Rewrite TUI with group-based Hive panel, source toggle, ANSI 256 colors, and clean install flow
+**Depends on:** Phase 7
+**Requirements**: PRD §2.1-§4.4
+**Success Criteria** (what must be TRUE):
+  1. Hive panel shows predefined taxonomy groups (Coding/Research/Design/Documents/Operations/Business) with skill counts
+  2. Splash screen renders with correct ANSI 256 colors (amber 214, carbon 235, etc.)
+  3. Source toggle (S key) lists external sources and allows enabling/disabling
+  4. Install flow cleans stale skills from target directories before installing
+  5. Skills without taxonomy entries are hidden (except archived)
+**Plans:** 1 plan
+
+Plans:
+- [ ] 08-01: V3 dashboard rewrite with groups, source toggle, color fixes, and install sync
+
+
+## Milestone v3.0 — Configuration Orchestration & Verified Sync
+
+### Phase 9: Configuration Scope Foundation
+
+**Goal:** Implement the PRD's layered configuration model with global/project override YAML and independent manifests.
+**Depends on:** Phase 8
+**Requirements:** [CFG-01, CFG-02, CFG-03, CFG-04]
+**Success Criteria** (what must be TRUE):
+  1. Global override config reads/writes `~/.config/skillbee/global/config.yaml`
+  2. Project override config reads/writes `<project>/.skillbee/config.yaml` based on the command's current working directory
+  3. Global and project manifests are separate and cannot overwrite each other
+  4. Durable TUI/config changes write user override YAML only, not repo catalog/taxonomy defaults
+**Plans:** TBD by `/gsd:plan-phase 9`
+
+Plans:
+- [ ] 09-01: Scope-aware config and manifest foundation
+
+### Phase 10: Source Eligibility Resolver
+
+**Goal:** Resolve catalog defaults plus user overrides into an explainable install eligibility set.
+**Depends on:** Phase 9
+**Requirements:** [ELIG-01, ELIG-02, ELIG-03, ELIG-04, ELIG-05, ELIG-06]
+**Success Criteria** (what must be TRUE):
+  1. Sources can remain visible/searchable while default-disabled for bulk install
+  2. `slavingia/skill` is represented as a Business source that is visible/searchable but default-disabled
+  3. `include` can select individual skills from default-disabled sources
+  4. `exclude` prevents install regardless of source state or include rules
+  5. Every eligible/skipped/removed/blocked decision has a user-visible reason
+  6. Command-based sources are skipped in project scope with a clear global-only reason
+**Plans:** TBD by `/gsd:plan-phase 10`
+
+Plans:
+- [ ] 10-01: Source eligibility and explanation resolver
+
+### Phase 11: Previewed Managed Sync Engine
+
+**Goal:** Convert resolved desired state into preview-confirmed filesystem sync that only affects selected CLI targets and Skillbee-managed items.
+**Depends on:** Phase 10
+**Requirements:** [SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05, SYNC-06, SYNC-07]
+**Success Criteria** (what must be TRUE):
+  1. Sync planning is scoped to the current global/project scope and selected CLI targets
+  2. Preview lists create/update/overwrite/remove/skip operations before any write
+  3. No CLI skills directory is modified until preview is confirmed
+  4. Manual files in target skills directories survive sync and cleanup
+  5. Stale Skillbee-managed installs are removed when no longer eligible
+  6. Modified Skillbee-managed installs are overwritten by the resolved desired state
+**Plans:** TBD by `/gsd:plan-phase 11`
+
+Plans:
+- [ ] 11-01: Preview and managed-only sync engine
+
+### Phase 12: TUI Orchestration Console
+
+**Goal:** Make the TUI a frontend for scope-aware configuration orchestration, preview, and reporting.
+**Depends on:** Phase 11
+**Requirements:** [TUI3-01, TUI3-02, TUI3-03, TUI3-04, TUI3-05]
+**Success Criteria** (what must be TRUE):
+  1. User can switch scope and see scope-specific config, manifest, status, preview, and report information
+  2. User can toggle source enabled/default-disabled/disabled state and persist it immediately to override YAML
+  3. User can set skill include/exclude and persist it immediately to override YAML
+  4. TUI displays taxonomy groups, source groupings, source status, and eligibility reasons
+  5. Install/sync shows a pre-execution Target × Skill preview and a final Target × Skill report
+**Plans:** TBD by `/gsd:plan-phase 12`
+
+Plans:
+- [ ] 12-01: TUI orchestration controls, preview, and reports
+
+### Phase 13: End-to-End Acceptance & Real Global Verification
+
+**Goal:** Prove the full PRD through automated tests, manual TUI verification, project-scope installs, and real global-directory acceptance after preview confirmation.
+**Depends on:** Phase 12
+**Requirements:** [ACC-01, ACC-02, ACC-03, ACC-04, ACC-05]
+**Success Criteria** (what must be TRUE):
+  1. Automated tests cover include/exclude priority, default-disabled sources, project/global manifest isolation, selected-target sync, and manual-file preservation
+  2. Project scope installs into current `pwd` using CLI-specific project paths such as `<project>/.claude/skills`
+  3. Command sources skip in project scope with clear reasons
+  4. Real global-directory acceptance runs against current-user CLI skills directories only after preview confirmation
+  5. `docs/PRD.md` acceptance checklist has no unresolved implementation or verification gaps
+**Plans:** TBD by `/gsd:plan-phase 13`
+
+Plans:
+- [ ] 13-01: Automated, TUI, project-scope, and real global acceptance
+
+## v3.0 Progress
+
+| Phase | Feature | Status | Completed |
+|-------|---------|--------|-----------|
+| 9. Configuration Scope Foundation | Config/manifest layers | Pending | - |
+| 10. Source Eligibility Resolver | Source states + include/exclude | Pending | - |
+| 11. Previewed Managed Sync Engine | Preview + managed-only sync | Pending | - |
+| 12. TUI Orchestration Console | TUI controls + reports | Pending | - |
+| 13. End-to-End Acceptance & Real Global Verification | Automated + real acceptance | Pending | - |
+
+**V3 Coverage:**
+- v3 requirements: 27 total
+- Mapped to phases: 27
+- Unmapped: 0
