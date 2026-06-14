@@ -76,7 +76,7 @@ function createSourceCommonSchema() {
   return z
     .object({
       id: slugSchema,
-      enabled: z.boolean().default(true),
+      enabled: z.boolean().default(false),
       description: z.string().min(1).optional(),
       version: z.string().min(1).optional(),
       targets: targetSelectionSchema.optional()

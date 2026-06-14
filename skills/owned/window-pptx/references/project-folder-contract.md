@@ -246,6 +246,8 @@ templates/template-library/
     一段内容.pptx
     人物介绍.pptx
     六段内容.pptx
+  previews/
+    <category>__S###.png
   template-library-review.xlsx
 ```
 
@@ -255,6 +257,6 @@ Rules:
 - Category PPTX files are recommendation sources, not default source/template decks for generated deliverables.
 - One category PPTX can contain multiple single-page templates.
 - Each slide gets one workbook row and one stable `TemplateID` such as `一段内容::S001`.
-- The workbook is the source of truth for review status, tags, scores, and recommendation history.
-- Only reviewed rows should be treated as production-ready recommendations.
-```
+- V2 intake writes preview PNGs to `templates/template-library/previews/` and merges AI-initial recommendation fields into the workbook `Library` sheet.
+- The workbook is the source of truth for review status, tags, scores, recommendation fields, and recommendation history.
+- Rows with `ReviewStatus = 已通过` are production-ready; rows with `AutoRecommendStatus = AutoRecommendable` are AI-initial candidates.

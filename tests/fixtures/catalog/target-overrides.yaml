@@ -2,6 +2,7 @@ skills:
   sources:
     - id: default-skill-source
       type: github
+      enabled: true
       github:
         repo: aimagician/default-skills
         path: skills
@@ -11,6 +12,7 @@ skills:
           path: ship-everywhere/SKILL.md
     - id: selective-skill-source
       type: github
+      enabled: true
       targets:
         include:
           - claude
@@ -34,6 +36,7 @@ plugins:
   sources:
     - id: plugin-source
       type: command
+      enabled: true
       targets:
         include:
           - opencode

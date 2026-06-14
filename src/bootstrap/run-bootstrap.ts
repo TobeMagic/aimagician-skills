@@ -11,7 +11,11 @@ import {
   previewCommandSkillSources,
   type CommandSourceReport
 } from "./command-sources";
-import { syncManagedInstalls } from "./direct-target-sync";
+import {
+  planManagedInstallSync,
+  syncManagedInstalls,
+  type ManagedInstallSyncOperation
+} from "./direct-target-sync";
 import {
   loadManifest,
   manifestsEqual,
@@ -82,12 +86,28 @@ export async function runBootstrap(
     ? resolveBootstrapWorkspace(platformContext)
     : await ensureBootstrapWorkspace(platformContext);
   const targetHomes = resolveTargetHomes(platformContext);
+  const previousManifest = await loadManifest(workspace.manifestPath);
 
   if (options.dryRun) {
     const pluginReports = await previewPluginReports({
       normalizedAssets: prepared.normalizedAssets,
       selectedTargets,
       targetHomes
+    });
+    const skillInstalls = await resolveManagedSkillInstalls({
+      catalog: prepared.catalog,
+      normalizedAssets: prepared.normalizedAssets,
+      workspaceRoot: workspace.rootDir,
+      selectedTargets,
+      targetHomes,
+      githubRepoOverrides: options.githubRepoOverrides
+    });
+    const allowedRootsByTarget = createAllowedRootsByTarget(targetHomes);
+    const syncOperations = planManagedInstallSync({
+      allowedRootsByTarget,
+      selectedTargets,
+      installs: skillInstalls,
+      previousInstalls: previousManifest?.managedInstalls ?? []
     });
 
     return {
@@ -97,13 +117,17 @@ export async function runBootstrap(
       manifestPath: workspace.manifestPath,
       planPath: workspace.planPath,
       plan: prepared.plan,
-      targetReports: createPreviewTargetReports(prepared.plan, targetHomes, pluginReports),
+      targetReports: createPreviewTargetReports(
+        prepared.plan,
+        targetHomes,
+        pluginReports,
+        syncOperations
+      ),
       pluginReports,
       commandReports: previewCommandSkillSources(prepared.normalizedAssets, selectedTargets)
     };
   }
 
-  const previousManifest = await loadManifest(workspace.manifestPath);
   const retainedManagedInstalls = previousManifest?.managedInstalls.filter(
     (install) => !selectedTargets.includes(install.target)
   ) ?? [];
@@ -239,12 +263,13 @@ function createManifest(
 function createPreviewTargetReports(
   plan: BootstrapPlan,
   targetHomes: ResolvedTargetHomes,
-  pluginReports: BootstrapPluginReport[]
+  pluginReports: BootstrapPluginReport[],
+  syncOperations: ManagedInstallSyncOperation[]
 ): BootstrapTargetReport[] {
   return plan.selectedTargets.map((target) => ({
     target,
     status: "planned",
-    installedSkillIds: listSkillIdsForTarget(plan, target),
+    installedSkillIds: listPlannedSkillIdsForTarget(syncOperations, target),
     installedPluginIds: listPluginIdsForTarget(pluginReports, target, "planned"),
     ...resolveReportLocations(targetHomes, target)
   }));
@@ -299,6 +324,21 @@ function resolveReportLocations(
     default:
       return {};
   }
+}
+
+function listPlannedSkillIdsForTarget(
+  syncOperations: ManagedInstallSyncOperation[],
+  target: SupportedTarget
+): string[] {
+  return syncOperations
+    .filter(
+      (operation) =>
+        operation.target === target &&
+        operation.assetKind === "skill" &&
+        (operation.kind === "create" || operation.kind === "overwrite")
+    )
+    .map((operation) => operation.assetId)
+    .sort();
 }
 
 function listSkillIdsForTarget(

@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it } from "vitest";
+import { ensureBuiltCli } from "../helpers/ensure-built-cli";
 
 const execFileAsync = promisify(execFile);
 const tempDirectories: string[] = [];
@@ -25,7 +26,7 @@ describe("bootstrap package smoke", () => {
     const fixture = await createSmokeFixture(workspaceRoot);
     tempDirectories.push(workspaceRoot);
 
-    await runPackageCommand("run build");
+    await ensureBuiltCli();
     await runPackageCommand("pack --dry-run");
 
     const { stdout } = await execFileAsync(
@@ -116,7 +117,7 @@ describe("bootstrap package smoke", () => {
     const fixture = await createSmokeFixture(workspaceRoot, { includePluginSource: true });
     tempDirectories.push(workspaceRoot);
 
-    await runPackageCommand("run build");
+    await ensureBuiltCli();
 
     const { stdout } = await execFileAsync(
       process.execPath,
@@ -202,6 +203,7 @@ async function createSmokeFixture(
       "sources:",
       "  - id: external-skills",
       "    type: github",
+      "    enabled: true",
       "    github:",
       "      repo: aimagician/external-skills",
       "      path: skills",
@@ -217,6 +219,7 @@ async function createSmokeFixture(
           "sources:",
           "  - id: plugin-repo",
           "    type: github",
+          "    enabled: true",
           "    targets:",
           "      include:",
           "        - claude",

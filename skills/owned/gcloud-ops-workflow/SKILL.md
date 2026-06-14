@@ -1,14 +1,29 @@
 ---
 name: gcloud-ops-workflow
-description: Use when inspecting, debugging, inventorying, or safely operating Google Cloud resources with gcloud, especially Cloud Run, GKE, GCS/Cloud Storage, VPC, Cloud SQL, logging, infrastructure runbooks, or wiki-recorded cloud ops workflows.
+description: Use when inspecting, debugging, inventorying, or safely operating
+  Google Cloud resources with gcloud, especially Cloud Run, GKE, GCS/Cloud
+  Storage, VPC, Cloud SQL, logging, infrastructure runbooks, or wiki-recorded
+  cloud ops workflows.
 metadata:
   related_skills:
     - llm-know-how-wiki
     - linear-issue-workflow
     - github-pr-workflow
 compatibility:
-  tools: [bash, gcloud, gsutil, kubectl, python]
-  requires: Authenticated gcloud account and explicit project/region/zone for real cloud operations
+  tools:
+    - bash
+    - gcloud
+    - gsutil
+    - kubectl
+    - python
+  requires: Authenticated gcloud account and explicit project/region/zone for real
+    cloud operations
+category: operate
+subcategory: cloud
+tags:
+  - gcloud
+  - cloud-run
+  - gke
 ---
 
 # Gcloud Ops Workflow

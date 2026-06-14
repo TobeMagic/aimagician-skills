@@ -1,18 +1,22 @@
-# Template Library Recommendation Workflow V1
+# Template Library Recommendation and Intake Workflow
 
 Use this workflow when selecting reusable slide templates from the `window-pptx` skill's built-in template library.
 
 ## Scope
 
-V1 is documentation plus an XLSX review workstation. It does not automate template intake, export previews, run Excel macros, add workbook buttons, or automatically assemble final PowerPoint decks.
+V1 established the documentation and XLSX review workstation. V2 adds automated intake for the skill-local template library: scanning category PPTX files, exporting slide previews, extracting objective slide metadata, and merging AI-initial recommendation fields into the workbook `Library` sheet.
+
+The workflow still does not run Excel macros, add workbook buttons, automatically compose final PowerPoint decks, or depend on external template folders at runtime.
 
 ## Core Decisions
 
 - Recommendation unit: one slide, not one deck.
 - Organization: one category PPTX contains 3-5 representative single-slide templates.
-- Built-in library root: `templates/template-library/reference/`.
+- Built-in category decks: `templates/template-library/reference/`.
+- Generated previews: `templates/template-library/previews/`.
 - Review workbook: `templates/template-library/template-library-review.xlsx`.
-- Tags: AI may draft tags, but human review decides approved tags, score, and reuse notes.
+- Intake command: `--intake-template-library` in `scripts/window_pptx_automation.py`.
+- AI-initial recommendation fields live in `Library`; no separate `AIIntake` or `AutoTags` sheet is used.
 - Output: Top 5 recommendations in chat and in the workbook `Recommendations` sheet.
 
 ## V1 Categories
@@ -71,6 +75,38 @@ Required sheets:
 - `ChangeLog`: review and vocabulary change history.
 
 Only rows with `ReviewStatus = 已通过` are production-ready recommendations.
+
+## V2 Automated Intake
+
+Run intake from native Windows PowerShell/CMD because it uses PowerPoint COM:
+
+```powershell
+py D:\Growth_up_youth\repo\skills\skills\owned\window-pptx\scripts\window_pptx_automation.py --project-dir D:\Growth_up_youth\repo\skills\skills\owned\window-pptx --intake-template-library --no-save --json
+```
+
+Default paths are derived from the skill directory:
+
+- reference decks: `templates/template-library/reference/*.pptx`
+- workbook: `templates/template-library/template-library-review.xlsx`
+- previews: `templates/template-library/previews/`
+
+The command opens each category PPTX, treats every slide as one template candidate, generates the stable ID `<Category>::S###`, exports a 1600×900 PNG preview, reads visible text and object counts, and updates the workbook `Library` sheet.
+
+V2 writes these intake fields into `Library`:
+
+- objective fields: `PreviewUpdatedAt`, `ShapeCount`, `ImageCount`, `TableCount`, `ChartCount`, `IngestStatus`, `IngestIssue`, `LastAutoIngestedAt`
+- recommendation fields: `VisualLayoutSummary`, `MatchKeywords`, `AIRecommendationReason`, `SuggestedAdaptation`, `RequiredInputs`, `RiskNotes`, `AIQualityReason`, `AutoRecommendStatus`, `ManualLock`
+
+Existing fields such as `ContentSlots`, `StructureTag`, `AIInitialTags`, `BestFor`, `AvoidFor`, `QualityScore`, `ReuseComplexity`, `EditabilityRisk`, and `CompositeScore` may be refreshed for unlocked rows.
+
+Preservation rules:
+
+- Always preserve human fields on existing rows: `HumanReviewedTags`, `ReviewStatus`, `Reviewer`, `LastReviewedDate`, and `Notes`.
+- Always preserve usage and outcome fields such as use counts, selected/final-used counts, rates, and feedback.
+- If `ManualLock` is `yes`, `是`, `true`, `1`, or `locked`, refresh only objective fields and preview timestamps; do not overwrite AI/recommendation fields.
+- Successful intake defaults to `AutoRecommendStatus = AutoRecommendable`; per-slide issues use `NeedsReview` and record the issue in `RiskNotes` / `IngestIssue`.
+
+The V2 script generates deterministic AI-initial metadata from category, extracted text, object counts, and preview paths. It does not perform full pixel-level visual reasoning inside the script; use preview PNGs for human or future multimodal review.
 
 ## Human Review
 

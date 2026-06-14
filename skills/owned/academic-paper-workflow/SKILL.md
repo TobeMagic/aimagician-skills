@@ -1,9 +1,22 @@
 ---
 name: academic-paper-workflow
-description: Use when the user asks about academic papers, paper ideas, literature review, baseline or module design, method synthesis, contribution framing, evidence planning, experiments, manuscript structure, journal or conference selection, SCI, EI, 中文核心, CCF, CSSCI, OA, submission, revision, reviewer response, or light thesis integration.
+description: Use when the user asks about academic papers, paper ideas,
+  literature review, baseline or module design, method synthesis, contribution
+  framing, evidence planning, experiments, manuscript structure, journal or
+  conference selection, SCI, EI, 中文核心, CCF, CSSCI, OA, submission, revision,
+  reviewer response, or light thesis integration.
 compatibility:
-  tools: [bash, python, git]
+  tools:
+    - bash
+    - python
+    - git
   requires: Optional network access for live paper, venue, policy, and indexing checks
+category: research
+subcategory: academic
+tags:
+  - papers
+  - literature
+  - experiments
 ---
 
 # Academic Paper Workflow

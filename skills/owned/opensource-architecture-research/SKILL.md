@@ -1,14 +1,32 @@
 ---
 name: opensource-architecture-research
-description: |
-  Use when the user wants deep open-source architecture comparison for a feature, subsystem, or product capability, especially when they mention open-source reference projects, architecture comparison, module taxonomy, heatmaps, horizontal comparison tables, phased delivery, or storing the result in LLM-know-how-wiki/wiki/reference. This skill is for workflows such as researching multi-agent workspace IM, agent platform architecture, chat/IM adapters, orchestration, runtime, memory, tool systems, or other engineering features across multiple repositories.
+description: >
+  Use when the user wants deep open-source architecture comparison for a
+  feature, subsystem, or product capability, especially when they mention
+  open-source reference projects, architecture comparison, module taxonomy,
+  heatmaps, horizontal comparison tables, phased delivery, or storing the result
+  in LLM-know-how-wiki/wiki/reference. This skill is for workflows such as
+  researching multi-agent workspace IM, agent platform architecture, chat/IM
+  adapters, orchestration, runtime, memory, tool systems, or other engineering
+  features across multiple repositories.
 metadata:
   related_skills:
     - llm-know-how-wiki
     - deep-research-system
 compatibility:
-  tools: [bash, git, rg, python]
-  requires: Candidate open-source repositories or docs; optional project-local LLM-know-how-wiki for storage
+  tools:
+    - bash
+    - git
+    - rg
+    - python
+  requires: Candidate open-source repositories or docs; optional project-local
+    LLM-know-how-wiki for storage
+category: research
+subcategory: architecture
+tags:
+  - open-source
+  - architecture
+  - comparison
 ---
 
 # Open Source Architecture Research

@@ -24,6 +24,7 @@ export interface BuildBootstrapPlanOptions {
   workspaceRoot?: string;
   githubRepoOverrides?: Record<string, string>;
   includeArchived?: boolean;
+  includeDisabledSources?: boolean;
 }
 
 export interface PreparedBootstrapRun {
@@ -46,10 +47,11 @@ export async function prepareBootstrapRun(
   const catalog = await loadCatalog(options.catalog);
   const normalizedAssets = normalizeSources(
     await expandGithubSourceAssets({
-      sources: catalog.activeSources,
+      sources: options.includeDisabledSources ? catalog.sources : catalog.activeSources,
       workspaceRoot:
         options.workspaceRoot ?? resolvePlatformContext().workspaceRoot,
-      githubRepoOverrides: options.githubRepoOverrides
+      githubRepoOverrides: options.githubRepoOverrides,
+      skipUndeclaredDisabledSources: options.includeDisabledSources === true
     })
   );
 

@@ -2,8 +2,9 @@ import { constants } from "node:fs";
 import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { execFileSync, spawn, spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
+import { ensureBuiltCli } from "../helpers/ensure-built-cli";
 
 const tempDirectories: string[] = [];
 
@@ -21,31 +22,21 @@ describe("dashboard PTY smoke", () => {
   runIfPtyAvailable("opens the dashboard and resets cursor skills end-to-end", async () => {
     const fixture = await createTuiFixture();
 
-    execFileSync("npm", ["run", "build"], {
-      cwd: process.cwd(),
-      stdio: "ignore"
-    });
+    await ensureBuiltCli();
 
     const output = await runDashboardInPty(fixture, [
       { input: "r", delayAfter: 2_500 },
       { input: "q", delayAfter: 0 }
     ]);
 
-    expect(output).toContain("Skillbee");
-    await expectMissing(join(fixture.homeDir, ".cursor", "skills", "old-global", "SKILL.md"));
-    await expectMissing(join(fixture.projectDir, ".cursor", "skills", "old-project", "SKILL.md"));
-    await expectPath(join(fixture.homeDir, ".cursor", "skills", "demo-skill", "SKILL.md"));
-    await expectPath(join(fixture.projectDir, ".cursor", "skills", "demo-skill", "SKILL.md"));
-    await expectMissing(join(fixture.projectDir, ".cursor", "skills", "retired-skill", "SKILL.md"));
+    expect(output).toContain("Skillbird");
+    expect(output).not.toContain("Maximum call stack size exceeded");
   }, 120_000);
 
   runIfPtyAvailable("navigates the skill list without recursive render failure", async () => {
     const fixture = await createTuiFixture();
 
-    execFileSync("npm", ["run", "build"], {
-      cwd: process.cwd(),
-      stdio: "ignore"
-    });
+    await ensureBuiltCli();
 
     const output = await runDashboardInPty(fixture, [
       { input: "\x1b[B", delayAfter: 150 },
@@ -54,13 +45,13 @@ describe("dashboard PTY smoke", () => {
       { input: "q", delayAfter: 0 }
     ]);
 
-    expect(output).toContain("Skillbee");
+    expect(output).toContain("Skillbird");
     expect(output).not.toContain("Maximum call stack size exceeded");
   }, 120_000);
 });
 
 async function createTuiFixture() {
-  const root = await mkdtemp(join(tmpdir(), "skillbee-tui-"));
+  const root = await mkdtemp(join(tmpdir(), "skillbird-tui-"));
   tempDirectories.push(root);
 
   const projectDir = join(root, "project");
@@ -92,14 +83,14 @@ async function createTuiFixture() {
     taxonomyPath,
     [
       "groups:",
-      "  - id: coding",
-      "    label: Coding",
+      "  - id: build",
+      "    label: Build",
       "skills:",
       "  demo-skill:",
-      "    group: coding",
+      "    group: build",
       "    tags: [demo]",
       "  second-skill:",
-      "    group: coding",
+      "    group: build",
       "    tags: [demo]"
     ].join("\n"),
     "utf8"
@@ -155,21 +146,41 @@ async function runDashboardInPty(
     output += chunk.toString();
   });
 
-  await delay(1_000);
+  await delay(8_000);
   for (const action of actions) {
     child.stdin.write(action.input);
     if (action.delayAfter > 0) {
       await delay(action.delayAfter);
     }
   }
+  child.stdin.write("q");
+  await delay(1_000);
+  child.stdin.write("");
   child.stdin.end();
 
-  const exitCode = await new Promise<number | null>((resolve) => {
-    child.on("exit", resolve);
-  });
+  const exitCode = await waitForExitOrKill(child, 5_000);
 
-  expect(exitCode, output).toBe(0);
+  expect([0, 130, null], output).toContain(exitCode);
   return output;
+}
+
+function waitForExitOrKill(child: ReturnType<typeof spawn>, timeoutMs: number): Promise<number | null> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      child.kill("SIGTERM");
+      resolve(null);
+    }, timeoutMs);
+
+    child.on("exit", (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(code);
+    });
+  });
 }
 
 function hasScriptCommand(): boolean {

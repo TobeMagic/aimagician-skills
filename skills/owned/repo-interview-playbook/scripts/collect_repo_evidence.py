@@ -45,6 +45,26 @@ MANIFEST_NAMES = {
     "docker-compose.yaml",
 }
 
+TEXT_EXTS = {
+    ".py",
+    ".java",
+    ".kt",
+    ".ts",
+    ".tsx",
+    ".js",
+    ".go",
+    ".md",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".xml",
+    ".gradle",
+    ".json",
+}
+
+CODE_EXTS = {".py", ".java", ".kt", ".ts", ".tsx", ".js", ".go"}
+CONFIG_EXTS = {".yaml", ".yml", ".toml", ".xml", ".gradle", ".json"}
+
 KEYWORD_PATTERNS = {
     "java": r"\b(Java|Spring|Spring Boot|JVM|MyBatis|Hibernate)\b",
     "python": r"\b(FastAPI|Pydantic|Celery|SQLAlchemy|asyncio|Django|Flask)\b",
@@ -62,6 +82,35 @@ ROUTE_PATTERNS = [
     re.compile(r"\b(FastMCP|mcp\.tool|server\.tool)\b", re.IGNORECASE),
     re.compile(r"\b(GraphQL|strawberry|graphene)\b", re.IGNORECASE),
 ]
+
+DATA_STRUCTURE_PATTERNS = [
+    re.compile(r"^\s*(export\s+)?(interface|type|enum|class)\s+[A-Za-z_][A-Za-z0-9_]*"),
+    re.compile(r"^\s*(class|interface|enum|record)\s+[A-Za-z_][A-Za-z0-9_]*"),
+    re.compile(r"^\s*@dataclass\b"),
+    re.compile(r"^\s*class\s+[A-Za-z_][A-Za-z0-9_]*\(.*(BaseModel|Enum|TypedDict).*\):"),
+    re.compile(r"^\s*class\s+[A-Za-z_][A-Za-z0-9_]*:"),
+]
+
+KEY_OPERATION_RE = re.compile(
+    r"^\s*(async\s+def|def|function|export\s+(async\s+)?function|const|let|public|private|protected|static)\s+"
+    r"(?P<name>[A-Za-z_][A-Za-z0-9_]*)"
+)
+
+KEY_OPERATION_NAMES = re.compile(
+    r"(query|run|execute|handle|register|load|create|process|route|dispatch|compact|sync|ingest|validate|authorize|"
+    r"permission|stream|publish|consume|persist|schedule|worker|task)",
+    re.IGNORECASE,
+)
+
+ENGINEERING_STRUCTURE_PATTERNS = {
+    "registry_or_factory": re.compile(r"\b(registry|register|factory|loader|discover|plugin)\b", re.IGNORECASE),
+    "pipeline_or_chain": re.compile(r"\b(pipeline|chain|middleware|interceptor|before|after|pre_|post_)\b", re.IGNORECASE),
+    "hook_or_event": re.compile(r"\b(hook|event|listener|subscriber|emit|publish)\b", re.IGNORECASE),
+    "state_or_store": re.compile(r"\b(state|store|context|session|lifecycle|status)\b", re.IGNORECASE),
+    "router_or_dispatch": re.compile(r"\b(router|route|dispatch|handler|controller)\b", re.IGNORECASE),
+    "executor_or_worker": re.compile(r"\b(executor|worker|task|queue|schedule|job|celery)\b", re.IGNORECASE),
+    "permission_or_policy": re.compile(r"\b(permission|policy|auth|authorize|allow|deny|guard)\b", re.IGNORECASE),
+}
 
 
 @dataclass
@@ -122,6 +171,53 @@ def collect_manifests(repo: Path, files: list[Path]) -> list[str]:
     return sorted(manifests)[:80]
 
 
+def collect_dependency_hints(repo: Path, files: list[Path], max_items: int) -> list[Match]:
+    hints: list[Match] = []
+    manifest_paths = [path for path in files if path.name in MANIFEST_NAMES]
+    for path in sorted(manifest_paths):
+        rel_path = rel(repo, path)
+        text = read_text(path, 160_000)
+        if not text:
+            continue
+
+        if path.name == "package.json":
+            try:
+                data = json.loads(text)
+            except json.JSONDecodeError:
+                data = {}
+            for section in ["dependencies", "devDependencies", "peerDependencies"]:
+                deps = data.get(section, {})
+                if isinstance(deps, dict):
+                    for name, version in sorted(deps.items()):
+                        hints.append(Match(rel_path, 1, f"{section}: {name}={version}"))
+                        if len(hints) >= max_items:
+                            return hints
+            continue
+
+        for line_no, line in enumerate(text.splitlines(), start=1):
+            compact = line.strip()
+            if not compact or compact.startswith("#") or len(compact) > 220:
+                continue
+            if path.name.startswith("requirements") and re.match(r"^[A-Za-z0-9_.-]+([<>=!~]=?.*)?$", compact):
+                hints.append(Match(rel_path, line_no, compact))
+            elif path.name == "pyproject.toml" and re.search(r"(dependencies|requires|[A-Za-z0-9_.-]+)\s*=", compact):
+                hints.append(Match(rel_path, line_no, compact))
+            elif path.name in {"pom.xml", "build.gradle", "settings.gradle"} and re.search(
+                r"(artifactId|groupId|implementation|api|compileOnly|runtimeOnly)", compact
+            ):
+                hints.append(Match(rel_path, line_no, compact))
+            elif path.name == "go.mod" and re.search(r"^(module|require|\t)", compact):
+                hints.append(Match(rel_path, line_no, compact))
+            elif path.name in {"Dockerfile", "docker-compose.yml", "docker-compose.yaml"} and re.search(
+                r"^(FROM|RUN|CMD|ENTRYPOINT|image:|services:|depends_on:|ports:)", compact, re.IGNORECASE
+            ):
+                hints.append(Match(rel_path, line_no, compact))
+
+            if len(hints) >= max_items:
+                return hints
+    return hints
+
+
 def collect_dirs(repo: Path) -> list[str]:
     interesting = []
     names = {
@@ -158,10 +254,9 @@ def collect_dirs(repo: Path) -> list[str]:
 def collect_keyword_hits(repo: Path, files: list[Path], max_hits_per_topic: int) -> dict[str, list[Match]]:
     compiled = {key: re.compile(pattern, re.IGNORECASE) for key, pattern in KEYWORD_PATTERNS.items()}
     hits: dict[str, list[Match]] = {key: [] for key in compiled}
-    text_exts = {".py", ".java", ".kt", ".ts", ".tsx", ".js", ".go", ".md", ".yaml", ".yml", ".toml", ".xml", ".gradle", ".json"}
 
     for path in files:
-        if path.suffix not in text_exts and path.name not in MANIFEST_NAMES:
+        if path.suffix not in TEXT_EXTS and path.name not in MANIFEST_NAMES:
             continue
         text = read_text(path)
         if not text:
@@ -193,6 +288,62 @@ def collect_route_hits(repo: Path, files: list[Path], max_hits: int) -> list[Mat
                 if len(hits) >= max_hits:
                     return hits
     return hits
+
+
+def collect_data_structure_hits(repo: Path, files: list[Path], max_hits: int) -> list[Match]:
+    hits: list[Match] = []
+    for path in files:
+        if path.suffix not in {".py", ".java", ".kt", ".ts", ".tsx", ".js", ".go"}:
+            continue
+        text = read_text(path)
+        for line_no, line in enumerate(text.splitlines(), start=1):
+            compact = line.strip()
+            if not compact or len(compact) > 240:
+                continue
+            if any(pattern.search(compact) for pattern in DATA_STRUCTURE_PATTERNS):
+                hits.append(Match(rel(repo, path), line_no, compact))
+                if len(hits) >= max_hits:
+                    return hits
+    return hits
+
+
+def collect_key_operation_hits(repo: Path, files: list[Path], max_hits: int) -> list[Match]:
+    hits: list[Match] = []
+    for path in files:
+        if path.suffix not in {".py", ".java", ".kt", ".ts", ".tsx", ".js", ".go"}:
+            continue
+        text = read_text(path)
+        for line_no, line in enumerate(text.splitlines(), start=1):
+            compact = line.strip()
+            if not compact or len(compact) > 240:
+                continue
+            match = KEY_OPERATION_RE.search(compact)
+            if not match:
+                continue
+            name = match.group("name")
+            if KEY_OPERATION_NAMES.search(name) or KEY_OPERATION_NAMES.search(compact):
+                hits.append(Match(rel(repo, path), line_no, compact))
+                if len(hits) >= max_hits:
+                    return hits
+    return hits
+
+
+def collect_engineering_structure_hints(repo: Path, files: list[Path], max_hits_per_topic: int) -> dict[str, list[Match]]:
+    hints: dict[str, list[Match]] = {key: [] for key in ENGINEERING_STRUCTURE_PATTERNS}
+    for path in files:
+        if path.suffix not in CODE_EXTS and path.suffix not in CONFIG_EXTS:
+            continue
+        text = read_text(path)
+        for line_no, line in enumerate(text.splitlines(), start=1):
+            compact = line.strip()
+            if not compact or len(compact) > 240:
+                continue
+            for key, pattern in ENGINEERING_STRUCTURE_PATTERNS.items():
+                if len(hints[key]) >= max_hits_per_topic:
+                    continue
+                if pattern.search(compact):
+                    hints[key].append(Match(rel(repo, path), line_no, compact))
+    return {key: value for key, value in hints.items() if value}
 
 
 def collect_wiki_hints(wiki_root: Path | None, repo_name: str) -> list[str]:
@@ -234,8 +385,15 @@ def build_payload(args: argparse.Namespace) -> dict[str, object]:
             "files_scanned": len(files),
         },
         "manifests_and_docs": collect_manifests(repo, files),
+        "dependency_hints": [asdict(item) for item in collect_dependency_hints(repo, files, args.max_dependency_hints)],
         "interesting_dirs": collect_dirs(repo),
         "route_and_surface_evidence": [asdict(item) for item in collect_route_hits(repo, files, args.max_route_hits)],
+        "data_structure_hints": [asdict(item) for item in collect_data_structure_hits(repo, files, args.max_data_structure_hits)],
+        "key_operation_hints": [asdict(item) for item in collect_key_operation_hits(repo, files, args.max_operation_hits)],
+        "engineering_structure_hints": {
+            key: [asdict(item) for item in value]
+            for key, value in collect_engineering_structure_hints(repo, files, args.max_hits_per_topic).items()
+        },
         "keyword_evidence": {key: [asdict(item) for item in value] for key, value in keyword_hits.items() if value},
         "wiki_hints": collect_wiki_hints(wiki_root, repo_name),
     }
@@ -269,6 +427,16 @@ def render_markdown(payload: dict[str, object]) -> str:
     lines.extend(f"- `{item}`" for item in manifests) if manifests else lines.append("- None found.")
     lines.append("")
 
+    lines.append("## Dependency hints")
+    lines.append("")
+    dependency_hints = payload.get("dependency_hints") or []
+    if dependency_hints:
+        for item in dependency_hints:
+            lines.append(f"- `{item['path']}:{item['line']}` {item['text']}")
+    else:
+        lines.append("- None found.")
+    lines.append("")
+
     lines.append("## Interesting directories")
     lines.append("")
     dirs = payload.get("interesting_dirs") or []
@@ -280,6 +448,40 @@ def render_markdown(payload: dict[str, object]) -> str:
     route_hits = payload.get("route_and_surface_evidence") or []
     if route_hits:
         for item in route_hits:
+            lines.append(f"- `{item['path']}:{item['line']}` {item['text']}")
+    else:
+        lines.append("- None found.")
+    lines.append("")
+
+    lines.append("## Engineering structure hints")
+    lines.append("")
+    engineering_hints = payload.get("engineering_structure_hints") or {}
+    if isinstance(engineering_hints, dict) and engineering_hints:
+        for topic, matches in engineering_hints.items():
+            lines.append(f"### {topic}")
+            lines.append("")
+            for item in matches:
+                lines.append(f"- `{item['path']}:{item['line']}` {item['text']}")
+            lines.append("")
+    else:
+        lines.append("- None found.")
+        lines.append("")
+
+    lines.append("## Data structure hints")
+    lines.append("")
+    data_structure_hints = payload.get("data_structure_hints") or []
+    if data_structure_hints:
+        for item in data_structure_hints:
+            lines.append(f"- `{item['path']}:{item['line']}` {item['text']}")
+    else:
+        lines.append("- None found.")
+    lines.append("")
+
+    lines.append("## Key operation hints")
+    lines.append("")
+    operation_hints = payload.get("key_operation_hints") or []
+    if operation_hints:
+        for item in operation_hints:
             lines.append(f"- `{item['path']}:{item['line']}` {item['text']}")
     else:
         lines.append("- None found.")
@@ -311,6 +513,9 @@ def main() -> int:
     parser.add_argument("--max-files", type=int, default=2500)
     parser.add_argument("--max-route-hits", type=int, default=80)
     parser.add_argument("--max-hits-per-topic", type=int, default=30)
+    parser.add_argument("--max-dependency-hints", type=int, default=120)
+    parser.add_argument("--max-data-structure-hits", type=int, default=120)
+    parser.add_argument("--max-operation-hits", type=int, default=120)
     args = parser.parse_args()
 
     payload = build_payload(args)

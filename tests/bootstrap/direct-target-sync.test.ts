@@ -3,6 +3,7 @@ import { constants } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { planManagedInstallSync } from "../../src/bootstrap/direct-target-sync";
 import { runBootstrap } from "../../src/bootstrap/run-bootstrap";
 
 const tempDirectories: string[] = [];
@@ -16,6 +17,68 @@ afterEach(async () => {
 });
 
 describe("direct target sync", () => {
+  it("previews create overwrite remove and skipped unmanaged-root operations without writing", async () => {
+    const root = await mkdtemp(join(tmpdir(), "skillbird-sync-preview-"));
+    tempDirectories.push(root);
+    const allowedRoot = join(root, "allowed");
+    const outsideRoot = join(root, "outside");
+    const sourceDir = join(root, "source", "new-skill");
+    const createDestination = join(allowedRoot, "new-skill");
+    const overwriteDestination = join(allowedRoot, "existing-skill");
+    const removeDestination = join(allowedRoot, "stale-skill");
+    const skippedDestination = join(outsideRoot, "external-stale");
+
+    await mkdir(sourceDir, { recursive: true });
+    await mkdir(overwriteDestination, { recursive: true });
+    await mkdir(removeDestination, { recursive: true });
+    await mkdir(skippedDestination, { recursive: true });
+    await writeFile(join(sourceDir, "SKILL.md"), "# New Skill\n", "utf8");
+    await writeFile(join(overwriteDestination, "SKILL.md"), "# Existing\n", "utf8");
+    await writeFile(join(removeDestination, "SKILL.md"), "# Stale\n", "utf8");
+    await writeFile(join(skippedDestination, "SKILL.md"), "# Outside\n", "utf8");
+
+    const operations = planManagedInstallSync({
+      allowedRootsByTarget: {
+        codex: [allowedRoot], claude: [], opencode: [], gemini: [], hermes: [], cursor: [], copilot: []
+      },
+      selectedTargets: ["codex"],
+      installs: [
+        {
+          target: "codex", assetId: "new-skill", kind: "skill", origin: "owned",
+          sourcePath: sourceDir, destinationPath: createDestination, installType: "directory", installArea: "skills"
+        },
+        {
+          target: "codex", assetId: "existing-skill", kind: "skill", origin: "owned",
+          sourcePath: sourceDir, destinationPath: overwriteDestination, installType: "directory", installArea: "skills"
+        }
+      ],
+      previousInstalls: [
+        {
+          target: "codex", assetId: "existing-skill", kind: "skill", origin: "owned",
+          destinationPath: overwriteDestination, installType: "directory", installArea: "skills"
+        },
+        {
+          target: "codex", assetId: "stale-skill", kind: "skill", origin: "owned",
+          destinationPath: removeDestination, installType: "directory", installArea: "skills"
+        },
+        {
+          target: "codex", assetId: "external-stale", kind: "skill", origin: "owned",
+          destinationPath: skippedDestination, installType: "directory", installArea: "skills"
+        }
+      ]
+    });
+
+    expect(operations.map((operation) => ({ kind: operation.kind, assetId: operation.assetId }))).toEqual([
+      { kind: "remove", assetId: "stale-skill" },
+      { kind: "skip", assetId: "external-stale" },
+      { kind: "overwrite", assetId: "existing-skill" },
+      { kind: "create", assetId: "new-skill" }
+    ]);
+    await access(join(removeDestination, "SKILL.md"), constants.F_OK);
+    await access(join(overwriteDestination, "SKILL.md"), constants.F_OK);
+    await expect(access(join(createDestination, "SKILL.md"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("copies owned and GitHub-resolved skills into Codex, Claude Code, and OpenCode homes", async () => {
     const fixture = await createFixtureRepository();
     const workspaceRoot = join(fixture.root, "workspace");
@@ -92,6 +155,64 @@ describe("direct target sync", () => {
     expect(geminiContext).toContain("# Daily Ops");
   }, 15000);
 
+  it("previews dry-run managed sync operations without mutating stale target files", async () => {
+    const fixture = await createFixtureRepository();
+    const workspaceRoot = join(fixture.root, "workspace");
+    const homeDir = join(fixture.root, "home");
+
+    await runBootstrap({
+      selectedTargets: ["codex"],
+      catalog: fixture.catalog,
+      platform: {
+        platform: "linux",
+        homeDir,
+        configBaseDir: join(homeDir, ".config"),
+        stateBaseDir: fixture.root,
+        workspaceRoot
+      },
+      githubRepoOverrides: {
+        "aimagician/external-skills": fixture.externalRepoRoot
+      },
+      now: "2026-03-14T03:00:00Z"
+    });
+
+    await rm(join(fixture.root, "skills", "owned", "daily-ops"), {
+      recursive: true,
+      force: true
+    });
+    await writeFile(join(fixture.catalog.skillsRoot, "skills.yaml"), "sources: []\n", "utf8");
+
+    const result = await runBootstrap({
+      selectedTargets: ["codex"],
+      dryRun: true,
+      catalog: fixture.catalog,
+      platform: {
+        platform: "linux",
+        homeDir,
+        configBaseDir: join(homeDir, ".config"),
+        stateBaseDir: fixture.root,
+        workspaceRoot
+      },
+      githubRepoOverrides: {
+        "aimagician/external-skills": fixture.externalRepoRoot
+      },
+      now: "2026-03-14T03:00:00Z"
+    });
+
+    expect(result.mode).toBe("dry-run");
+    expect(result.changed).toBe(false);
+    expect(result.targetReports).toEqual([
+      expect.objectContaining({
+        target: "codex",
+        status: "planned",
+        installedSkillIds: []
+      })
+    ]);
+    await access(join(homeDir, ".codex", "skills", "daily-ops", "SKILL.md"), constants.F_OK);
+    await access(join(homeDir, ".codex", "skills", "gsd", "SKILL.md"), constants.F_OK);
+  });
+
+
   it("prunes stale managed installs on selected targets and keeps unmanaged directories", async () => {
     const fixture = await createFixtureRepository();
     const workspaceRoot = join(fixture.root, "workspace");
@@ -146,6 +267,16 @@ describe("direct target sync", () => {
     await expectMissing(join(homeDir, ".codex", "skills", "daily-ops", "SKILL.md"));
     await expectMissing(join(homeDir, ".codex", "skills", "gsd", "SKILL.md"));
     await access(join(homeDir, ".codex", "skills", "manual-skill", "SKILL.md"), constants.F_OK);
+
+    const manifest = JSON.parse(await readFile(rerun.manifestPath, "utf8")) as {
+      managedInstalls: Array<{ target: string; assetId: string }>;
+    };
+    expect(manifest.managedInstalls).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: "codex", assetId: "daily-ops" }),
+        expect.objectContaining({ target: "codex", assetId: "gsd" })
+      ])
+    );
   });
 
   it("updates only the selected direct targets and leaves unselected targets untouched", async () => {
@@ -175,7 +306,7 @@ describe("direct target sync", () => {
     });
     await writeFile(join(fixture.catalog.skillsRoot, "skills.yaml"), "sources: []\n", "utf8");
 
-    await runBootstrap({
+    const rerun = await runBootstrap({
       selectedTargets: ["claude"],
       catalog: fixture.catalog,
       platform: {
@@ -195,6 +326,22 @@ describe("direct target sync", () => {
     await access(join(homeDir, ".codex", "skills", "gsd", "SKILL.md"), constants.F_OK);
     await expectMissing(join(homeDir, ".claude", "skills", "daily-ops", "SKILL.md"));
     await expectMissing(join(homeDir, ".claude", "skills", "gsd", "SKILL.md"));
+
+    const manifest = JSON.parse(await readFile(rerun.manifestPath, "utf8")) as {
+      managedInstalls: Array<{ target: string; assetId: string }>;
+    };
+    expect(manifest.managedInstalls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: "codex", assetId: "daily-ops" }),
+        expect.objectContaining({ target: "codex", assetId: "gsd" })
+      ])
+    );
+    expect(manifest.managedInstalls).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: "claude", assetId: "daily-ops" }),
+        expect.objectContaining({ target: "claude", assetId: "gsd" })
+      ])
+    );
   });
 
   it("executes command-based skill sources with target-aware environment variables", async () => {
@@ -371,6 +518,7 @@ async function createFixtureRepository(
       "sources:",
       "  - id: external-skills",
       "    type: github",
+      "    enabled: true",
       "    github:",
       "      repo: aimagician/external-skills",
       "      path: skills",
@@ -380,6 +528,7 @@ async function createFixtureRepository(
         ? [
             "  - id: delegated-tools",
             "    type: command",
+            "    enabled: true",
             "    targets:",
             "      include:",
             "        - claude",
@@ -401,6 +550,7 @@ async function createFixtureRepository(
           "sources:",
           "  - id: opencode-plugins",
           "    type: github",
+          "    enabled: true",
           "    targets:",
           "      include:",
           "        - opencode",

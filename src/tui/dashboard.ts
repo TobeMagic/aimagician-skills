@@ -5,7 +5,9 @@ import { loadUserConfig, removeUserGroup, saveTheme, saveUserGroup } from "../co
 import {
   archiveSkills,
   installSkills,
+  previewInstallSkills,
   searchSkills,
+  setSkillOverride,
   uninstallSkills,
   type InstallSkillsResult,
   type ManagerSkillRecord,
@@ -18,26 +20,29 @@ import { ownedSkillsRoot } from "../shared/paths";
 import {
   AVAILABLE_GLYPH,
   BROKEN_GLYPH,
-  BEE_ASCII,
-  BEE_SPLASH,
+  BIRD_ASCII,
+  BIRD_SPLASH,
   COLORS,
   INSTALLED_GLYPH,
   PALETTE,
   SELECT_GLYPH,
-  SELECTED_LIST_STYLE,
   UNAVAILABLE_GLYPH,
   UNSELECT_GLYPH,
   formatMatrixCell,
+  getSelectedListStyle,
   getTheme,
   targetShortLabel,
   THEME_NAMES,
   type ThemeColors
 } from "./theme";
+import { loadTaxonomy, type TaxonomyGroup } from "../catalog/taxonomy";
+import { showSourceToggle } from "./source-toggle";
+import { loadCatalog } from "../catalog/load-catalog";
 
-const COMMAND_HELP = `{bold}{yellow-fg}Skillbee Keyboard Shortcuts{/yellow-fg}{/bold}
+const COMMAND_HELP = `{bold}{yellow-fg}Skillbird Keyboard Shortcuts{/yellow-fg}{/bold}
 
 {bold}Navigate{/bold}
-  {yellow-fg}{bold}\u2190{bold}{/yellow-fg}/{yellow-fg}{bold}\u2192{bold}{/yellow-fg} ........... switch panel (Hive/Cells/Nectar)
+  {yellow-fg}{bold}\u2190{bold}{/yellow-fg}/{yellow-fg}{bold}\u2192{bold}{/yellow-fg} ........... switch panel (Categories/Skills/Details)
   {yellow-fg}{bold}\u2191{bold}{/yellow-fg}/{yellow-fg}{bold}\u2193{bold}{/yellow-fg} ........... navigate list / scroll detail
   {yellow-fg}{bold}/{/yellow-fg} ................. search skills
   {yellow-fg}{bold}v{/bold}{/yellow-fg} ................. toggle list/matrix view
@@ -48,7 +53,7 @@ const COMMAND_HELP = `{bold}{yellow-fg}Skillbee Keyboard Shortcuts{/yellow-fg}{/
   {yellow-fg}{bold}space{/bold}{/yellow-fg} ............. multi-select (tags or skills)
   {yellow-fg}{bold}A{/bold}{/yellow-fg} ................. select all tags
   {yellow-fg}{bold}Shift+A{/bold}{/yellow-fg} .......... deselect all tags
-  {yellow-fg}{bold}Enter{/bold}{/yellow-fg} ............. view skill detail in Nectar
+  {yellow-fg}{bold}Enter{/bold}{/yellow-fg} ............. view skill detail in Details
   {yellow-fg}{bold}t{/bold}{/yellow-fg} ................. open target multi-select
   {yellow-fg}{bold}N{/bold}{/yellow-fg} ................. cycle detail tab (Matrix/README/Related)
 
@@ -57,7 +62,12 @@ const COMMAND_HELP = `{bold}{yellow-fg}Skillbee Keyboard Shortcuts{/yellow-fg}{/
   {yellow-fg}{bold}u{/bold}{/yellow-fg} ................ uninstall selected
   {yellow-fg}{bold}x{/bold}{/yellow-fg} ................ archive / unarchive
   {yellow-fg}{bold}r{/bold}{/yellow-fg} ................ repair broken skills
-  {yellow-fg}{bold}T{/bold}{/yellow-fg} ................ cycle theme (bee/monokai/nord)
+  {yellow-fg}{bold}p{/bold}{/yellow-fg} ................. preview sync
+  {yellow-fg}{bold}I{/bold}{/yellow-fg} ................. include selected
+  {yellow-fg}{bold}X{/bold}{/yellow-fg} ................. exclude selected
+  {yellow-fg}{bold}d{/bold}{/yellow-fg} ................. reset include/exclude
+  {yellow-fg}{bold}T{/bold}{/yellow-fg} ................ cycle theme (dove/monokai/nord)
+  {yellow-fg}{bold}S{/bold}{/yellow-fg} ................ manage external sources
 
 {bold}Manage{/bold}
   {yellow-fg}{bold}c{/bold}{/yellow-fg} ................ create custom group
@@ -87,14 +97,14 @@ function showSplash(screen: blessed.Widgets.Screen): Promise<void> {
       height: "shrink",
       tags: true,
       style: { fg: PALETTE.amber, bg: PALETTE.carbon },
-      content: BEE_SPLASH.join("\n")
+      content: BIRD_SPLASH.join("\n")
     });
     screen.render();
 
     let frame = 0;
     const typewriter = setInterval(() => {
       frame++;
-      if (frame >= BEE_SPLASH.length) {
+      if (frame >= BIRD_SPLASH.length) {
         clearInterval(typewriter);
         setTimeout(() => {
           splash.detach();
@@ -102,32 +112,32 @@ function showSplash(screen: blessed.Widgets.Screen): Promise<void> {
           resolve();
         }, 800);
       } else {
-        splash.setContent(BEE_SPLASH.slice(0, frame + 1).join("\n"));
+        splash.setContent(BIRD_SPLASH.slice(0, frame + 1).join("\n"));
         screen.render();
       }
     }, 60);
   });
 }
 
-// ── Extract all unique tags from skills ────────────────────────────────
-function extractAllTags(skills: ManagerSkillRecord[]): string[] {
-  const tagSet = new Set<string>();
+// ── Extract all unique groups from skills ──────────────────────────────
+function extractAllGroups(skills: ManagerSkillRecord[], taxonomy: import("../catalog/taxonomy").SkillTaxonomy): TaxonomyGroup[] {
+  const groupIds = new Set<string>();
   for (const skill of skills) {
-    for (const tag of skill.tags) tagSet.add(tag);
+    if (skill.group) groupIds.add(skill.group);
   }
-  return [...tagSet].sort();
+  return taxonomy.groups.filter((g) => groupIds.has(g.id));
 }
 
-// ── Count skills per tag ───────────────────────────────────────────────
-function countSkillsPerTag(skills: ManagerSkillRecord[], tag: string): number {
-  return skills.filter((s) => s.tags.includes(tag)).length;
+// ── Count skills per group ─────────────────────────────────────────────
+function countSkillsPerGroup(skills: ManagerSkillRecord[], groupId: string): number {
+  return skills.filter((s) => s.group === groupId).length;
 }
 
 // ── Main Dashboard ─────────────────────────────────────────────────────
 export async function runDashboard(options: DashboardOptions = {}): Promise<void> {
   const screen = blessed.screen({
     smartCSR: true,
-    title: "Skillbee"
+    title: "Skillbird"
   });
 
   await showSplash(screen);
@@ -141,17 +151,19 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
   let query = "";
   let includeArchived = false;
   let skills: ManagerSkillRecord[] = [];
-  let allTags: string[] = [];
+  let allGroups: TaxonomyGroup[] = [];
   let isRendering = false;
-  const selectedTags = new Set<string>();
+  const selectedGroups = new Set<string>();
   const selectedIds = new Set<string>();
   const operationLog: string[] = [];
   let viewMode: "list" | "matrix" = "list";
-  let currentTheme = "bee";
+  let currentTheme = "dove";
   let currentColors: ThemeColors = COLORS;
   const brokenIds = new Set<string>();
   let progressTimer: ReturnType<typeof setInterval> | null = null;
   let progressStage = 0;
+  let cachedUserConfig: import("../config/user-config").UserSkillConfig | null = null;
+  let cachedTaxonomy: import("../catalog/taxonomy").SkillTaxonomy | null = null;
 
   // ── Layout ──────────────────────────────────────────────────────────
   const header = blessed.box({
@@ -161,32 +173,32 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
 
   const hiveList = blessed.list({
     parent: screen,
-    label: ` ${BEE_ASCII} Hive `,
+    label: ` ${BIRD_ASCII} Categories `,
     top: 3, left: 0, width: "20%", height: "calc(100% - 5)",
     border: "line", keys: true, vi: true, mouse: true, focusable: true,
-    style: { ...SELECTED_LIST_STYLE, border: { fg: currentColors.panelBorder } }
+    style: { ...getSelectedListStyle(currentColors), border: { fg: currentColors.panelBorder }, bg: PALETTE.carbon }
   });
 
   const skillList = blessed.list({
     parent: screen,
-    label: ` ${BEE_ASCII} Cells `,
+    label: ` ${BIRD_ASCII} Skills `,
     top: 3, left: "20%", width: "50%", height: "calc(100% - 5)",
     border: "line", keys: true, vi: true, mouse: true, focusable: true,
-    style: { ...SELECTED_LIST_STYLE, border: { fg: currentColors.panelBorder } }
+    style: { ...getSelectedListStyle(currentColors), border: { fg: currentColors.panelBorder }, bg: PALETTE.carbon }
   });
 
   const detailBox = blessed.box({
     parent: screen,
-    label: ` ${BEE_ASCII} Nectar `,
+    label: ` ${BIRD_ASCII} Details `,
     top: 3, left: "70%", width: "30%", height: "calc(100% - 5)",
     border: "line", tags: true, scrollable: true, alwaysScroll: true,
     keys: true, vi: true, focusable: true,
-    style: { fg: PALETTE.ghostWhite, border: { fg: currentColors.panelBorder } }
+    style: { fg: PALETTE.ghostWhite, border: { fg: currentColors.panelBorder }, bg: PALETTE.carbon }
   });
 
   const statusBar = blessed.box({
     parent: screen, top: "100%-2", left: 0, width: "100%", height: 2,
-    tags: true, style: { fg: PALETTE.ghostWhite }, content: ""
+    tags: true, style: { fg: PALETTE.ghostWhite, bg: PALETTE.carbon }, content: ""
   });
 
   // ── Platform ───────────────────────────────────────────────────────
@@ -209,11 +221,11 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
   // ── Progress Animation ─────────────────────────────────────────────
   function startProgress(label: string): void {
     const frames = [
-      `{${currentColors.brandYellow}-fg}\u{1F41D}----{/}`,
-      `-{${currentColors.brandYellow}-fg}\u{1F41D}---{/}`,
-      `--{${currentColors.brandYellow}-fg}\u{1F41D}--{/}`,
-      `---{${currentColors.brandYellow}-fg}\u{1F41D}-{/}`,
-      `----{${currentColors.brandYellow}-fg}\u{1F41D}{/}`
+      `{${currentColors.brandYellow}-fg}${BIRD_ASCII}----{/}`,
+      `-{${currentColors.brandYellow}-fg}${BIRD_ASCII}---{/}`,
+      `--{${currentColors.brandYellow}-fg}${BIRD_ASCII}--{/}`,
+      `---{${currentColors.brandYellow}-fg}${BIRD_ASCII}-{/}`,
+      `----{${currentColors.brandYellow}-fg}${BIRD_ASCII}{/}`
     ];
     progressStage = 0;
     statusBar.setContent(`${label}  ${frames[0]}\n`);
@@ -240,9 +252,9 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
     }
   }
 
-  // ── Tag Filtering ──────────────────────────────────────────────────
+  // ── Group Filtering ──────────────────────────────────────────────────
   function getVisibleSkills(): ManagerSkillRecord[] {
-    return filterSkillsByTags(skills, selectedTags, query, includeArchived, selectedTargets, primaryTarget);
+    return filterSkillsByGroups(skills, selectedGroups, query, includeArchived, selectedTargets, primaryTarget);
   }
 
   // ── Flash Animation (amber → installed color) ──────────────────────
@@ -266,16 +278,19 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
     statusBar.setContent(message);
     screen.render();
     try {
-      const [loadedSkills, userConfig] = await Promise.all([
+      const [loadedSkills, userConfig, taxonomy] = await Promise.all([
         searchSkills({
           scope, projectDir: options.projectDir,
           selectedTargets: targetsForSearch, includeArchived,
           platform: options.platform
         }),
-        loadUserConfig(platformContext.configBaseDir)
+        loadUserConfig(platformContext.configBaseDir),
+        loadTaxonomy()
       ]);
       skills = loadedSkills;
-      allTags = extractAllTags(skills);
+      cachedUserConfig = userConfig;
+      cachedTaxonomy = taxonomy;
+      allGroups = extractAllGroups(skills, taxonomy);
       void checkHealth();
 
       if (currentTheme !== userConfig.theme) {
@@ -300,21 +315,21 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
       const visibleSkills = getVisibleSkills();
       const targetsOverview = [...selectedTargets].map((t) => targetShortLabel(t)).join(",");
 
-      // Header: The Crown (蜂冠)
+      // Header
       header.setContent(
-        ` {bold}${BEE_ASCII} SKILLBEE{/bold}  scope:{bold}${scope}{/bold}  selected:{bold}${selectedIds.size}{/bold}  tags:{bold}${selectedTags.size > 0 ? selectedTags.size : "all"}{/bold}  targets:[{bold}${targetsOverview}{/bold}]` +
+        ` {bold}${BIRD_ASCII} SKILLBIRD{/bold}  scope:{bold}${scope}{/bold}  selected:{bold}${selectedIds.size}{/bold}  groups:{bold}${selectedGroups.size > 0 ? selectedGroups.size : "all"}{/bold}  targets:[{bold}${targetsOverview}{/bold}]` +
         (brokenIds.size > 0 ? `  {${currentColors.error}-fg}health:${brokenIds.size}{/${currentColors.error}-fg}` : "") +
         (query ? `  {79-fg}search:${query}{/79-fg}` : "")
       );
 
-      // Hive: Tag Panel
+      // Categories
       renderHivePanel();
-      // Cells: Skill List
+      // Skills
       renderCellsPanel(visibleSkills);
-      // Nectar: Detail
+      // Details
       renderSelectedSkillDetail();
-      // Status Bar: The Guide (导航蜂)
-      const shortcutLine = getGuideBar(focusPanel, selectedIds.size > 0, selectedTags.size > 0);
+      // Status bar
+      const shortcutLine = getGuideBar(focusPanel, selectedIds.size > 0, selectedGroups.size > 0);
       const statusLine = operationLog.length > 0 ? operationLog[0] : "ready";
       statusBar.setContent(`${shortcutLine}\n${statusLine}`);
       screen.render();
@@ -324,28 +339,25 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
   }
 
   function renderHivePanel(): void {
-    const tagItems = allTags.map((tag) => {
-      const count = countSkillsPerTag(skills, tag);
-      const sel = selectedTags.has(tag) || selectedTags.size === 0;
+    const groupItems = allGroups.map((group) => {
+      const count = countSkillsPerGroup(skills, group.id);
+      const sel = selectedGroups.has(group.id) || selectedGroups.size === 0;
       const glyph = sel ? SELECT_GLYPH : UNSELECT_GLYPH;
       const prefix = sel
-        ? `{${currentColors.brandYellow}-fg}{bold}${glyph} ${tag} (${count}){/bold}{/${currentColors.brandYellow}-fg}`
-        : `{${PALETTE.ghostWhite}-fg}${glyph} ${tag} (${count}){/${PALETTE.ghostWhite}-fg}`;
+        ? `{${currentColors.brandYellow}-fg}{bold}${glyph} ${group.label} (${count}){/bold}{/${currentColors.brandYellow}-fg}`
+        : `{${PALETTE.ghostWhite}-fg}${glyph} ${group.label} (${count}){/${PALETTE.ghostWhite}-fg}`;
       return prefix;
     });
 
     // Custom groups
-    void loadUserConfig(platformContext.configBaseDir).then((userConfig) => {
-      if (userConfig.groups.length > 0) {
-        const groupItems = userConfig.groups.map((g) => {
-          return `{79-fg}\u25CE ${g.name} (${g.skills.length}){/79-fg}`;
-        });
-        hiveList.setItems([...tagItems, `{${PALETTE.dimGray}-fg}--- groups ---{/${PALETTE.dimGray}-fg}`, ...groupItems]);
-      } else {
-        hiveList.setItems(tagItems);
-      }
-      screen.render();
-    });
+    if (cachedUserConfig && cachedUserConfig.groups.length > 0) {
+      const customItems = cachedUserConfig.groups.map((g) => {
+        return `{79-fg}\u25CE ${g.name} (${g.skills.length}){/79-fg}`;
+      });
+      hiveList.setItems([...groupItems, `{${PALETTE.dimGray}-fg}--- custom groups ---{/${PALETTE.dimGray}-fg}`, ...customItems]);
+    } else {
+      hiveList.setItems(groupItems);
+    }
   }
 
   function renderCellsPanel(visibleSkills: ManagerSkillRecord[]): void {
@@ -365,7 +377,7 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
 
   function renderDetail(skill: ManagerSkillRecord | undefined): void {
     if (!skill) { detailBox.setContent("No skill selected."); return; }
-    detailBox.setLabel(` ${BEE_ASCII} ${DETAIL_TABS[detailTab]}  (N=cycle) `);
+    detailBox.setLabel(` ${BIRD_ASCII} ${DETAIL_TABS[detailTab]}  (N=cycle) `);
 
     const matrixRow = supportedTargets.map((t) => {
       const avail = skill.availableTargets.includes(t);
@@ -380,7 +392,8 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
       detailBox.setContent([
         `{${currentColors.brandYellow}-fg}{bold}${skill.id}{/bold}{/${currentColors.brandYellow}-fg}`,
         `{bold}Group:{/bold} ${skill.group}${skill.subgroup ? `/${skill.subgroup}` : ""}`,
-        `{bold}Origin:{/bold} ${skill.origin}${skill.sourceId ? ` {79-fg}(${skill.sourceId}){/79-fg}` : ""}`,
+        `{bold}Source:{/bold} ${skill.sourceId ?? "owned"}`,
+        `{bold}Eligibility:{/bold} ${skill.archived ? "archived" : skill.commandOnly && scope === "project" ? "global-only" : "eligible"}`,
         `{bold}Archived:{/bold} ${skill.archived ? `{${currentColors.archivedFg}-fg}yes{/${currentColors.archivedFg}-fg}` : "no"}`,
         `{bold}Description:{/bold} ${(skill.description ?? "").slice(0, 80)}${(skill.description ?? "").length > 80 ? "..." : ""}`,
         "",
@@ -419,7 +432,7 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
   }
 
   // ── Guide Bar (PRD §3.2) ───────────────────────────────────────────
-  function getGuideBar(panel: string, hasSkillSelection: boolean, hasTagSelection: boolean): string {
+  function getGuideBar(panel: string, hasSkillSelection: boolean, hasGroupSelection: boolean): string {
     if (panel === "hive") {
       return `Space=toggle  A=all  Shift+A=none  \u2190\u2192 panel`;
     }
@@ -428,9 +441,84 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
     }
     // cells panel
     if (hasSkillSelection) {
-      return `Space=unselect  i=batch install  u=batch uninstall  x=archive  t=targets  ?=help  q=quit`;
+      return `Space=unselect  p=preview  i=install  I=include  X=exclude  d=default  u=uninstall  x=archive  ?=help`;
     }
-    return `Space=select  Enter=detail  i=install  u=uninstall  x=archive  t=targets  ?=help  q=quit`;
+    return `Space=select  Enter=detail  p=preview  i=install  I=include  X=exclude  d=default  t=targets  ?=help`;
+  }
+
+  async function showSyncPreview(assetIds: string[], targetsChoice: SupportedTarget[]): Promise<boolean> {
+    const preview = await previewInstallSkills({
+      assetIds,
+      scope,
+      projectDir: options.projectDir,
+      selectedTargets: targetsChoice,
+      includeArchived,
+      platform: options.platform
+    });
+    const counts = { create: 0, overwrite: 0, remove: 0, skip: preview.skipped.length };
+    for (const operation of preview.operations) {
+      if (operation.kind === "create") counts.create += 1;
+      else if (operation.kind === "overwrite") counts.overwrite += 1;
+      else if (operation.kind === "remove") counts.remove += 1;
+      else counts.skip += 1;
+    }
+    const lines = [
+      `scope:${scope} targets:${targetsChoice.map(targetShortLabel).join(",")} create:${counts.create} overwrite:${counts.overwrite} remove:${counts.remove} skip:${counts.skip}`,
+      "",
+      ...targetsChoice.flatMap((target) => {
+        const targetOperations = preview.operations.filter((operation) => operation.target === target);
+        const targetSkipped = preview.skipped.filter((skip) => skip.target === undefined || skip.target === target);
+        return [
+          `{bold}${target}{/bold}`,
+          ...targetOperations.map((operation) => `  ${operation.kind} ${operation.assetId} — ${operation.destinationPath}`),
+          ...targetSkipped.map((skip) => `  skip ${skip.assetId} — ${skip.reason}`),
+          ""
+        ];
+      }),
+      "{center}{bold}Enter confirm  Esc cancel  Up/Down scroll{/bold}{/center}"
+    ];
+
+    return new Promise((resolve) => {
+      const previewBox = blessed.box({
+        parent: screen,
+        top: "center",
+        left: "center",
+        width: "80%",
+        height: "70%",
+        border: { type: "line" },
+        label: " Sync Preview ",
+        tags: true,
+        keys: true,
+        vi: true,
+        mouse: true,
+        scrollable: true,
+        alwaysScroll: true,
+        style: { fg: PALETTE.ghostWhite, bg: PALETTE.carbon, border: { fg: currentColors.brandYellow } },
+        content: lines.join("\n")
+      });
+      previewBox.focus();
+      screen.render();
+      previewBox.key("enter", () => { previewBox.detach(); screen.render(); resolve(true); });
+      previewBox.key(["escape", "q"], () => { previewBox.detach(); screen.render(); resolve(false); });
+    });
+  }
+
+  async function applySkillOverride(state: "include" | "exclude" | "default"): Promise<void> {
+    const visibleSkills = getVisibleSkills();
+    const highlighted = visibleSkills[getSelectedIndex(skillList)] ?? visibleSkills[0];
+    const assetIds = selectedIds.size > 0 ? [...selectedIds] : highlighted ? [highlighted.id] : [];
+
+    if (assetIds.length === 0) { log("No skills selected."); render(); return; }
+
+    await setSkillOverride({
+      assetIds,
+      state,
+      scope,
+      projectDir: options.projectDir,
+      selectedTargets: [...selectedTargets],
+      platform: options.platform
+    });
+    await refresh(`Set ${assetIds.length} skill(s) to ${state}.`);
   }
 
   // ── Install Flow: Scope → Target → Install ─────────────────────────
@@ -454,6 +542,19 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
 
       const targetsChoice = await showTargetSelector();
       if (!targetsChoice || targetsChoice.length === 0) return;
+
+      try {
+        const confirmed = await showSyncPreview(assetIds, targetsChoice);
+        if (!confirmed) {
+          log("Sync cancelled.");
+          render();
+          return;
+        }
+      } catch (error) {
+        log(`Preview error: ${error instanceof Error ? error.message : "unknown error"}`);
+        render();
+        return;
+      }
 
       startProgress(`Installing ${assetIds.length} skill(s)`);
       try {
@@ -503,7 +604,7 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
       const scopeBox = blessed.list({
         parent: screen, border: "line", height: "shrink", width: "40%",
         top: "center", left: "center",
-        label: ` ${BEE_ASCII} Install Scope `, tags: true, keys: true, mouse: true,
+        label: ` ${BIRD_ASCII} Install Scope `, tags: true, keys: true, mouse: true,
         shadow: true,
         style: { border: { fg: currentColors.brandYellow }, bg: PALETTE.carbon, fg: PALETTE.ghostWhite },
         items
@@ -543,8 +644,8 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
       const targetBox = blessed.list({
         parent: screen, border: "line", height: "50%", width: "40%",
         top: "center", left: "center",
-        label: ` ${BEE_ASCII} Select Targets `, tags: true, keys: true, vi: true, mouse: true, shadow: true,
-        style: { ...SELECTED_LIST_STYLE, border: { fg: currentColors.brandYellow } },
+        label: ` ${BIRD_ASCII} Select Targets `, tags: true, keys: true, vi: true, mouse: true, shadow: true,
+        style: { ...getSelectedListStyle(currentColors), border: { fg: currentColors.brandYellow } },
         items: targetsArr.map((t) =>
           currentSelection.has(t)
             ? `{${currentColors.brandYellow}-fg}{bold}[x]{/bold}{/${currentColors.brandYellow}-fg} ${t}`
@@ -621,7 +722,7 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
   // ── Report Builder ─────────────────────────────────────────────────
   function buildInstallReport(targets: SupportedTarget[], assetIds: string[], result: InstallSkillsResult): string {
     const lines: string[] = [];
-    lines.push(`═══ INSTALL COMPLETE ═══`);
+    lines.push(`═══ Sync Complete ═══`);
     lines.push("");
     const installedByTarget = new Map<SupportedTarget, string[]>();
     const skippedByTarget = new Map<SupportedTarget, Array<{ assetId: string; reason: string }>>();
@@ -722,12 +823,12 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
 
   screen.key("space", () => {
     if (focusPanel === "hive") {
-      // Tag selection
+      // Group selection
       const idx = getSelectedIndex(hiveList);
-      const tag = allTags[idx];
-      if (tag) {
-        if (selectedTags.has(tag)) selectedTags.delete(tag);
-        else selectedTags.add(tag);
+      const group = allGroups[idx];
+      if (group) {
+        if (selectedGroups.has(group.id)) selectedGroups.delete(group.id);
+        else selectedGroups.add(group.id);
         render();
       }
     } else {
@@ -742,14 +843,29 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
   });
 
   screen.key("A", () => {
-    for (const tag of allTags) selectedTags.add(tag);
+    for (const group of allGroups) selectedGroups.add(group.id);
     render();
   });
   screen.key(["S-a", "A-s"], () => {
-    selectedTags.clear();
+    selectedGroups.clear();
     render();
   });
 
+  screen.key("p", async () => {
+    const visibleSkills = getVisibleSkills();
+    const highlighted = visibleSkills[getSelectedIndex(skillList)] ?? visibleSkills[0];
+    const assetIds = selectedIds.size > 0 ? [...selectedIds] : highlighted ? [highlighted.id] : [];
+    if (assetIds.length === 0) { log("No skills selected."); render(); return; }
+    try {
+      await showSyncPreview(assetIds, [...selectedTargets]);
+    } catch (error) {
+      log(`Preview error: ${error instanceof Error ? error.message : "unknown error"}`);
+      render();
+    }
+  });
+  screen.key("I", () => { void applySkillOverride("include"); });
+  screen.key("X", () => { void applySkillOverride("exclude"); });
+  screen.key("d", () => { void applySkillOverride("default"); });
   screen.key("i", () => { void mutate("install"); });
   screen.key("u", () => { void mutate("uninstall"); });
   screen.key("x", () => { void toggleArchive(); });
@@ -795,6 +911,21 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
     render();
   });
 
+  screen.key("S", async () => {
+    const catalog = await loadCatalog();
+    const allSources = catalog.sources;
+    const userConfig = cachedUserConfig ?? await loadUserConfig(platformContext.configBaseDir);
+    showSourceToggle(screen, {
+      configBaseDir: platformContext.configBaseDir,
+      currentColors,
+      sources: allSources,
+      userConfig,
+      onToggle: async (_sourceId, _enabled) => {
+        await refresh("Sources updated.");
+      }
+    });
+  });
+
   screen.key("c", async () => {
     blessed.prompt({
       parent: screen, border: "line", height: "shrink", width: "50%",
@@ -820,7 +951,7 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
     const groupBox = blessed.list({
       parent: screen, border: "line", height: "shrink", width: "40%",
       top: "center", left: "center", label: " Edit Group ", tags: true, keys: true,
-      style: { ...SELECTED_LIST_STYLE, border: { fg: currentColors.brandYellow } },
+      style: { ...getSelectedListStyle(currentColors), border: { fg: currentColors.brandYellow } },
       items: userConfig.groups.map((g) => `  ${g.name}`)
     });
     groupBox.focus(); screen.render();
@@ -848,7 +979,7 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
     const groupBox = blessed.list({
       parent: screen, border: "line", height: "shrink", width: "40%",
       top: "center", left: "center", label: " Delete Group ", tags: true, keys: true,
-      style: { ...SELECTED_LIST_STYLE, border: { fg: currentColors.brandYellow } },
+      style: { ...getSelectedListStyle(currentColors), border: { fg: currentColors.brandYellow } },
       items: userConfig.groups.map((g) => `  ${g.name}`)
     });
     groupBox.focus(); screen.render();
@@ -879,7 +1010,7 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
     const helpBox = blessed.box({
       parent: screen, border: "line", height: "80%", width: "60%",
       top: "center", left: "center",
-      label: ` ${BEE_ASCII} Keyboard Shortcuts `, tags: true, keys: true, vi: true, mouse: true, shadow: true,
+      label: ` ${BIRD_ASCII} Keyboard Shortcuts `, tags: true, keys: true, vi: true, mouse: true, shadow: true,
       content: COMMAND_HELP,
       style: { bg: PALETTE.carbon, fg: PALETTE.ghostWhite, border: { fg: currentColors.brandYellow } }
     });
@@ -889,10 +1020,10 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
 
   // ── Event Listeners ────────────────────────────────────────────────
   hiveList.on("select", async (_item, index) => {
-    const tag = allTags[index];
-    if (tag) {
-      if (selectedTags.has(tag)) selectedTags.delete(tag);
-      else selectedTags.add(tag);
+    const group = allGroups[index];
+    if (group) {
+      if (selectedGroups.has(group.id)) selectedGroups.delete(group.id);
+      else selectedGroups.add(group.id);
       skillList.select(0);
       render();
       skillList.focus();
@@ -934,23 +1065,23 @@ function getRelatedSkills(skill: ManagerSkillRecord, allSkills: ManagerSkillReco
     });
 }
 
-function filterSkillsByTags(
+function filterSkillsByGroups(
   skills: ManagerSkillRecord[],
-  selectedTags: Set<string>,
+  selectedGroups: Set<string>,
   query: string,
   includeArchived: boolean,
   selectedTargets: Set<SupportedTarget>,
   primaryTarget: SupportedTarget
 ): ManagerSkillRecord[] {
   const normalizedQuery = query.trim().toLowerCase();
-  const hasTagFilter = selectedTags.size > 0;
+  const hasGroupFilter = selectedGroups.size > 0;
 
   return skills.filter((skill) => {
     // Archive filter
     if (!includeArchived && skill.archived) return false;
 
-    // Tag filter (OR logic)
-    if (hasTagFilter && !skill.tags.some((t) => selectedTags.has(t))) return false;
+    // Group filter (OR logic)
+    if (hasGroupFilter && !selectedGroups.has(skill.group)) return false;
 
     // Query filter
     if (normalizedQuery) {

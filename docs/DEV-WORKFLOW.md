@@ -1,7 +1,9 @@
-# Skillbee V2 开发工作流
+# Legacy Skillbee V2 开发工作流
 
-> 本文档定义基于 GSD 的开发流程、验收标准和进度管理规则。
-> 所有功能迭代以 [PRD.md](./PRD.md) 为核心参照。
+> Legacy note: this workflow is retained for v2 history. Current milestone execution uses Skillbird / `aimagician_superpower` planning under `.planning/` and the root `README.md`.
+>
+> 本文档定义基于 GSD 的历史开发流程、验收标准和进度管理规则。
+> v2 历史功能迭代以 [PRD.md](./PRD.md) 为参照。
 
 ---
 

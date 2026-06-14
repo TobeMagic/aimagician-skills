@@ -1,5 +1,5 @@
 // ── Brand ──────────────────────────────────────────────────────────────
-export const BEE_ASCII = "\u{1F41D}";
+export const BIRD_ASCII = "\u{1F54A}\uFE0F";
 
 // ── PRD §2.1: ANSI 256 Color Palette ──────────────────────────────────
 // 琥珀黄 Amber #FFD700 | 炭黑 Carbon #2C2C2C | 花粉绿 Pollen Green #00CD00
@@ -16,27 +16,27 @@ export const PALETTE = {
   amberLight: "228",   // #fff8a0 — light amber for bg highlights
 } as const;
 
-// ── PRD §2.2: Splash Screen (Braille Bee Art) ─────────────────────────
-export const BEE_SPLASH = [
+// ── Splash Screen ──────────────────────────────────────────────────────
+// NOTE: blessed tag syntax requires {XXX-fg} where XXX is ANSI 256 color number
+export const BIRD_SPLASH = [
   "",
-  "       {amber}\u2808\u2808\u2800\u2808\u2808\u2800\u2808\u2808{/amber}",
-  "      {amber}\u2808\u2808\u2808\u2808\u2808\u2808\u2808\u2808\u2808\u2808\u2808{/amber}",
-  "     {amber}\u2808\u2808\u2808\u2808\u2838\u2838\u2808\u2808\u2838\u2838\u2808\u2808\u2808\u2808{/amber}",
-  "      {amber}\u2808\u2808\u2808\u2808\u2808\u2808\u2808\u2808\u2808\u2808\u2808{/amber}",
-  "       {amber}\u2808\u2808\u2808\u2808\u2800\u2808\u2808\u2808\u2808{/amber}",
-  "         {amber}\u2808\u2808\u2808\u2808\u2808\u2808\u2808\u2808{/amber}",
-  "          {dimGray}\u2808\u2808\u2808\u2808\u2808\u2808\u2808{/dimGray}",
+  `        {${PALETTE.amber}-fg}      /\\{/${PALETTE.amber}-fg}`,
+  `        {${PALETTE.amber}-fg}  ___/  \\___{/${PALETTE.amber}-fg}`,
+  `        {${PALETTE.amber}-fg}<___      _>{/${PALETTE.amber}-fg}`,
+  `        {${PALETTE.amber}-fg}    /  /\\ \\{/${PALETTE.amber}-fg}`,
+  `        {${PALETTE.amber}-fg}   /__/  \\_\\{/${PALETTE.amber}-fg}`,
+  `        {${PALETTE.dimGray}-fg}      v{/${PALETTE.dimGray}-fg}`,
   "",
-  "    {bold}{amber} S K I L L B E E {/amber}{/bold}",
-  "    {dimGray}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500{/dimGray}",
-  "    {ghostWhite}Personal Skill Manager{/ghostWhite}",
-  "    {ghostWhite}for AI CLI Tools{/ghostWhite}",
+  `    {bold}{${PALETTE.amber}-fg} S K I L L B I R D {/${PALETTE.amber}-fg}{/bold}`,
+  `    {${PALETTE.dimGray}-fg}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500{/${PALETTE.dimGray}-fg}`,
+  `    {${PALETTE.ghostWhite}-fg}Personal Skill Manager{/${PALETTE.ghostWhite}-fg}`,
+  `    {${PALETTE.ghostWhite}-fg}for AI CLI Tools{/${PALETTE.ghostWhite}-fg}`,
   "",
-  "    {dimGray}v1.1.0  \u2022  github.com/TobeMagic/aimagician-skills{/dimGray}",
+  `    {${PALETTE.dimGray}-fg}v1.1.1  \u2022  aimagician_superpower{/${PALETTE.dimGray}-fg}`,
   ""
 ];
 
-// ── PRD §2.3: Hive Layout Select Indicators ────────────────────────────
+// ── Select Indicators ──────────────────────────────────────────────────
 export const SELECT_GLYPH = "\u25B6";   // ▶  amber — selected item
 export const UNSELECT_GLYPH = "\u25E6"; // ◦  ghost white — unselected
 export const GROUP_CUSTOM_PREFIX = "\u25CE"; // ◎ — custom group marker
@@ -48,7 +48,7 @@ export const UNAVAILABLE_GLYPH = "\u2014"; // —  dim gray
 export const BROKEN_GLYPH = "\u{1F494}";   // 💔 stinger red
 
 // ── Theme System ───────────────────────────────────────────────────────
-export const THEME_NAMES = ["bee", "monokai", "nord"] as const;
+export const THEME_NAMES = ["dove", "monokai", "nord"] as const;
 export type ThemeName = (typeof THEME_NAMES)[number];
 
 export interface ThemeColors {
@@ -70,7 +70,7 @@ export interface ThemeColors {
 }
 
 const themes: Record<ThemeName, ThemeColors> = {
-  bee: {
+  dove: {
     brandYellow:    PALETTE.amber,
     brandBlack:     PALETTE.carbon,
     installed:      PALETTE.pollen,
@@ -124,21 +124,23 @@ const themes: Record<ThemeName, ThemeColors> = {
 };
 
 export function getTheme(name: string): ThemeColors {
-  return themes[name as ThemeName] ?? themes.bee;
+  return themes[name as ThemeName] ?? themes.dove;
 }
 
-export const COLORS: ThemeColors = themes.bee;
+export const COLORS: ThemeColors = themes.dove;
 
-export const SELECTED_LIST_STYLE = {
-  selected: {
-    bg: COLORS.selectedBg,
-    fg: COLORS.selectedFg,
-    bold: true
-  },
-  item: {
-    fg: PALETTE.ghostWhite
-  }
-};
+export function getSelectedListStyle(colors: ThemeColors): { selected: { bg: string; fg: string; bold: boolean }; item: { fg: string } } {
+  return {
+    selected: {
+      bg: colors.selectedBg,
+      fg: colors.selectedFg,
+      bold: true
+    },
+    item: {
+      fg: colors.uninstalled
+    }
+  };
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────
 export function targetShortLabel(target: string): string {

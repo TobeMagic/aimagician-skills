@@ -1,15 +1,34 @@
 ---
 name: deep-research-system
-description: |
-  Build or reuse a docs-first, multi-source literature research system for any technical direction.
-  Use this whenever the user wants deep research, paper scraping, systematic literature review,
-  innovation mapping, venue-oriented novelty scouting, query registries, reusable research workflows,
-  or a `docs/deep_research` style research package. Also use it when the user asks to automate paper
-  collection across sources like OpenAlex, arXiv, Crossref, CVF Open Access, or to turn an existing
+description: >
+  Build or reuse a docs-first, multi-source literature research system for any
+  technical direction.
+
+  Use this whenever the user wants deep research, paper scraping, systematic
+  literature review,
+
+  innovation mapping, venue-oriented novelty scouting, query registries,
+  reusable research workflows,
+
+  or a `docs/deep_research` style research package. Also use it when the user
+  asks to automate paper
+
+  collection across sources like OpenAlex, arXiv, Crossref, CVF Open Access, or
+  to turn an existing
+
   research workflow into a reusable skill or system.
 compatibility:
-  tools: [bash, python, git]
+  tools:
+    - bash
+    - python
+    - git
   requires: Network access for retrieval; write access to the target repository
+category: research
+subcategory: literature
+tags:
+  - papers
+  - retrieval
+  - synthesis
 ---
 
 # Deep Research System

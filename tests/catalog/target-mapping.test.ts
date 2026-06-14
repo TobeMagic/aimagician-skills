@@ -26,7 +26,7 @@ describe("normalizeSources", () => {
       plugins: unknown;
     };
 
-    const root = await mkdtemp(join(tmpdir(), "aimagician-skills-targets-"));
+    const root = await mkdtemp(join(tmpdir(), "aimagician-superpower-targets-"));
     tempDirectories.push(root);
 
     const skillsRoot = join(root, "skills");

@@ -1,11 +1,11 @@
-import { cp, mkdir, rm } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { dirname, join, normalize, sep } from "node:path";
 import type { CatalogLoadOptions } from "../catalog/load-catalog";
+import type { NormalizedAsset } from "../model/assets";
 import { loadTaxonomy, resolveSkillTaxonomy } from "../catalog/taxonomy";
 import {
-  addArchivedIds,
-  loadUserConfig,
-  removeArchivedIds,
+  loadScopedUserConfig,
+  saveScopedUserConfig,
   type UserSkillConfig
 } from "../config/user-config";
 import {
@@ -24,6 +24,11 @@ import {
 import { prepareBootstrapRun, type PlannedAsset } from "../bootstrap/plan-bootstrap";
 import { resolveManagedSkillInstalls, type ResolvedManagedInstall } from "../bootstrap/source-resolution";
 import { resolveTargetHomes, type ResolvedTargetHomes } from "../bootstrap/target-homes";
+import {
+  planManagedInstallSync,
+  syncManagedInstalls,
+  type ManagedInstallSyncOperation
+} from "../bootstrap/direct-target-sync";
 import { ensureBootstrapWorkspace, resolveBootstrapWorkspace } from "../bootstrap/workspace";
 import type { InstallScope, ResetScope } from "../model/scopes";
 import { supportedTargets, type SupportedTarget } from "../model/targets";
@@ -61,10 +66,16 @@ export interface ManagerSkillRecord {
 
 export interface SearchSkillsOptions extends ManagerBaseOptions {
   query?: string;
+  category?: string;
+  subcategory?: string;
+  tags?: string[];
 }
 
 export interface InstallSkillsOptions extends ManagerBaseOptions {
   assetIds: string[];
+  category?: string;
+  subcategory?: string;
+  tags?: string[];
   now?: string;
   dryRun?: boolean;
 }
@@ -84,10 +95,27 @@ export interface ResetSkillsOptions extends Omit<ManagerBaseOptions, "selectedTa
   now?: string;
 }
 
+export interface PreviewInstallTargetReport {
+  target: SupportedTarget;
+  plannedSkillIds: string[];
+  skippedSkillIds: string[];
+  removeSkillIds: string[];
+  overwriteSkillIds: string[];
+}
+
+export interface PreviewInstallSkillsResult {
+  scope: InstallScope;
+  workspaceRoot: string;
+  manifestPath: string;
+  operations: ManagedInstallSyncOperation[];
+  skipped: Array<{ assetId: string; target?: SupportedTarget; reason: string }>;
+  targetReports: PreviewInstallTargetReport[];
+}
 export interface InstallSkillsResult {
   scope: InstallScope;
   workspaceRoot: string;
   manifestPath: string;
+  dryRun: boolean;
   installed: BootstrapManifestManagedInstall[];
   commandReports: CommandSourceReport[];
   skipped: Array<{ assetId: string; target?: SupportedTarget; reason: string }>;
@@ -129,6 +157,8 @@ export interface ArchiveSkillsResult {
   unarchived: string[];
 }
 
+type InstallEligibility = { eligible: true } | { eligible: false; reason: string };
+
 export async function searchSkills(options: SearchSkillsOptions): Promise<ManagerSkillRecord[]> {
   const selectedTargets = options.selectedTargets ?? [...supportedTargets];
   const platformContext = resolvePlatformContext(options.platform);
@@ -143,7 +173,8 @@ export async function searchSkills(options: SearchSkillsOptions): Promise<Manage
       catalog: options.catalog,
       workspaceRoot: workspace.rootDir,
       githubRepoOverrides: options.githubRepoOverrides,
-      includeArchived: options.includeArchived ?? false
+      includeArchived: options.includeArchived ?? false,
+      includeDisabledSources: true
     }),
     loadTaxonomy(options.taxonomyPath),
     inspectInstallation({
@@ -152,9 +183,18 @@ export async function searchSkills(options: SearchSkillsOptions): Promise<Manage
       projectDir: options.projectDir,
       platform: platformContext
     }),
-    loadUserConfig(platformContext.configBaseDir)
+    loadScopedUserConfig({
+      configBaseDir: platformContext.configBaseDir,
+      scope: options.scope,
+      projectDir: options.projectDir
+    })
   ]);
   const normalizedById = new Map(prepared.normalizedAssets.map((asset) => [asset.id, asset]));
+  const ownedAssetIds = new Set(
+    prepared.plan.assets
+      .filter((asset) => asset.origin === "owned")
+      .map((asset) => asset.id)
+  );
   const installedById = new Map<string, Set<SupportedTarget>>();
   const managedById = new Map<string, Set<SupportedTarget>>();
 
@@ -176,7 +216,7 @@ export async function searchSkills(options: SearchSkillsOptions): Promise<Manage
     .filter((asset) => asset.kind === "skill")
     .map<ManagerSkillRecord>((asset) => {
       const taxonomyEntry = resolveSkillTaxonomy(taxonomy, asset.id);
-      const normalized = normalizedById.get(asset.id);
+      const normalized = asset.origin === "external" ? normalizedById.get(asset.id) : undefined;
 
       return {
         id: asset.id,
@@ -196,15 +236,151 @@ export async function searchSkills(options: SearchSkillsOptions): Promise<Manage
         archived: asset.archived === true || userConfig.archivedIds.includes(asset.id)
       };
     })
+    .filter((skill) => skill.origin !== "external" || !ownedAssetIds.has(skill.id))
+    .filter((skill) => skill.archived || taxonomy.skills[skill.id] !== undefined)
+    .filter((skill) => options.includeArchived === true || !skill.archived)
+    .filter((skill) => matchesSelectors(skill, options))
     .filter((skill) => matchesQuery(skill, query))
     .sort(compareManagerSkill);
 
   return skills;
 }
 
+export async function setSkillOverride(
+  options: ManagerBaseOptions & { assetIds: string[]; state: "include" | "exclude" | "default" }
+): Promise<UserSkillConfig> {
+  const platformContext = resolvePlatformContext(options.platform);
+  const configOptions = {
+    configBaseDir: platformContext.configBaseDir,
+    scope: options.scope,
+    projectDir: options.projectDir
+  };
+  const config = await loadScopedUserConfig(configOptions);
+  const includedIds = new Set(config.includedIds);
+  const excludedIds = new Set(config.excludedIds);
+
+  for (const assetId of options.assetIds) {
+    includedIds.delete(assetId);
+    excludedIds.delete(assetId);
+
+    if (options.state === "include") {
+      includedIds.add(assetId);
+    } else if (options.state === "exclude") {
+      excludedIds.add(assetId);
+    }
+  }
+
+  config.includedIds = [...includedIds].sort();
+  config.excludedIds = [...excludedIds].sort();
+  await saveScopedUserConfig(configOptions, config);
+
+  return config;
+}
+
+export async function previewInstallSkills(
+  options: InstallSkillsOptions
+): Promise<PreviewInstallSkillsResult> {
+  const selectedTargets = options.selectedTargets ?? [...supportedTargets];
+  const selectedIds = await resolveSelectedAssetIds(options, selectedTargets);
+  const platformContext = resolvePlatformContext(options.platform);
+  const workspace = resolveBootstrapWorkspace({
+    ...platformContext,
+    scope: options.scope,
+    projectDir: options.projectDir
+  });
+  const targetHomes = resolveTargetHomes({
+    ...platformContext,
+    scope: options.scope,
+    projectDir: options.projectDir
+  });
+  const userConfig = await loadScopedUserConfig({
+    configBaseDir: platformContext.configBaseDir,
+    scope: options.scope,
+    projectDir: options.projectDir
+  });
+  const prepared = await prepareBootstrapRun({
+    selectedTargets,
+    catalog: options.catalog,
+    workspaceRoot: workspace.rootDir,
+    githubRepoOverrides: options.githubRepoOverrides,
+    includeArchived: options.includeArchived ?? false,
+    includeDisabledSources: true
+  });
+  const ownedAssetIds = createOwnedAssetIdSet(prepared.plan.assets);
+  const selectedAssets = prepared.normalizedAssets.filter((asset) =>
+    selectedIds.has(asset.id) && !ownedAssetIds.has(asset.id)
+  );
+  const eligibilityById = new Map<string, InstallEligibility>(selectedAssets.map((asset) => [
+    asset.id,
+    resolveInstallEligibility(asset, userConfig, options.scope)
+  ]));
+  const eligibleAssets = selectedAssets.filter((asset) => isInstallEligible(eligibilityById.get(asset.id)));
+  const missingIds = [...selectedIds].filter((id) => !prepared.plan.assets.some((asset) => asset.id === id));
+  const skipped = [
+    ...missingIds.map((assetId) => ({ assetId, reason: "not-found" })),
+    ...selectedAssets
+      .map((asset) => ({ assetId: asset.id, reason: installIneligibilityReason(eligibilityById.get(asset.id)) }))
+      .filter((skip): skip is { assetId: string; reason: string } => skip.reason !== undefined)
+  ];
+  const managedInstalls = await resolveManagedSkillInstalls({
+    catalog: prepared.catalog,
+    normalizedAssets: eligibleAssets,
+    workspaceRoot: workspace.rootDir,
+    selectedTargets,
+    targetHomes,
+    githubRepoOverrides: options.githubRepoOverrides,
+    includeArchived: options.includeArchived ?? false
+  });
+  const selectedManagedInstalls = managedInstalls
+    .filter((install) => selectedIds.has(install.assetId))
+    .sort(compareResolvedInstall);
+  const previousManifest = await loadManifest(workspace.manifestPath);
+  const operations = planManagedInstallSync({
+    allowedRootsByTarget: createAllowedRootsByTarget(targetHomes),
+    selectedTargets,
+    installs: selectedManagedInstalls,
+    previousInstalls: previousManifest?.managedInstalls ?? []
+  });
+
+  return {
+    scope: options.scope,
+    workspaceRoot: workspace.rootDir,
+    manifestPath: workspace.manifestPath,
+    operations,
+    skipped,
+    targetReports: createPreviewTargetReports(selectedTargets, operations, skipped)
+  };
+}
+
+function createPreviewTargetReports(
+  selectedTargets: SupportedTarget[],
+  operations: ManagedInstallSyncOperation[],
+  skipped: Array<{ assetId: string; target?: SupportedTarget; reason: string }>
+): PreviewInstallTargetReport[] {
+  return selectedTargets.map((target) => ({
+    target,
+    plannedSkillIds: operations
+      .filter((operation) => operation.target === target && operation.assetKind === "skill" && operation.kind === "create")
+      .map((operation) => operation.assetId)
+      .sort(),
+    skippedSkillIds: skipped
+      .filter((skip) => skip.target === undefined || skip.target === target)
+      .map((skip) => skip.assetId)
+      .sort(),
+    removeSkillIds: operations
+      .filter((operation) => operation.target === target && operation.assetKind === "skill" && operation.kind === "remove")
+      .map((operation) => operation.assetId)
+      .sort(),
+    overwriteSkillIds: operations
+      .filter((operation) => operation.target === target && operation.assetKind === "skill" && operation.kind === "overwrite")
+      .map((operation) => operation.assetId)
+      .sort()
+  }));
+}
+
 export async function installSkills(options: InstallSkillsOptions): Promise<InstallSkillsResult> {
   const selectedTargets = options.selectedTargets ?? [...supportedTargets];
-  const selectedIds = new Set(options.assetIds);
+  const selectedIds = await resolveSelectedAssetIds(options, selectedTargets);
   const platformContext = resolvePlatformContext(options.platform);
   const workspace = options.dryRun
     ? resolveBootstrapWorkspace({ ...platformContext, scope: options.scope, projectDir: options.projectDir })
@@ -214,17 +390,34 @@ export async function installSkills(options: InstallSkillsOptions): Promise<Inst
     scope: options.scope,
     projectDir: options.projectDir
   });
+  const userConfig = await loadScopedUserConfig({
+    configBaseDir: platformContext.configBaseDir,
+    scope: options.scope,
+    projectDir: options.projectDir
+  });
   const prepared = await prepareBootstrapRun({
     selectedTargets,
     catalog: options.catalog,
     workspaceRoot: workspace.rootDir,
     githubRepoOverrides: options.githubRepoOverrides,
-    includeArchived: options.includeArchived ?? false
+    includeArchived: options.includeArchived ?? false,
+    includeDisabledSources: true
   });
-  const selectedAssets = prepared.normalizedAssets.filter((asset) => selectedIds.has(asset.id));
+  const ownedAssetIds = createOwnedAssetIdSet(prepared.plan.assets);
+  const selectedAssets = prepared.normalizedAssets.filter((asset) =>
+    selectedIds.has(asset.id) && !ownedAssetIds.has(asset.id)
+  );
+  const eligibilityById = new Map<string, InstallEligibility>(selectedAssets.map((asset) => [
+    asset.id,
+    resolveInstallEligibility(asset, userConfig, options.scope)
+  ]));
+  const eligibleAssets = selectedAssets.filter((asset) => isInstallEligible(eligibilityById.get(asset.id)));
   const missingIds = [...selectedIds].filter((id) => !prepared.plan.assets.some((asset) => asset.id === id));
+  const ineligibleSkipped = selectedAssets
+    .map((asset) => ({ assetId: asset.id, reason: installIneligibilityReason(eligibilityById.get(asset.id)) }))
+    .filter((skip): skip is { assetId: string; reason: string } => skip.reason !== undefined);
   const generatedCommandSources = await materializeGeneratedCommandSkillSources({
-    normalizedAssets: selectedAssets,
+    normalizedAssets: eligibleAssets,
     selectedTargets,
     workspaceRoot: workspace.rootDir,
     platformContext,
@@ -232,7 +425,7 @@ export async function installSkills(options: InstallSkillsOptions): Promise<Inst
   });
   const managedInstalls = await resolveManagedSkillInstalls({
     catalog: prepared.catalog,
-    normalizedAssets: selectedAssets,
+    normalizedAssets: eligibleAssets,
     workspaceRoot: workspace.rootDir,
     selectedTargets,
     targetHomes,
@@ -244,9 +437,9 @@ export async function installSkills(options: InstallSkillsOptions): Promise<Inst
     .filter((install) => selectedIds.has(install.assetId))
     .sort(compareResolvedInstall);
   const directCommandReports = options.dryRun
-    ? previewCommandSkillSources(selectedAssets, selectedTargets)
+    ? previewCommandSkillSources(eligibleAssets, selectedTargets)
     : await executeCommandSkillSources({
-        normalizedAssets: selectedAssets,
+        normalizedAssets: eligibleAssets,
         selectedTargets,
         workspaceRoot: workspace.rootDir,
         platformContext,
@@ -256,16 +449,20 @@ export async function installSkills(options: InstallSkillsOptions): Promise<Inst
     ...generatedCommandSources.reports,
     ...directCommandReports
   ].sort((left, right) => left.sourceId.localeCompare(right.sourceId));
-  const skipped = missingIds.map((assetId) => ({
-    assetId,
-    reason: "not-found"
-  }));
+  const skipped = [
+    ...missingIds.map((assetId) => ({
+      assetId,
+      reason: "not-found"
+    })),
+    ...ineligibleSkipped
+  ];
 
   if (options.dryRun) {
     return {
       scope: options.scope,
       workspaceRoot: workspace.rootDir,
       manifestPath: workspace.manifestPath,
+      dryRun: true,
       installed: selectedManagedInstalls.map(toManifestInstall),
       commandReports,
       skipped,
@@ -273,13 +470,21 @@ export async function installSkills(options: InstallSkillsOptions): Promise<Inst
     };
   }
 
-  await copyManagedInstalls(selectedManagedInstalls);
-
   const previousManifest = await loadManifest(workspace.manifestPath);
+  const previousInstalls = previousManifest?.managedInstalls ?? [];
+  const allowedRootsByTarget = createAllowedRootsByTarget(targetHomes);
+
+  await syncManagedInstalls({
+    allowedRootsByTarget,
+    selectedTargets,
+    installs: selectedManagedInstalls,
+    previousInstalls
+  });
+
   const nextManifest = mergeInstalledManifest(
     previousManifest,
     selectedTargets,
-    prepared.plan.assets.filter((asset) => selectedIds.has(asset.id)),
+    prepared.plan.assets.filter((asset) => selectedIds.has(asset.id) && isInstallEligible(eligibilityById.get(asset.id))),
     selectedManagedInstalls.map(toManifestInstall),
     commandReports,
     options.now
@@ -291,6 +496,7 @@ export async function installSkills(options: InstallSkillsOptions): Promise<Inst
     scope: options.scope,
     workspaceRoot: workspace.rootDir,
     manifestPath: workspace.manifestPath,
+    dryRun: false,
     installed: selectedManagedInstalls.map(toManifestInstall),
     commandReports,
     skipped,
@@ -468,16 +674,61 @@ export async function archiveSkills(options: ArchiveSkillsOptions): Promise<Arch
   const selectedTargets = options.selectedTargets ?? [...supportedTargets];
   const platformContext = resolvePlatformContext(options.platform);
 
+  const config = await loadScopedUserConfig({
+    configBaseDir: platformContext.configBaseDir,
+    scope: options.scope,
+    projectDir: options.projectDir
+  });
+
   if (options.archived) {
-    await addArchivedIds(platformContext.configBaseDir, options.assetIds);
+    const archivedIds = new Set(config.archivedIds);
+    for (const id of options.assetIds) {
+      archivedIds.add(id);
+    }
+    config.archivedIds = [...archivedIds].sort();
   } else {
-    await removeArchivedIds(platformContext.configBaseDir, options.assetIds);
+    const unarchivedIds = new Set(options.assetIds);
+    config.archivedIds = config.archivedIds.filter((id) => !unarchivedIds.has(id));
   }
+
+  await saveScopedUserConfig({
+    configBaseDir: platformContext.configBaseDir,
+    scope: options.scope,
+    projectDir: options.projectDir
+  }, config);
 
   return {
     archived: options.archived ? options.assetIds : [],
     unarchived: options.archived ? [] : options.assetIds
   };
+}
+
+function isInstallEligible(eligibility: InstallEligibility | undefined): boolean {
+  return eligibility?.eligible === true;
+}
+
+function installIneligibilityReason(eligibility: InstallEligibility | undefined): string | undefined {
+  return eligibility?.eligible === false ? eligibility.reason : undefined;
+}
+
+function resolveInstallEligibility(
+  asset: NormalizedAsset,
+  config: UserSkillConfig,
+  scope: InstallScope
+): InstallEligibility {
+  if (config.excludedIds.includes(asset.id)) {
+    return { eligible: false, reason: "excluded" };
+  }
+
+  if (scope === "project" && asset.sourceType === "command") {
+    return { eligible: false, reason: "command-source-global-only" };
+  }
+
+  if (!asset.sourceEnabled && !config.includedIds.includes(asset.id)) {
+    return { eligible: false, reason: "source-default-disabled" };
+  }
+
+  return { eligible: true };
 }
 
 function matchesQuery(skill: ManagerSkillRecord, query: string | undefined): boolean {
@@ -496,19 +747,48 @@ function matchesQuery(skill: ManagerSkillRecord, query: string | undefined): boo
   ].some((value) => value?.toLowerCase().includes(query));
 }
 
-async function copyManagedInstalls(installs: ResolvedManagedInstall[]): Promise<void> {
-  for (const install of installs) {
-    await mkdir(dirname(install.destinationPath), { recursive: true });
-    await rm(install.destinationPath, {
-      recursive: install.installType === "directory",
-      force: true
-    });
-    await cp(install.sourcePath, install.destinationPath, {
-      recursive: install.installType === "directory",
-      force: true,
-      filter: (source) => !source.endsWith(`${sep}.git`) && !source.includes(`${sep}.git${sep}`)
-    });
+function matchesSelectors(
+  skill: ManagerSkillRecord,
+  selectors: { category?: string; subcategory?: string; tags?: string[] }
+): boolean {
+  if (selectors.category && skill.group !== selectors.category) {
+    return false;
   }
+
+  if (selectors.subcategory && skill.subgroup !== selectors.subcategory) {
+    return false;
+  }
+
+  const requiredTags = selectors.tags ?? [];
+  if (requiredTags.length > 0) {
+    const skillTags = new Set([...skill.tags, ...skill.customTags]);
+    return requiredTags.every((tag) => skillTags.has(tag));
+  }
+
+  return true;
+}
+
+async function resolveSelectedAssetIds(
+  options: InstallSkillsOptions,
+  selectedTargets: SupportedTarget[]
+): Promise<Set<string>> {
+  const selectedIds = new Set(options.assetIds);
+
+  if (!options.category && !options.subcategory && !options.tags?.length) {
+    return selectedIds;
+  }
+
+  const matchedSkills = await searchSkills({
+    ...options,
+    selectedTargets,
+    query: undefined
+  });
+
+  for (const skill of matchedSkills) {
+    selectedIds.add(skill.id);
+  }
+
+  return selectedIds;
 }
 
 function mergeInstalledManifest(
@@ -657,6 +937,14 @@ function createManagedInstallKey(install: Pick<BootstrapManifestManagedInstall, 
 
 function createAssetKey(asset: Pick<BootstrapManifestAsset, "kind" | "origin" | "id" | "sourceId">): string {
   return `${asset.kind}:${asset.origin}:${asset.sourceId ?? ""}:${asset.id}`;
+}
+
+function createOwnedAssetIdSet(assets: Array<Pick<BootstrapManifestAsset, "origin" | "id">>): Set<string> {
+  return new Set(
+    assets
+      .filter((asset) => asset.origin === "owned")
+      .map((asset) => asset.id)
+  );
 }
 
 function createAllowedRootsByTarget(targetHomes: ResolvedTargetHomes): Record<SupportedTarget, string[]> {

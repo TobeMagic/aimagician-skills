@@ -5,8 +5,15 @@ description: |
   当用户提到“README 规范化”“高质量项目首页”“万级 star 风格 README”“模板化仓库说明”时触发。
   适用于开源项目 README、合集型 README、个人项目主页 README 的结构升级。
 compatibility:
-  tools: [bash]
+  tools:
+    - bash
   requires: 仓库至少有可提取的信息源（代码目录、安装命令、示例或文档）
+category: documents
+subcategory: readme
+tags:
+  - readme
+  - docs
+  - github
 ---
 
 # GitHub README Highstar

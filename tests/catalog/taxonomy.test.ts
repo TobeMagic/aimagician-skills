@@ -16,7 +16,7 @@ afterEach(async () => {
 
 describe("loadTaxonomy", () => {
   it("accepts skill ids that include underscores", async () => {
-    const root = await mkdtemp(join(tmpdir(), "skillbee-taxonomy-"));
+    const root = await mkdtemp(join(tmpdir(), "skillbird-taxonomy-"));
     tempDirectories.push(root);
     const taxonomyPath = join(root, "taxonomy.yaml");
 

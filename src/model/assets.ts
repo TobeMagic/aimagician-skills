@@ -45,6 +45,7 @@ export interface NormalizedAsset {
   section: CatalogSection;
   kind: AssetKind;
   sourceType: SourceKind;
+  sourceEnabled: boolean;
   originFile: string;
   description?: string;
   relativePath?: string;

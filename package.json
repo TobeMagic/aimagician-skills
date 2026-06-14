@@ -1,5 +1,5 @@
 {
-  "name": "skillbee",
+  "name": "aimagician_superpower",
   "version": "1.1.1",
   "description": "Skill manager, catalog, and deployment toolkit for AI coding CLIs.",
   "license": "MIT",
@@ -16,8 +16,7 @@
     "!**/*.pyc"
   ],
   "bin": {
-    "skillbee": "./dist/cli/index.js",
-    "aimagician-skills": "./dist/cli/index.js"
+    "skillbird": "./dist/cli/index.js"
   },
   "scripts": {
     "start": "node ./dist/cli/index.js",
@@ -30,7 +29,8 @@
   },
   "keywords": [
     "skills",
-    "skillbee",
+    "skillbird",
+    "aimagician-superpower",
     "skill-manager",
     "tui",
     "bootstrap",

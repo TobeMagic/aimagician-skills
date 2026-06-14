@@ -5,8 +5,14 @@ description: |
   当用户提到“请帮我前端风格设计”“用 Apple 风格做页面”“按某品牌做 UI”“DESIGN.md”“brand style”时必须触发。
   默认行为是从 skill 的 references 中直接选品牌文件，不使用任何下载脚本或在线更新流程。
 compatibility:
-  tools: [bash]
+  tools:
+    - bash
   requires: 无额外依赖
+category: design
+subcategory: brand
+tags:
+  - brand
+  - design-md
 ---
 
 # Design.md Brand Router

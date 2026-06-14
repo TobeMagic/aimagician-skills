@@ -1,7 +1,7 @@
 sources:
   - id: anthropics-skills-selected
     type: github
-    enabled: true
+    enabled: false
     description: Selected Anthropic official skills (docx, frontend-design, mcp-builder, pdf, pptx, skill-creator, webapp-testing, xlsx)
     github:
       repo: anthropics/skills

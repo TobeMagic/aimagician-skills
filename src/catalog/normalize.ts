@@ -63,6 +63,7 @@ export function normalizeSourceAsset(
     section: source.section,
     kind: asset.kind,
     sourceType: source.type,
+    sourceEnabled: source.enabled,
     originFile: source.originFile,
     description: asset.description ?? source.description,
     relativePath: asset.path,

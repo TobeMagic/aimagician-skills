@@ -3,7 +3,7 @@ import { posix, win32 } from "node:path";
 
 function warnIfSpaces(label: string, path: string): void {
   if (path.includes(" ")) {
-    console.error(`[skillbee] Warning: ${label} path contains spaces — ${path}`);
+    console.error(`[skillbird] Warning: ${label} path contains spaces — ${path}`);
   }
 }
 
@@ -36,8 +36,8 @@ export function resolvePlatformContext(
     overrides.workspaceRoot ??
     process.env.AIMAGICIAN_WORKSPACE_ROOT ??
     (platform === "windows"
-      ? win32.join(stateBaseDir, "aimagician-skills")
-      : posix.join(stateBaseDir, "aimagician-skills"));
+      ? win32.join(stateBaseDir, "aimagician-superpower")
+      : posix.join(stateBaseDir, "aimagician-superpower"));
 
   warnIfSpaces("workspace root", workspaceRoot);
   warnIfSpaces("home", homeDir);

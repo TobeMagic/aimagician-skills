@@ -1,14 +1,31 @@
 ---
 name: llm-know-how-wiki
-description: |
-  Build, maintain, query, and lint a project-local LLM-know-how-wiki: a persistent, compiled Markdown knowledge base with raw evidence, curated wiki pages, schema rules, index, and log. Use this skill whenever the user asks to create an LLM wiki, ingest raw docs/repos/Feishu/Linear snapshots, answer from an existing wiki, lint/audit wiki health, or turn scattered engineering context into a durable knowledge base. This skill should trigger even if the user only says "wiki", "know-how", "ingest", "digest", "基于 wiki 回答", "把这些文档编译进知识库", or "维护 LLM-know-how-wiki".
+description: >
+  Build, maintain, query, and lint a project-local LLM-know-how-wiki: a
+  persistent, compiled Markdown knowledge base with raw evidence, curated wiki
+  pages, schema rules, index, and log. Use this skill whenever the user asks to
+  create an LLM wiki, ingest raw docs/repos/Feishu/Linear snapshots, answer from
+  an existing wiki, lint/audit wiki health, or turn scattered engineering
+  context into a durable knowledge base. This skill should trigger even if the
+  user only says "wiki", "know-how", "ingest", "digest", "基于 wiki 回答",
+  "把这些文档编译进知识库", or "维护 LLM-know-how-wiki".
 metadata:
   related_skills:
     - opensource-architecture-research
     - repo-interview-playbook
 compatibility:
-  tools: [bash, python, rg]
-  requires: Write access to the current project when initializing or ingesting; read access is enough for Answer mode
+  tools:
+    - bash
+    - python
+    - rg
+  requires: Write access to the current project when initializing or ingesting;
+    read access is enough for Answer mode
+category: build
+subcategory: knowledge
+tags:
+  - wiki
+  - knowledge
+  - context
 ---
 
 # LLM Know-how Wiki

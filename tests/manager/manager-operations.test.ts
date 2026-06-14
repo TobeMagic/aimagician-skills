@@ -4,9 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  archiveSkills,
   installSkills,
+  previewInstallSkills,
   resetSkills,
   searchSkills,
+  setSkillOverride,
   uninstallSkills
 } from "../../src/manager/manager";
 
@@ -43,8 +46,8 @@ describe("manager operations", () => {
     }))).toEqual([
       {
         id: "daily-ops",
-        group: "operations",
-        subgroup: "project-hygiene",
+        group: "build",
+        subgroup: "workflow",
         installedTargets: []
       }
     ]);
@@ -138,6 +141,44 @@ describe("manager operations", () => {
     await expectPath(join(fixture.projectDir, ".claude", "skills", "retired-helper", "SKILL.md"));
   });
 
+
+  it("keeps archive overrides isolated between project and global scopes", async () => {
+    const fixture = await createManagerFixture();
+
+    await archiveSkills({
+      assetIds: ["daily-ops"],
+      archived: true,
+      scope: "project",
+      projectDir: fixture.projectDir,
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides
+    });
+
+    const projectSkills = await searchSkills({
+      scope: "project",
+      projectDir: fixture.projectDir,
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides
+    });
+    const globalSkills = await searchSkills({
+      scope: "global",
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides
+    });
+
+    expect(projectSkills.map((skill) => skill.id)).not.toContain("daily-ops");
+    expect(globalSkills.map((skill) => skill.id)).toContain("daily-ops");
+  });
+
   it("installs selected skills into project-native target homes and uninstalls only managed skills", async () => {
     const fixture = await createManagerFixture();
 
@@ -162,7 +203,7 @@ describe("manager operations", () => {
     await expectMissing(join(fixture.projectDir, ".claude", "skills", "research-helper", "SKILL.md"));
 
     const manifest = JSON.parse(
-      await readFile(join(fixture.projectDir, ".aimagician-skills", "manifest.json"), "utf8")
+      await readFile(join(fixture.projectDir, ".skillbird", "manifest.json"), "utf8")
     ) as {
       selectedTargets: string[];
       managedInstalls: Array<{ target: string; assetId: string; destinationPath: string }>;
@@ -198,6 +239,185 @@ describe("manager operations", () => {
     await expectMissing(join(fixture.projectDir, ".claude", "skills", "daily-ops", "SKILL.md"));
     await expectPath(join(fixture.projectDir, ".claude", "skills", "external-helper", "SKILL.md"));
     await expectPath(join(manualSkillDir, "SKILL.md"));
+  });
+
+  it("installs skills selected by category without explicit asset ids", async () => {
+    const fixture = await createManagerFixture();
+
+    const installResult = await installSkills({
+      assetIds: [],
+      category: "build",
+      scope: "project",
+      projectDir: fixture.projectDir,
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides,
+      now: "2026-05-24T11:30:00Z"
+    });
+
+    expect(installResult.installed.map((install) => install.assetId).sort()).toEqual([
+      "daily-ops",
+      "external-helper"
+    ]);
+  });
+
+
+  it("shows default-disabled source skills in search but skips bulk install unless included", async () => {
+    const fixture = await createManagerFixture();
+
+    const searchResults = await searchSkills({
+      query: "business",
+      scope: "global",
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides
+    });
+
+    expect(searchResults.map((skill) => skill.id)).toContain("business-helper");
+
+    const bulkInstall = await installSkills({
+      assetIds: ["business-helper"],
+      scope: "global",
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides,
+      dryRun: true
+    });
+
+    expect(bulkInstall.skipped).toContainEqual({
+      assetId: "business-helper",
+      reason: "source-default-disabled"
+    });
+  });
+
+  it("lets explicit include install from default-disabled sources while exclude wins", async () => {
+    const fixture = await createManagerFixture();
+    const globalConfigPath = join(fixture.platform.configBaseDir, "skillbird", "global", "config.yaml");
+    await mkdir(join(fixture.platform.configBaseDir, "skillbird", "global"), { recursive: true });
+
+    await writeFile(
+      globalConfigPath,
+      [
+        "version: 1",
+        "includedIds:",
+        "  - business-helper"
+      ].join("\n"),
+      "utf8"
+    );
+
+    const includedInstall = await installSkills({
+      assetIds: ["business-helper"],
+      scope: "global",
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides,
+      dryRun: true
+    });
+
+    expect(includedInstall.skipped).toEqual([]);
+    expect(includedInstall.installed.map((install) => install.assetId)).toEqual(["business-helper"]);
+
+    await writeFile(
+      globalConfigPath,
+      [
+        "version: 1",
+        "includedIds:",
+        "  - business-helper",
+        "excludedIds:",
+        "  - business-helper"
+      ].join("\n"),
+      "utf8"
+    );
+
+    const excludedInstall = await installSkills({
+      assetIds: ["business-helper"],
+      scope: "global",
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides,
+      dryRun: true
+    });
+
+    expect(excludedInstall.skipped).toContainEqual({
+      assetId: "business-helper",
+      reason: "excluded"
+    });
+  });
+
+  it("previews install sync without writing target files", async () => {
+    const fixture = await createManagerFixture();
+
+    const preview = await previewInstallSkills({
+      assetIds: ["daily-ops"],
+      scope: "project",
+      projectDir: fixture.projectDir,
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides
+    });
+
+    expect(preview.operations.map((operation) => ({ kind: operation.kind, assetId: operation.assetId }))).toEqual([
+      { kind: "create", assetId: "daily-ops" }
+    ]);
+    expect(preview.targetReports).toEqual([
+      {
+        target: "claude",
+        plannedSkillIds: ["daily-ops"],
+        skippedSkillIds: [],
+        removeSkillIds: [],
+        overwriteSkillIds: []
+      }
+    ]);
+    await expectMissing(join(fixture.projectDir, ".claude", "skills", "daily-ops", "SKILL.md"));
+  });
+
+  it("persists scoped include exclude and default skill overrides", async () => {
+    const fixture = await createManagerFixture();
+
+    await setSkillOverride({
+      assetIds: ["business-helper"],
+      state: "include",
+      scope: "project",
+      projectDir: fixture.projectDir,
+      platform: fixture.platform
+    });
+    let config = await readFile(join(fixture.projectDir, ".skillbird", "config.yaml"), "utf8");
+    expect(config).toContain("includedIds:");
+    expect(config).toContain("business-helper");
+
+    await setSkillOverride({
+      assetIds: ["business-helper"],
+      state: "exclude",
+      scope: "project",
+      projectDir: fixture.projectDir,
+      platform: fixture.platform
+    });
+    config = await readFile(join(fixture.projectDir, ".skillbird", "config.yaml"), "utf8");
+    expect(config).toContain("excludedIds:");
+    expect(config).toContain("business-helper");
+
+    await setSkillOverride({
+      assetIds: ["business-helper"],
+      state: "default",
+      scope: "project",
+      projectDir: fixture.projectDir,
+      platform: fixture.platform
+    });
+    config = await readFile(join(fixture.projectDir, ".skillbird", "config.yaml"), "utf8");
+    expect(config).toContain("includedIds: []");
+    expect(config).toContain("excludedIds: []");
   });
 
   it("resets cursor across global and project scopes before reinstalling all active skills", async () => {
@@ -245,6 +465,7 @@ async function createManagerFixture() {
   const skillsRoot = join(root, "fixture", "catalog", "skills");
   const pluginsRoot = join(root, "fixture", "catalog", "plugins");
   const externalRepoRoot = join(root, "fixture", "external-source");
+  const businessRepoRoot = join(root, "fixture", "business-source");
   const taxonomyPath = join(root, "fixture", "catalog", "taxonomy.yaml");
 
   await mkdir(projectDir, { recursive: true });
@@ -254,22 +475,41 @@ async function createManagerFixture() {
   await mkdir(skillsRoot, { recursive: true });
   await mkdir(pluginsRoot, { recursive: true });
   await mkdir(join(externalRepoRoot, "skills", "external-helper"), { recursive: true });
+  await mkdir(join(businessRepoRoot, "skills", "business-helper"), { recursive: true });
 
   await writeFile(join(ownedSkillsRoot, "daily-ops", "SKILL.md"), "# Daily Ops\n", "utf8");
   await writeFile(join(ownedSkillsRoot, "research-helper", "SKILL.md"), "# Research Helper\n", "utf8");
   await writeFile(join(archivedSkillsRoot, "retired-helper", "SKILL.md"), "# Retired Helper\n", "utf8");
   await writeFile(join(externalRepoRoot, "skills", "external-helper", "SKILL.md"), "# External Helper\n", "utf8");
+  await writeFile(join(businessRepoRoot, "skills", "business-helper", "SKILL.md"), "# Business Helper\n", "utf8");
   await writeFile(
     join(skillsRoot, "skills.yaml"),
     [
       "sources:",
       "  - id: external-skills",
       "    type: github",
+      "    enabled: true",
       "    github:",
       "      repo: aimagician/external-skills",
       "      path: skills",
       "    assets:",
-      "      - path: external-helper"
+      "      - path: external-helper",
+      "  - id: business-skills",
+      "    type: github",
+      "    enabled: false",
+      "    description: Business source",
+      "    github:",
+      "      repo: aimagician/business-skills",
+      "      path: skills",
+      "    assets:",
+      "      - path: business-helper",
+      "  - id: disabled-undiscovered",
+      "    type: github",
+      "    enabled: false",
+      "    description: Disabled source without declared assets must not be cloned during search",
+      "    github:",
+      "      repo: aimagician/missing-undiscovered-skills",
+      "      path: skills"
     ].join("\n"),
     "utf8"
   );
@@ -278,20 +518,24 @@ async function createManagerFixture() {
     taxonomyPath,
     [
       "groups:",
-      "  - id: operations",
-      "    label: Operations",
-      "  - id: coding",
-      "    label: Coding",
+      "  - id: build",
+      "    label: Build",
+      "  - id: research",
+      "    label: Research",
       "skills:",
       "  daily-ops:",
-      "    group: operations",
-      "    subgroup: project-hygiene",
-      "    tags: [ops]",
+      "    group: build",
+      "    subgroup: workflow",
+      "    tags: [workflow]",
       "    recommendedScopes: [project]",
       "    recommendedTargets: [claude]",
       "  external-helper:",
-      "    group: coding",
-      "    tags: [external]"
+      "    group: build",
+      "    subgroup: workflow",
+      "    tags: [external]",
+      "  business-helper:",
+      "    group: strategy",
+      "    tags: [business]"
     ].join("\n"),
     "utf8"
   );
@@ -314,7 +558,8 @@ async function createManagerFixture() {
       workspaceRoot: join(root, "global-workspace")
     },
     githubRepoOverrides: {
-      "aimagician/external-skills": externalRepoRoot
+      "aimagician/external-skills": externalRepoRoot,
+      "aimagician/business-skills": businessRepoRoot
     }
   };
 }

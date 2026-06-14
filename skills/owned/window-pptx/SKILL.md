@@ -1,14 +1,38 @@
 ---
 name: window-pptx
-description: |
-  Automate Windows desktop PowerPoint through COM/VBA-compatible object models from a project folder containing REQUEST.md, templates, assets, data, and output requirements.
+description: >
+  Automate Windows desktop PowerPoint through COM/VBA-compatible object models
+  from a project folder containing REQUEST.md, templates, assets, data, and
+  output requirements.
 
-  Use this skill whenever the user asks to create, edit, batch-update, reproduce, or polish PowerPoint decks on Windows using COM, VBA, pywin32, PowerPoint.Application, iSlide/OKPlus add-in discovery, or a "folder with requirements + PPT/materials" workflow. Also use it when the user wants one-to-one PowerPoint implementation from a template, advanced PPT production, master-level watermarks, reusable slide modules, design systems, award/team/government/technology style layouts, stock image search, Iconify icon search/download, template library retrieval/recommendation, animation/notes/add-in-aware operations, or anything beyond pure pptx libraries.
 
-  This skill has a discuss gate: before executing real deck edits, confirm or read from REQUEST.md the project folder, source/template deck, output policy, macro/add-in policy, and acceptance check.
+  Use this skill whenever the user asks to create, edit, batch-update,
+  reproduce, or polish PowerPoint decks on Windows using COM, VBA, pywin32,
+  PowerPoint.Application, iSlide/OKPlus add-in discovery, or a "folder with
+  requirements + PPT/materials" workflow. Also use it when the user wants
+  one-to-one PowerPoint implementation from a template, advanced PPT production,
+  master-level watermarks, reusable slide modules, design systems,
+  award/team/government/technology style layouts, stock image search, Iconify
+  icon search/download, template library retrieval/recommendation,
+  animation/notes/add-in-aware operations, or anything beyond pure pptx
+  libraries.
+
+
+  This skill has a discuss gate: before executing real deck edits, confirm or
+  read from REQUEST.md the project folder, source/template deck, output policy,
+  macro/add-in policy, and acceptance check.
 compatibility:
-  tools: [powershell, python, git]
+  tools:
+    - powershell
+    - python
+    - git
   requires: Windows desktop PowerPoint, native Windows Python, pywin32
+category: documents
+subcategory: slides
+tags:
+  - pptx
+  - windows
+  - automation
 ---
 
 # Window PowerPoint COM Automation
@@ -286,22 +310,29 @@ python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
   --json
 ```
 
-## Template Library Recommendation V1
+## Template Library Recommendation and Intake
 
-Use this when the user asks to find, choose, rank, compare, or recommend reusable slide templates from the built-in template library.
+Use this when the user asks to find, choose, rank, compare, recommend, or ingest reusable slide templates from the built-in template library.
 
-V1 is documentation + workbook only:
+Core library assets:
 
-- Built-in sample library lives under `templates/template-library/reference/`.
-- Review workbook lives at `templates/template-library/template-library-review.xlsx`.
+- Built-in category PPTX files live under `templates/template-library/reference/`.
+- Preview PNGs are generated under `templates/template-library/previews/`.
+- Review and recommendation metadata lives in `templates/template-library/template-library-review.xlsx`.
 - One category PPTX may contain 3-5 single-page templates.
 - The recommendation unit is one slide, not one deck.
-- Use the reviewed workbook first; only `已通过` rows are production-ready recommendations.
-- Output Top 5 recommendations in chat and in the workbook `Recommendations` sheet.
-- If fewer than five reviewed candidates exist, say so and return all available reviewed candidates.
-- Do not use macros, workbook buttons, automatic template intake, or automatic deck assembly in V1.
 
-Read [template-library-recommendation-workflow.md](./references/template-library-recommendation-workflow.md) for the full V1 workflow, category rules, workbook fields, and validation prompts.
+For V2 intake automation, run the helper from native Windows PowerShell/CMD with desktop PowerPoint installed:
+
+```powershell
+py D:\Growth_up_youth\repo\skills\skills\owned\window-pptx\scripts\window_pptx_automation.py --project-dir D:\Growth_up_youth\repo\skills\skills\owned\window-pptx --intake-template-library --no-save --json
+```
+
+The intake command scans skill-local category PPTX files, exports slide previews, extracts objective slide metadata, and merges AI-initial recommendation fields into the workbook `Library` sheet. It does not create or modify user project decks, does not use macros or workbook buttons, and does not assemble final PPT pages.
+
+For recommendation, consult `template-library-review.xlsx` before designing from scratch. Rows with `ReviewStatus = 已通过` are production-ready recommendations; rows with `AutoRecommendStatus = AutoRecommendable` are AI-initial candidates that may still need human review depending on the request.
+
+Read [template-library-recommendation-workflow.md](./references/template-library-recommendation-workflow.md) for the full workflow, category rules, V2 intake fields, preservation rules, and validation prompts.
 
 ## Execution Workflow
 

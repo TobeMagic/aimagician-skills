@@ -17,7 +17,10 @@ const userConfigSchema = z
     groups: z.array(userGroupSchema).optional(),
     archivedIds: z.array(z.string().min(1)).optional(),
     customTags: z.record(z.string(), z.array(z.string().min(1))).optional(),
-    theme: z.string().optional()
+    theme: z.string().optional(),
+    sourceOverrides: z.record(z.string(), z.boolean()).optional(),
+    includedIds: z.array(z.string().min(1)).optional(),
+    excludedIds: z.array(z.string().min(1)).optional()
   })
   .strict();
 
@@ -33,14 +36,32 @@ export interface UserSkillConfig {
   archivedIds: string[];
   customTags: Record<string, string[]>;
   theme: string;
+  sourceOverrides: Record<string, boolean>;
+  includedIds: string[];
+  excludedIds: string[];
 }
 
 export function userConfigDir(configBaseDir: string): string {
-  return join(configBaseDir, "skillbee");
+  return join(configBaseDir, "skillbird");
 }
 
 export function userConfigPath(configBaseDir: string): string {
   return join(userConfigDir(configBaseDir), "user-config.yaml");
+}
+
+
+export interface ScopedUserConfigOptions {
+  configBaseDir: string;
+  scope: "global" | "project";
+  projectDir?: string;
+}
+
+export function scopedUserConfigPath(options: ScopedUserConfigOptions): string {
+  if (options.scope === "project") {
+    return join(options.projectDir ?? process.cwd(), ".skillbird", "config.yaml");
+  }
+
+  return join(userConfigDir(options.configBaseDir), "global", "config.yaml");
 }
 
 export function defaultUserConfig(): UserSkillConfig {
@@ -49,7 +70,10 @@ export function defaultUserConfig(): UserSkillConfig {
     groups: [],
     archivedIds: [],
     customTags: {},
-    theme: "bee"
+    theme: "dove",
+    sourceOverrides: {},
+    includedIds: [],
+    excludedIds: []
   };
 }
 
@@ -65,7 +89,10 @@ export async function loadUserConfig(configBaseDir: string): Promise<UserSkillCo
       groups: parsed.groups ?? [],
       archivedIds: parsed.archivedIds ?? [],
       customTags: parsed.customTags ?? {},
-      theme: parsed.theme ?? "bee"
+      theme: parsed.theme ?? "dove",
+      sourceOverrides: parsed.sourceOverrides ?? {},
+      includedIds: parsed.includedIds ?? [],
+      excludedIds: parsed.excludedIds ?? []
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -172,4 +199,42 @@ export async function saveTheme(
   config.theme = theme;
   await saveUserConfig(configBaseDir, config);
   return config;
+}
+
+export async function loadScopedUserConfig(
+  options: ScopedUserConfigOptions
+): Promise<UserSkillConfig> {
+  const path = scopedUserConfigPath(options);
+
+  try {
+    const contents = await readFile(path, "utf8");
+    const parsed = userConfigSchema.parse(parse(contents) ?? {});
+
+    return {
+      version: 1,
+      groups: parsed.groups ?? [],
+      archivedIds: parsed.archivedIds ?? [],
+      customTags: parsed.customTags ?? {},
+      theme: parsed.theme ?? "dove",
+      sourceOverrides: parsed.sourceOverrides ?? {},
+      includedIds: parsed.includedIds ?? [],
+      excludedIds: parsed.excludedIds ?? []
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return defaultUserConfig();
+    }
+
+    throw error;
+  }
+}
+
+export async function saveScopedUserConfig(
+  options: ScopedUserConfigOptions,
+  config: UserSkillConfig
+): Promise<void> {
+  const path = scopedUserConfigPath(options);
+
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, stringify(config), "utf8");
 }

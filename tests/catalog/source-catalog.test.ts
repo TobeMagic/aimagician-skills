@@ -18,14 +18,14 @@ afterEach(async () => {
 });
 
 describe("loadCatalog", () => {
-  it("loads the live repository catalogs and preserves github sources that default to all assets", async () => {
+  it("loads the live repository catalogs and keeps external sources disabled by default", async () => {
     const catalog = await loadCatalog({
       skillsRoot: skillsCatalogRoot,
       pluginsRoot: pluginsCatalogRoot
     });
 
     expect(catalog.skills.sources.length).toBeGreaterThanOrEqual(2);
-    expect(catalog.activeSources.length).toBeGreaterThanOrEqual(2);
+    expect(catalog.activeSources).toEqual([]);
     expect(
       catalog.skills.sources.find((source) => source.id === "gsd")
     ).toMatchObject({
@@ -34,7 +34,7 @@ describe("loadCatalog", () => {
   });
 
   it("keeps disabled sources in config while filtering them from active resolution", async () => {
-    const root = await mkdtemp(join(tmpdir(), "aimagician-skills-catalog-"));
+    const root = await mkdtemp(join(tmpdir(), "aimagician-superpower-catalog-"));
     tempDirectories.push(root);
 
     const skillsRoot = join(root, "skills");
@@ -51,6 +51,7 @@ describe("loadCatalog", () => {
         "sources:",
         "  - id: claude-official",
         "    type: github",
+        "    enabled: true",
         "    github:",
         "      repo: anthropics/skills",
         "      path: skills",

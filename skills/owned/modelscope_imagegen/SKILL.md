@@ -1,14 +1,31 @@
 ---
 name: modelscope_imagegen
-description: |
-  Generate and edit images through ModelScope API-Inference, especially for Qwen/Qwen-Image-2512 (text-to-image) and Qwen/Qwen-Image-Edit-2511 (image-to-image edit).
+description: >
+  Generate and edit images through ModelScope API-Inference, especially for
+  Qwen/Qwen-Image-2512 (text-to-image) and Qwen/Qwen-Image-Edit-2511
+  (image-to-image edit).
 
-  Use this skill whenever the user asks to generate images with ModelScope, edit an existing image with ModelScope, use Qwen-Image/Qwen-Image-Edit, call ModelScope API-Inference, or wants a hosted image workflow with token auth instead of local diffusion weights. Also use it when the user mentions async task polling, LoRA image models, single-image or multi-image edit, or wants Python/curl examples for ModelScope image APIs.
 
-  Prefer environment variable MODELSCOPE_API_KEY. Do not hardcode tokens into source files, commits, logs, or screenshots.
+  Use this skill whenever the user asks to generate images with ModelScope, edit
+  an existing image with ModelScope, use Qwen-Image/Qwen-Image-Edit, call
+  ModelScope API-Inference, or wants a hosted image workflow with token auth
+  instead of local diffusion weights. Also use it when the user mentions async
+  task polling, LoRA image models, single-image or multi-image edit, or wants
+  Python/curl examples for ModelScope image APIs.
+
+
+  Prefer environment variable MODELSCOPE_API_KEY. Do not hardcode tokens into
+  source files, commits, logs, or screenshots.
 compatibility:
-  tools: [bash, python]
+  tools:
+    - bash
+    - python
   requires: Python 3, requests, Pillow
+category: design
+subcategory: image-generation
+tags:
+  - image
+  - modelscope
 ---
 
 # ModelScope Image Generation and Editing

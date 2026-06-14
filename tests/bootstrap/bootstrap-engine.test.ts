@@ -30,9 +30,9 @@ describe("runBootstrap", () => {
     });
 
     expect(windows.workspaceRoot).toBe(
-      "C:\\Users\\AImagician\\AppData\\Local\\aimagician-skills"
+      "C:\\Users\\AImagician\\AppData\\Local\\aimagician-superpower"
     );
-    expect(linux.workspaceRoot).toBe("/home/aimagician/.local/state/aimagician-skills");
+    expect(linux.workspaceRoot).toBe("/home/aimagician/.local/state/aimagician-superpower");
   });
 
   it("writes deterministic bootstrap state and avoids duplicate manifest records on rerun", async () => {
@@ -259,10 +259,12 @@ async function createFixtureRepository(
       "sources:",
       "  - id: repo-skills",
       "    type: github",
+      "    enabled: true",
       "    github:",
       "      repo: aimagician/repo-skills",
       "  - id: bootstrap-command",
       "    type: command",
+      "    enabled: true",
       "    targets:",
       "      include:",
       "        - claude",
@@ -275,6 +277,7 @@ async function createFixtureRepository(
         ? [
             "  - id: implicit-command",
             "    type: command",
+            "    enabled: true",
             "    targets:",
             "      include:",
             "        - claude",
@@ -292,6 +295,7 @@ async function createFixtureRepository(
           "sources:",
           "  - id: plugin-repo",
           "    type: github",
+          "    enabled: true",
           "    targets:",
           "      include:",
           "        - claude",

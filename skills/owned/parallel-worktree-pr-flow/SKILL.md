@@ -1,13 +1,28 @@
 ---
 name: parallel-worktree-pr-flow
-description: |
+description: >
   设计、启动、巡检和收口多 worktree 并行开发 + integration 分支验收 + PR 合并的完整工作流。
-  当用户提到“多 worktree 并行开发”“多个 Codex/agent 同时干活”“integration 分支”“批量开 PR”“后台跑 worker”“write_scope / manifest / registry”“统一验收合并”“并行 provider/platform lane”“repo 级协作协议”时，必须使用这个 skill。
+
+  当用户提到“多 worktree 并行开发”“多个 Codex/agent 同时干活”“integration 分支”“批量开 PR”“后台跑
+  worker”“write_scope / manifest / registry”“统一验收合并”“并行 provider/platform
+  lane”“repo 级协作协议”时，必须使用这个 skill。
+
   这个 skill必须同时支持两种仓库：有 `.planning` 的 GSD 管理仓库，以及没有 `.planning` 的普通仓库。
-  在 GSD 管理的仓库中，必须用它把并行执行挂到当前 milestone/phase；在普通仓库中，也必须能独立完成 registry、worktree、PR、验收与集成闭环。不要把这套协议写进产品运行时目录或应用本身的 skills/runtime。
+
+  在 GSD 管理的仓库中，必须用它把并行执行挂到当前 milestone/phase；在普通仓库中，也必须能独立完成
+  registry、worktree、PR、验收与集成闭环。不要把这套协议写进产品运行时目录或应用本身的 skills/runtime。
 compatibility:
-  tools: [bash, git, python]
+  tools:
+    - bash
+    - git
+    - python
   requires: git 仓库、可创建 git worktree、最好有 GitHub CLI 或 API token
+category: operate
+subcategory: git
+tags:
+  - worktree
+  - pr
+  - integration
 ---
 
 # Parallel Worktree PR Flow

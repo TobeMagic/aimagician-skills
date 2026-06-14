@@ -5,8 +5,16 @@ description: |
   当用户提到“提高输出多样性”“避免千篇一律”“多角度方案”“多语言思考”“creative expansion”时必须触发。
   该技能包含强制 discuss 步骤：在参数确认前，不得直接开始批量生成。
 compatibility:
-  tools: [bash, python]
+  tools:
+    - bash
+    - python
   requires: 无强制依赖；可在任意文本任务中使用
+category: design
+subcategory: ideation
+tags:
+  - creative
+  - diversity
+  - ideation
 ---
 
 # Multilingual Diversity Loop

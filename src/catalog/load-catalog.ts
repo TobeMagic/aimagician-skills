@@ -125,7 +125,7 @@ async function loadCatalogFile(
 
   const sources = parsed.sources.map((source) => ({
     ...source,
-    enabled: source.enabled ?? true,
+    enabled: source.enabled ?? false,
     section,
     originFile: filePath
   }));

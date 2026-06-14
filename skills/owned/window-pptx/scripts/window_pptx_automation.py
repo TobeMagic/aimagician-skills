@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -17,6 +18,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
+from xml.etree import ElementTree as ET
 
 
 MISSING = "<unavailable>"
@@ -245,6 +247,11 @@ def parse_args() -> argparse.Namespace:
         "--make-ascii-temp-copy",
         action="store_true",
         help="Copy the template/source deck to an ASCII temp filename under .window-pptx/temp before COM work.",
+    )
+    parser.add_argument(
+        "--intake-template-library",
+        action="store_true",
+        help="Scan built-in template-library PPTX decks, export previews, and update template-library-review.xlsx.",
     )
     parser.add_argument("--list-addins", action="store_true", help="Print PowerPoint add-in inventory.")
     parser.add_argument(
@@ -570,6 +577,588 @@ def export_all_slides_to_png(presentation: Any, export_dir: Path) -> dict[str, A
         list(range(1, int(presentation.Slides.Count) + 1)),
         export_dir,
     )
+
+
+EXCEL_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
+OD_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+ET.register_namespace("", EXCEL_NS)
+
+OBJECTIVE_INTAKE_FIELDS = {
+    "TemplateID",
+    "Category",
+    "SourcePPTX",
+    "SlideNo",
+    "SlideCountInDeck",
+    "PreviewPath",
+    "PreviewUpdatedAt",
+    "VisibleTextSummary",
+    "ShapeCount",
+    "ImageCount",
+    "TableCount",
+    "ChartCount",
+    "IngestStatus",
+    "IngestIssue",
+    "LastAutoIngestedAt",
+}
+
+MANUAL_FIELDS = {
+    "HumanReviewedTags",
+    "ReviewStatus",
+    "Reviewer",
+    "LastReviewedDate",
+    "Notes",
+}
+
+AI_RECOMMENDATION_FIELDS = [
+    "VisualLayoutSummary",
+    "ContentSlots",
+    "StructureTag",
+    "AIInitialTags",
+    "BestFor",
+    "AvoidFor",
+    "MatchKeywords",
+    "AIRecommendationReason",
+    "SuggestedAdaptation",
+    "RequiredInputs",
+    "RiskNotes",
+    "QualityScore",
+    "ReuseComplexity",
+    "EditabilityRisk",
+    "CompositeScore",
+    "AIQualityReason",
+    "AutoRecommendStatus",
+]
+
+V2_LIBRARY_FIELDS = [
+    "PreviewUpdatedAt",
+    "ShapeCount",
+    "ImageCount",
+    "TableCount",
+    "ChartCount",
+    "IngestStatus",
+    "IngestIssue",
+    "LastAutoIngestedAt",
+    *AI_RECOMMENDATION_FIELDS,
+    "ManualLock",
+]
+
+CATEGORY_RULES = {
+    "封面模板": {
+        "structure": "封面标题",
+        "slots": "标题, 副标题, 日期/Logo 可选",
+        "tags": "封面模板, 开场页, 标题页",
+        "best_for": "封面页、开场页、主题页",
+        "avoid_for": "正文页、数据密集页、多模块说明页",
+        "keywords": "封面, 标题, 开场, 主题, cover, title",
+        "adaptation": "替换主标题、副标题和品牌信息，并统一当前 deck 主色。",
+        "required": "主标题；副标题、日期、Logo 可选",
+    },
+    "一段内容": {
+        "structure": "单段正文",
+        "slots": "标题, 单段正文",
+        "tags": "一段内容, 单段正文, 介绍页",
+        "best_for": "简短介绍页、观点页、摘要页、一段正文说明",
+        "avoid_for": "长文、多模块并列、复杂数据页",
+        "keywords": "一段内容, 正文, 介绍, 摘要, paragraph, body",
+        "adaptation": "替换标题和正文，正文过长时先压缩为一段核心观点。",
+        "required": "标题；一段 60-140 字左右正文",
+    },
+    "人物介绍": {
+        "structure": "人物履历",
+        "slots": "姓名, 职位/身份, 简介, 照片可选",
+        "tags": "人物介绍, 个人介绍, 团队介绍",
+        "best_for": "个人介绍、团队成员介绍、嘉宾/讲师介绍",
+        "avoid_for": "纯数据页、流程页、无人物主体的内容页",
+        "keywords": "人物, 个人介绍, 团队, 简历, profile, bio",
+        "adaptation": "替换姓名、身份、简介和头像，并保持人物信息层级清晰。",
+        "required": "姓名；身份/职位；简介；头像可选",
+    },
+    "六段内容": {
+        "structure": "六项卡片",
+        "slots": "标题, 六个要点/模块",
+        "tags": "六段内容, 六项并列, 模块页",
+        "best_for": "6 个要点、6 个模块、6 项能力或 6 步说明",
+        "avoid_for": "少于 4 项的内容、长段正文、单一重点页",
+        "keywords": "六段, 六个要点, 六项, 模块, 6 points, six modules",
+        "adaptation": "把内容压缩成 6 个平行短句，并统一每项标题长度。",
+        "required": "标题；6 个并列要点或模块名称",
+    },
+}
+
+
+def template_library_paths(project_dir: Path, args: argparse.Namespace) -> dict[str, Path]:
+    skill_root = Path(__file__).resolve().parents[1]
+    library_root = skill_root / "templates" / "template-library"
+    preview_dir = resolve_path(project_dir, args.export_dir) if args.export_dir else library_root / "previews"
+    if preview_dir is None:
+        preview_dir = library_root / "previews"
+    return {
+        "skill_root": skill_root,
+        "library_root": library_root,
+        "reference_dir": library_root / "reference",
+        "workbook_path": library_root / "template-library-review.xlsx",
+        "preview_dir": preview_dir,
+    }
+
+
+def discover_template_category_decks(reference_dir: Path) -> list[Path]:
+    if not reference_dir.exists():
+        die(f"Template library reference directory not found: {reference_dir}")
+    decks = sorted(path for path in reference_dir.glob("*.pptx") if not path.name.startswith("~$"))
+    if not decks:
+        die(f"No template category PPTX files found in: {reference_dir}")
+    return decks
+
+
+def category_from_deck(deck_path: Path) -> str:
+    return deck_path.stem
+
+
+def make_template_id(category: str, slide_no: int) -> str:
+    return f"{category}::S{slide_no:03d}"
+
+
+def col_name(index: int) -> str:
+    name = ""
+    while index:
+        index, remainder = divmod(index - 1, 26)
+        name = chr(65 + remainder) + name
+    return name
+
+
+def col_index(cell_ref: str) -> int:
+    letters = "".join(ch for ch in cell_ref if ch.isalpha())
+    index = 0
+    for letter in letters:
+        index = index * 26 + ord(letter.upper()) - 64
+    return index
+
+
+def cell_ref(column: int, row: int) -> str:
+    return f"{col_name(column)}{row}"
+
+
+def xlsx_text_from_cell(cell: ET.Element, shared_strings: list[str]) -> str:
+    ns = f"{{{EXCEL_NS}}}"
+    formula = cell.find(f"{ns}f")
+    if formula is not None and formula.text:
+        return "=" + formula.text
+    cell_type = cell.attrib.get("t")
+    if cell_type == "inlineStr":
+        text_node = cell.find(f"{ns}is/{ns}t")
+        return text_node.text if text_node is not None and text_node.text is not None else ""
+    value_node = cell.find(f"{ns}v")
+    if value_node is None or value_node.text is None:
+        return ""
+    if cell_type == "s":
+        try:
+            return shared_strings[int(value_node.text)]
+        except Exception:
+            return ""
+    return value_node.text
+
+
+def load_shared_strings(zf: zipfile.ZipFile) -> list[str]:
+    if "xl/sharedStrings.xml" not in zf.namelist():
+        return []
+    root = ET.fromstring(zf.read("xl/sharedStrings.xml"))
+    ns = f"{{{EXCEL_NS}}}"
+    strings: list[str] = []
+    for si in root.findall(f"{ns}si"):
+        parts = [node.text or "" for node in si.findall(f".//{ns}t")]
+        strings.append("".join(parts))
+    return strings
+
+
+def worksheet_target_for_sheet(zf: zipfile.ZipFile, sheet_name: str) -> str:
+    workbook = ET.fromstring(zf.read("xl/workbook.xml"))
+    rels = ET.fromstring(zf.read("xl/_rels/workbook.xml.rels"))
+    ns = f"{{{EXCEL_NS}}}"
+    rel_attr = f"{{{OD_REL_NS}}}id"
+    rel_id = None
+    for sheet in workbook.findall(f"{ns}sheets/{ns}sheet"):
+        if sheet.attrib.get("name") == sheet_name:
+            rel_id = sheet.attrib.get(rel_attr)
+            break
+    if not rel_id:
+        die(f"Workbook sheet not found: {sheet_name}")
+    for rel in rels.findall(f"{{{REL_NS}}}Relationship"):
+        if rel.attrib.get("Id") == rel_id:
+            target = rel.attrib.get("Target", "")
+            return target if target.startswith("xl/") else "xl/" + target.lstrip("/")
+    die(f"Workbook relationship not found for sheet: {sheet_name}")
+
+
+def read_xlsx_sheet_rows(workbook_path: Path, sheet_name: str) -> tuple[list[str], list[dict[str, str]], ET.Element]:
+    with zipfile.ZipFile(workbook_path) as zf:
+        target = worksheet_target_for_sheet(zf, sheet_name)
+        shared_strings = load_shared_strings(zf)
+        root = ET.fromstring(zf.read(target))
+    ns = f"{{{EXCEL_NS}}}"
+    sheet_data = root.find(f"{ns}sheetData")
+    if sheet_data is None:
+        return [], [], root
+    matrix: dict[int, dict[int, str]] = {}
+    for row in sheet_data.findall(f"{ns}row"):
+        row_index = int(row.attrib.get("r", "0") or 0)
+        matrix[row_index] = {}
+        for cell in row.findall(f"{ns}c"):
+            ref = cell.attrib.get("r", "A1")
+            matrix[row_index][col_index(ref)] = xlsx_text_from_cell(cell, shared_strings)
+    headers = [matrix.get(1, {}).get(i, "") for i in range(1, max(matrix.get(1, {}) or {0: ''}) + 1)]
+    headers = [header for header in headers if header]
+    rows: list[dict[str, str]] = []
+    for row_index in sorted(index for index in matrix if index > 1):
+        row_values = matrix[row_index]
+        row_dict = {header: row_values.get(i + 1, "") for i, header in enumerate(headers)}
+        if any(value != "" for value in row_dict.values()):
+            rows.append(row_dict)
+    return headers, rows, root
+
+
+def xlsx_cell(column: int, row: int, value: str, style: str | None = None) -> ET.Element:
+    cell = ET.Element(f"{{{EXCEL_NS}}}c", {"r": cell_ref(column, row)})
+    if style:
+        cell.set("s", style)
+    if value.startswith("="):
+        formula = ET.SubElement(cell, f"{{{EXCEL_NS}}}f")
+        formula.text = value[1:]
+        return cell
+    cell.set("t", "inlineStr")
+    inline = ET.SubElement(cell, f"{{{EXCEL_NS}}}is")
+    text_node = ET.SubElement(inline, f"{{{EXCEL_NS}}}t")
+    if value.strip() != value or "\n" in value:
+        text_node.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    text_node.text = value
+    return cell
+
+
+def build_library_sheet_xml(headers: list[str], rows: list[dict[str, str]], old_root: ET.Element) -> bytes:
+    ns = f"{{{EXCEL_NS}}}"
+    root = ET.Element(f"{ns}worksheet")
+    for tag in ("sheetViews", "cols"):
+        existing = old_root.find(f"{ns}{tag}")
+        if existing is not None:
+            root.append(existing)
+    sheet_data = ET.SubElement(root, f"{ns}sheetData")
+    header_row = ET.SubElement(sheet_data, f"{ns}row", {"r": "1"})
+    for column, header in enumerate(headers, start=1):
+        header_row.append(xlsx_cell(column, 1, header, "1"))
+    for row_index, row_dict in enumerate(rows, start=2):
+        row = ET.SubElement(sheet_data, f"{ns}row", {"r": str(row_index)})
+        for column, header in enumerate(headers, start=1):
+            row.append(xlsx_cell(column, row_index, str(row_dict.get(header, ""))))
+    merge_cells = old_root.find(f"{ns}mergeCells")
+    if merge_cells is not None:
+        root.append(merge_cells)
+    auto_filter = ET.Element(f"{ns}autoFilter", {"ref": f"A1:{col_name(len(headers))}{max(len(rows) + 1, 1)}"})
+    root.append(auto_filter)
+    data_validations = old_root.find(f"{ns}dataValidations")
+    if data_validations is not None:
+        root.append(data_validations)
+    page_margins = old_root.find(f"{ns}pageMargins")
+    if page_margins is not None:
+        root.append(page_margins)
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
+def write_xlsx_sheet_rows_preserving_workbook(workbook_path: Path, sheet_name: str, headers: list[str], rows: list[dict[str, str]], old_root: ET.Element) -> None:
+    with zipfile.ZipFile(workbook_path) as source:
+        target = worksheet_target_for_sheet(source, sheet_name)
+        replacement = build_library_sheet_xml(headers, rows, old_root)
+        temp_path = workbook_path.with_suffix(workbook_path.suffix + ".tmp")
+        with zipfile.ZipFile(temp_path, "w", zipfile.ZIP_DEFLATED) as dest:
+            for item in source.infolist():
+                if item.filename == target:
+                    dest.writestr(item, replacement)
+                else:
+                    dest.writestr(item, source.read(item.filename))
+    temp_path.replace(workbook_path)
+
+
+def is_manual_locked(row: dict[str, str]) -> bool:
+    return str(row.get("ManualLock", "")).strip().lower() in {"yes", "是", "true", "1", "locked"}
+
+
+def is_usage_field(header: str) -> bool:
+    lowered = header.lower()
+    return any(token in lowered for token in ["usage", "used", "selection", "selected", "final", "feedback", "count", "rate"])
+
+
+def merge_library_rows(headers: list[str], existing_rows: list[dict[str, str]], intake_rows: list[dict[str, str]]) -> tuple[list[str], list[dict[str, str]], dict[str, int]]:
+    for field in V2_LIBRARY_FIELDS:
+        if field not in headers:
+            headers.append(field)
+    for row in existing_rows:
+        for header in headers:
+            row.setdefault(header, "")
+    rows_by_id = {row.get("TemplateID", ""): row for row in existing_rows if row.get("TemplateID")}
+    stats = {"rows_added": 0, "rows_updated": 0, "rows_locked_objective_only": 0}
+    for intake in intake_rows:
+        template_id = intake.get("TemplateID", "")
+        if template_id in rows_by_id:
+            existing = rows_by_id[template_id]
+            locked = is_manual_locked(existing)
+            for header in headers:
+                if header not in intake:
+                    continue
+                is_objective = header in OBJECTIVE_INTAKE_FIELDS
+                if not is_objective and (header in MANUAL_FIELDS or is_usage_field(header)):
+                    continue
+                if locked and not is_objective:
+                    continue
+                existing[header] = str(intake.get(header, ""))
+            if locked:
+                stats["rows_locked_objective_only"] += 1
+            else:
+                stats["rows_updated"] += 1
+        else:
+            new_row = {header: str(intake.get(header, "")) for header in headers}
+            existing_rows.append(new_row)
+            rows_by_id[template_id] = new_row
+            stats["rows_added"] += 1
+    return headers, existing_rows, stats
+
+
+def apply_library_formulas(headers: list[str], rows: list[dict[str, str]]) -> None:
+    required = {"UseCount", "SelectedCount", "FinalUsedCount", "SelectedRate", "FinalUsedRate", "QualityScore", "CompositeScore"}
+    if not required.issubset(set(headers)):
+        return
+    columns = {header: col_name(index) for index, header in enumerate(headers, start=1)}
+    for index, row in enumerate(rows, start=2):
+        use_count = f"{columns['UseCount']}{index}"
+        selected_count = f"{columns['SelectedCount']}{index}"
+        final_used_count = f"{columns['FinalUsedCount']}{index}"
+        quality_score = f"{columns['QualityScore']}{index}"
+        selected_rate = f"{columns['SelectedRate']}{index}"
+        final_used_rate = f"{columns['FinalUsedRate']}{index}"
+        row["SelectedRate"] = f"=IF({use_count}=0,0,{selected_count}/{use_count})"
+        row["FinalUsedRate"] = f"=IF({use_count}=0,0,{final_used_count}/{use_count})"
+        row["CompositeScore"] = f"={quality_score}*0.5+{selected_rate}*0.2+{final_used_rate}*0.2"
+
+
+def summarize_visible_text(texts: list[str], limit: int = 400) -> str:
+    summary = re.sub(r"\s+", " ", " ".join(text.strip() for text in texts if text.strip())).strip()
+    if len(summary) > limit:
+        return summary[: limit - 3] + "..."
+    return summary
+
+
+def safe_shape_text(shape: Any) -> str:
+    try:
+        if not shape.HasTextFrame:
+            return ""
+        if not shape.TextFrame.HasText:
+            return ""
+        return str(shape.TextFrame.TextRange.Text).strip()
+    except Exception:
+        return ""
+
+
+def truthy_com_attr(shape: Any, attr: str) -> bool:
+    try:
+        return bool(getattr(shape, attr))
+    except Exception:
+        return False
+
+
+def inspect_template_slide(slide: Any) -> dict[str, Any]:
+    texts: list[str] = []
+    shape_count = 0
+    image_count = 0
+    table_count = 0
+    chart_count = 0
+    for shape in iter_slide_shapes(slide):
+        shape_count += 1
+        text = safe_shape_text(shape)
+        if text:
+            texts.append(text)
+        try:
+            if int(get_attr(shape, "Type")) == 13:
+                image_count += 1
+        except Exception:
+            pass
+        if truthy_com_attr(shape, "HasTable"):
+            table_count += 1
+        if truthy_com_attr(shape, "HasChart"):
+            chart_count += 1
+    return {
+        "VisibleTextSummary": summarize_visible_text(texts),
+        "ShapeCount": shape_count,
+        "ImageCount": image_count,
+        "TableCount": table_count,
+        "ChartCount": chart_count,
+    }
+
+
+def relative_to_skill(path: Path, skill_root: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(skill_root.resolve())).replace("\\", "/")
+    except Exception:
+        return str(path)
+
+
+def export_template_preview(slide: Any, preview_dir: Path, category: str, slide_no: int) -> Path:
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    category_stem = sanitize_filename(category, "")
+    category_key = hashlib.sha1(category.encode("utf-8")).hexdigest()[:8]
+    stem = f"{category_stem}-{category_key}" if category_stem else category_key
+    target = preview_dir / f"{stem}__S{slide_no:03d}.png"
+    slide.Export(str(target), "PNG", 1600, 900)
+    return target
+
+
+def risk_level(shape_count: int, image_count: int, table_count: int, chart_count: int) -> tuple[str, str, str]:
+    complexity_label = "低"
+    complexity_score = "1"
+    if shape_count >= 35 or table_count or chart_count:
+        complexity_label = "高"
+        complexity_score = "5"
+    elif shape_count >= 18 or image_count >= 3:
+        complexity_label = "中"
+        complexity_score = "3"
+    risk = "低"
+    if chart_count or table_count or image_count >= 5:
+        risk = "高"
+    elif image_count >= 2 or shape_count >= 30:
+        risk = "中"
+    return complexity_label, complexity_score, risk
+
+
+def build_initial_intake_fields(category: str, objective: dict[str, Any], issue: str, now: str) -> dict[str, str]:
+    rule = CATEGORY_RULES.get(category, {})
+    shape_count = int(objective.get("ShapeCount", 0) or 0)
+    image_count = int(objective.get("ImageCount", 0) or 0)
+    table_count = int(objective.get("TableCount", 0) or 0)
+    chart_count = int(objective.get("ChartCount", 0) or 0)
+    complexity_label, complexity_score, risk = risk_level(shape_count, image_count, table_count, chart_count)
+    risk_notes: list[str] = []
+    if not objective.get("VisibleTextSummary"):
+        risk_notes.append("未检测到可见文本；推荐前应查看预览确认文本槽位。")
+    if table_count:
+        risk_notes.append("包含表格，复用时需要准备结构化数据。")
+    if chart_count:
+        risk_notes.append("包含图表，复用时需要准备可替换数据。")
+    if issue:
+        risk_notes.append(issue)
+    quality_score = "4"
+    if complexity_label == "高" or risk == "高":
+        quality_score = "3"
+    if issue:
+        quality_score = "2"
+    status = "NeedsReview" if issue else "AutoRecommendable"
+    visual = f"基于类别、可见文本和对象统计自动初标；形状 {shape_count} 个，图片 {image_count} 个，表格 {table_count} 个，图表 {chart_count} 个，复杂度 {complexity_label}。"
+    if not rule:
+        visual += " 未命中专用类别规则，推荐前应人工查看预览。"
+    return {
+        "VisualLayoutSummary": visual,
+        "ContentSlots": rule.get("slots", "标题, 内容槽位待确认"),
+        "StructureTag": rule.get("structure", category),
+        "AIInitialTags": rule.get("tags", category),
+        "BestFor": rule.get("best_for", f"{category} 类页面需求"),
+        "AvoidFor": rule.get("avoid_for", "类别不匹配或信息结构差异较大的页面"),
+        "MatchKeywords": rule.get("keywords", category),
+        "AIRecommendationReason": f"类别为 {category}，结构与该类模板库来源匹配；可见文本和对象统计已完成入库。",
+        "SuggestedAdaptation": rule.get("adaptation", "替换标题、正文和视觉元素，并对齐当前 deck 主色。"),
+        "RequiredInputs": rule.get("required", "标题和页面核心内容"),
+        "RiskNotes": " ".join(risk_notes),
+        "QualityScore": quality_score,
+        "ReuseComplexity": complexity_score,
+        "EditabilityRisk": risk,
+        "AIQualityReason": f"初始评分来自类别匹配、形状复杂度、图片/表格/图表数量和入库状态；当前状态：{status}。",
+        "AutoRecommendStatus": status,
+        "LastAutoIngestedAt": now,
+    }
+
+
+def open_template_presentation(app: Any, deck_path: Path) -> Any:
+    return app.Presentations.Open(str(deck_path), MSO_TRUE, MSO_TRUE, MSO_FALSE)
+
+
+def intake_template_library(app: Any, project_dir: Path, args: argparse.Namespace) -> dict[str, Any]:
+    paths = template_library_paths(project_dir, args)
+    workbook_path = paths["workbook_path"]
+    if not workbook_path.exists():
+        die(f"Template library workbook not found: {workbook_path}")
+    decks = discover_template_category_decks(paths["reference_dir"])
+    now = datetime.now().isoformat(timespec="seconds")
+    intake_rows: list[dict[str, str]] = []
+    issues: list[dict[str, str]] = []
+    previews_written = 0
+    slides_scanned = 0
+    for deck in decks:
+        category = category_from_deck(deck)
+        presentation = None
+        try:
+            presentation = open_template_presentation(app, deck)
+            slide_count = int(presentation.Slides.Count)
+            for slide_no in range(1, slide_count + 1):
+                slides_scanned += 1
+                slide = presentation.Slides(slide_no)
+                issue = ""
+                objective = {"VisibleTextSummary": "", "ShapeCount": 0, "ImageCount": 0, "TableCount": 0, "ChartCount": 0}
+                try:
+                    objective.update(inspect_template_slide(slide))
+                except Exception as exc:
+                    issue = f"基础解析失败：{exc}"
+                preview_path = ""
+                preview_updated_at = ""
+                try:
+                    preview = export_template_preview(slide, paths["preview_dir"], category, slide_no)
+                    preview_path = relative_to_skill(preview, paths["skill_root"])
+                    preview_updated_at = now
+                    previews_written += 1
+                except Exception as exc:
+                    export_issue = f"预览导出失败：{exc}"
+                    issue = f"{issue} {export_issue}".strip()
+                fields = build_initial_intake_fields(category, objective, issue, now)
+                source_pptx = relative_to_skill(deck, paths["skill_root"])
+                row = {
+                    "TemplateID": make_template_id(category, slide_no),
+                    "Category": category,
+                    "SourcePPTX": source_pptx,
+                    "SlideNo": str(slide_no),
+                    "SlideCountInDeck": str(slide_count),
+                    "PreviewPath": preview_path,
+                    "PreviewUpdatedAt": preview_updated_at,
+                    "VisibleTextSummary": str(objective.get("VisibleTextSummary", "")),
+                    "ShapeCount": str(objective.get("ShapeCount", "")),
+                    "ImageCount": str(objective.get("ImageCount", "")),
+                    "TableCount": str(objective.get("TableCount", "")),
+                    "ChartCount": str(objective.get("ChartCount", "")),
+                    "IngestStatus": "issue" if issue else "ok",
+                    "IngestIssue": issue,
+                    "ManualLock": "",
+                    **fields,
+                }
+                intake_rows.append(row)
+                if issue:
+                    issues.append({"template_id": row["TemplateID"], "issue": issue})
+        except Exception as exc:
+            issue = {"deck": str(deck), "issue": f"PPTX 打开或扫描失败：{exc}"}
+            issues.append(issue)
+        finally:
+            if presentation is not None:
+                try:
+                    presentation.Close()
+                except Exception:
+                    pass
+    headers, rows, old_root = read_xlsx_sheet_rows(workbook_path, "Library")
+    headers, merged_rows, stats = merge_library_rows(headers, rows, intake_rows)
+    apply_library_formulas(headers, merged_rows)
+    write_xlsx_sheet_rows_preserving_workbook(workbook_path, "Library", headers, merged_rows, old_root)
+    return {
+        "library_root": str(paths["library_root"]),
+        "reference_dir": str(paths["reference_dir"]),
+        "workbook": str(workbook_path),
+        "preview_dir": str(paths["preview_dir"]),
+        "decks_scanned": len(decks),
+        "slides_scanned": slides_scanned,
+        "previews_written": previews_written,
+        "issues": issues,
+        **stats,
+    }
 
 
 def rgb(r: int, g: int, b: int) -> int:
@@ -1474,6 +2063,7 @@ def main() -> None:
             args.list_addins,
             args.probe_plugin_apis,
             args.export_slides,
+            args.intake_template_library,
             args.add_master_watermark,
             args.export_qa,
             args.audit_deck,
@@ -1532,6 +2122,15 @@ def main() -> None:
 
         if args.list_addins and args.no_save:
             print_addins(addins, args.json)
+            return
+
+        if args.intake_template_library:
+            intake_result = intake_template_library(app, project_dir, args)
+            if args.json:
+                print(json.dumps({"template_library_intake": intake_result}, ensure_ascii=False, indent=2))
+            else:
+                print("Template library intake complete")
+                print(json.dumps(intake_result, ensure_ascii=False, indent=2))
             return
 
         request_path: Path | None = None

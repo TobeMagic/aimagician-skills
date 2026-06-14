@@ -1,6 +1,9 @@
 ---
 name: code-guidelines
-description: Use for every non-trivial coding task, including feature work, bug fixes, refactors, review fixes, test failures, and debugging. Also use when the user asks to think before coding, wants minimal diffs, wants to avoid overengineering, or wants testable/verifiable goals.
+description: Use for every non-trivial coding task, including feature work, bug
+  fixes, refactors, review fixes, test failures, and debugging. Also use when
+  the user asks to think before coding, wants minimal diffs, wants to avoid
+  overengineering, or wants testable/verifiable goals.
 metadata:
   related_skills:
     - test-driven-development
@@ -8,8 +11,16 @@ metadata:
     - github-pr-workflow
     - llm-know-how-wiki
 compatibility:
-  tools: [bash, git]
+  tools:
+    - bash
+    - git
   requires: A codebase, a concrete task, and preferably a runnable verification command
+category: build
+subcategory: quality
+tags:
+  - coding
+  - quality
+  - verification
 ---
 
 # Code Guidelines

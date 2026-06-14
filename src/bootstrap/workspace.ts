@@ -43,7 +43,7 @@ function resolveWorkspaceRoot(
   options: BootstrapWorkspaceOptions
 ): string {
   if (options.scope === "project") {
-    return join(options.projectDir ?? process.cwd(), ".aimagician-skills");
+    return join(options.projectDir ?? process.cwd(), ".skillbird");
   }
 
   return platformContext.workspaceRoot;

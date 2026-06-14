@@ -13,6 +13,10 @@ import {
   type ResetSkillsResult,
   type UninstallSkillsResult
 } from "../manager/manager";
+import {
+  formatOwnedSkills,
+  type FormatOwnedSkillsResult
+} from "../manager/skill-format";
 import { runDashboard } from "../tui/dashboard";
 import { parseCli } from "./parse-cli";
 
@@ -56,6 +60,9 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
     if (parsed.command === "search") {
       const result = await searchSkills({
         query: parsed.query,
+        category: parsed.category,
+        subcategory: parsed.subcategory,
+        tags: parsed.tags,
         scope: parsed.scope,
         projectDir: parsed.projectDir,
         selectedTargets: parsed.targets,
@@ -75,10 +82,14 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
     if (parsed.command === "install") {
       const result = await installSkills({
         assetIds: parsed.assetIds,
+        category: parsed.category,
+        subcategory: parsed.subcategory,
+        tags: parsed.tags,
         scope: parsed.scope,
         projectDir: parsed.projectDir,
         selectedTargets: parsed.targets,
         includeArchived: parsed.includeArchived,
+        dryRun: parsed.dryRun,
         platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
       });
 
@@ -125,6 +136,18 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
         stdout: parsed.json
           ? JSON.stringify({ command: parsed.command, ...result }, null, 2)
           : renderReset(result),
+        stderr: ""
+      };
+    }
+
+    if (parsed.command === "format-skills") {
+      const result = await formatOwnedSkills({ mode: parsed.mode });
+
+      return {
+        exitCode: result.records.some((record) => record.status !== "ok") && parsed.mode === "check" ? 1 : 0,
+        stdout: parsed.json
+          ? JSON.stringify({ command: parsed.command, ...result }, null, 2)
+          : renderFormatSkills(result),
         stderr: ""
       };
     }
@@ -230,7 +253,7 @@ function renderBootstrapPreview(
   const preview = createBootstrapPreview(parsed, result);
 
   return [
-    "Skillbee bootstrap",
+    "Skillbird bootstrap",
     `Mode: ${preview.mode}`,
     `Targets: ${preview.targets.join(", ")}`,
     `Workspace: ${preview.workspaceRoot}`,
@@ -259,14 +282,15 @@ function renderInspection(
 
 function renderHelp(): string {
   return [
-    "Usage: skillbee <command> [--target <codex|claude|opencode|gemini|hermes|cursor|copilot>] [--json]",
+    "Usage: skillbird <command> [--target <codex|claude|opencode|gemini|hermes|cursor|copilot>] [--json]",
     "",
     "Commands:",
     "  tui           Open the skill manager dashboard (default command)",
     "  search        Search local packaged skills",
-    "  install       Install selected skills (requires --scope)",
+    "  install       Install selected skills, or preview with --dry-run (requires --scope)",
     "  uninstall     Uninstall managed skills only (requires --scope)",
     "  reset         Clear one target scope and reinstall all active skills",
+    "  format-skills Check or write owned skill category frontmatter",
     "  bootstrap     Run the legacy all-selected bootstrap workflow",
     "  list          Show detected assets per target and scope",
     "  inspect       Show detailed target inspection output",
@@ -278,10 +302,15 @@ function renderHelp(): string {
     "  --scope       Scope for manager commands: global or project; reset also supports all",
     "  --project     Project directory for project scope (default: current directory)",
     "  --home        Override the effective home directory (default: current ~/)",
+    "  --category    Search/install skills by category slug",
+    "  --subcategory Search/install skills by subcategory slug",
+    "  --tag, --tags Search/install skills by tag slug (comma-separated accepted)",
+    "  --check       format-skills check mode (default)",
+    "  --write       format-skills write mode",
     "  --install-all Reset-only flag: reinstall every active skill after clearing",
     "  --yes, -y     Confirm reset when applying changes",
     "  --include-archived  Show or install archived owned skills",
-    "  --dry-run     Print bootstrap/reset intent without applying changes",
+    "  --dry-run     Print bootstrap/install/reset intent without applying changes",
     "  --clean       Wipe all target skill/plugin dirs before install (bootstrap only)",
     "  --json        Render machine-readable output",
     "  -h, --help    Show command help"
@@ -290,7 +319,7 @@ function renderHelp(): string {
 
 function renderTuiNotice(): string {
   return [
-    "Skillbee dashboard",
+    "Skillbird dashboard",
     "Interactive dashboard support is available through the tui command in a terminal session.",
     "Use search/install/uninstall for non-interactive workflows."
   ].join("\n");
@@ -298,7 +327,7 @@ function renderTuiNotice(): string {
 
 function renderSearch(skills: ManagerSkillRecord[]): string {
   return [
-    "Skillbee search",
+    "Skillbird search",
     ...skills.map((skill) => {
       const status = skill.installedTargets.length > 0
         ? `installed: ${skill.installedTargets.join(",")}`
@@ -313,7 +342,8 @@ function renderSearch(skills: ManagerSkillRecord[]): string {
 
 function renderInstall(result: InstallSkillsResult): string {
   return [
-    "Skillbee install",
+    "Skillbird install",
+    `Mode: ${result.dryRun ? "dry-run" : "apply"}`,
     `Scope: ${result.scope}`,
     `Workspace: ${result.workspaceRoot}`,
     `Installed: ${result.installed.length > 0 ? result.installed.map((install) => `${install.assetId}->${install.target}`).join(", ") : "none"}`,
@@ -324,7 +354,7 @@ function renderInstall(result: InstallSkillsResult): string {
 
 function renderUninstall(result: UninstallSkillsResult): string {
   return [
-    "Skillbee uninstall",
+    "Skillbird uninstall",
     `Scope: ${result.scope}`,
     `Workspace: ${result.workspaceRoot}`,
     `Removed: ${result.removed.length > 0 ? result.removed.map((install) => `${install.assetId}->${install.target}`).join(", ") : "none"}`,
@@ -334,7 +364,7 @@ function renderUninstall(result: UninstallSkillsResult): string {
 
 function renderReset(result: ResetSkillsResult): string {
   return [
-    "Skillbee reset",
+    "Skillbird reset",
     `Target: ${result.target}`,
     `Mode: ${result.dryRun ? "dry-run" : "apply"}`,
     ...result.scopes.flatMap((scopeResult) => [
@@ -345,6 +375,25 @@ function renderReset(result: ResetSkillsResult): string {
       `  Command sources: ${scopeResult.commandReports.length > 0 ? scopeResult.commandReports.map((report) => report.sourceId).join(", ") : "none"}`,
       `  Skipped: ${scopeResult.skipped.length > 0 ? scopeResult.skipped.map((skip) => `${skip.assetId} (${skip.reason})`).join(", ") : "none"}`
     ])
+  ].join("\n");
+}
+
+function renderFormatSkills(result: FormatOwnedSkillsResult): string {
+  const issueRecords = result.records.filter((record) => record.status !== "ok");
+
+  return [
+    "Skillbird format-skills",
+    `Mode: ${result.mode}`,
+    `Changed: ${result.changed ? "yes" : "no"}`,
+    `Checked: ${result.records.length}`,
+    `Issues: ${issueRecords.length > 0 ? issueRecords.length : "none"}`,
+    ...issueRecords.map((record) => {
+      const classification = record.status === "missing-taxonomy"
+        ? "missing taxonomy"
+        : `${record.category ?? "uncategorized"}${record.subcategory ? `/${record.subcategory}` : ""}`;
+
+      return `  ${record.id}: ${classification} (${record.issues.join(", ")})`;
+    })
   ].join("\n");
 }
 
@@ -390,7 +439,7 @@ function renderList(
   inspection: Awaited<ReturnType<typeof inspectInstallation>>
 ): string {
   return [
-    "Skillbee list",
+    "Skillbird list",
     `Scope: ${inspection.scope}`,
     `Workspace: ${inspection.workspaceRoot}`,
     `Manifest: ${inspection.manifestExists ? "present" : "missing"}`,
@@ -416,7 +465,7 @@ function renderInspect(
   inspection: Awaited<ReturnType<typeof inspectInstallation>>
 ): string {
   return [
-    "Skillbee inspect",
+    "Skillbird inspect",
     `Scope: ${inspection.scope}`,
     `Workspace: ${inspection.workspaceRoot}`,
     `Manifest path: ${inspection.manifestPath}`,
@@ -438,7 +487,7 @@ function renderDoctor(
   inspection: Awaited<ReturnType<typeof inspectInstallation>>
 ): string {
   return [
-    "Skillbee doctor",
+    "Skillbird doctor",
     `Scope: ${inspection.scope}`,
     `Status: ${inspection.status}`,
     `Manifest: ${inspection.manifestExists ? inspection.manifestPath : "missing"}`,

@@ -1,13 +1,24 @@
 ---
 name: github-pr-workflow
-description: Use when creating, inspecting, reviewing, updating, or closing GitHub pull requests, especially when PR readiness depends on CI, reviewer-bot output, review comments, Linear links, or LLM wiki activity records.
+description: Use when creating, inspecting, reviewing, updating, or closing
+  GitHub pull requests, especially when PR readiness depends on CI, reviewer-bot
+  output, review comments, Linear links, or LLM wiki activity records.
 metadata:
   related_skills:
     - linear-issue-workflow
     - llm-know-how-wiki
 compatibility:
-  tools: [bash, git, gh, python]
+  tools:
+    - bash
+    - git
+    - gh
+    - python
   requires: GitHub CLI authenticated for the target repo
+category: operate
+subcategory: github
+tags:
+  - pull-request
+  - review
 ---
 
 # GitHub PR Workflow

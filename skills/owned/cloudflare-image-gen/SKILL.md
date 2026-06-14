@@ -1,16 +1,30 @@
 ---
 name: cloudflare-image-gen
-description: |
+description: >
   Generate images using Cloudflare Workers AI image models.
+
 
   Use when asked to generate, draw, create, render, or visualize any image.
 
+
   Required env vars: CF_ACCOUNT_ID, CF_API_TOKEN
 
+
   Notes:
-  - Cloudflare Workers AI returns JSON, and the image bytes are usually in `.result.image` as Base64.
-  - For exact Chinese text, logos, or watermarks, prefer post-processing; direct prompt text rendering is unreliable.
-  - `flux-1-schnell` can accept `width` and `height`, and both should be divisible by 8.
+
+  - Cloudflare Workers AI returns JSON, and the image bytes are usually in
+  `.result.image` as Base64.
+
+  - For exact Chinese text, logos, or watermarks, prefer post-processing; direct
+  prompt text rendering is unreliable.
+
+  - `flux-1-schnell` can accept `width` and `height`, and both should be
+  divisible by 8.
+category: design
+subcategory: image-generation
+tags:
+  - image
+  - cloudflare
 ---
 
 ## Requirements

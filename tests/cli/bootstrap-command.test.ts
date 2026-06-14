@@ -84,12 +84,42 @@ describe("parseCli", () => {
       json: true,
       help: false
     });
+    expect(parseCli(["search", "--category", "build", "--tag", "workflow"])).toEqual({
+      command: "search",
+      targets: ["codex", "claude", "opencode", "gemini", "hermes", "cursor", "copilot"],
+      scope: "global",
+      category: "build",
+      tags: ["workflow"],
+      json: false,
+      help: false
+    });
     expect(parseCli(["install", "daily-ops", "external-helper", "--target", "claude", "--scope", "project"])).toEqual({
       command: "install",
       assetIds: ["daily-ops", "external-helper"],
       targets: ["claude"],
       scope: "project",
+      dryRun: false,
       json: false,
+      help: false
+    });
+    expect(parseCli(["install", "--category", "build", "--target", "claude", "--scope", "project"])).toEqual({
+      command: "install",
+      assetIds: [],
+      category: "build",
+      targets: ["claude"],
+      scope: "project",
+      dryRun: false,
+      json: false,
+      help: false
+    });
+    expect(parseCli(["install", "--category", "documents", "--target", "claude", "--scope", "global", "--dry-run", "--json"])).toEqual({
+      command: "install",
+      assetIds: [],
+      category: "documents",
+      targets: ["claude"],
+      scope: "global",
+      dryRun: true,
+      json: true,
       help: false
     });
     expect(parseCli(["uninstall", "daily-ops", "--target", "claude", "--scope", "global"])).toEqual({
@@ -97,6 +127,23 @@ describe("parseCli", () => {
       assetIds: ["daily-ops"],
       targets: ["claude"],
       scope: "global",
+      json: false,
+      help: false
+    });
+  });
+
+  it("supports classification formatter commands", () => {
+    expect(parseCli(["format-skills", "--check", "--json"])).toEqual({
+      command: "format-skills",
+      mode: "check",
+      targets: ["codex", "claude", "opencode", "gemini", "hermes", "cursor", "copilot"],
+      json: true,
+      help: false
+    });
+    expect(parseCli(["format-skills", "--write"])).toEqual({
+      command: "format-skills",
+      mode: "write",
+      targets: ["codex", "claude", "opencode", "gemini", "hermes", "cursor", "copilot"],
       json: false,
       help: false
     });
@@ -153,7 +200,7 @@ describe("runCli", () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stderr).toBe("");
-      expect(result.stdout).toContain("Skillbee bootstrap");
+      expect(result.stdout).toContain("Skillbird bootstrap");
       expect(result.stdout).toContain("Mode: dry-run");
       expect(result.stdout).toContain("Targets: claude");
       expect(result.stdout).toContain("Planned assets: 1");
@@ -166,14 +213,14 @@ describe("runCli", () => {
     await withFixtureEnv(fixture, async () => {
       const listResult = await runCli(["list", "--targets", "codex,opencode"]);
       expect(listResult.exitCode).toBe(0);
-      expect(listResult.stdout).toContain("Skillbee list");
+      expect(listResult.stdout).toContain("Skillbird list");
       expect(listResult.stdout).toContain("daily-ops");
       expect(listResult.stdout).toContain("audit-helper");
       expect(listResult.stdout).toContain("command sources: none");
 
       const inspectResult = await runCli(["inspect", "--target", "gemini"]);
       expect(inspectResult.exitCode).toBe(0);
-      expect(inspectResult.stdout).toContain("Skillbee inspect");
+      expect(inspectResult.stdout).toContain("Skillbird inspect");
       expect(inspectResult.stdout).toContain(".gemini");
       expect(inspectResult.stdout).toContain("command installs: gsd");
 
@@ -194,7 +241,7 @@ describe("runCli", () => {
     const result = await runCli(["--help"]);
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("Usage: skillbee");
+    expect(result.stdout).toContain("Usage: skillbird");
     expect(result.stdout).toContain("tui");
     expect(result.stdout).toContain("install");
     expect(result.stdout).toContain("uninstall");
@@ -312,6 +359,7 @@ async function createBootstrapFixture() {
       "sources:",
       "  - id: external-skills",
       "    type: github",
+      "    enabled: true",
       "    targets:",
       "      include:",
       "        - claude",

@@ -14,6 +14,7 @@ export interface ExpandGithubSourceAssetsOptions {
   sources: CatalogSourceRecord[];
   workspaceRoot: string;
   githubRepoOverrides?: Record<string, string>;
+  skipUndeclaredDisabledSources?: boolean;
 }
 
 export async function expandGithubSourceAssets(
@@ -39,6 +40,14 @@ export async function expandGithubSourceAssets(
       expandedSources.push({
         ...source,
         assets: resolveDeclaredAssets(source.assets ?? [], source.section, source.id)
+      });
+      continue;
+    }
+
+    if (options.skipUndeclaredDisabledSources && !source.enabled) {
+      expandedSources.push({
+        ...source,
+        assets: []
       });
       continue;
     }

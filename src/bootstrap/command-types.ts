@@ -43,14 +43,21 @@ export interface SearchCommand extends BaseCliCommand {
   scope: InstallScope;
   projectDir?: string;
   includeArchived?: boolean;
+  category?: string;
+  subcategory?: string;
+  tags?: string[];
 }
 
 export interface InstallCommand extends BaseCliCommand {
   command: "install";
   assetIds: string[];
   scope: InstallScope;
+  dryRun: boolean;
   projectDir?: string;
   includeArchived?: boolean;
+  category?: string;
+  subcategory?: string;
+  tags?: string[];
 }
 
 export interface UninstallCommand extends BaseCliCommand {
@@ -69,6 +76,11 @@ export interface ResetCommand extends BaseCliCommand {
   dryRun: boolean;
 }
 
+export interface FormatSkillsCommand extends BaseCliCommand {
+  command: "format-skills";
+  mode: "check" | "write";
+}
+
 export type ParsedCli =
   | TuiCommand
   | BootstrapCommand
@@ -76,6 +88,7 @@ export type ParsedCli =
   | InstallCommand
   | UninstallCommand
   | ResetCommand
+  | FormatSkillsCommand
   | ListCommand
   | InspectCommand
   | DoctorCommand;

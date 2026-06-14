@@ -76,7 +76,9 @@ Use `PIXABAY_API_KEY` in the environment. Do not paste API keys into this file. 
 
 - Use built-in template library: yes/no
 - Library root: templates/template-library/reference
+- Preview directory: templates/template-library/previews
 - Reviewed workbook: templates/template-library/template-library-review.xlsx
+- Intake library before recommendation: yes/no
 - Desired category: 封面模板 / 一段内容 / 人物介绍 / 六段内容 / other
 - Content structure:
 - Style/tone preferences:

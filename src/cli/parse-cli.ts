@@ -6,6 +6,7 @@ import type {
   InstallCommand,
   InspectCommand,
   ListCommand,
+  FormatSkillsCommand,
   ParsedCli,
   ResetCommand,
   SearchCommand,
@@ -21,6 +22,7 @@ const supportedCommands = [
   "install",
   "uninstall",
   "reset",
+  "format-skills",
   "list",
   "inspect",
   "doctor"
@@ -45,6 +47,10 @@ export function parseCli(argv: string[]): ParsedCli {
   let homeDir: string | undefined;
   let scope: InstallScope | ResetScope | undefined;
   let projectDir: string | undefined;
+  let category: string | undefined;
+  let subcategory: string | undefined;
+  const tags: string[] = [];
+  let formatMode: "check" | "write" | undefined;
   const positional: string[] = [];
 
   while (args.length > 0) {
@@ -52,10 +58,22 @@ export function parseCli(argv: string[]): ParsedCli {
 
     switch (argument) {
       case "--dry-run":
-        if (command !== "bootstrap" && command !== "reset") {
+        if (command !== "bootstrap" && command !== "install" && command !== "reset") {
           throw new Error(`Unsupported argument for ${command}: ${argument}`);
         }
         dryRun = true;
+        break;
+      case "--check":
+        if (command !== "format-skills") {
+          throw new Error(`Unsupported argument for ${command}: ${argument}`);
+        }
+        formatMode = "check";
+        break;
+      case "--write":
+        if (command !== "format-skills") {
+          throw new Error(`Unsupported argument for ${command}: ${argument}`);
+        }
+        formatMode = "write";
         break;
       case "--install-all":
         if (command !== "reset") {
@@ -104,6 +122,25 @@ export function parseCli(argv: string[]): ParsedCli {
       case "--home":
         homeDir = parsePathArgument(args.shift(), argument);
         break;
+      case "--category":
+        if (command !== "search" && command !== "install") {
+          throw new Error(`Unsupported argument for ${command}: ${argument}`);
+        }
+        category = parseSlugArgument(args.shift(), argument);
+        break;
+      case "--subcategory":
+        if (command !== "search" && command !== "install") {
+          throw new Error(`Unsupported argument for ${command}: ${argument}`);
+        }
+        subcategory = parseSlugArgument(args.shift(), argument);
+        break;
+      case "--tag":
+      case "--tags":
+        if (command !== "search" && command !== "install") {
+          throw new Error(`Unsupported argument for ${command}: ${argument}`);
+        }
+        tags.push(...parseSlugListArgument(args.shift(), argument));
+        break;
       default:
         if (argument.startsWith("-")) {
           throw new Error(`Unsupported argument: ${argument}`);
@@ -142,16 +179,23 @@ export function parseCli(argv: string[]): ParsedCli {
         scope: scope ?? "global",
         ...(projectDir ? { projectDir } : {}),
         ...(includeArchived ? { includeArchived: true } : {}),
+        ...(category ? { category } : {}),
+        ...(subcategory ? { subcategory } : {}),
+        ...(tags.length > 0 ? { tags: dedupeStrings(tags) } : {}),
         ...base
       } satisfies SearchCommand;
     case "install":
-      assertScopedMutation(command, scope, positional);
+      assertScopedMutation(command, scope, positional, Boolean(category || subcategory || tags.length > 0));
       return {
         command,
         assetIds: positional,
         scope,
+        dryRun,
         ...(projectDir ? { projectDir } : {}),
         ...(includeArchived ? { includeArchived: true } : {}),
+        ...(category ? { category } : {}),
+        ...(subcategory ? { subcategory } : {}),
+        ...(tags.length > 0 ? { tags: dedupeStrings(tags) } : {}),
         ...base
       } satisfies InstallCommand;
     case "uninstall":
@@ -174,6 +218,13 @@ export function parseCli(argv: string[]): ParsedCli {
         dryRun,
         ...base
       } satisfies ResetCommand;
+    case "format-skills":
+      assertFormatSkillsCommand(scope, projectDir, positional, formatMode);
+      return {
+        command,
+        mode: formatMode ?? "check",
+        ...base
+      } satisfies FormatSkillsCommand;
     case "list":
       assertInstallScopeForCommand(command, scope);
       return {
@@ -237,6 +288,30 @@ function parsePathArgument(value: string | undefined, flag: string): string {
   return value;
 }
 
+function parseSlugArgument(value: string | undefined, flag: string): string {
+  if (!value) {
+    throw new Error(`Missing value for ${flag}`);
+  }
+
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) {
+    throw new Error(`Unsupported ${flag} value: ${value}`);
+  }
+
+  return value;
+}
+
+function parseSlugListArgument(value: string | undefined, flag: string): string[] {
+  if (!value) {
+    throw new Error(`Missing value for ${flag}`);
+  }
+
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => parseSlugArgument(entry, flag));
+}
+
 function parseInstallScopeArgument(value: string | undefined, flag: string): InstallScope {
   if (!value) {
     throw new Error(`Missing value for ${flag}`);
@@ -277,7 +352,8 @@ function assertInstallScopeForCommand(
 function assertScopedMutation(
   command: "install" | "uninstall",
   scope: InstallScope | ResetScope | undefined,
-  assetIds: string[]
+  assetIds: string[],
+  hasSelector = false
 ): asserts scope is InstallScope {
   if (!scope) {
     throw new Error(`Missing required --scope for ${command}`);
@@ -287,8 +363,25 @@ function assertScopedMutation(
     throw new Error("Scope all is only supported for reset");
   }
 
-  if (assetIds.length === 0) {
+  if (assetIds.length === 0 && !hasSelector) {
     throw new Error(`Missing skill id for ${command}`);
+  }
+}
+
+function assertFormatSkillsCommand(
+  scope: InstallScope | ResetScope | undefined,
+  projectDir: string | undefined,
+  positional: string[],
+  mode: "check" | "write" | undefined
+): void {
+  rejectScopeForBootstrap(scope, projectDir);
+
+  if (positional.length > 0) {
+    throw new Error("format-skills does not accept skill ids");
+  }
+
+  if (mode && mode !== "check" && mode !== "write") {
+    throw new Error(`Unsupported format-skills mode: ${mode}`);
   }
 }
 
@@ -326,4 +419,8 @@ function rejectScopeForBootstrap(
 
 function dedupeTargets(targets: SupportedTarget[]): SupportedTarget[] {
   return [...new Set(targets)];
+}
+
+function dedupeStrings(values: string[]): string[] {
+  return [...new Set(values)];
 }

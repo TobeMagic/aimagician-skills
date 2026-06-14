@@ -1,305 +1,175 @@
-
-<h1 align="center">🐝 Skillbee</h1>
+<h1 align="center">Skillbird</h1>
 
 <p align="center">
-  <em>Personal skill manager, catalog, and deployment toolkit for AI CLI tools</em>
+  <em>AImagician Superpower: owned-skill-first workflow management for AI coding CLIs</em>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/skillbee"><img src="https://img.shields.io/npm/v/skillbee?color=22D4FF&label=version" alt="npm version" /></a>
-  <a href="https://www.npmjs.com/package/skillbee"><img src="https://img.shields.io/npm/dm/skillbee?color=3EA4FF" alt="npm downloads" /></a>
+  <a href="https://www.npmjs.com/package/aimagician_superpower"><img src="https://img.shields.io/npm/v/aimagician_superpower?color=22D4FF&label=version" alt="npm version" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="Node" /></a>
-  <img src="https://img.shields.io/badge/targets-7-FFB14A" alt="7 targets" />
-  <img src="https://img.shields.io/badge/skills-56%2B-FF6A20" alt="56+ skills" />
+  <img src="https://img.shields.io/badge/categories-6-FFB14A" alt="6 categories" />
 </p>
 
 <p align="center">
   <b><a href="#quick-start">Quick Start</a></b> ·
-  <b><a href="#features">Features</a></b> ·
-  <b><a href="#dashboard-tui">Dashboard</a></b> ·
-  <b><a href="#cli-commands">CLI</a></b> ·
-  <b><a href="#architecture">Architecture</a></b> ·
-  <b><a href="#faq">FAQ</a></b> ·
-  <b><a href="#contributing">Contributing</a></b>
+  <b><a href="#workflow">Workflow</a></b> ·
+  <b><a href="#skill-consolidation">Skill Consolidation</a></b> ·
+  <b><a href="#cli">CLI</a></b> ·
+  <b><a href="#architecture">Architecture</a></b>
 </p>
 
-<br>
-
-> **One command** to install, update, and manage skills across all your AI CLI tools — Codex, Claude, OpenCode, Gemini, Hermes, Cursor, and Copilot.
-
-English quick start: [docs/README.en.md](./docs/README.en.md)
-
 ---
 
-## Table of Contents
+## What It Is
 
-- [Quick Start](#quick-start)
-- [Local Development](#local-development)
-- [Features](#features)
-- [Dashboard TUI](#dashboard-tui)
-- [CLI Commands](#cli-commands)
-- [Architecture](#architecture)
-- [Support Matrix](#support-matrix)
-- [Owned Skills](#owned-skills)
-- [FAQ](#faq)
-- [Contributing](#contributing)
-- [License](#license)
+`aimagician_superpower` is the consolidated home for my AI-agent workflow skills.
 
----
+The daily command is `skillbird`. It manages skills across Codex, Claude, OpenCode, Gemini, Hermes, Cursor, and Copilot with global or project-local installs.
+
+The important change: owned skills are now the source of truth. External collections such as GSD, Superpowers, selected Claude skills, UI packs, and Playwright skills are treated as reference material unless explicitly enabled. No default external installer, no forced update hook, and no automatic upstream noise.
 
 ## Quick Start
 
 ```bash
-# Install globally
-npm install -g skillbee
-
-# Launch the Dashboard TUI
-skillbee
-
-# Or try without installing:
-npx skillbee@latest
+npm install -g aimagician_superpower
+skillbird
 ```
 
-**First time?** The Dashboard opens in your terminal. Browse 56+ skills, filter by target or tag, select multiple, and install them all at once.
-
-Want everything everywhere?
+Use without installing:
 
 ```bash
-npx skillbee@latest bootstrap
+npx aimagician_superpower@latest
 ```
 
-That's it — that single command installs all owned skills and resolves catalog sources across every supported CLI on your machine.
-
----
-
-## Local Development
-
-Clone and run from source:
+Install the core workflow stack globally:
 
 ```bash
-git clone https://github.com/TobeMagic/aimagician-skills.git
-cd aimagician-skills
-npm install
-npm run build
-
-# Launch the Dashboard TUI
-node .
-
-# Or install all skills to all targets
-npm run bootstrap
+skillbird install aimagician-superpower code-guidelines skill-creator --scope global
 ```
 
-Development workflow:
+Install a whole category into a project:
 
 ```bash
-npm run typecheck     # Fast type-check (no build)
-npm run build         # Full build (clean + compile)
-npm test              # Run unit tests
-npm link              # Make 'skillbee' available globally
+skillbird install --category documents --scope project --target claude
 ```
 
-After making changes, rebuild and test:
+## Workflow
+
+Skillbird keeps one workflow model:
+
+1. Discuss the phase and success criteria.
+2. Plan only after the phase is clear.
+3. Execute with `code-guidelines` discipline.
+4. Verify with tests, browser checks, or document-specific validation.
+5. Resume through the GSD-style milestone state instead of scattering plans across many skills.
+
+The central owned skill is:
+
+| Skill | Role |
+|---|---|
+| `aimagician-superpower` | GSD state machine backbone + Superpowers quality gates + local workflow ownership |
+| `code-guidelines` | Non-trivial coding discipline: read first, minimal diff, local patterns, verification |
+| `skill-creator` | Skill authoring, merging, taxonomy, formatter rules |
+
+## Skill Consolidation
+
+External sources are curated into owned skills instead of installed by default.
+
+| Source area | New owned path |
+|---|---|
+| GSD + Superpowers planning/execution | `aimagician-superpower` |
+| Claude skill creator + Superpowers skill writing | `skill-creator` |
+| Claude MCP builder + community MCP builder | `mcp-builder` |
+| frontend-design, baseline-ui, accessibility, metadata, motion, design-lab, impeccable | `interface-design` |
+| Claude webapp-testing + Playwright skill | `webapp-testing` |
+| docx / pdf / pptx / xlsx | Owned document skills under `skills/owned` |
+
+Six categories are used everywhere:
+
+| Category | Scope |
+|---|---|
+| `build` | Coding, planning, debugging, tests, reviews, skill authoring, MCP/tools |
+| `research` | Papers, literature, open-source architecture, repo evidence |
+| `design` | UI, brand, accessibility, metadata, motion, image generation |
+| `documents` | README, Word, PDF, PowerPoint, spreadsheets |
+| `operate` | GitHub, Linear, cloud, worktrees, releases |
+| `strategy` | Product, business, pricing, customers, growth |
+
+Every owned skill is formatted with `category`, `subcategory`, and `tags` frontmatter:
 
 ```bash
-npm run build && npm test
-node .
+skillbird format-skills --check
+skillbird format-skills --write
 ```
 
----
-
-## Features
-
-| | Capability | Details |
-|---|---|---|
-| 🎛️ | **Dashboard TUI** | Keyboard-driven terminal UI — navigate, select, filter, install, uninstall |
-| 🎯 | **Multi-target install** | Deploy skills to 7+ CLI tools simultaneously |
-| 🔎 | **Smart filtering** | Filter by status (installed/missing), target, tags, or search query |
-| 👁️ | **List + Matrix views** | `v` to toggle between list mode and target × skill matrix |
-| 🎨 | **Multi-theme** | `T` cycles through bee / monokai / nord — persisted in config |
-| 📦 | **Batch operations** | Select multiple skills, install or uninstall to all chosen targets at once |
-| 🚀 | **Bootstrap mode** | Single command to install everything to every CLI |
-| 📋 | **Install report** | Per-target × per-skill result overlay after batch operations |
-| 📁 | **Global / Project scope** | Install at user level or per-project |
-| 🗂️ | **Archive management** | Hide skills you don't use, toggle visibility with `a` |
-
----
-
-## Dashboard TUI
-
-Press `?` anytime inside the TUI for the full command reference.
-
-| Key | Action |
-|-----|--------|
-| `↑` `↓` | Navigate skill list |
-| `space` | Multi-select / deselect |
-| `i` `u` | Install / uninstall selected to targets |
-| `t` | Open target multi-select panel |
-| `tab` | Cycle single target (within selected set) |
-| `f` | Open multi-dimension filter (status / target / tag) |
-| `v` | Toggle list / matrix overview view |
-| `/` | Search skills by name, tag, or description |
-| `x` | Archive / unarchive selected skill |
-| `g` | Toggle global / project scope |
-| `a` | Toggle archived skill visibility |
-| `T` | Cycle theme (bee / monokai / nord) |
-| `?` | Show keyboard shortcut reference |
-| `q` | Quit |
-
-After install/uninstall, a **report overlay** shows per-target × per-skill results:
-- **✓** success &nbsp; **○** skipped &nbsp; **✗** failed
-
----
-
-## CLI Commands
+## CLI
 
 | Command | Description |
-|---------|-------------|
-| `skillbee` | Open Dashboard TUI |
-| `skillbee search <query>` | Search skills in catalog |
-| `skillbee install <id> --target <t>` | Install a specific skill |
-| `skillbee uninstall <id>` | Remove a skill |
-| `skillbee bootstrap` | Install all skills to all targets |
-| `skillbee list` | List installed skills per target |
-| `skillbee inspect --target <t>` | Inspect target skill directory |
-| `skillbee doctor` | Health check |
-| `skillbee reset --target <t>` | Reset and reinstall on a target |
+|---|---|
+| `skillbird` | Open the TUI dashboard |
+| `skillbird search <query>` | Search skills |
+| `skillbird search --category build` | Search by category |
+| `skillbird install <id> --scope global` | Install selected skills |
+| `skillbird install --category documents --scope project` | Install a category bundle |
+| `skillbird uninstall <id> --scope global` | Remove managed installs |
+| `skillbird list --scope global` | List detected target installs |
+| `skillbird inspect --scope project` | Inspect target paths and manifest state |
+| `skillbird doctor --scope global` | Health check managed installs |
+| `skillbird reset --target claude --scope project --install-all --yes` | Rebuild a target scope |
+| `skillbird bootstrap` | Legacy all-selected bootstrap workflow |
 
-**Flags:**
-- `--scope global|project` — install at user level or project-local
-- `--dry-run --json` — preview changes without touching files
-- `--targets codex,claude,opencode` — comma-separated target list
-
-Examples:
+Useful flags:
 
 ```bash
-# Search for paper-related skills in project scope
-skillbee search paper --scope project
-
-# Install a specific skill to two targets
-skillbee install deep-research-system --target claude --target opencode --scope global
-
-# Full bootstrap to specific targets (dry-run)
-skillbee bootstrap --targets codex,claude,opencode --dry-run --json
+--target claude                 # repeatable single target
+--targets codex,claude,cursor   # comma-separated targets
+--scope global|project          # user-level or project-local install
+--category build                # category selector
+--subcategory browser-testing   # subcategory selector
+--tag verification              # tag selector
+--include-archived              # include archived skills
+--json                          # machine-readable output
 ```
-
----
 
 ## Architecture
 
-```
+```text
 skills/
-  owned/<skill-id>/SKILL.md     # 17 self-authored skill packages
-  archived/                      # Archived skills (hidden by default)
+  owned/<skill-id>/SKILL.md      owned skills, default source of truth
+  archived/                      archived local skills
 catalog/
-  skills/*.yaml                  # External skill source definitions (GitHub, command)
-  plugins/*.yaml                 # Plugin/extension source references
-  taxonomy.yaml                  # Global tags & classification tree
-dist/                            # Compiled TypeScript → JS output
-docs/                            # Documentation assets & guides
+  taxonomy.yaml                  six-category classification
+  skills/*.yaml                  disabled external references
+src/
+  cli/                           skillbird command surface
+  manager/                       search/install/format workflows
+  bootstrap/                     target resolution and sync engine
 ```
 
-**Core flow:**
+State paths:
 
-```
-owned skills + catalog sources + command sources
-        │
-        ▼
-   Bootstrap Engine
-   (plan → resolve → validate)
-        │
-        ▼
-   Target directories
-   (codex / claude / opencode / gemini / hermes / cursor / copilot)
-```
+| Scope | Path |
+|---|---|
+| Global config | `~/.config/skillbird/global/config.yaml` |
+| Global state | `~/.local/state/aimagician-superpower/manifest.json` |
+| Project config | `<project>/.skillbird/config.yaml` |
+| Project state | `<project>/.skillbird/manifest.json` |
 
-Install state is tracked via a **bootstrap manifest** at `~/.local/state/aimagician-skills/manifest.json`. Re-running bootstrap updates existing installs without duplicating.
-
----
-
-## Support Matrix
-
-| Capability | Status | Notes |
-|---|---|---|
-| Owned skills | ✅ | `skills/owned/*` synced to all targets |
-| GitHub skill sources | ✅ | Cloned from remote, installed per target |
-| Command sources | ✅ | Delegated to upstream installer |
-| Codex | ✅ | `~/.codex/skills` |
-| Claude Code | ✅ | `~/.claude/skills` |
-| OpenCode skills | ✅ | `~/.config/opencode/skills` |
-| OpenCode plugins | ✅ | `~/.config/opencode/plugins` |
-| Gemini extensions | ✅ | `~/.gemini/extensions` |
-| Hermes | ✅ | `~/.hermes/skills` |
-| Cursor | ✅ | `~/.cursor/skills` |
-| Copilot | ✅ | `~/.copilot/skills` |
-| Claude plugins | ⏭️ | Skipped — uses marketplace flow |
-| Gemini plugin catalog | ⏭️ | Skipped — extension-only |
-
-**Bootstrap state path:**
-- Linux: `~/.local/state/aimagician-skills/manifest.json`
-- Windows: `%LOCALAPPDATA%\aimagician-skills\manifest.json`
-
----
-
-## Owned Skills
-
-Skills shipped with the package:
-
-| Skill | Description |
-|-------|-------------|
-| `academic-paper-workflow` | End-to-end academic paper workflow |
-| `baseline-ui` | UI validation for Tailwind CSS projects |
-| `cloudflare-image-gen` | Image generation via Cloudflare Workers AI |
-| `code-guidelines` | Coding standards & minimal-diff guidance |
-| `deep-research-system` | Multi-source literature research system |
-| `design-lab` | UI design exploration with multiple variations |
-| `design-md-brand-router` | Branded DESIGN.md style management |
-| `gcloud-ops-workflow` | Google Cloud operations runbook |
-| `github-pr-workflow` | PR creation, review & management |
-| `github-readme-highstar` | High-star README generation |
-| `linear-issue-workflow` | Linear issue lifecycle management |
-| `llm-know-how-wiki` | Persistent LLM knowledge base |
-| `modelscope_imagegen` | Image generation via ModelScope |
-| `multilingual-diversity-loop` | Multi-language output diversity |
-| `opensource-architecture-research` | Open-source architecture comparison |
-| `parallel-worktree-pr-flow` | Multi-worktree parallel development |
-| `repo-interview-playbook` | Interview preparation from repos |
-| `window-pptx` | Windows PowerPoint automation |
-
-Total resolved catalog: **56+ skills** (owned + external sources).
-
----
-
-## FAQ
-
-**Q: What CLIs does Skillbee support?**
-A: Codex, Claude, OpenCode, Gemini, Hermes, Cursor, and Copilot.
-
-**Q: How do I install just one skill?**
-A: `skillbee install <skill-id> --target <target>` or use the TUI (`space` to select, `i` to install).
-
-**Q: Will bootstrap overwrite my existing skills?**
-A: Bootstrap tracks state via a manifest. It updates existing installs without duplicating or overwriting unrelated files.
-
-**Q: Can I install skills per-project?**
-A: Yes. Use `--scope project` (CLI) or press `g` (TUI) to toggle between global and project scope.
-
-**Q: How do I add my own skills?**
-A: Create a skill directory under `skills/owned/<your-skill>/` with a `SKILL.md`, add it to the catalog, and run bootstrap.
-
----
-
-## Contributing
-
-PRs and issues are welcome.
+## Development
 
 ```bash
-npm run build    # Compile TypeScript
-npm test         # Run tests
+npm install
+npm run build
+npm test
 ```
 
-- README changes should also be reflected in `docs/README.en.md`
-- See individual skill docs for skill-specific contribution guidelines
+Run from source:
+
+```bash
+node dist/cli/index.js --help
+node dist/cli/index.js search --category build
+```
 
 ## License
 

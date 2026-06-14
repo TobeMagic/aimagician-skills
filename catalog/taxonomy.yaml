@@ -1,23 +1,100 @@
 groups:
-  - id: coding
-    label: Coding
-    description: Engineering, debugging, review, and repository workflow skills.
+  - id: build
+    label: Build
+    description: Code execution, planning, debugging, testing, review, skill authoring, and tool building.
   - id: research
     label: Research
-    description: Literature, open-source, and deep research workflows.
+    description: Literature, open-source, architecture, evidence gathering, and synthesis workflows.
   - id: design
     label: Design
-    description: UI, frontend design, brand, and accessibility skills.
+    description: Interface design, brand systems, accessibility, metadata, motion, polish, and image generation.
   - id: documents
     label: Documents
-    description: Office documents, spreadsheets, PDFs, and presentation workflows.
-  - id: operations
-    label: Operations
-    description: Cloud, Linear, GitHub, worktree, and release operations.
-  - id: business
-    label: Business
-    description: Minimalist business, marketing, pricing, and customer workflows.
+    description: README, Word, PDF, PowerPoint, spreadsheet, and document automation workflows.
+  - id: operate
+    label: Operate
+    description: GitHub, Linear, cloud, worktree, release, and project operations.
+  - id: strategy
+    label: Strategy
+    description: Business, product, pricing, customer, growth, community, and ideation workflows.
 skills:
+  aimagician-superpower:
+    group: build
+    subgroup: workflow
+    tags: [gsd, superpowers, planning, verification]
+    recommendedScopes: [global]
+    description: Unified AImagician workflow skill combining GSD state management, Superpowers quality gates, and code-guideline discipline.
+  code-guidelines:
+    group: build
+    subgroup: quality
+    tags: [coding, quality, verification]
+    recommendedScopes: [global]
+  test-driven-development:
+    group: build
+    subgroup: quality
+    tags: [tests, tdd]
+    recommendedScopes: [global]
+  systematic-debugging:
+    group: build
+    subgroup: debugging
+    tags: [debugging, investigation]
+    recommendedScopes: [global]
+  verification-before-completion:
+    group: build
+    subgroup: quality
+    tags: [verification, tests]
+    recommendedScopes: [global]
+  playwright-skill:
+    group: build
+    subgroup: browser-testing
+    tags: [playwright, browser]
+    recommendedScopes: [project]
+  webapp-testing:
+    group: build
+    subgroup: browser-testing
+    tags: [playwright, webapp, verification]
+    recommendedScopes: [project]
+  skill-creator:
+    group: build
+    subgroup: skills
+    tags: [skills, authoring, taxonomy]
+    recommendedScopes: [global]
+  writing-skills:
+    group: build
+    subgroup: skills
+    tags: [skills, authoring]
+    recommendedScopes: [global]
+  mcp-builder:
+    group: build
+    subgroup: integrations
+    tags: [mcp, server, tools]
+    recommendedScopes: [project]
+  brainstorming:
+    group: build
+    subgroup: planning
+    tags: [planning, requirements]
+    recommendedScopes: [global]
+  writing-plans:
+    group: build
+    subgroup: planning
+    tags: [planning, implementation]
+    recommendedScopes: [global]
+  requesting-code-review:
+    group: build
+    subgroup: review
+    tags: [review, quality]
+    recommendedScopes: [global]
+  receiving-code-review:
+    group: build
+    subgroup: review
+    tags: [review, feedback]
+    recommendedScopes: [global]
+  llm-know-how-wiki:
+    group: build
+    subgroup: knowledge
+    tags: [wiki, knowledge, context]
+    recommendedScopes: [project]
+
   academic-paper-workflow:
     group: research
     subgroup: academic
@@ -31,36 +108,23 @@ skills:
   opensource-architecture-research:
     group: research
     subgroup: architecture
-    tags: [open-source, architecture]
+    tags: [open-source, architecture, comparison]
     recommendedScopes: [project]
-  code-guidelines:
-    group: coding
-    subgroup: quality
-    tags: [coding, quality]
-    recommendedScopes: [global]
-  github-pr-workflow:
-    group: operations
-    subgroup: github
-    tags: [pull-request, review]
-    recommendedScopes: [global]
-  linear-issue-workflow:
-    group: operations
-    subgroup: linear
-    tags: [linear, issue-tracking]
-    recommendedScopes: [global]
-  parallel-worktree-pr-flow:
-    group: operations
-    subgroup: git
-    tags: [worktree, pr, integration]
+  repo-interview-playbook:
+    group: research
+    subgroup: repo-analysis
+    tags: [interview, evidence, repo]
     recommendedScopes: [project]
-  gcloud-ops-workflow:
-    group: operations
-    subgroup: cloud
-    tags: [gcloud, cloud-run, gke]
-    recommendedScopes: [global]
+
+  interface-design:
+    group: design
+    subgroup: interface
+    tags: [ui, frontend, accessibility, polish]
+    recommendedScopes: [project]
+    description: Consolidated interface workflow from frontend-design, baseline-ui, accessibility, metadata, motion, design-lab, impeccable, and interaction polish skills.
   frontend-design:
     group: design
-    subgroup: frontend
+    subgroup: interface
     tags: [ui, frontend]
     recommendedScopes: [project]
   design-md-brand-router:
@@ -103,6 +167,11 @@ skills:
     subgroup: polish
     tags: [ui, polish]
     recommendedScopes: [project]
+  wcag-audit-patterns:
+    group: design
+    subgroup: accessibility
+    tags: [wcag, audit]
+    recommendedScopes: [project]
   cloudflare-image-gen:
     group: design
     subgroup: image-generation
@@ -113,6 +182,17 @@ skills:
     subgroup: image-generation
     tags: [image, modelscope]
     recommendedScopes: [global]
+  multilingual-diversity-loop:
+    group: design
+    subgroup: ideation
+    tags: [creative, diversity, ideation]
+    recommendedScopes: [global]
+
+  github-readme-highstar:
+    group: documents
+    subgroup: readme
+    tags: [readme, docs, github]
+    recommendedScopes: [project]
   docx:
     group: documents
     subgroup: word
@@ -121,7 +201,7 @@ skills:
   pdf:
     group: documents
     subgroup: pdf
-    tags: [pdf]
+    tags: [pdf, document]
     recommendedScopes: [global]
   pptx:
     group: documents
@@ -138,128 +218,85 @@ skills:
     subgroup: spreadsheets
     tags: [xlsx, spreadsheet]
     recommendedScopes: [global]
-  playwright-skill:
-    group: coding
-    subgroup: browser-testing
-    tags: [playwright, browser]
+
+  github-pr-workflow:
+    group: operate
+    subgroup: github
+    tags: [pull-request, review]
+    recommendedScopes: [global]
+  linear-issue-workflow:
+    group: operate
+    subgroup: linear
+    tags: [linear, issue-tracking]
+    recommendedScopes: [global]
+  parallel-worktree-pr-flow:
+    group: operate
+    subgroup: git
+    tags: [worktree, pr, integration]
     recommendedScopes: [project]
-  webapp-testing:
-    group: coding
-    subgroup: browser-testing
-    tags: [playwright, webapp]
-    recommendedScopes: [project]
-  test-driven-development:
-    group: coding
-    subgroup: quality
-    tags: [tests, tdd]
-    recommendedScopes: [global]
-  systematic-debugging:
-    group: coding
-    subgroup: debugging
-    tags: [debugging]
-    recommendedScopes: [global]
-  verification-before-completion:
-    group: coding
-    subgroup: quality
-    tags: [verification]
-    recommendedScopes: [global]
   using-git-worktrees:
-    group: operations
+    group: operate
     subgroup: git
     tags: [git, worktree]
     recommendedScopes: [global]
-  github-readme-highstar:
-    group: coding
-    subgroup: docs
-    tags: [readme, docs]
-    recommendedScopes: [project]
-  llm-know-how-wiki:
-    group: coding
-    subgroup: knowledge
-    tags: [wiki, knowledge]
-    recommendedScopes: [project]
+  gcloud-ops-workflow:
+    group: operate
+    subgroup: cloud
+    tags: [gcloud, cloud-run, gke]
+    recommendedScopes: [global]
   gsd:
-    group: operations
+    group: operate
     subgroup: planning
     tags: [planning, workflow]
     recommendedScopes: [global]
-  mcp-builder:
-    group: coding
-    subgroup: integrations
-    tags: [mcp, server]
-    recommendedScopes: [project]
-  skill-creator:
-    group: coding
-    subgroup: skills
-    tags: [skills, authoring]
-    recommendedScopes: [global]
-  writing-skills:
-    group: coding
-    subgroup: skills
-    tags: [skills, authoring]
-    recommendedScopes: [global]
-  brainstorming:
-    group: coding
-    subgroup: planning
-    tags: [planning, requirements]
-    recommendedScopes: [global]
-  writing-plans:
-    group: coding
-    subgroup: planning
-    tags: [planning]
-    recommendedScopes: [global]
-  requesting-code-review:
-    group: coding
-    subgroup: review
-    tags: [review]
-    recommendedScopes: [global]
-  receiving-code-review:
-    group: coding
-    subgroup: review
-    tags: [review]
+
+  find-community:
+    group: strategy
+    subgroup: community
+    tags: [community, business]
     recommendedScopes: [global]
   company-values:
-    group: business
-    subgroup: strategy
+    group: strategy
+    subgroup: culture
     tags: [business, culture]
     recommendedScopes: [global]
   marketing-plan:
-    group: business
+    group: strategy
     subgroup: marketing
     tags: [marketing]
     recommendedScopes: [global]
   pricing:
-    group: business
+    group: strategy
     subgroup: pricing
     tags: [pricing]
     recommendedScopes: [global]
   validate-idea:
-    group: business
+    group: strategy
     subgroup: validation
     tags: [validation]
     recommendedScopes: [global]
   first-customers:
-    group: business
+    group: strategy
     subgroup: sales
     tags: [customers, sales]
     recommendedScopes: [global]
   grow-sustainably:
-    group: business
-    subgroup: strategy
-    tags: [growth]
+    group: strategy
+    subgroup: growth
+    tags: [growth, sustainability]
     recommendedScopes: [global]
   mvp:
-    group: business
+    group: strategy
     subgroup: product
-    tags: [mvp]
+    tags: [mvp, product]
     recommendedScopes: [global]
   processize:
-    group: business
-    subgroup: operations
-    tags: [process]
+    group: strategy
+    subgroup: process
+    tags: [process, operations]
     recommendedScopes: [global]
   minimalist-review:
-    group: business
+    group: strategy
     subgroup: review
-    tags: [business, review]
+    tags: [business, decision]
     recommendedScopes: [global]

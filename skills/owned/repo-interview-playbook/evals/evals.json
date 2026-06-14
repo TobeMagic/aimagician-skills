@@ -34,13 +34,31 @@
     {
       "id": 6,
       "prompt": "先打磨 data-provider 的 REST/MCP/Celery 三暴露层这个亮点。",
-      "expected_output": "Produces a single-highlight draft only for REST/MCP/Celery: scenario, design, code evidence, tradeoff, likely interviewer question, 30-second answer, deep follow-ups, basic 八股文 mapping, resume phrasing candidate, and do-not-overclaim boundary. It stops for feedback and does not generate unrelated highlights.",
+      "expected_output": "Produces a single-highlight draft only for REST/MCP/Celery. It starts with a generic evidence-backed context prefix when useful, then gives scenario, design, code evidence, tradeoff, likely interviewer question, 30-second answer, deep follow-ups, basic 八股文 mapping, resume phrasing candidate, and do-not-overclaim boundary. It stops for feedback and does not generate unrelated highlights.",
       "files": []
     },
     {
       "id": 7,
       "prompt": "这个亮点确认，写入 wiki。",
       "expected_output": "Files only the confirmed highlight into wiki/interview/<repo>/ technical highlights, question bank, and evidence map as appropriate; updates wiki/index.md and wiki/log.md if needed; does not file unconfirmed drafts.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "打磨某个后端项目亮点时，先把技术栈、核心抽象、数据结构、关键操作、宏观流程讲清楚，再进入细节。",
+      "expected_output": "Treats the requested preface as a generic context prefix within the existing highlight draft, not as a new skill mode or hardcoded case. It uses repo/wiki evidence for stack, abstractions, data structures, operations, and macro flow, marks unsupported sections as Unknown or needs-confirmation, then proceeds to the highlight deep dive.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "这个 repo 有两个很强的技术亮点，我希望像 PaiSmart 那样每个亮点都能单独复习和面试演练。",
+      "expected_output": "Keeps the existing discuss-first workflow, but recommends standalone highlight pages such as 01-<highlight>.md and 02-<highlight>.md after confirmation. Each substantial highlight includes Context Prefix Plus, technology selection alternatives, macro flow, interview speech pack, code evidence, tradeoff table, deep follow-ups, 八股文 mapping, resume phrasing, metric/claim boundary, and do-not-overclaim notes. It keeps technical_highlights.md as an index/summary rather than dumping all details into one giant file.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "生成完整面试题库和简历版本，注意不要出现各文档口径不一致，也不要编造召回率、QPS、线上规模。",
+      "expected_output": "Produces or plans a full playbook with question_bank.md organized by project global, confirmed highlights, high-frequency 八股文, system design, code-level follow-ups, incident/debugging walkthroughs, and a topic index. Before filing, it performs a consistency pass across highlight pages, question bank, resume bullets, and evidence map; unsupported metrics or scale claims are written as safe answer boundaries or needs-confirmation rather than invented numbers.",
       "files": []
     }
   ]

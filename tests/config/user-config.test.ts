@@ -5,12 +5,15 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   addArchivedIds,
   defaultUserConfig,
+  loadScopedUserConfig,
   loadUserConfig,
   removeArchivedIds,
   removeUserGroup,
+  saveScopedUserConfig,
   saveUserConfig,
   saveUserGroup,
   setCustomTags,
+  scopedUserConfigPath,
   userConfigPath
 } from "../../src/config/user-config";
 
@@ -23,10 +26,9 @@ afterEach(async () => {
     )
   );
 });
-
 describe("user-config", () => {
   it("returns default config when file does not exist", async () => {
-    const root = await mkdtemp(join(tmpdir(), "skillbee-config-"));
+    const root = await mkdtemp(join(tmpdir(), "skillbird-config-"));
     tempDirectories.push(root);
 
     const config = await loadUserConfig(root);
@@ -35,7 +37,7 @@ describe("user-config", () => {
   });
 
   it("loads and saves user config", async () => {
-    const root = await mkdtemp(join(tmpdir(), "skillbee-config-"));
+    const root = await mkdtemp(join(tmpdir(), "skillbird-config-"));
     tempDirectories.push(root);
 
     const config = defaultUserConfig();
@@ -50,7 +52,7 @@ describe("user-config", () => {
   });
 
   it("manages archived ids", async () => {
-    const root = await mkdtemp(join(tmpdir(), "skillbee-config-"));
+    const root = await mkdtemp(join(tmpdir(), "skillbird-config-"));
     tempDirectories.push(root);
 
     const afterAdd = await addArchivedIds(root, ["skill-a", "skill-b"]);
@@ -64,7 +66,7 @@ describe("user-config", () => {
   });
 
   it("manages custom tags per skill", async () => {
-    const root = await mkdtemp(join(tmpdir(), "skillbee-config-"));
+    const root = await mkdtemp(join(tmpdir(), "skillbird-config-"));
     tempDirectories.push(root);
 
     const afterSet = await setCustomTags(root, "my-skill", ["favorite", "daily"]);
@@ -75,7 +77,7 @@ describe("user-config", () => {
   });
 
   it("manages user groups", async () => {
-    const root = await mkdtemp(join(tmpdir(), "skillbee-config-"));
+    const root = await mkdtemp(join(tmpdir(), "skillbird-config-"));
     tempDirectories.push(root);
 
     const group = { name: "my-dev", label: "My Dev", skills: ["code-guidelines"] };
@@ -93,7 +95,7 @@ describe("user-config", () => {
   });
 
   it("persists to a readable YAML file", async () => {
-    const root = await mkdtemp(join(tmpdir(), "skillbee-config-"));
+    const root = await mkdtemp(join(tmpdir(), "skillbird-config-"));
     tempDirectories.push(root);
 
     const config = defaultUserConfig();
@@ -110,4 +112,46 @@ describe("user-config", () => {
     expect(raw).toContain("old-tool");
     expect(raw).toContain("customTags:");
   });
+
+  it("resolves global and project override config paths independently", async () => {
+    const root = await mkdtemp(join(tmpdir(), "skillbird-config-"));
+    const projectDir = await mkdtemp(join(tmpdir(), "skillbird-project-"));
+    tempDirectories.push(root, projectDir);
+
+    expect(scopedUserConfigPath({ configBaseDir: root, scope: "global" })).toBe(
+      join(root, "skillbird", "global", "config.yaml")
+    );
+    expect(scopedUserConfigPath({ configBaseDir: root, scope: "project", projectDir })).toBe(
+      join(projectDir, ".skillbird", "config.yaml")
+    );
+  });
+
+  it("loads and saves global and project override configs without cross-scope interference", async () => {
+    const root = await mkdtemp(join(tmpdir(), "skillbird-config-"));
+    const projectDir = await mkdtemp(join(tmpdir(), "skillbird-project-"));
+    tempDirectories.push(root, projectDir);
+
+    const globalConfig = defaultUserConfig();
+    globalConfig.theme = "monokai";
+    globalConfig.archivedIds = ["global-only"];
+
+    const projectConfig = defaultUserConfig();
+    projectConfig.theme = "nord";
+    projectConfig.archivedIds = ["project-only"];
+
+    await saveScopedUserConfig({ configBaseDir: root, scope: "global" }, globalConfig);
+    await saveScopedUserConfig({ configBaseDir: root, scope: "project", projectDir }, projectConfig);
+
+    await expect(loadScopedUserConfig({ configBaseDir: root, scope: "global" })).resolves.toMatchObject({
+      theme: "monokai",
+      archivedIds: ["global-only"]
+    });
+    await expect(loadScopedUserConfig({ configBaseDir: root, scope: "project", projectDir })).resolves.toMatchObject({
+      theme: "nord",
+      archivedIds: ["project-only"]
+    });
+
+    await expect(loadUserConfig(root)).resolves.toEqual(defaultUserConfig());
+  });
+
 });

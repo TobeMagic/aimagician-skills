@@ -1,13 +1,26 @@
 ---
 name: linear-issue-workflow
-description: Use when starting, implementing, tracking, splitting, or closing a Linear issue, especially Luckee 2.0 work that needs Linear MCP context, parent/sub-issue completion gates, a fresh dev-based branch, GitHub PR linkage, reviewer-bot gates, or LLM wiki activity records.
+description: Use when starting, implementing, tracking, splitting, or closing a
+  Linear issue, especially Luckee 2.0 work that needs Linear MCP context,
+  parent/sub-issue completion gates, a fresh dev-based branch, GitHub PR
+  linkage, reviewer-bot gates, or LLM wiki activity records.
 metadata:
   related_skills:
     - github-pr-workflow
     - llm-know-how-wiki
 compatibility:
-  tools: [bash, git, linear-mcp, python]
-  requires: Configured Linear MCP connector; write access to the target repo for branch work
+  tools:
+    - bash
+    - git
+    - linear-mcp
+    - python
+  requires: Configured Linear MCP connector; write access to the target repo for
+    branch work
+category: operate
+subcategory: linear
+tags:
+  - linear
+  - issue-tracking
 ---
 
 # Linear Issue Workflow
