@@ -16,7 +16,9 @@ describe("consolidated owned skill content", () => {
     expect(skill).toContain("8 Verification Dimensions");
     expect(skill).toContain("Package Legitimacy");
     expect(skill).toContain("dependency waves");
-    expect(skill).toContain("code-guidelines remains independent");
+    expect(skill).toContain("Built-In Code Discipline");
+    expect(skill).toContain("Surgical changes");
+    expect(skill).toContain("Goal-driven verification");
   });
 
   it("keeps the Claude and Superpowers skill-authoring evaluation loop in skill-creator", async () => {

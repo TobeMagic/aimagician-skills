@@ -18,6 +18,8 @@ Use Ingest to compile new evidence into durable wiki pages.
 8. Run lint and sensitive scan.
 9. Report changed files, verification results, and unresolved gaps.
 
+If ingest evidence contains secrets, tokens, passwords, cookies, private keys, credential URLs, or full `.env` values, do not copy them into curated pages. Use Secret Inventory to copy real values into the controlled local vault and cite only env keys, fingerprints, and safe source refs.
+
 ## Ingest Heuristics
 
 Create a page when:
@@ -79,7 +81,7 @@ python <skill>/scripts/scan_sensitive.py <wiki-root>
 
 Review findings in this severity order:
 
-1. unsafe secret-looking content
+1. unsafe secret-looking content outside the controlled local vault
 2. broken links
 3. missing frontmatter
 4. missing index entries
@@ -90,3 +92,4 @@ Review findings in this severity order:
 
 Lint should normally create a report, not rewrite large parts of the wiki. Use later Ingest operations to fix substantial content issues.
 
+`scan_sensitive.py` skips `secrets/vault.local.env` by default. Use `--include-vault` only for local vault audits; previews are redacted, but vault audit results should still be treated as local security context.

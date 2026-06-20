@@ -12,7 +12,6 @@ description: >
 metadata:
   related_skills:
     - llm-know-how-wiki
-    - code-guidelines
 compatibility:
   tools:
     - bash

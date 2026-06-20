@@ -25,8 +25,7 @@ External catalog sources remain visible reference material and are disabled by d
 
 | Skill | Purpose |
 |---|---|
-| `aimagician-superpower` | GSD-style state machine plus Superpowers process gates |
-| `code-guidelines` | Engineering discipline for non-trivial coding work |
+| `aimagician-superpower` | GSD-style state machine plus Superpowers process gates and built-in code discipline |
 | `skill-creator` | Create, merge, classify, and verify skills |
 | `interface-design` | Consolidated UI, accessibility, metadata, motion, and polish workflow |
 | `webapp-testing` | Playwright and browser verification workflow |

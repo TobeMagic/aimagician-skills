@@ -39,9 +39,9 @@ v4 turns the current Skillbee repository into `aimagician_superpower`, with `ski
 
 | Category | Owner skills |
 |---|---|
-| Build | `aimagician-superpower`, `code-guidelines`, `skill-creator`, `mcp-builder`, `webapp-testing` |
+| Build | `aimagician-superpower`, `skill-creator`, `mcp-builder`, `webapp-testing` |
 | Research | `academic-paper-workflow`, `deep-research-system`, `opensource-architecture-research`, `llm-know-how-wiki` |
-| Design | `interface-design`, `design-md-brand-router`, `cloudflare-image-gen`, `modelscope_imagegen` |
+| Design | `interface-design`, `design-md-brand-router`, `modelscope_imagegen` |
 | Documents | `window-pptx`, `github-readme-highstar`; user-provided `docx`, `pdf`, `pptx`, and `xlsx` are managed if present |
 | Operate | `github-pr-workflow`, `linear-issue-workflow`, `gcloud-ops-workflow`, `parallel-worktree-pr-flow` |
 | Strategy | `repo-interview-playbook`, `multilingual-diversity-loop` |
@@ -196,4 +196,3 @@ Acceptance:
 - Restricted external document skills are not copied by this implementation. If the user provides them in `skills/owned`, the manager should classify and install them like any other owner skill.
 - Reference clones are local discussion artifacts and should not be committed.
 - Current worktree contains unrelated uncommitted changes. Implementation must avoid reverting or overwriting those changes.
-

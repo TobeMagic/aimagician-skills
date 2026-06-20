@@ -57,7 +57,7 @@ Foundation completed:
 - Phase 19 deep merge audit completed:
   - GSD state machine remains canonical;
   - Superpowers planning/writing quality gates are folded into `aimagician-superpower`;
-  - `code-guidelines` remains independent and referenced;
+  - `code-guidelines` execution discipline is folded into `aimagician-superpower`;
   - merged skill regression coverage added.
 - Phase 20 Skillbird UX acceptance completed:
   - PTY smoke asserts Skillbird launch;
@@ -75,7 +75,7 @@ Foundation completed:
 - [Phase 15]: External sources are reference material by default, not installers.
 - [Phase 16]: GSD remains the workflow state machine backbone.
 - [Phase 16]: Superpowers process gates are merged into `aimagician-superpower`, not installed as separate default skills.
-- [Phase 16]: `code-guidelines` remains independent and is referenced as execution discipline.
+- [Phase 16]: `code-guidelines` execution discipline is folded into `aimagician-superpower`.
 - [Phase 17]: Categories are `build`, `research`, `design`, `documents`, `operate`, and `strategy`.
 - [Phase 17]: Bundles are derived from taxonomy selectors instead of a separate bundle file.
 - [Phase 19]: GSD planning artifacts and Superpowers plan-writing checks are merged into `aimagician-superpower`.

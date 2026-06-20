@@ -36,7 +36,6 @@ Acceptance evidence:
 - Apply reports `dryRun: false`.
 - Installed core workflow skills include:
   - `aimagician-superpower`
-  - `code-guidelines`
   - `skill-creator`
   - `webapp-testing`
 - Disabled external `playwright-skill` is skipped with `source-default-disabled`.

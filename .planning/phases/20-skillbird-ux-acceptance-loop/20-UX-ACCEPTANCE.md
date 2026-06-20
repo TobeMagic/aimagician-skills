@@ -39,7 +39,6 @@ Scenarios:
    - command path: `install --category build --scope global --target claude --home <isolated-home> --dry-run --json`
    - preview confirms owned workflow skills:
      - `aimagician-superpower`
-     - `code-guidelines`
      - `skill-creator`
      - `webapp-testing`
    - preview confirms disabled external source skip:

@@ -33,7 +33,7 @@
 | Claude official skill authoring loop | `skill-creator` | Preserved with eval metadata and progressive disclosure |
 | Claude / community webapp testing probe pattern | `skills/owned/webapp-testing/SKILL.md` | Preserved with helper `--help`, `/tmp` probes, `networkidle`, and reconnaissance-first flow |
 | Claude / community MCP guidance | `skills/owned/mcp-builder/SKILL.md` | Preserved with protocol checklist, `structuredContent`, annotations, hints, and eval set |
-| `code-guidelines` engineering discipline | `skills/owned/code-guidelines/SKILL.md` | Kept independent; `aimagician-superpower` references it instead of duplicating it |
+| `code-guidelines` engineering discipline | `skills/owned/aimagician-superpower/SKILL.md` | Folded into the built-in code discipline; original skill archived |
 | External auto-update hooks, installer commands, Discord/community links | Not merged | Excluded as noise or environment mutation risk |
 | Superpowers creator skill | `skill-creator` | Not kept as separate default skill; useful authoring behavior merged into owned skill |
 
@@ -45,7 +45,7 @@ Automated content regression coverage was added in:
 
 The test asserts that the owned merged skills retain the specific capability markers that were most likely to regress during consolidation:
 
-- `aimagician-superpower`: GSD artifacts, validation/UAT, 8 verification dimensions, package legitimacy, dependency waves, independent `code-guidelines`.
+- `aimagician-superpower`: GSD artifacts, validation/UAT, 8 verification dimensions, package legitimacy, dependency waves, built-in code discipline.
 - `skill-creator`: baseline, with-skill, `evals/evals.json`, quantitative assertions, progressive disclosure, trigger-focused descriptions.
 - `webapp-testing`: `with_server.py --help`, `networkidle`, reconnaissance-first flow, `/tmp` probes.
 - `mcp-builder`: `structuredContent`, annotations, `readOnlyHint`, `destructiveHint`, 10 read-only eval questions, MCP Inspector.
@@ -61,5 +61,5 @@ Result: 1 test file, 4 tests passed.
 ## Outcome
 
 - V4-MERGE-01: Complete. GSD remains the single milestone/phase backbone, while Superpowers plan-writing is folded into the GSD plan phase.
-- V4-MERGE-02: Complete. `code-guidelines` remains an independent execution discipline and is referenced by the workflow skill.
+- V4-MERGE-02: Complete. `code-guidelines` execution discipline is merged into `aimagician-superpower`; the standalone skill is archived.
 - V4-MERGE-03: Complete. Regression coverage now checks the merged owned skills against the highest-value reference capabilities.

@@ -41,10 +41,10 @@ describe("v4 Skillbird acceptance", () => {
     expect(previewJson.dryRun).toBe(true);
     expect(installedIds(previewJson)).toEqual(expect.arrayContaining([
       "aimagician-superpower",
-      "code-guidelines",
       "skill-creator",
       "webapp-testing"
     ]));
+    expect(installedIds(previewJson)).not.toContain("code-guidelines");
     expect(previewJson.skipped).toContainEqual({
       assetId: "playwright-skill",
       reason: "source-default-disabled"
@@ -69,10 +69,10 @@ describe("v4 Skillbird acceptance", () => {
     expect(appliedJson.dryRun).toBe(false);
     expect(installedIds(appliedJson)).toEqual(expect.arrayContaining([
       "aimagician-superpower",
-      "code-guidelines",
       "skill-creator",
       "webapp-testing"
     ]));
+    expect(installedIds(appliedJson)).not.toContain("code-guidelines");
     await expectPath(join(homeDir, ".claude", "skills", "aimagician-superpower", "SKILL.md"));
     await expectPath(join(homeDir, ".local", "state", "aimagician-superpower", "manifest.json"));
   });
@@ -139,6 +139,36 @@ describe("v4 Skillbird acceptance", () => {
     ]));
     await expectPath(join(projectDir, ".claude", "skills", "docx", "SKILL.md"));
     await expectPath(join(projectDir, ".skillbird", "manifest.json"));
+  });
+
+  it("previews the active design bundle without archived cloudflare image generation", async () => {
+    const root = await createTempRoot();
+    const homeDir = join(root, "home");
+    await mkdir(homeDir, { recursive: true });
+
+    const preview = await runCli([
+      "install",
+      "--category",
+      "design",
+      "--scope",
+      "global",
+      "--target",
+      "codex",
+      "--home",
+      homeDir,
+      "--dry-run",
+      "--json"
+    ]);
+
+    expect(preview.exitCode).toBe(0);
+    const previewJson = JSON.parse(preview.stdout) as InstallJson;
+    expect(installedIds(previewJson)).toEqual(expect.arrayContaining([
+      "design-md-brand-router",
+      "interface-design",
+      "modelscope_imagegen",
+      "multilingual-diversity-loop"
+    ]));
+    expect(installedIds(previewJson)).not.toContain("cloudflare-image-gen");
   });
 
   it("keeps PTY smoke and category styling coverage tied to Skillbird", async () => {

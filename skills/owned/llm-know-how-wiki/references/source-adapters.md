@@ -97,7 +97,8 @@ Create or update:
 
 Safety:
 
-- redact signed download URLs, authcode URLs, cookies, tokens, passwords, account credentials, and private links where needed
+- run Secret Inventory for signed download URLs, authcode URLs, cookies, tokens, passwords, account credentials, and private links that need to be retained locally
+- redact those values from curated pages and shared reports
 - do not preserve Feishu temporary auth codes in curated wiki pages
 
 ## Linear Snapshots
@@ -171,7 +172,7 @@ If deployment metadata comes from docs, repo CI/CD files, or cloud inventory, st
 
 Do not live-inspect Cloud Run, Kubernetes, secrets, IAM, or env vars unless the user explicitly asks.
 
-Never store secret env var values.
+Never store secret env var values in curated pages or raw reports. If the user needs local reuse, put real values only in `secrets/vault.local.env` through Secret Inventory and store metadata in `secrets/registry.yaml`.
 
 Expected deployment behavior should be resolved in this order:
 
@@ -205,10 +206,33 @@ Create or update:
 
 Safety:
 
-- never store secret values, service account keys, signed URLs, database passwords, cookies, or full env values
+- never store secret values, service account keys, signed URLs, database passwords, cookies, or full env values outside the controlled local vault
 - store env var names only
 - prefer resource names, URLs, region/zone, status, and recent error signatures
 - mutating cloud actions belong in workflow activity records with explicit human approval noted
+
+## Secret Inventory Inputs
+
+Use Secret Inventory when a workspace or repository contains scattered credential material that should be collected for local reuse:
+
+- `.env*`, `.npmrc`, `.pypirc`, `.netrc`
+- cloud provider credential/config files
+- Terraform variable or state files
+- credential-looking JSON/YAML/TOML/INI files
+- targeted high-risk cache/config files under `.cache`, `.config`, `.aws`, `.gcloud`, `.docker`, `.npm`, or `.pip`
+
+Create or update:
+
+- `secrets/vault.local.env` for real values
+- `secrets/registry.yaml` for metadata only
+- `raw/secret_inventory/<timestamp>-secret-scan.md` for sanitized scan evidence
+- `wiki/runbook/secret_management.md` when durable loading, ownership, or rotation instructions are useful
+
+Safety:
+
+- reports must use fingerprints and redacted previews
+- source files are not modified unless a separate redaction pass is explicitly requested
+- do not copy raw values into `wiki/`, `raw/`, logs, issue trackers, or chat
 
 ## Images, PDFs, and Binary Assets
 

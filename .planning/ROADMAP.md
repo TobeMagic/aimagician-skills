@@ -362,7 +362,7 @@ Plans:
 
 ### Phase 19: Deep Workflow Merge Review
 
-**Goal:** Discuss and verify the detailed merge of GSD planning, Superpowers planning/writing, and `code-guidelines` so capability expands instead of shrinking.
+**Goal:** Discuss and verify the detailed merge of GSD planning, Superpowers planning/writing, and `code-guidelines` execution discipline so capability expands instead of shrinking.
 **Depends on:** Phase 18
 **Requirements:** [V4-MERGE-01, V4-MERGE-02, V4-MERGE-03]
 **Status:** Complete
@@ -370,7 +370,7 @@ Plans:
 **Success Criteria**:
   1. GSD remains the canonical milestone/phase state machine
   2. Superpowers planning/write-plan behavior is folded into the canonical workflow
-  3. `code-guidelines` remains independent but is referenced as the execution discipline
+  3. `code-guidelines` execution discipline is folded into `aimagician-superpower`
 
 ### Phase 20: Skillbird UX Acceptance Loop
 

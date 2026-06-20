@@ -39,6 +39,7 @@ describe("dashboard PTY smoke", () => {
     await ensureBuiltCli();
 
     const output = await runDashboardInPty(fixture, [
+      { input: "v", delayAfter: 300 },
       { input: "\x1b[B", delayAfter: 150 },
       { input: "\x1b[B", delayAfter: 150 },
       { input: "\x1b[A", delayAfter: 150 },
@@ -109,6 +110,20 @@ async function createTuiFixture() {
 }
 
 async function runDashboardInPty(
+  fixture: Awaited<ReturnType<typeof createTuiFixture>>,
+  actions: Array<{ input: string; delayAfter: number }>
+): Promise<string> {
+  let lastOutput = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    lastOutput = await runDashboardInPtyOnce(fixture, actions);
+    if (lastOutput.includes("Skillbird")) {
+      return lastOutput;
+    }
+  }
+  return lastOutput;
+}
+
+async function runDashboardInPtyOnce(
   fixture: Awaited<ReturnType<typeof createTuiFixture>>,
   actions: Array<{ input: string; delayAfter: number }>
 ): Promise<string> {

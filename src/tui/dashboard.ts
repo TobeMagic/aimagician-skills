@@ -18,15 +18,11 @@ import { supportedTargets, type SupportedTarget } from "../model/targets";
 import { resolvePlatformContext, type PlatformContext } from "../shared/platform";
 import { ownedSkillsRoot } from "../shared/paths";
 import {
-  AVAILABLE_GLYPH,
-  BROKEN_GLYPH,
   BIRD_ASCII,
   BIRD_SPLASH,
   COLORS,
-  INSTALLED_GLYPH,
   PALETTE,
   SELECT_GLYPH,
-  UNAVAILABLE_GLYPH,
   UNSELECT_GLYPH,
   formatMatrixCell,
   getSelectedListStyle,
@@ -38,47 +34,13 @@ import {
 import { loadTaxonomy, type TaxonomyGroup } from "../catalog/taxonomy";
 import { showSourceToggle } from "./source-toggle";
 import { loadCatalog } from "../catalog/load-catalog";
-
-const COMMAND_HELP = `{bold}{yellow-fg}Skillbird Keyboard Shortcuts{/yellow-fg}{/bold}
-
-{bold}Navigate{/bold}
-  {yellow-fg}{bold}\u2190{bold}{/yellow-fg}/{yellow-fg}{bold}\u2192{bold}{/yellow-fg} ........... switch panel (Categories/Skills/Details)
-  {yellow-fg}{bold}\u2191{bold}{/yellow-fg}/{yellow-fg}{bold}\u2193{bold}{/yellow-fg} ........... navigate list / scroll detail
-  {yellow-fg}{bold}/{/yellow-fg} ................. search skills
-  {yellow-fg}{bold}v{/bold}{/yellow-fg} ................. toggle list/matrix view
-  {yellow-fg}{bold}s{/bold}{/yellow-fg} ................. toggle scope (global/project)
-  {yellow-fg}{bold}a{/bold}{/yellow-fg} ................. toggle archived visibility
-
-{bold}Select{/bold}
-  {yellow-fg}{bold}space{/bold}{/yellow-fg} ............. multi-select (tags or skills)
-  {yellow-fg}{bold}A{/bold}{/yellow-fg} ................. select all tags
-  {yellow-fg}{bold}Shift+A{/bold}{/yellow-fg} .......... deselect all tags
-  {yellow-fg}{bold}Enter{/bold}{/yellow-fg} ............. view skill detail in Details
-  {yellow-fg}{bold}t{/bold}{/yellow-fg} ................. open target multi-select
-  {yellow-fg}{bold}N{/bold}{/yellow-fg} ................. cycle detail tab (Matrix/README/Related)
-
-{bold}Actions{/bold}
-  {yellow-fg}{bold}i{/bold}{/yellow-fg} ................. install (scope \u2192 target \u2192 install)
-  {yellow-fg}{bold}u{/bold}{/yellow-fg} ................ uninstall selected
-  {yellow-fg}{bold}x{/bold}{/yellow-fg} ................ archive / unarchive
-  {yellow-fg}{bold}r{/bold}{/yellow-fg} ................ repair broken skills
-  {yellow-fg}{bold}p{/bold}{/yellow-fg} ................. preview sync
-  {yellow-fg}{bold}I{/bold}{/yellow-fg} ................. include selected
-  {yellow-fg}{bold}X{/bold}{/yellow-fg} ................. exclude selected
-  {yellow-fg}{bold}d{/bold}{/yellow-fg} ................. reset include/exclude
-  {yellow-fg}{bold}T{/bold}{/yellow-fg} ................ cycle theme (dove/monokai/nord)
-  {yellow-fg}{bold}S{/bold}{/yellow-fg} ................ manage external sources
-
-{bold}Manage{/bold}
-  {yellow-fg}{bold}c{/bold}{/yellow-fg} ................ create custom group
-  {yellow-fg}{bold}E{/bold}{/yellow-fg} ................ edit custom group
-  {yellow-fg}{bold}D{/bold}{/yellow-fg} ................ delete custom group
-
-{bold}System{/bold}
-  {yellow-fg}{bold}?{/bold}{/yellow-fg} ................ show this help
-  {yellow-fg}{bold}q{/bold}{/yellow-fg} ................ quit
-
-{center}{dim}Press ESC to close{/dim}{/center}`;
+import {
+  COMMAND_HELP,
+  renderMatrixLabel,
+  renderMatrixRow,
+  renderSkillRow,
+  visibleWidth
+} from "./rendering";
 
 export interface DashboardOptions {
   selectedTargets?: SupportedTarget[];
@@ -363,9 +325,11 @@ export async function runDashboard(options: DashboardOptions = {}): Promise<void
   function renderCellsPanel(visibleSkills: ManagerSkillRecord[]): void {
     if (viewMode === "matrix") {
       const targetsArr = [...selectedTargets];
-      const maxIdLen = Math.max(...visibleSkills.map((s) => s.id.length), 8);
+      const maxIdLen = Math.max(...visibleSkills.map((s) => visibleWidth(s.id)), 8);
+      skillList.setLabel(renderMatrixLabel(targetsArr));
       skillList.setItems(visibleSkills.map((skill) => renderMatrixRow(skill, targetsArr, selectedIds, maxIdLen)));
     } else {
+      skillList.setLabel(` ${BIRD_ASCII} Skills `);
       skillList.setItems(visibleSkills.map((skill) => renderSkillRow(skill, primaryTarget, selectedIds, brokenIds, query)));
     }
   }
@@ -1092,59 +1056,6 @@ function filterSkillsByGroups(
 
     return true;
   });
-}
-
-function highlightText(text: string, query: string): string {
-  if (!query || !text.toLowerCase().includes(query.toLowerCase())) return text;
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  const match = text.slice(idx, idx + query.length);
-  return `${text.slice(0, idx)}{${PALETTE.amber}-fg}${match}{/${PALETTE.amber}-fg}${text.slice(idx + query.length)}`;
-}
-
-function renderSkillRow(
-  skill: ManagerSkillRecord,
-  target: SupportedTarget,
-  selectedIds: Set<string>,
-  brokenIds?: Set<string>,
-  query?: string
-): string {
-  const prefix = selectedIds.has(skill.id)
-    ? `{${PALETTE.amber}-fg}{bold}\u271A{/bold}{/${PALETTE.amber}-fg}`
-    : `{${PALETTE.ghostWhite}-fg}\u271F{/${PALETTE.ghostWhite}-fg}`;
-  const status = skill.installedTargets.includes(target)
-    ? `{${PALETTE.pollen}-fg}${INSTALLED_GLYPH}{/${PALETTE.pollen}-fg}`
-    : skill.availableTargets.includes(target)
-      ? `{${PALETTE.ghostWhite}-fg}${AVAILABLE_GLYPH}{/${PALETTE.ghostWhite}-fg}`
-      : `{${PALETTE.dimGray}-fg}${UNAVAILABLE_GLYPH}{/${PALETTE.dimGray}-fg}`;
-  const archived = skill.archived ? ` {${PALETTE.dimGray}-fg}(archived){/${PALETTE.dimGray}-fg}` : "";
-  const broken = brokenIds?.has(skill.id) ? ` {${PALETTE.stinger}-fg}${BROKEN_GLYPH}{/${PALETTE.stinger}-fg}` : "";
-  const idDisplay = query ? highlightText(skill.id, query) : skill.id;
-  const idText = skill.archived ? `{${PALETTE.dimGray}-fg}${idDisplay}{/${PALETTE.dimGray}-fg}` : idDisplay;
-
-  return `${prefix} ${idText}  ${status}${broken}${archived}`;
-}
-
-function renderMatrixRow(
-  skill: ManagerSkillRecord,
-  targets: SupportedTarget[],
-  selectedIds: Set<string>,
-  maxIdLen: number
-): string {
-  const prefix = selectedIds.has(skill.id)
-    ? `{${PALETTE.amber}-fg}{bold}[x]{/bold}{/${PALETTE.amber}-fg}`
-    : "[ ]";
-  const idText = skill.archived ? `{${PALETTE.dimGray}-fg}${skill.id}{/${PALETTE.dimGray}-fg}` : skill.id;
-  const paddedId = skill.id.padEnd(maxIdLen);
-  const displayId = skill.archived ? `{${PALETTE.dimGray}-fg}${paddedId}{/${PALETTE.dimGray}-fg}` : paddedId;
-
-  const cells = targets.map((t) => {
-    const avail = skill.availableTargets.includes(t);
-    const installed = skill.installedTargets.includes(t);
-    const managed = skill.managedTargets.includes(t);
-    return `${targetShortLabel(t)}:${formatMatrixCell(avail, installed, managed)}`;
-  }).join(" ");
-
-  return `${prefix} ${displayId}  ${cells}`;
 }
 
 function getSelectedIndex(list: blessed.Widgets.ListElement): number {

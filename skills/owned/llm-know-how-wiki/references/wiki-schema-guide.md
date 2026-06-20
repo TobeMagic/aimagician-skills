@@ -10,10 +10,15 @@ LLM-know-how-wiki/
     external_reference_repos/
     gcloud_inventory/
     workflow_activity/
+    secret_inventory/
   external_reference_repos/
     README.md
     manifest.json
     open_source/
+  secrets/
+    .gitignore
+    registry.yaml
+    vault.local.env  # ignored local vault, not committed
   wiki/
     service/
     architecture/
@@ -215,7 +220,17 @@ Recommended entry:
   - notes: One concise sentence.
 ```
 
-Use operation labels: `INIT`, `RAW_IMPORT`, `INGEST`, `ANSWER_FILED`, `LINT`, `SAFETY_REDACTION`, `REFERENCE_REPO`, `REFERENCE_REPO_REFRESH`, `REFERENCE_REPO_SNAPSHOT`, `LINEAR_WORKFLOW`, `GITHUB_PR_WORKFLOW`, `WORKFLOW_ACTIVITY`, `ARCHIVE`.
+Use operation labels: `INIT`, `RAW_IMPORT`, `INGEST`, `ANSWER_FILED`, `LINT`, `SAFETY_REDACTION`, `SECRET_INVENTORY`, `REFERENCE_REPO`, `REFERENCE_REPO_REFRESH`, `REFERENCE_REPO_SNAPSHOT`, `LINEAR_WORKFLOW`, `GITHUB_PR_WORKFLOW`, `WORKFLOW_ACTIVITY`, `ARCHIVE`.
+
+## Secret Management Rules
+
+Real credential values may only be stored in ignored local vault files under `secrets/`, normally `secrets/vault.local.env`. Do not put raw values in `wiki/`, `raw/`, `secrets/registry.yaml`, logs, or reports.
+
+`secrets/registry.yaml` is the durable metadata index. Store env keys, secret ids, kind, fingerprint, source refs, status, owner if known, and rotation notes. Fingerprints should be one-way hashes, not reversible encodings.
+
+Sanitized scan reports belong under `raw/secret_inventory/`. Curated operating guidance belongs in `wiki/runbook/secret_management.md` when the team needs reusable loading, rotation, or ownership context.
+
+Secret inventory does not modify source files by default. Treat redacting source files as a separate explicit operation so repository changes remain reviewable.
 
 ### Log Archive
 

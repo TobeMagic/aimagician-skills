@@ -104,4 +104,6 @@ deploy_triggers:
 
 ## Safety
 
-Do not store secrets, private env values, tokens, signed URLs, or credentials. Store resource names, project IDs, regions, trigger names, service names, URLs, commit SHAs, and non-secret labels.
+Do not store secrets, private env values, tokens, signed URLs, or credentials in deployment runbooks, raw reports, logs, or registry metadata. Store real values only in the ignored local vault under `secrets/`, when the user explicitly wants local secret management.
+
+Deployment metadata pages should store resource names, project IDs, regions, trigger names, service names, URLs, commit SHAs, env variable names, secret ids, fingerprints, and non-secret labels. Use Secret Inventory for collecting scattered real values into `secrets/vault.local.env`.

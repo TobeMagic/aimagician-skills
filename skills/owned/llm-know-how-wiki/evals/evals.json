@@ -54,6 +54,12 @@
       "prompt": "wiki/log.md 太大了，请归档旧日志，只保留最近上下文。",
       "expected_output": "Runs archive_log.py with --dry-run first, then archives older dated log entries to wiki/log_archive/YYYY.md, keeps a recent window in wiki/log.md, appends a LOG_ARCHIVE entry, and does not add archive files to wiki/index.md.",
       "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "扫描当前多仓库 workspace 里的 token、env、credential URL，并把密钥统一整理到 LLM-know-how-wiki 管理。",
+      "expected_output": "Runs secret_inventory.py across workspace repositories, writes real values only to secrets/vault.local.env, writes metadata to secrets/registry.yaml, writes a sanitized raw report under raw/secret_inventory, appends wiki/log.md, and does not modify source files or print raw secret values.",
+      "files": []
     }
   ]
 }

@@ -16,7 +16,6 @@ metadata:
     - executing-plans
     - code-guidelines
   preferred_companions:
-    - code-guidelines
     - test-driven-development
     - verification-before-completion
 compatibility:
@@ -33,7 +32,7 @@ This is the owned workflow entrypoint for serious work. It takes the useful part
 - GSD provides the canonical milestone state machine: discuss, plan, execute, verify, audit.
 - Superpowers `writing-plans` is folded into GSD phase planning: file map, concrete steps, exact commands, explicit acceptance criteria, and self-review for missing coverage.
 - Superpowers `executing-plans` is folded into GSD execution: follow the active plan, checkpoint after meaningful tasks, and stop on blockers that would change the plan.
-- `code-guidelines remains independent`; this skill invokes it as the coding discipline instead of copying its full rules into every workflow skill.
+- `code-guidelines` is folded into this skill as the default execution discipline: read first, keep changes small, scope files tightly, and verify with concrete evidence.
 - External installers, auto-update hooks, community commands, and forced shell integration are excluded.
 
 ## Core Contract
@@ -54,7 +53,7 @@ Use one loop for each meaningful unit of work:
    - Write `PLAN.md` with a file map, ordered tasks, exact commands, expected outputs, acceptance criteria, and rollback or checkpoint notes.
    - Run the plan through the 8 Verification Dimensions before execution.
 3. Execute
-   - Follow `code-guidelines`: read first, keep edits scoped, avoid unrelated churn.
+   - Follow the built-in code discipline: read first, keep edits scoped, avoid unrelated churn.
    - Use tests or probes before implementation when behavior can be pinned down.
    - Preserve user changes in dirty worktrees.
    - Execute by dependency waves when tasks can be parallelized safely; later waves must wait for files or decisions produced by earlier waves.
@@ -118,18 +117,36 @@ When a plan introduces or updates packages, tools, CLIs, or external services:
 - record why it is needed in research or the plan;
 - stop for a human checkpoint if installation fails, licensing is unclear, or the dependency changes architecture.
 
+## Built-In Code Discipline
+
+Use this discipline for every non-trivial code change:
+
+1. Think before coding
+   - State assumptions, constraints, tradeoffs, and risky unknowns before editing when they affect implementation.
+   - Ask only when a missing answer would materially change the solution.
+2. Simplicity first
+   - Make the smallest workable change that satisfies the current goal.
+   - Prefer existing local patterns, helpers, and dependencies over new abstractions.
+3. Surgical changes
+   - Touch only files required for the task.
+   - Do not reformat, rename, or refactor unrelated code.
+   - Preserve user edits and dirty worktree state.
+4. Goal-driven verification
+   - Define what proves completion.
+   - Run the narrowest useful verification first, then broaden when blast radius justifies it.
+   - Report command results, manual checks, and residual risk clearly.
+
 ## Consolidation Rules
 
 - Keep GSD as the state machine backbone.
 - Fold Superpowers quality gates into this workflow instead of installing Superpowers as a command source.
-- Keep `code-guidelines` independent because it is a reusable engineering discipline across all coding tasks.
+- Keep code discipline here instead of installing `code-guidelines` as a separate active skill.
 - Prefer owned skills over external catalog sources. External sources are references until explicitly enabled.
 - Merge duplicate workflows by outcome, not by source repository.
 - Do not downgrade a merged skill until a regression audit shows the old workflow is either preserved here or intentionally moved to another owned skill.
 
 ## When To Escalate To Companion Skills
 
-- `code-guidelines`: every non-trivial code change.
 - `test-driven-development`: when behavior can be specified with a failing test.
 - `systematic-debugging`: when a failure is unknown or not reproducible.
 - `verification-before-completion`: before marking work complete.

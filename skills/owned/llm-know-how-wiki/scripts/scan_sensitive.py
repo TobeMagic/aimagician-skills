@@ -28,6 +28,7 @@ TEXT_SUFFIXES = {
 DEFAULT_SKIP_PARTS = {".git", ".hg", ".svn", "__pycache__", "node_modules"}
 
 PATTERNS = [
+    ("env_secret_assignment", re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*(?:TOKEN|SECRET|PASSWORD|PASS|API_KEY|ACCESS_KEY|PRIVATE_KEY|CLIENT_SECRET|AUTH)[A-Za-z0-9_]*\s*=\s*(?!(?:REDACTED|<|\*{3,}|x{3,}))[^\s\"'#;]{8,}", re.I)),
     ("password_cn", re.compile(r"密码[:：]\s*(?!(?:REDACTED|<|\*{3,}|x{3,}))[^\s,，;；]+", re.I)),
     ("password_en", re.compile(r"\bpassword\s*[:=]\s*(?!(?:REDACTED|<|\*{3,}|x{3,}))[^\s,;]+", re.I)),
     ("token_assignment", re.compile(r"\b(api[_-]?key|access[_-]?token|auth[_-]?token|secret[_-]?key)\s*[:=]\s*(?!(?:REDACTED|<|\*{3,}|x{3,}))[A-Za-z0-9_./+=:@-]{12,}", re.I)),
@@ -63,15 +64,33 @@ def resolve_root(value: str | None) -> Path:
 
 def should_skip(path: Path, root: Path, include_external_reference_repos: bool) -> bool:
     rel_parts = path.relative_to(root).parts
-    if any(part in DEFAULT_SKIP_PARTS or part.startswith(".") for part in rel_parts):
-        return True
+    for index, part in enumerate(rel_parts):
+        if part in DEFAULT_SKIP_PARTS:
+            return True
+        is_directory_part = index < len(rel_parts) - 1
+        if is_directory_part and part.startswith("."):
+            return True
     if not include_external_reference_repos and rel_parts[:2] == ("external_reference_repos", "open_source"):
         return True
     return False
 
 
-def should_scan(path: Path, root: Path, include_external_reference_repos: bool) -> bool:
+def is_controlled_vault(path: Path, root: Path) -> bool:
+    rel = path.relative_to(root)
+    return rel.parts[:1] == ("secrets",) and (
+        rel.name.endswith(".local.env") or (rel.name.startswith("vault") and rel.suffix == ".env")
+    )
+
+
+def should_scan(
+    path: Path,
+    root: Path,
+    include_external_reference_repos: bool,
+    include_vault: bool,
+) -> bool:
     if should_skip(path, root, include_external_reference_repos):
+        return False
+    if not include_vault and is_controlled_vault(path, root):
         return False
     if path.suffix.lower() in TEXT_SUFFIXES:
         return True
@@ -80,7 +99,11 @@ def should_scan(path: Path, root: Path, include_external_reference_repos: bool) 
     return False
 
 
-def scan(root: Path, include_external_reference_repos: bool = False) -> list[dict[str, object]]:
+def scan(
+    root: Path,
+    include_external_reference_repos: bool = False,
+    include_vault: bool = False,
+) -> list[dict[str, object]]:
     findings: list[dict[str, object]] = []
     for current, dirnames, filenames in os.walk(root):
         current_path = Path(current)
@@ -91,7 +114,7 @@ def scan(root: Path, include_external_reference_repos: bool = False) -> list[dic
         ]
         for filename in sorted(filenames):
             path = current_path / filename
-            if not should_scan(path, root, include_external_reference_repos):
+            if not should_scan(path, root, include_external_reference_repos, include_vault):
                 continue
             try:
                 text = path.read_text(encoding="utf-8")
@@ -99,16 +122,25 @@ def scan(root: Path, include_external_reference_repos: bool = False) -> list[dic
                 continue
             for line_no, line in enumerate(text.splitlines(), start=1):
                 for name, pattern in PATTERNS:
-                    if pattern.search(line):
+                    for match in pattern.finditer(line):
                         findings.append(
                             {
                                 "path": str(path.relative_to(root)),
                                 "line": line_no,
                                 "pattern": name,
-                                "preview": line.strip()[:220],
+                                "preview": redacted_preview(line, match, name),
                             }
                         )
     return findings
+
+
+def redacted_preview(line: str, match: re.Match[str], pattern_name: str) -> str:
+    stripped = line.strip()
+    offset = len(line) - len(line.lstrip())
+    start = max(match.start() - offset, 0)
+    end = max(match.end() - offset, start)
+    preview = stripped[:start] + f"<redacted:{pattern_name}>" + stripped[end:]
+    return preview[:220]
 
 
 def main() -> int:
@@ -120,10 +152,19 @@ def main() -> int:
         action="store_true",
         help="Also scan third-party repositories under external_reference_repos/open_source",
     )
+    parser.add_argument(
+        "--include-vault",
+        action="store_true",
+        help="Also scan controlled local vault files under secrets/. Default omits them.",
+    )
     args = parser.parse_args()
 
     root = resolve_root(args.path)
-    findings = scan(root, include_external_reference_repos=args.include_external_reference_repos)
+    findings = scan(
+        root,
+        include_external_reference_repos=args.include_external_reference_repos,
+        include_vault=args.include_vault,
+    )
 
     if args.json:
         print(json.dumps({"wiki_root": str(root), "findings": findings}, ensure_ascii=False, indent=2))

@@ -60,7 +60,7 @@ Reference:
 
 当用户明确要“高星风格 README”时，默认包含封面图流程：
 
-1. 使用生图 skill 生成封面（优先 `modelscope_imagegen`，可选 `cloudflare-image-gen`）。
+1. 使用 active owned 生图 skill 生成封面（默认 `modelscope_imagegen`；`cloudflare-image-gen` 已归档，仅作历史参考）。
 2. 推荐尺寸：`1600x896`（16:9），避免在图内写密集小字。
 3. 输出路径建议：`./docs/assets/readme-cover.webp`。
 4. 在 README 顶部通过 Markdown 或 HTML `<img>` 引入封面。

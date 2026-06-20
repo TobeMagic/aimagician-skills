@@ -5,10 +5,12 @@ description: >
   persistent, compiled Markdown knowledge base with raw evidence, curated wiki
   pages, schema rules, index, and log. Use this skill whenever the user asks to
   create an LLM wiki, ingest raw docs/repos/Feishu/Linear snapshots, answer from
-  an existing wiki, lint/audit wiki health, or turn scattered engineering
-  context into a durable knowledge base. This skill should trigger even if the
-  user only says "wiki", "know-how", "ingest", "digest", "基于 wiki 回答",
-  "把这些文档编译进知识库", or "维护 LLM-know-how-wiki".
+  an existing wiki, lint/audit wiki health, inventory project secrets into a
+  controlled local vault, or turn scattered engineering context into a durable
+  knowledge base. This skill should trigger even if the user only says "wiki",
+  "know-how", "ingest", "digest", "secret inventory", "env 管理",
+  "密钥整理", "基于 wiki 回答", "把这些文档编译进知识库", or
+  "维护 LLM-know-how-wiki".
 metadata:
   related_skills:
     - opensource-architecture-research
@@ -34,12 +36,13 @@ Use this skill to create and operate a project-local compiled knowledge base ins
 
 ## Core Model
 
-Every wiki has three core layers plus one optional external-reference area:
+Every wiki has three core layers plus optional external-reference and local secret-management areas:
 
 - `raw/`: append-only evidence such as repository snapshots, Feishu exports, Linear snapshots, meeting notes, APIs, PDFs, CSVs, screenshots, and imported docs.
 - `wiki/`: curated, agent-maintained Markdown pages with frontmatter, links, summaries, architecture notes, API contracts, project status, runbooks, decisions, and digests.
 - `SCHEMA.md`: the behavior contract that tells agents how to maintain this specific wiki: page types, tags, naming, update rules, safety rules, and operation modes.
 - `external_reference_repos/open_source/`: third-party open-source repositories used only for architecture and implementation reference. Do not treat these as company services or deployment targets.
+- `secrets/`: controlled local secret management. `secrets/vault.local.env` may contain real values and must stay gitignored; `secrets/registry.yaml` stores metadata only.
 
 The navigation backbone is:
 
@@ -47,6 +50,7 @@ The navigation backbone is:
 - `wiki/log.md`: recent action history. Read recent entries before changing anything.
 - `wiki/log_archive/`: older log entries archived by year when `wiki/log.md` grows too large.
 - `wiki/interview/`: evidence-backed interview playbooks generated from local repos and wiki pages.
+- `raw/secret_inventory/`: sanitized secret scan snapshots with fingerprints and source locations, never raw values.
 
 ## Resolve The Wiki Root
 
@@ -108,6 +112,37 @@ python <skill>/scripts/refresh_repos.py --workspace <workspace-root> --dry-run -
 
 After Refresh Repos, use Ingest to compile the snapshot into service or project pages if the status changes matter.
 
+### Secret Inventory
+
+Use Secret Inventory when the user wants to scan all related repositories for keys, tokens, credential URLs, `.env` values, or cache/config secrets and organize them into one managed location.
+
+Run the bundled script:
+
+```bash
+python <skill>/scripts/secret_inventory.py --workspace <workspace-root> --wiki-root <wiki-root>
+```
+
+Default behavior:
+
+- discovers git repositories under the workspace, using the same safe discovery style as Refresh Repos
+- scans text/config files, `.env*`, `.npmrc`, `.pypirc`, `.netrc`, Terraform variable/state files, credential-looking filenames, and targeted high-risk cache/config files
+- copies unique detected values into `secrets/vault.local.env`
+- appends metadata only to `secrets/registry.yaml`
+- writes a sanitized raw report to `raw/secret_inventory/<timestamp>-secret-scan.md`
+- appends `wiki/log.md`
+- does not modify the source files where the secret was found
+- does not print or write raw secret values outside `secrets/vault.local.env`
+
+Useful variants:
+
+```bash
+python <skill>/scripts/secret_inventory.py --workspace <workspace-root> --dry-run --json
+python <skill>/scripts/secret_inventory.py --workspace <workspace-root> --no-write-vault
+python <skill>/scripts/secret_inventory.py --workspace <workspace-root> --strict
+```
+
+After Secret Inventory, create or update `wiki/runbook/secret_management.md` only with safe metadata: secret ids, env keys, owning service, purpose, source locations, loading instructions, and rotation notes. Do not copy raw values from `secrets/vault.local.env` into `wiki/`, `raw/`, reports, chat, or issue trackers.
+
 ### Reference Repos
 
 Use Reference Repos when the user wants to pull, update, or compare external open-source projects.
@@ -165,7 +200,7 @@ Use Ingest when the user provides raw files, folders, repo context, Feishu expor
    ```
 9. Report changed files and verification results.
 
-Raw files are normally append-only. If a safety scan finds passwords, tokens, cookies, private keys, signed download URLs, or credential-like account data, redact them and record the redaction in metadata/log.
+Raw files are normally append-only. If a safety scan finds passwords, tokens, cookies, private keys, signed download URLs, or credential-like account data outside the controlled local vault, either run Secret Inventory or redact the value and record the action in metadata/log.
 
 ### Workflow Activity Record
 
@@ -214,6 +249,7 @@ Check for:
 - page size over threshold
 - unknown tags
 - unsafe secret-looking content
+- real secret values outside `secrets/vault.local.env`
 
 Lint reports go under `wiki/digest/lint-YYYY-MM-DD.md` and `wiki/log.md` should receive an entry.
 
@@ -295,7 +331,10 @@ Do not live-inspect Cloud Run or external systems unless the user explicitly ask
 
 ## Safety Rules
 
-- Never store secrets, tokens, passwords, cookies, private keys, or full credential-like env values.
+- Real secrets, tokens, passwords, cookies, private keys, and full credential-like env values may only live in the controlled local vault: `secrets/vault.local.env` or another ignored `secrets/*.local.env` file.
+- Never store raw secret values in `wiki/`, `raw/`, `secrets/registry.yaml`, logs, reports, chat responses, or issue trackers.
+- `secrets/registry.yaml` stores metadata only: env key, secret id, kind, fingerprint, source refs, status, and rotation notes.
+- Secret scan reports must use fingerprints and redacted previews, not raw values.
 - Never silently overwrite raw evidence.
 - Prefer "Unknown from current docs" over guessing.
 - Keep every curated page traceable through `sources:` frontmatter and a Sources section.
@@ -334,6 +373,9 @@ python <skill>/scripts/wiki_lint.py <wiki-root> --write-report
 
 # Scan for obvious secrets
 python <skill>/scripts/scan_sensitive.py <wiki-root>
+
+# Inventory workspace secrets into the local controlled vault
+python <skill>/scripts/secret_inventory.py --workspace <workspace-root> --wiki-root <wiki-root>
 ```
 
 ## References

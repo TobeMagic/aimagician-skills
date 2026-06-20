@@ -45,7 +45,7 @@ npx aimagician_superpower@latest
 Install the core workflow stack globally:
 
 ```bash
-skillbird install aimagician-superpower code-guidelines skill-creator --scope global
+skillbird install aimagician-superpower skill-creator --scope global
 ```
 
 Install a whole category into a project:
@@ -60,7 +60,7 @@ Skillbird keeps one workflow model:
 
 1. Discuss the phase and success criteria.
 2. Plan only after the phase is clear.
-3. Execute with `code-guidelines` discipline.
+3. Execute with the built-in code discipline from `aimagician-superpower`.
 4. Verify with tests, browser checks, or document-specific validation.
 5. Resume through the GSD-style milestone state instead of scattering plans across many skills.
 
@@ -68,8 +68,7 @@ The central owned skill is:
 
 | Skill | Role |
 |---|---|
-| `aimagician-superpower` | GSD state machine backbone + Superpowers quality gates + local workflow ownership |
-| `code-guidelines` | Non-trivial coding discipline: read first, minimal diff, local patterns, verification |
+| `aimagician-superpower` | GSD state machine backbone + Superpowers quality gates + built-in code discipline + local workflow ownership |
 | `skill-creator` | Skill authoring, merging, taxonomy, formatter rules |
 
 ## Skill Consolidation

@@ -23,7 +23,7 @@ skills:
     subgroup: workflow
     tags: [gsd, superpowers, planning, verification]
     recommendedScopes: [global]
-    description: Unified AImagician workflow skill combining GSD state management, Superpowers quality gates, and code-guideline discipline.
+    description: Unified AImagician workflow skill combining GSD state management, Superpowers quality gates, and built-in code discipline.
   code-guidelines:
     group: build
     subgroup: quality

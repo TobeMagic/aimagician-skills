@@ -20,6 +20,9 @@ You are not a generic chat agent while operating in this wiki. Follow the reques
 - `raw/external_reference_repos/` stores shallow snapshots generated from external reference repositories.
 - `raw/gcloud_inventory/` stores read-only Google Cloud inventory snapshots.
 - `raw/workflow_activity/` stores append-only activity records from Linear, GitHub, PR review, and other workflow skills.
+- `raw/secret_inventory/` stores sanitized secret inventory snapshots with fingerprints and source locations, never raw secret values.
+- `secrets/vault.local.env` is the controlled local vault for real secret values and must stay ignored by git.
+- `secrets/registry.yaml` stores secret metadata only: env keys, ids, fingerprints, source refs, status, and rotation notes.
 - `wiki/` is curated knowledge. Create and update wiki pages during Ingest and Lint.
 - `wiki/reference/` stores curated comparisons and architecture notes derived from external reference repositories.
 - `wiki/interview/` stores evidence-backed repo interview playbooks, project stories, question banks, and resume bullets.
@@ -29,13 +32,14 @@ You are not a generic chat agent while operating in this wiki. Follow the reques
 
 ## Hard Rules
 
-1. Do not store secrets, tokens, passwords, private keys, cookies, or full credential-like environment values.
-2. Prefer "Unknown from current docs" over guessing.
-3. Every curated wiki page must have YAML frontmatter.
-4. Every Ingest must update `wiki/index.md` and append `wiki/log.md`.
-5. Answer mode is read-only unless the human explicitly asks to file the answer.
-6. New tags must be added to this schema before broad use.
-7. Do not treat repositories under `external_reference_repos/` as local services or deployment targets.
+1. Store real secrets, tokens, passwords, private keys, cookies, and full credential-like environment values only in `secrets/vault.local.env` or another ignored `secrets/*.local.env` vault file.
+2. Do not store raw secret values in `wiki/`, `raw/`, `secrets/registry.yaml`, logs, reports, chat responses, or issue trackers.
+3. Prefer "Unknown from current docs" over guessing.
+4. Every curated wiki page must have YAML frontmatter.
+5. Every Ingest must update `wiki/index.md` and append `wiki/log.md`.
+6. Answer mode is read-only unless the human explicitly asks to file the answer.
+7. New tags must be added to this schema before broad use.
+8. Do not treat repositories under `external_reference_repos/` as local services or deployment targets.
 
 ## Operations
 
@@ -59,9 +63,22 @@ You are not a generic chat agent while operating in this wiki. Follow the reques
 
 ### Lint
 
-Check missing frontmatter, broken wikilinks, missing index entries, orphan pages, stale pages, oversized pages, unknown tags, and secret-looking content.
+Check missing frontmatter, broken wikilinks, missing index entries, orphan pages, stale pages, oversized pages, unknown tags, and secret-looking content outside the controlled local vault.
 
 Write lint reports to `wiki/digest/lint-YYYY-MM-DD.md` and append `wiki/log.md`.
+
+### Secret Inventory
+
+Use Secret Inventory to scan project repositories for keys, tokens, credential URLs, `.env` values, and high-risk cache/config files.
+
+1. Discover repositories under the workspace.
+2. Scan source/config files while skipping dependency and build output directories.
+3. Copy unique real values to `secrets/vault.local.env`.
+4. Append metadata only to `secrets/registry.yaml`.
+5. Write sanitized reports to `raw/secret_inventory/`.
+6. Append `wiki/log.md`.
+7. Do not modify source files unless the human asks for a separate redaction pass.
+8. Do not print raw secret values.
 
 ### Log Archive
 
@@ -162,6 +179,9 @@ confidence: high | medium | low
 - workflow
 - log
 - archive
+- secret
+- env
+- credential
 - interview
 - career
 - gcloud

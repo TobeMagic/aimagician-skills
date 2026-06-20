@@ -30,7 +30,7 @@ Cover embed example:
 
 Cover generation guidance:
 
-- Prefer image-generation skills (`modelscope_imagegen` or `cloudflare-image-gen`).
+- Prefer the active owned image-generation skill `modelscope_imagegen`; `cloudflare-image-gen` is archived reference material.
 - Recommended size: `1600x896`.
 - Keep cover mostly visual; avoid dense text inside the image.
 
