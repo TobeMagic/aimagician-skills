@@ -3,6 +3,7 @@ import { cp, mkdir, rm } from "node:fs/promises";
 import type { SupportedTarget } from "../model/targets";
 import type { BootstrapManifestManagedInstall } from "./manifest";
 import type { ResolvedManagedInstall } from "./source-resolution";
+import { shouldCopyManagedSource } from "./copy-filter";
 
 export interface SyncManagedInstallsOptions {
   allowedRootsByTarget: Record<SupportedTarget, string[]>;
@@ -138,7 +139,7 @@ export async function syncManagedInstalls(
     await cp(operation.sourcePath, operation.destinationPath, {
       recursive: operation.installType === "directory",
       force: true,
-      filter: (source) => !source.endsWith(`${sep}.git`) && !source.includes(`${sep}.git${sep}`)
+      filter: shouldCopyManagedSource
     });
 
     installsByTarget.get(operation.target)?.push({

@@ -1,5 +1,6 @@
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { join } from "node:path";
+import { shouldCopyManagedSource } from "./copy-filter";
 
 export interface MaterializeGeminiExtensionOptions {
   assetId: string;
@@ -24,7 +25,7 @@ export async function materializeGeminiExtension(
   await cp(options.sourceDir, bundledSkillDir, {
     recursive: true,
     force: true,
-    filter: (source) => basename(source) !== ".git"
+    filter: shouldCopyManagedSource
   });
   await writeFile(
     join(extensionRoot, "GEMINI.md"),

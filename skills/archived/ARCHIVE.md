@@ -10,6 +10,8 @@ Archived IDs:
 - infinite-research-loop (owned, 2026-05-11)
 - code-guidelines (owned, 2026-06-18; merged into aimagician-superpower)
 - cloudflare-image-gen (owned, 2026-06-18; replaced by active modelscope_imagegen workflow)
+- design-md-brand-router (owned, 2026-06-25; merged into interface-design)
+- multilingual-diversity-loop (owned, 2026-06-25; archived from active default set)
 
 Notes:
 - These entries will not be installed by bootstrap; catalog entries were removed/disabled.

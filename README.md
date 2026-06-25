@@ -27,7 +27,7 @@
 
 The daily command is `skillbird`. It manages skills across Codex, Claude, OpenCode, Gemini, Hermes, Cursor, and Copilot with global or project-local installs.
 
-The important change: owned skills are now the source of truth. External collections such as GSD, Superpowers, selected Claude skills, UI packs, and Playwright skills are treated as reference material unless explicitly enabled. No default external installer, no forced update hook, and no automatic upstream noise.
+The important change: owned skills are now the source of truth. External collections such as GSD, Superpowers, selected Claude skills, UI packs, and Playwright skills are curated into owned skills or kept as disabled reference material. Bootstrap installs only the active owned set by default.
 
 ## Quick Start
 
@@ -58,17 +58,19 @@ skillbird install --category documents --scope project --target claude
 
 Skillbird keeps one workflow model:
 
-1. Discuss the phase and success criteria.
-2. Plan only after the phase is clear.
-3. Execute with the built-in code discipline from `aimagician-superpower`.
-4. Verify with tests, browser checks, or document-specific validation.
-5. Resume through the GSD-style milestone state instead of scattering plans across many skills.
+1. Establish the target, boundary, success criteria, and non-goals.
+2. Discuss baseline requirements and locked assumptions.
+3. Research local evidence and current external facts when needed.
+4. Brainstorm viable approaches, then re-discuss changed boundaries.
+5. Plan only after the target, research, and assumptions are stable.
+6. Execute with small scoped changes and checkpoints.
+7. Verify, audit, hand off, and close with evidence.
 
 The central owned skill is:
 
 | Skill | Role |
 |---|---|
-| `aimagician-superpower` | GSD state machine backbone + Superpowers quality gates + built-in code discipline + local workflow ownership |
+| `aimagician-superpower` | Research-aware milestone workflow, planning, execution, verification, audit, handoff, and code discipline |
 | `skill-creator` | Skill authoring, merging, taxonomy, formatter rules |
 
 ## Skill Consolidation
@@ -80,7 +82,7 @@ External sources are curated into owned skills instead of installed by default.
 | GSD + Superpowers planning/execution | `aimagician-superpower` |
 | Claude skill creator + Superpowers skill writing | `skill-creator` |
 | Claude MCP builder + community MCP builder | `mcp-builder` |
-| frontend-design, baseline-ui, accessibility, metadata, motion, design-lab, impeccable | `interface-design` |
+| frontend-design, design-md brand routing, baseline-ui, accessibility, metadata, motion, design-lab, impeccable | `interface-design` |
 | Claude webapp-testing + Playwright skill | `webapp-testing` |
 | docx / pdf / pptx / xlsx | Owned document skills under `skills/owned` |
 
@@ -90,7 +92,7 @@ Six categories are used everywhere:
 |---|---|
 | `build` | Coding, planning, debugging, tests, reviews, skill authoring, MCP/tools |
 | `research` | Papers, literature, open-source architecture, repo evidence |
-| `design` | UI, brand, accessibility, metadata, motion, image generation |
+| `design` | UI, brand DESIGN.md routing, accessibility, metadata, motion, image generation |
 | `documents` | README, Word, PDF, PowerPoint, spreadsheets |
 | `operate` | GitHub, Linear, cloud, worktrees, releases |
 | `strategy` | Product, business, pricing, customers, growth |

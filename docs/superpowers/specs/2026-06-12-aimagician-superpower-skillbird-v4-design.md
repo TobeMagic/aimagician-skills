@@ -41,10 +41,10 @@ v4 turns the current Skillbee repository into `aimagician_superpower`, with `ski
 |---|---|
 | Build | `aimagician-superpower`, `skill-creator`, `mcp-builder`, `webapp-testing` |
 | Research | `academic-paper-workflow`, `deep-research-system`, `opensource-architecture-research`, `llm-know-how-wiki` |
-| Design | `interface-design`, `design-md-brand-router`, `modelscope_imagegen` |
+| Design | `interface-design`, `modelscope_imagegen` |
 | Documents | `window-pptx`, `github-readme-highstar`; user-provided `docx`, `pdf`, `pptx`, and `xlsx` are managed if present |
 | Operate | `github-pr-workflow`, `linear-issue-workflow`, `gcloud-ops-workflow`, `parallel-worktree-pr-flow` |
-| Strategy | `repo-interview-playbook`, `multilingual-diversity-loop` |
+| Strategy | `repo-interview-playbook` |
 
 ## Workflow Consolidation
 
@@ -77,6 +77,7 @@ Claude's Apache-2.0 `skill-creator` is the primary source for skill authoring. S
 This replaces scattered UI/design skills with one main interface skill. It absorbs:
 
 - Claude `frontend-design`
+- `design-md-brand-router`
 - `baseline-ui`
 - `fixing-accessibility`
 - `fixing-metadata`
@@ -157,6 +158,7 @@ Acceptance:
 - Browser testing is consolidated into `webapp-testing`.
 - Skill authoring is consolidated into `skill-creator`.
 - Removed/absorbed skills no longer appear as separate default owner installs.
+- `design-md-brand-router` and `multilingual-diversity-loop` are archived from the active default set.
 
 ### Phase 18: Category Formatter and Auto Bundles
 

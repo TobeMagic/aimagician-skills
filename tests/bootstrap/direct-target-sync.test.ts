@@ -148,6 +148,23 @@ describe("direct target sync", () => {
       "utf8"
     );
     expect(copiedHelper).toBe("owned helper\n");
+    await expectMissing(
+      join(homeDir, ".codex", "skills", "daily-ops", "references", "_external_repos", "upstream", "README.md")
+    );
+    await expectMissing(
+      join(
+        homeDir,
+        ".gemini",
+        "extensions",
+        "daily-ops",
+        "skills",
+        "daily-ops",
+        "references",
+        "_external_repos",
+        "upstream",
+        "README.md"
+      )
+    );
     const geminiContext = await readFile(
       join(homeDir, ".gemini", "extensions", "daily-ops", "GEMINI.md"),
       "utf8"
@@ -459,6 +476,7 @@ async function createFixtureRepository(
   const commandEnvPath = join(root, "command-env.json");
 
   await mkdir(join(ownedSkillsRoot, "daily-ops"), { recursive: true });
+  await mkdir(join(ownedSkillsRoot, "daily-ops", "references", "_external_repos", "upstream"), { recursive: true });
   await mkdir(join(skillsRoot), { recursive: true });
   await mkdir(join(pluginsRoot), { recursive: true });
   await mkdir(join(externalRepoRoot, "skills", "gsd"), { recursive: true });
@@ -466,6 +484,11 @@ async function createFixtureRepository(
 
   await writeFile(join(ownedSkillsRoot, "daily-ops", "SKILL.md"), "# Daily Ops\n", "utf8");
   await writeFile(join(ownedSkillsRoot, "daily-ops", "notes.txt"), "owned helper\n", "utf8");
+  await writeFile(
+    join(ownedSkillsRoot, "daily-ops", "references", "_external_repos", "upstream", "README.md"),
+    "local reference repo only\n",
+    "utf8"
+  );
   await writeFile(join(externalRepoRoot, "skills", "gsd", "SKILL.md"), "# GSD\n", "utf8");
   await writeFile(join(externalRepoRoot, "skills", "gsd", "README.md"), "external helper\n", "utf8");
   await writeFile(

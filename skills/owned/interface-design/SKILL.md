@@ -1,23 +1,15 @@
 ---
 name: interface-design
-description: Consolidated UI and frontend design workflow. Use when building, refactoring, auditing, or polishing interfaces, including frontend-design, baseline UI quality, accessibility, metadata, motion performance, design-lab variation, impeccable polish, and interaction feel.
+description: Consolidated UI and frontend design workflow. Use when building, refactoring, auditing, or polishing interfaces, including frontend design, brand DESIGN.md routing, baseline UI quality, accessibility, metadata, motion performance, design variation, polish, and interaction feel.
 category: design
 subcategory: interface
 tags:
   - ui
   - frontend
+  - brand
+  - design-md
   - accessibility
   - polish
-metadata:
-  merged_from:
-    - frontend-design
-    - baseline-ui
-    - fixing-accessibility
-    - fixing-metadata
-    - fixing-motion-performance
-    - design-lab
-    - impeccable
-    - make-interfaces-feel-better
 compatibility:
   tools: [bash, browser, playwright]
   requires: Existing app or a concrete interface brief
@@ -62,6 +54,35 @@ Use this skill for product interfaces, web apps, dashboards, tools, and UI polis
    - metadata when the page is public.
 6. Verify with tests, screenshots, or manual browser checks.
 
+## Brand DESIGN.md Routing
+
+Use this section when the user asks for a brand style, a `DESIGN.md`, a named company/product visual language, or a brand-inspired UI direction.
+
+Built-in brand assets live here:
+
+- `references/brand-design-md/brands.json`
+- `references/brand-design-md/design-md/*.DESIGN.md`
+
+Process:
+
+1. Match the requested brand against `brands.json` and available `*.DESIGN.md` files.
+2. If the user did not specify a brand, ask for the target brand or offer two or three relevant options.
+3. Confirm:
+   - single brand or blended brands;
+   - whether to write root `./DESIGN.md` or keep candidates in a project docs folder;
+   - target surface such as dashboard, landing page, component library, app shell, or marketing page;
+   - constraints on fonts, colors, motion, accessibility, and existing design tokens.
+4. Read the selected brand file before designing.
+5. Treat the brand file as alignment input, not a destructive override of the existing product system.
+6. During implementation, read the project `DESIGN.md`, local tokens, components, and previous UI before editing.
+
+Guardrails:
+
+- Do not blindly combine multiple brands into an unreadable style.
+- If the product already has a design system, preserve its interaction patterns and adapt only the visual language that improves the task.
+- Do not copy brand names into user-facing UI unless the user explicitly wants that.
+- Keep accessibility and responsive behavior above brand mimicry.
+
 ## Guardrails
 
 - Do not build a landing page when the user asked for an app or tool.
@@ -75,6 +96,7 @@ Use this skill for product interfaces, web apps, dashboards, tools, and UI polis
 Report:
 
 - UX workflow addressed;
+- brand/design reference used when applicable;
 - key files changed;
 - desktop/mobile verification performed;
 - known design tradeoffs.

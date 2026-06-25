@@ -141,7 +141,7 @@ describe("v4 Skillbird acceptance", () => {
     await expectPath(join(projectDir, ".skillbird", "manifest.json"));
   });
 
-  it("previews the active design bundle without archived cloudflare image generation", async () => {
+  it("previews the active design bundle without archived design experiments", async () => {
     const root = await createTempRoot();
     const homeDir = join(root, "home");
     await mkdir(homeDir, { recursive: true });
@@ -163,12 +163,12 @@ describe("v4 Skillbird acceptance", () => {
     expect(preview.exitCode).toBe(0);
     const previewJson = JSON.parse(preview.stdout) as InstallJson;
     expect(installedIds(previewJson)).toEqual(expect.arrayContaining([
-      "design-md-brand-router",
       "interface-design",
-      "modelscope_imagegen",
-      "multilingual-diversity-loop"
+      "modelscope_imagegen"
     ]));
     expect(installedIds(previewJson)).not.toContain("cloudflare-image-gen");
+    expect(installedIds(previewJson)).not.toContain("design-md-brand-router");
+    expect(installedIds(previewJson)).not.toContain("multilingual-diversity-loop");
   });
 
   it("keeps PTY smoke and category styling coverage tied to Skillbird", async () => {

@@ -25,9 +25,9 @@ External catalog sources remain visible reference material and are disabled by d
 
 | Skill | Purpose |
 |---|---|
-| `aimagician-superpower` | GSD-style state machine plus Superpowers process gates and built-in code discipline |
+| `aimagician-superpower` | Research-aware milestone workflow, planning, execution, verification, audit, handoff, and code discipline |
 | `skill-creator` | Create, merge, classify, and verify skills |
-| `interface-design` | Consolidated UI, accessibility, metadata, motion, and polish workflow |
+| `interface-design` | Consolidated UI, brand DESIGN.md routing, accessibility, metadata, motion, and polish workflow |
 | `webapp-testing` | Playwright and browser verification workflow |
 | `mcp-builder` | MCP server and tool-schema design workflow |
 
