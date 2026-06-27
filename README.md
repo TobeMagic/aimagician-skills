@@ -80,7 +80,7 @@ External sources are curated into owned skills instead of installed by default.
 | Source area | New owned path |
 |---|---|
 | GSD + Superpowers planning/execution | `aimagician-superpower` |
-| Agent-to-agent repository exploration with OpenCode | `agentic-repo-explorer` |
+| CLI agent orchestration, currently OpenCode-backed exploration | `cli-agent-orchestrator` |
 | Claude skill creator + Superpowers skill writing | `skill-creator` |
 | Claude MCP builder + community MCP builder | `mcp-builder` |
 | frontend-design, design-md brand routing, baseline-ui, accessibility, metadata, motion, design-lab, impeccable | `interface-design` |
@@ -92,10 +92,10 @@ Six categories are used everywhere:
 | Category | Scope |
 |---|---|
 | `build` | Coding, planning, debugging, tests, reviews, skill authoring, MCP/tools |
-| `research` | Papers, literature, OpenCode repo exploration, open-source architecture, repo evidence |
+| `research` | Papers, literature, open-source architecture, repo evidence |
 | `design` | UI, brand DESIGN.md routing, accessibility, metadata, motion, image generation |
 | `documents` | README, Word, PDF, PowerPoint, spreadsheets |
-| `operate` | GitHub, Linear, cloud, worktrees, releases |
+| `operate` | GitHub, Linear, cloud, worktrees, releases, CLI agent orchestration |
 | `strategy` | Product, business, pricing, customers, growth |
 
 Every owned skill is formatted with `category`, `subcategory`, and `tags` frontmatter:

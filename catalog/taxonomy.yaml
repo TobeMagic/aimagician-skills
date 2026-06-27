@@ -100,12 +100,12 @@ skills:
     subgroup: academic
     tags: [papers, literature, experiments]
     recommendedScopes: [project]
-  agentic-repo-explorer:
-    group: research
-    subgroup: repo-analysis
-    tags: [opencode, exploration, architecture, context, agent-to-agent]
+  cli-agent-orchestrator:
+    group: operate
+    subgroup: agent-orchestration
+    tags: [cli-agent, multi-agent, orchestration, opencode, exploration]
     recommendedScopes: [project]
-    description: Delegate large repository exploration to OpenCode and turn the result into a structured context report.
+    description: Orchestrate external CLI agents for bounded multi-agent tasks; currently OpenCode-backed read-only exploration.
   deep-research-system:
     group: research
     subgroup: literature

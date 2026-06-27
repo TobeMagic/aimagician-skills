@@ -171,7 +171,7 @@ describe("v4 Skillbird acceptance", () => {
     expect(installedIds(previewJson)).not.toContain("multilingual-diversity-loop");
   });
 
-  it("previews the research bundle with the external explorer orchestrator", async () => {
+  it("previews the operate bundle with the CLI agent orchestrator", async () => {
     const root = await createTempRoot();
     const homeDir = join(root, "home");
     await mkdir(homeDir, { recursive: true });
@@ -179,7 +179,7 @@ describe("v4 Skillbird acceptance", () => {
     const preview = await runCli([
       "install",
       "--category",
-      "research",
+      "operate",
       "--scope",
       "project",
       "--target",
@@ -193,12 +193,13 @@ describe("v4 Skillbird acceptance", () => {
     expect(preview.exitCode).toBe(0);
     const previewJson = JSON.parse(preview.stdout) as InstallJson;
     expect(installedIds(previewJson)).toEqual(expect.arrayContaining([
-      "academic-paper-workflow",
-      "agentic-repo-explorer",
-      "deep-research-system",
-      "opensource-architecture-research",
-      "repo-interview-playbook"
+      "cli-agent-orchestrator",
+      "gcloud-ops-workflow",
+      "github-pr-workflow",
+      "linear-issue-workflow",
+      "parallel-worktree-pr-flow"
     ]));
+    expect(installedIds(previewJson)).not.toContain("agentic-repo-explorer");
   });
 
   it("keeps PTY smoke and category styling coverage tied to Skillbird", async () => {

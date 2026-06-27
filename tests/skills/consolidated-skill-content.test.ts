@@ -111,20 +111,48 @@ describe("consolidated owned skill content", () => {
     expect(appleDesign).toContain("Apple");
   });
 
-  it("keeps OpenCode exploration delegation strict and report-oriented", async () => {
-    const skill = await readOwnedSkill("agentic-repo-explorer");
+  it("keeps CLI agent orchestration provider-based and strict by default", async () => {
+    const skill = await readOwnedSkill("cli-agent-orchestrator");
+    const opencodeProvider = await readFile(
+      join(ownedSkillsRoot, "cli-agent-orchestrator", "references", "providers", "opencode.md"),
+      "utf8"
+    );
+    const explorationTask = await readFile(
+      join(ownedSkillsRoot, "cli-agent-orchestrator", "references", "task-types", "exploration.md"),
+      "utf8"
+    );
+    const reportTemplate = await readFile(
+      join(
+        ownedSkillsRoot,
+        "cli-agent-orchestrator",
+        "references",
+        "report-templates",
+        "exploration-report.md"
+      ),
+      "utf8"
+    );
 
-    expect(skill).toContain("opencode models");
-    expect(skill).toContain("opencode run --dir");
-    expect(skill).toContain("opencode/deepseek-v4-flash-free");
-    expect(skill).toContain("opencode/nemotron-3-ultra-free");
-    expect(skill).toContain("Do not modify files");
-    expect(skill).toContain("Do not run destructive commands");
-    expect(skill).toContain("opencode export");
-    expect(skill).toContain("# OpenCode Explorer Report");
-    expect(skill).toContain("Relevant Files");
-    expect(skill).toContain("Architecture Understanding");
-    expect(skill).toContain("Validation Suggestions");
+    expect(skill).toContain("references/providers/opencode.md");
+    expect(skill).toContain("references/task-types/exploration.md");
+    expect(skill).toContain("Discuss-First Boundary Gate");
+    expect(skill).toContain("strict read-only by default");
+    expect(skill).toContain("review, planning, verification, audit, summarization, comparison");
+    expect(skill).not.toContain("agentic-repo-explorer");
+
+    expect(opencodeProvider).toContain("opencode models");
+    expect(opencodeProvider).toContain("opencode run --dir");
+    expect(opencodeProvider).toContain("opencode/deepseek-v4-flash-free");
+    expect(opencodeProvider).toContain("opencode/nemotron-3-ultra-free");
+    expect(opencodeProvider).toContain("opencode export");
+
+    expect(explorationTask).toContain("not limited to repositories");
+    expect(explorationTask).toContain("Do not modify files");
+    expect(explorationTask).toContain("Do not run destructive commands");
+    expect(explorationTask).toContain("Relevant Sources");
+
+    expect(reportTemplate).toContain("# CLI Agent Exploration Report");
+    expect(reportTemplate).toContain("Allowed scope");
+    expect(reportTemplate).toContain("Reliability Notes");
   });
 
   it("keeps the Claude and Superpowers skill-authoring evaluation loop in skill-creator", async () => {
