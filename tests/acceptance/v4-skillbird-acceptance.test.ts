@@ -171,6 +171,36 @@ describe("v4 Skillbird acceptance", () => {
     expect(installedIds(previewJson)).not.toContain("multilingual-diversity-loop");
   });
 
+  it("previews the research bundle with the external explorer orchestrator", async () => {
+    const root = await createTempRoot();
+    const homeDir = join(root, "home");
+    await mkdir(homeDir, { recursive: true });
+
+    const preview = await runCli([
+      "install",
+      "--category",
+      "research",
+      "--scope",
+      "project",
+      "--target",
+      "codex",
+      "--home",
+      homeDir,
+      "--dry-run",
+      "--json"
+    ]);
+
+    expect(preview.exitCode).toBe(0);
+    const previewJson = JSON.parse(preview.stdout) as InstallJson;
+    expect(installedIds(previewJson)).toEqual(expect.arrayContaining([
+      "academic-paper-workflow",
+      "agentic-repo-explorer",
+      "deep-research-system",
+      "opensource-architecture-research",
+      "repo-interview-playbook"
+    ]));
+  });
+
   it("keeps PTY smoke and category styling coverage tied to Skillbird", async () => {
     const tuiSmoke = await readFile("tests/tui/tui-pty-smoke.test.ts", "utf8");
     const dashboard = await readFile("src/tui/dashboard.ts", "utf8");

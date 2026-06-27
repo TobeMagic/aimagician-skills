@@ -111,6 +111,22 @@ describe("consolidated owned skill content", () => {
     expect(appleDesign).toContain("Apple");
   });
 
+  it("keeps OpenCode exploration delegation strict and report-oriented", async () => {
+    const skill = await readOwnedSkill("agentic-repo-explorer");
+
+    expect(skill).toContain("opencode models");
+    expect(skill).toContain("opencode run --dir");
+    expect(skill).toContain("opencode/deepseek-v4-flash-free");
+    expect(skill).toContain("opencode/nemotron-3-ultra-free");
+    expect(skill).toContain("Do not modify files");
+    expect(skill).toContain("Do not run destructive commands");
+    expect(skill).toContain("opencode export");
+    expect(skill).toContain("# OpenCode Explorer Report");
+    expect(skill).toContain("Relevant Files");
+    expect(skill).toContain("Architecture Understanding");
+    expect(skill).toContain("Validation Suggestions");
+  });
+
   it("keeps the Claude and Superpowers skill-authoring evaluation loop in skill-creator", async () => {
     const skill = await readOwnedSkill("skill-creator");
 

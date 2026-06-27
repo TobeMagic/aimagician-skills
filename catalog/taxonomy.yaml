@@ -100,6 +100,12 @@ skills:
     subgroup: academic
     tags: [papers, literature, experiments]
     recommendedScopes: [project]
+  agentic-repo-explorer:
+    group: research
+    subgroup: repo-analysis
+    tags: [opencode, exploration, architecture, context, agent-to-agent]
+    recommendedScopes: [project]
+    description: Delegate large repository exploration to OpenCode and turn the result into a structured context report.
   deep-research-system:
     group: research
     subgroup: literature

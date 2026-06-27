@@ -26,6 +26,7 @@ External catalog sources remain visible reference material and are disabled by d
 | Skill | Purpose |
 |---|---|
 | `aimagician-superpower` | Research-aware milestone workflow, planning, execution, verification, audit, handoff, and code discipline |
+| `agentic-repo-explorer` | Delegate large repository exploration to OpenCode and summarize a decision-ready context report |
 | `skill-creator` | Create, merge, classify, and verify skills |
 | `interface-design` | Consolidated UI, brand DESIGN.md routing, accessibility, metadata, motion, and polish workflow |
 | `webapp-testing` | Playwright and browser verification workflow |
