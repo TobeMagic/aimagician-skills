@@ -49,6 +49,13 @@ describe("consolidated owned skill content", () => {
     expect(skill).toContain("Verify");
     expect(skill).toContain("Audit");
     expect(skill).toContain("Handoff And Complete");
+    expect(skill).toContain("Mandatory Context Recovery Gate");
+    expect(skill).toContain("Reload this `SKILL.md`");
+    expect(skill).toContain("workflow and planning state first");
+    expect(skill).toContain("project docs next");
+    expect(skill).toContain("project knowledge base");
+    expect(skill).toContain("source-of-truth set");
+    expect(skill).toContain("Never present a partial implementation as complete");
     expect(skill).toContain("CONTEXT.md");
     expect(skill).toContain("DISCUSSION-LOG.md");
     expect(skill).toContain("RESEARCH.md");
@@ -74,6 +81,8 @@ describe("consolidated owned skill content", () => {
     expect(modules.join("\n")).toContain("Audit Checklist");
     expect(modules.join("\n")).toContain("Debugging");
     expect(modules.join("\n")).toContain("Secrets And Environment");
+    expect(modules.join("\n")).toContain("planning source-of-truth files");
+    expect(modules.join("\n")).toContain("llm-know-how-wiki");
 
     expect(mergeAudit).toContain("GSD command files: 67");
     expect(mergeAudit).toContain("GSD agent files: 33");
@@ -153,6 +162,39 @@ describe("consolidated owned skill content", () => {
     expect(reportTemplate).toContain("# CLI Agent Exploration Report");
     expect(reportTemplate).toContain("Allowed scope");
     expect(reportTemplate).toContain("Reliability Notes");
+  });
+
+  it("adds Composio as a service-scoped SaaS tool router without turning it into MCP builder", async () => {
+    const skill = await readOwnedSkill("composio-tool-router");
+    const cliWorkflow = await readFile(
+      join(ownedSkillsRoot, "composio-tool-router", "references", "cli-workflow.md"),
+      "utf8"
+    );
+    const safety = await readFile(
+      join(ownedSkillsRoot, "composio-tool-router", "references", "safety-and-boundaries.md"),
+      "utf8"
+    );
+
+    expect(skill).toContain("category: operate");
+    expect(skill).toContain("subcategory: tool-routing");
+    expect(skill).toContain("schema-on-demand");
+    expect(skill).toContain("composio tools list <toolkit>");
+    expect(skill).toContain("composio search \"<intent>\" --toolkits <toolkit>");
+    expect(skill).toContain("composio execute <tool_slug> --get-schema");
+    expect(skill).toContain("Dry-run first");
+    expect(skill).toContain("Confirm external writes");
+    expect(skill).toContain("Use `mcp-builder` for custom MCP servers");
+
+    expect(cliWorkflow).toContain("composio tools list linear --limit 50");
+    expect(cliWorkflow).toContain("composio tools list slack --limit 50");
+    expect(cliWorkflow).toContain("composio execute LINEAR_CREATE_LINEAR_ISSUE --get-schema");
+    expect(cliWorkflow).toContain("--dry-run");
+    expect(cliWorkflow).toContain("composio proxy");
+
+    expect(safety).toContain("Risk Classes");
+    expect(safety).toContain("Confirmation Checklist For Writes");
+    expect(safety).toContain("Never print API keys");
+    expect(safety).toContain("not a complete protocol replacement");
   });
 
   it("keeps the Claude and Superpowers skill-authoring evaluation loop in skill-creator", async () => {

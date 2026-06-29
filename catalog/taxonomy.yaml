@@ -106,6 +106,12 @@ skills:
     tags: [cli-agent, multi-agent, orchestration, opencode, exploration]
     recommendedScopes: [project]
     description: Orchestrate external CLI agents for bounded multi-agent tasks; currently OpenCode-backed read-only exploration.
+  composio-tool-router:
+    group: operate
+    subgroup: tool-routing
+    tags: [composio, tool-router, integrations, saas, mcp-alternative]
+    recommendedScopes: [global]
+    description: Route third-party SaaS tool discovery and execution through Composio CLI with schema-on-demand and explicit write confirmation.
   deep-research-system:
     group: research
     subgroup: literature

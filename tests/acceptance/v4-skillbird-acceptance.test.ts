@@ -194,6 +194,7 @@ describe("v4 Skillbird acceptance", () => {
     const previewJson = JSON.parse(preview.stdout) as InstallJson;
     expect(installedIds(previewJson)).toEqual(expect.arrayContaining([
       "cli-agent-orchestrator",
+      "composio-tool-router",
       "gcloud-ops-workflow",
       "github-pr-workflow",
       "linear-issue-workflow",

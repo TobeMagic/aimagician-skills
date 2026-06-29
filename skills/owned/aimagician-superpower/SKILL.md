@@ -65,6 +65,20 @@ Every substantial task must produce answers to these questions before implementa
 
 If any answer is missing and materially changes the implementation, discuss it before planning.
 
+## Mandatory Context Recovery Gate
+
+Before execution begins, this skill must recover the source-of-truth context, especially after a resume, compacted context, handoff, or any request where the current repo state is not already known.
+
+1. Reload this `SKILL.md` before acting when the active instructions are not already in context.
+2. Read workflow and planning state first: `.planning/STATE.md`, `.planning/ROADMAP.md`, phase context, discussion logs, research, plans, validation, audit notes, summaries, and any repo-specific workflow docs.
+3. Read project docs next: `README*`, `docs/`, ADRs, contributor docs, architecture docs, API docs, and other committed documentation that defines expected behavior.
+4. Read the project knowledge base when present: `llm-know-how-wiki`, `.llm-know-how-wiki`, `llm-wiki`, `.llm-wiki`, `wiki/`, or the repo's documented wiki location.
+5. Treat the latest user instruction, planning artifacts, project docs, and wiki as the source-of-truth set. Do not rely on memory when they disagree with the filesystem.
+6. If these sources are missing, stale, conflicting, or materially ambiguous, state the uncertainty and confirm with the user before planning or editing.
+7. If the user asks to continue from prior work, resume from the last verified checkpoint instead of restarting or skipping earlier decisions.
+
+Do not execute non-trivial changes until this gate is satisfied or the missing context is explicitly recorded as unavailable and non-blocking.
+
 ## Operating Loop
 
 Use this loop for each meaningful unit of work.
@@ -75,7 +89,8 @@ Use this loop for each meaningful unit of work.
 - Identify the smallest useful delivery unit.
 - Define success criteria, non-goals, user-visible behavior, and rollback or stop conditions.
 - Detect whether this is a quick task, a phase, or a milestone.
-- For resumable work, read existing `.planning/STATE.md`, roadmap, prior context, open plans, validation notes, and recent summaries before asking new questions.
+- Run the Mandatory Context Recovery Gate before asking new questions or taking action.
+- For resumable work, read existing `.planning/STATE.md`, roadmap, prior context, open plans, validation notes, recent summaries, project docs, and wiki context before asking new questions.
 
 ### 2. Discuss Baseline Requirements
 
@@ -118,6 +133,7 @@ Use this loop for each meaningful unit of work.
 - Avoid unrelated cleanup, formatting churn, broad renames, or speculative abstractions.
 - Use tests or probes before implementation when behavior can be pinned down.
 - Checkpoint after meaningful units of work, especially before risky edits or phase transitions.
+- Keep working until the accepted objective is fully satisfied, verified, or blocked by a concrete external dependency or user decision. Never present a partial implementation as complete.
 
 ### 7. Verify
 

@@ -27,6 +27,7 @@ External catalog sources remain visible reference material and are disabled by d
 |---|---|
 | `aimagician-superpower` | Research-aware milestone workflow, planning, execution, verification, audit, handoff, and code discipline |
 | `cli-agent-orchestrator` | Orchestrate external CLI agents for bounded multi-agent work; currently OpenCode-backed read-only exploration |
+| `composio-tool-router` | Route SaaS tool discovery and execution through Composio CLI with service-scoped lookup and schema-on-demand |
 | `skill-creator` | Create, merge, classify, and verify skills |
 | `interface-design` | Consolidated UI, brand DESIGN.md routing, accessibility, metadata, motion, and polish workflow |
 | `webapp-testing` | Playwright and browser verification workflow |
