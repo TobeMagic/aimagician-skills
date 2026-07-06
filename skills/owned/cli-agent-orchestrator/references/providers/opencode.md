@@ -132,6 +132,12 @@ Default non-interactive command:
 opencode run --dir "<source_path>" -m "<model>" --format json "<prompt>"
 ```
 
+On some versions, the prompt can be passed as the trailing positional message argument instead of `--prompt`; this is the safe canonical form:
+
+```bash
+opencode run -m "<model>" "<prompt>"
+```
+
 If the installed version only supports a different syntax, adapt based on `opencode run --help`.
 
 Rules:
@@ -180,4 +186,3 @@ If run fails:
 
 - retry once with the next available priority model when the failure is model/provider related;
 - otherwise return the failure report without inventing findings.
-
