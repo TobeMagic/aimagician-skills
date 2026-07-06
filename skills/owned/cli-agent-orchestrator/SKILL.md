@@ -1,6 +1,6 @@
 ---
 name: cli-agent-orchestrator
-description: Orchestrate external CLI agents for bounded multi-agent work such as exploration, review, planning, verification, or context gathering. Use when the main agent should delegate a large or specialized task to another CLI agent, currently OpenCode for read-only exploration, then validate and summarize the result.
+description: Use when a task needs broad exploration, codebase scanning, architecture mapping, implementation-location discovery, context gathering, review, planning, verification, or audit that should be delegated to an external CLI agent. Prefer OpenCode for read-only exploration when available, then validate and summarize the result.
 category: operate
 subcategory: agent-orchestration
 tags:
@@ -20,6 +20,14 @@ Use this skill to coordinate external CLI agents. The main agent owns task frami
 
 Current provider: OpenCode. Current task type: read-only exploration. Future providers and task types can be added under `references/` without changing the orchestration contract.
 
+## Exploration Priority Rule
+
+When the task requires broad exploration or context gathering and the scope is larger than a few known files, prefer delegating read-only exploration to OpenCode instead of spending the main agent's context window on a large scan.
+
+Trigger this especially for codebase exploration, repository scanning, architecture mapping, dependency or data-flow discovery, finding implementation locations, issue/log/document corpus review, and preparing context for planning or implementation.
+
+Do not delegate tiny lookups. If one or two known files are enough, inspect them directly.
+
 ## Capability Routing
 
 Load only the files needed for the current task.
@@ -34,6 +42,8 @@ Load only the files needed for the current task.
 
 Use this skill when:
 
+- the user asks to explore, scan, map, inspect, trace, find implementation locations, collect context, or understand architecture across a broad source area;
+- the main agent needs a context report before deciding how to implement, debug, review, verify, or audit;
 - the task is large enough that the main agent should not spend its own context window scanning everything;
 - another CLI agent can cheaply inspect a repository, document corpus, issue set, logs, configs, APIs, or other allowed sources;
 - the user needs a structured context report before planning, implementation, debugging, review, or audit;
@@ -81,6 +91,7 @@ If the user asks for external-agent writes, stop and re-discuss the task as an e
    - Current implemented task type: exploration.
 2. Select the provider.
    - Current implemented provider: OpenCode.
+   - For read-only exploration, use OpenCode first when it is available and the boundary is safe.
    - Read `references/providers/opencode.md` before running OpenCode.
 3. Lock boundaries.
    - Confirm allowed and forbidden scope.

@@ -4,6 +4,8 @@ Use this task type when an external CLI agent should inspect a broad source area
 
 Exploration is not limited to repositories. It can cover code, docs, issues, tickets, logs, APIs, schemas, configs, cloud resources, dependency trees, architecture, or other allowed sources.
 
+Broad exploration should be delegated instead of consuming the main agent's context window when the scope spans many files, modules, documents, logs, or systems. For tiny lookups across one or two known files, inspect directly.
+
 ## Boundary Inputs
 
 Before delegation, define:
@@ -88,4 +90,3 @@ After the external agent returns:
 - Are open questions useful?
 
 If the report is too broad, run a second prompt with a narrower target. If the report is too shallow, ask for specific missing dimensions.
-

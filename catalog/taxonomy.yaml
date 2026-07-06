@@ -105,7 +105,7 @@ skills:
     subgroup: agent-orchestration
     tags: [cli-agent, multi-agent, orchestration, opencode, exploration]
     recommendedScopes: [project]
-    description: Orchestrate external CLI agents for bounded multi-agent tasks; currently OpenCode-backed read-only exploration.
+    description: Orchestrate external CLI agents for bounded multi-agent tasks; prefer OpenCode for broad read-only exploration, codebase scanning, and context gathering.
   composio-tool-router:
     group: operate
     subgroup: tool-routing

@@ -143,6 +143,12 @@ describe("consolidated owned skill content", () => {
 
     expect(skill).toContain("references/providers/opencode.md");
     expect(skill).toContain("references/task-types/exploration.md");
+    expect(skill).toContain("Exploration Priority Rule");
+    expect(skill).toContain("broad exploration");
+    expect(skill).toContain("codebase exploration");
+    expect(skill).toContain("architecture mapping");
+    expect(skill).toContain("finding implementation locations");
+    expect(skill).toContain("use OpenCode first");
     expect(skill).toContain("Discuss-First Boundary Gate");
     expect(skill).toContain("strict read-only by default");
     expect(skill).toContain("review, planning, verification, audit, summarization, comparison");
@@ -155,6 +161,7 @@ describe("consolidated owned skill content", () => {
     expect(opencodeProvider).toContain("opencode export");
 
     expect(explorationTask).toContain("not limited to repositories");
+    expect(explorationTask).toContain("Broad exploration should be delegated");
     expect(explorationTask).toContain("Do not modify files");
     expect(explorationTask).toContain("Do not run destructive commands");
     expect(explorationTask).toContain("Relevant Sources");

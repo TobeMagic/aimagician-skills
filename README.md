@@ -80,7 +80,7 @@ External sources are curated into owned skills instead of installed by default.
 | Source area | New owned path |
 |---|---|
 | GSD + Superpowers planning/execution | `aimagician-superpower` |
-| CLI agent orchestration, currently OpenCode-backed exploration | `cli-agent-orchestrator` |
+| CLI agent orchestration, preferring OpenCode for broad read-only exploration | `cli-agent-orchestrator` |
 | Composio SaaS tool routing and MCP-light discovery | `composio-tool-router` |
 | Claude skill creator + Superpowers skill writing | `skill-creator` |
 | Claude MCP builder + community MCP builder | `mcp-builder` |
