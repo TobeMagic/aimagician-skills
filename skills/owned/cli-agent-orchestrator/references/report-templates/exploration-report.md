@@ -11,11 +11,15 @@ Use this report after any read-only exploration delegation.
 - Provider status:
 - Version:
 - Model used:
+- Run command:
 - Source path or source set:
 - Allowed scope:
 - Forbidden scope:
 - Permission/config changes:
 - Session export:
+- Wait strategy:
+- Heartbeat / output:
+- Timeouts / retries:
 
 ## 2. Exploration Goal
 
@@ -61,5 +65,11 @@ Use this report after any read-only exploration delegation.
 ## 12. Reliability Notes
 
 <which claims were spot-checked, which are unverified, and whether another targeted pass is recommended>
-```
 
+## 13. Run Health
+
+- Final status: completed / timeout / failed
+- Exit status:
+- Total elapsed:
+- Failure cause:
+```

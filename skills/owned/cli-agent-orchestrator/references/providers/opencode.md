@@ -2,6 +2,11 @@
 
 Use this provider when the orchestration task should be delegated to OpenCode. OpenCode is currently the default explorer backend.
 
+## Behavior Notes
+
+- `opencode` is often quiet until it produces a final report. No immediate final output is usually a long-run indication, not an error.
+- For long-running exploration, prefer explicit log output and heartbeat-driven waiting so the caller does not time out without feedback.
+
 ## Preflight
 
 1. Verify the binary:
@@ -126,26 +131,39 @@ If the selected model fails, retry once with the next available priority model. 
 
 ## Execution
 
-Default non-interactive command:
+Default non-interactive command (prefer this form when supported):
 
 ```bash
-opencode run --dir "<source_path>" -m "<model>" --format json "<prompt>"
+opencode run --dir "<source_path>" -m "<model>" --format json --print-logs --log-level INFO "<prompt>"
 ```
 
 On some versions, the prompt can be passed as the trailing positional message argument instead of `--prompt`; this is the safe canonical form:
 
 ```bash
-opencode run -m "<model>" "<prompt>"
+opencode run -m "<model>" --print-logs --log-level INFO "<prompt>"
 ```
 
 If the installed version only supports a different syntax, adapt based on `opencode run --help`.
 
+### Runtime Observation Rule
+
+- Keep the run command connected until process exit.
+- If there is no final result, do not assume failure immediately. Treat as long-running and continue.
+- Use a 30-second initial wait before deciding to label as "still processing".
+- Poll for progress every 5 seconds.
+- If no stdout/stderr heartbeat appears for 45 seconds, emit one visible waiting status.
+- If still running after 90 seconds, emit a long-run status and continue.
+- If no terminal completion after 180 seconds, stop and classify as a timeout failure unless a caller-specific override allows longer.
+- On timeout/failure, retry once with the next priority model unless the failure is command/permission/config related.
+
 Rules:
 
 - Do not use the TUI by default.
+- Use `--print-logs` by default for delegated runs so progress is visible.
 - Use debug/log flags only when diagnosing a failed run.
 - Do not pass `--dangerously-skip-permissions` for default exploration.
-- Capture stdout, stderr, exit status, model, and command shape.
+- Capture stdout, stderr, exit status, model, final elapsed time, and command shape.
+- Always record heartbeat behavior (whether logs were emitted and whether no-output periods occurred).
 - If JSON output is available, preserve it for summarization.
 
 ## Session Export
@@ -184,5 +202,9 @@ If no acceptable model is available:
 
 If run fails:
 
-- retry once with the next available priority model when the failure is model/provider related;
+- classify the failure before retry:
+  - Command or environment failure (missing binary, invalid path, permissions, config mismatch): report directly, do not retry blindly.
+  - Model/provider failure (session error, model unavailable, transient provider error): retry once with the next available priority model.
+  - No-output timeout with no process error: retry once with the same model if command shape is unchanged; if still failing, retry once with next priority model.
+- retry at most once per model, and stop after two total attempts unless user explicitly authorizes a longer run.
 - otherwise return the failure report without inventing findings.
