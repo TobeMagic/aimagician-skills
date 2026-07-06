@@ -105,8 +105,12 @@ If the user asks for external-agent writes, stop and re-discuss the task as an e
    - Verify model availability and provider config.
 6. Execute the external CLI agent.
    - Prefer non-interactive mode.
-   - Capture stdout/stderr and exit status.
+   - Use the provider-specific command shape from `references/providers/opencode.md` (or equivalent provider instructions).
+   - Capture stdout/stderr, exit status, elapsed time, model, and command shape.
+   - Enable log output and heartbeat-aware waiting: 30s initial wait, 5s polling, 45s no-output status, 90s long-run status, 180s timeout by default.
+   - Capture heartbeat behavior explicitly (whether output appeared continuously, intermittently, or stalled).
    - Retry once with a fallback model/provider only when the failure is provider/model related.
+   - Treat no-output as long-running unless clearly classified as command/permission failure.
 7. Review the result.
    - Do not blindly trust it.
    - Check whether it answered the objective.
@@ -178,6 +182,7 @@ Final output must include:
 - preflight status;
 - allowed and forbidden scope;
 - whether config changed;
+- run health (timeout/no-output status/retries/heartbeat notes);
 - whether session export succeeded;
 - structured findings;
 - risks and unknowns;
