@@ -18,8 +18,9 @@ Use this report after any read-only exploration delegation.
 - Permission/config changes:
 - Session export:
 - Wait strategy:
-- Heartbeat / output:
-- Timeouts / retries:
+- Activity events:
+- Quiet / stale periods:
+- Retries / failure classification:
 
 ## 2. Exploration Goal
 
@@ -68,8 +69,10 @@ Use this report after any read-only exploration delegation.
 
 ## 13. Run Health
 
-- Final status: completed / timeout / failed
+- Final status: completed / active / quiet / stale / failed / cancelled
 - Exit status:
 - Total elapsed:
+- Last activity:
+- Stale reason:
 - Failure cause:
 ```

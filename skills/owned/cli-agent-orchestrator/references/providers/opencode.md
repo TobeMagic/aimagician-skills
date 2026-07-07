@@ -5,7 +5,7 @@ Use this provider when the orchestration task should be delegated to OpenCode. O
 ## Behavior Notes
 
 - `opencode` is often quiet until it produces a final report. No immediate final output is usually a long-run indication, not an error.
-- For long-running exploration, prefer explicit log output and heartbeat-driven waiting so the caller does not time out without feedback.
+- For long-running exploration, prefer explicit log output and event-based waiting so the caller can keep waiting while the run is still making progress.
 
 ## Preflight
 
@@ -149,12 +149,15 @@ If the installed version only supports a different syntax, adapt based on `openc
 
 - Keep the run command connected until process exit.
 - If there is no final result, do not assume failure immediately. Treat as long-running and continue.
-- Use a 30-second initial wait before deciding to label as "still processing".
-- Poll for progress every 5 seconds.
-- If no stdout/stderr heartbeat appears for 45 seconds, emit one visible waiting status.
-- If still running after 90 seconds, emit a long-run status and continue.
-- If no terminal completion after 180 seconds, stop and classify as a timeout failure unless a caller-specific override allows longer.
-- On timeout/failure, retry once with the next priority model unless the failure is command/permission/config related.
+- Watch stdout, stderr, and session activity for activity events.
+- Treat new logs, streamed tokens, stage changes, tool calls, command starts, command completions, file references, session updates, or explicit model progress as activity events.
+- Each activity event means the run is alive and progressing.
+- While the process is alive and activity events continue, wait until natural completion.
+- Do not impose a hard wall-clock timeout on a progressing run.
+- If output becomes quiet but the process is still alive, classify it as quiet and keep waiting while the caller can remain attached.
+- If output remains quiet long enough that no progress can be inferred, classify it as stale; report the last activity and wait state instead of inventing a result.
+- Only stop on process exit, clear CLI error, permission/config failure, user cancellation, or a caller-owned stale-run decision.
+- Do not start a fallback model while the original process is still running.
 
 Rules:
 
@@ -163,7 +166,7 @@ Rules:
 - Use debug/log flags only when diagnosing a failed run.
 - Do not pass `--dangerously-skip-permissions` for default exploration.
 - Capture stdout, stderr, exit status, model, final elapsed time, and command shape.
-- Always record heartbeat behavior (whether logs were emitted and whether no-output periods occurred).
+- Always record activity behavior, last activity, quiet periods, stale classification, and any caller-owned stop decision.
 - If JSON output is available, preserve it for summarization.
 
 ## Session Export
@@ -205,6 +208,6 @@ If run fails:
 - classify the failure before retry:
   - Command or environment failure (missing binary, invalid path, permissions, config mismatch): report directly, do not retry blindly.
   - Model/provider failure (session error, model unavailable, transient provider error): retry once with the next available priority model.
-  - No-output timeout with no process error: retry once with the same model if command shape is unchanged; if still failing, retry once with next priority model.
+  - Stale run with no process error: report the last activity and wait state; retry only after the original process exits or the caller explicitly stops it.
 - retry at most once per model, and stop after two total attempts unless user explicitly authorizes a longer run.
 - otherwise return the failure report without inventing findings.

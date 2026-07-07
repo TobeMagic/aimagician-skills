@@ -107,10 +107,12 @@ If the user asks for external-agent writes, stop and re-discuss the task as an e
    - Prefer non-interactive mode.
    - Use the provider-specific command shape from `references/providers/opencode.md` (or equivalent provider instructions).
    - Capture stdout/stderr, exit status, elapsed time, model, and command shape.
-   - Enable log output and heartbeat-aware waiting: 30s initial wait, 5s polling, 45s no-output status, 90s long-run status, 180s timeout by default.
-   - Capture heartbeat behavior explicitly (whether output appeared continuously, intermittently, or stalled).
+   - Enable log output and event-based waiting.
+   - Keep waiting while the process is alive and activity events show progress.
+   - Do not terminate a progressing run because it exceeded a fixed elapsed-time threshold.
+   - Capture activity behavior explicitly (whether output appeared continuously, intermittently, or became stale).
    - Retry once with a fallback model/provider only when the failure is provider/model related.
-   - Treat no-output as long-running unless clearly classified as command/permission failure.
+   - Treat temporary quiet periods as long-running unless clearly classified as stale, command failure, permission failure, or provider failure.
 7. Review the result.
    - Do not blindly trust it.
    - Check whether it answered the objective.
@@ -182,7 +184,7 @@ Final output must include:
 - preflight status;
 - allowed and forbidden scope;
 - whether config changed;
-- run health (timeout/no-output status/retries/heartbeat notes);
+- run health (activity/stale status/retries/heartbeat notes);
 - whether session export succeeded;
 - structured findings;
 - risks and unknowns;

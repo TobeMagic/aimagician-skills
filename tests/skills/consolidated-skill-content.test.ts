@@ -159,6 +159,11 @@ describe("consolidated owned skill content", () => {
     expect(opencodeProvider).toContain("opencode/deepseek-v4-flash-free");
     expect(opencodeProvider).toContain("opencode/nemotron-3-ultra-free");
     expect(opencodeProvider).toContain("opencode export");
+    expect(opencodeProvider).toContain("event-based waiting");
+    expect(opencodeProvider).toContain("activity events");
+    expect(opencodeProvider).toContain("Do not impose a hard wall-clock timeout");
+    expect(opencodeProvider).not.toContain("5 seconds");
+    expect(opencodeProvider).not.toContain("180 seconds");
 
     expect(explorationTask).toContain("not limited to repositories");
     expect(explorationTask).toContain("Broad exploration should be delegated");
@@ -169,6 +174,8 @@ describe("consolidated owned skill content", () => {
     expect(reportTemplate).toContain("# CLI Agent Exploration Report");
     expect(reportTemplate).toContain("Allowed scope");
     expect(reportTemplate).toContain("Reliability Notes");
+    expect(reportTemplate).toContain("Activity events");
+    expect(reportTemplate).toContain("Quiet / stale periods");
   });
 
   it("adds Composio as a service-scoped SaaS tool router without turning it into MCP builder", async () => {
