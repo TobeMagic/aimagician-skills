@@ -15,10 +15,16 @@ import tempfile
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 from xml.etree import ElementTree as ET
+
+from window_pptx.cli import (
+    build_dry_run_result,
+    emit_result,
+    parse_args as parse_cli_args,
+)
 
 
 MISSING = "<unavailable>"
@@ -213,174 +219,8 @@ if __name__ == "__main__":
 '''
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Run PowerPoint COM checks and a minimal request-summary edit."
-    )
-    parser.add_argument("--project-dir", required=True, help="PowerPoint project folder.")
-    parser.add_argument("--request", default="REQUEST.md", help="Request file name or path.")
-    parser.add_argument("--template", help="Template/source deck path. Defaults to auto-detect.")
-    parser.add_argument("--output", default="output/final.pptx", help="Output PPTX path.")
-    parser.add_argument(
-        "--init-project",
-        action="store_true",
-        help="Create standard window-pptx workspace folders plus planning files if missing.",
-    )
-    parser.add_argument(
-        "--extract-media",
-        action="store_true",
-        help="Extract ppt/media assets from the template/source deck into .window-pptx/media or --media-dir.",
-    )
-    parser.add_argument(
-        "--media-dir",
-        help="Directory for extracted media. Defaults to .window-pptx/media under the project.",
-    )
-    parser.add_argument(
-        "--export-slides",
-        help="Comma-separated slide numbers/ranges to export to PNG, e.g. 4,6,8-10.",
-    )
-    parser.add_argument(
-        "--export-dir",
-        help="Directory for exported slide PNGs. Defaults to .window-pptx/exports under the project.",
-    )
-    parser.add_argument(
-        "--make-ascii-temp-copy",
-        action="store_true",
-        help="Copy the template/source deck to an ASCII temp filename under .window-pptx/temp before COM work.",
-    )
-    parser.add_argument(
-        "--intake-template-library",
-        action="store_true",
-        help="Scan built-in template-library PPTX decks, export previews, and update template-library-review.xlsx.",
-    )
-    parser.add_argument("--list-addins", action="store_true", help="Print PowerPoint add-in inventory.")
-    parser.add_argument(
-        "--probe-plugin-apis",
-        action="store_true",
-        help="Read COM registration/type information for add-in ProgIDs without invoking business methods.",
-    )
-    parser.add_argument(
-        "--plugin-progid",
-        action="append",
-        default=[],
-        help="Add-in ProgID to probe. Can be repeated. Defaults to iSlideTools.Public and Slibe.OKPlus when probing.",
-    )
-    parser.add_argument(
-        "--clear-com-cache",
-        action="store_true",
-        help="Remove the current user's temp gen_py cache before creating COM objects.",
-    )
-    parser.add_argument("--export-pdf", action="store_true", help="Export a PDF next to the PPTX.")
-    parser.add_argument(
-        "--search-images",
-        help="Search Pixabay images with PIXABAY_API_KEY and write a source manifest. Does not require PowerPoint COM.",
-    )
-    parser.add_argument(
-        "--download-image",
-        help="Download one image URL into assets/downloads/pixabay and update the asset manifest.",
-    )
-    parser.add_argument(
-        "--download-top-image",
-        action="store_true",
-        help="After --search-images, download the first available largeImageURL/webformatURL result.",
-    )
-    parser.add_argument("--image-lang", default="zh", help="Pixabay language code. Default: zh.")
-    parser.add_argument(
-        "--image-type",
-        default="all",
-        choices=["all", "photo", "illustration", "vector"],
-        help="Pixabay image_type filter.",
-    )
-    parser.add_argument(
-        "--image-orientation",
-        default="all",
-        choices=["all", "horizontal", "vertical"],
-        help="Pixabay orientation filter.",
-    )
-    parser.add_argument("--image-category", help="Pixabay category filter.")
-    parser.add_argument("--image-colors", help="Pixabay colors filter.")
-    parser.add_argument(
-        "--image-order",
-        default="popular",
-        choices=["popular", "latest"],
-        help="Pixabay result order.",
-    )
-    parser.add_argument("--image-page", type=int, default=1, help="Pixabay result page.")
-    parser.add_argument(
-        "--image-per-page",
-        type=int,
-        default=20,
-        help="Pixabay results per page, 3-200.",
-    )
-    parser.add_argument(
-        "--unsafe-image-search",
-        action="store_true",
-        help="Disable Pixabay safesearch. Keep disabled by default for presentation work.",
-    )
-    parser.add_argument(
-        "--search-icons",
-        help="Search Iconify icons by keyword and cache results. Does not require PowerPoint COM.",
-    )
-    parser.add_argument(
-        "--icon-prefix",
-        action="append",
-        default=[],
-        help="Filter Iconify results by icon set prefix such as mdi or bi. Can be repeated.",
-    )
-    parser.add_argument(
-        "--icon-limit",
-        type=int,
-        default=50,
-        help="Iconify search result limit, 1-999.",
-    )
-    parser.add_argument(
-        "--download-icon",
-        help="Download one Iconify icon id such as bi:tag-fill into assets/downloads/iconify.",
-    )
-    parser.add_argument(
-        "--download-top-icon",
-        action="store_true",
-        help="After --search-icons, download the first matching Iconify result.",
-    )
-    parser.add_argument("--icon-color", help="Icon SVG color, e.g. #FF5722 or currentColor.")
-    parser.add_argument("--icon-width", help="Icon SVG width parameter, e.g. 64 or 1em.")
-    parser.add_argument("--icon-height", help="Icon SVG height parameter, e.g. 64 or 1em.")
-    parser.add_argument("--icon-flip", choices=["horizontal", "vertical"], help="Iconify SVG flip parameter.")
-    parser.add_argument("--icon-rotate", help="Iconify SVG rotate parameter, e.g. 90deg, 1, 2, or 3.")
-    parser.add_argument(
-        "--add-master-watermark",
-        help="Add or replace a master-level text watermark on the Slide Master.",
-    )
-    parser.add_argument(
-        "--watermark-opacity",
-        type=float,
-        default=0.16,
-        help="Desired watermark opacity from 0 to 1. Implemented as light gray text for broad COM compatibility.",
-    )
-    parser.add_argument(
-        "--export-qa",
-        action="store_true",
-        help="Export all slides to .window-pptx/exports/qa for visual QA.",
-    )
-    parser.add_argument(
-        "--audit-deck",
-        action="store_true",
-        help="Write .window-pptx/audits/deck_audit.json with slide, font, shape, and animation metadata.",
-    )
-    parser.add_argument("--visible", action="store_true", help="Open the presentation window visibly.")
-    parser.add_argument(
-        "--attach-existing",
-        action="store_true",
-        help="Attach to an existing PowerPoint instance instead of creating an isolated one.",
-    )
-    parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
-    parser.add_argument("--no-save", action="store_true", help="Run checks without saving output.")
-    parser.add_argument(
-        "--keep-open",
-        action="store_true",
-        help="Leave PowerPoint open after the run. Use carefully with --attach-existing.",
-    )
-    return parser.parse_args()
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    return parse_cli_args(argv)
 
 
 def die(message: str, code: int = 1) -> None:
@@ -2009,9 +1849,23 @@ def print_addins(addins: dict[str, Any], as_json: bool) -> None:
         print("- none")
 
 
-def main() -> None:
-    args = parse_args()
-    project_dir = Path(args.project_dir).resolve()
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    com_client: Any | None = None,
+) -> int:
+    args = parse_args(argv)
+    project_dir = Path(args.project_dir).expanduser()
+    if args.dry_run:
+        emit_result(
+            build_dry_run_result(args, project_dir),
+            args.json,
+            sys.stdout,
+            sys.stderr,
+        )
+        return 0
+
+    project_dir = project_dir.resolve()
     if not project_dir.exists():
         if args.init_project:
             project_dir.mkdir(parents=True, exist_ok=True)
@@ -2068,9 +1922,9 @@ def main() -> None:
             args.export_qa,
             args.audit_deck,
         ]
-    ) or not args.no_save
+    ) or not args.no_output_deck
 
-    if args.extract_media and args.no_save and not args.export_slides:
+    if args.extract_media and args.no_output_deck and not args.export_slides:
         template = choose_template(project_dir, args.template)
         if template is None:
             die("No template/source deck available for --extract-media. Pass --template explicitly.")
@@ -2080,12 +1934,10 @@ def main() -> None:
 
     if not com_needed:
         result = {"init_project": init_result, **non_com_results}
-        if args.json:
-            print(json.dumps(result, ensure_ascii=False, indent=2))
-        else:
+        if not args.json:
             print("window-pptx non-COM run complete")
-            print(json.dumps(result, ensure_ascii=False, indent=2))
-        return
+        emit_result(result, args.json, sys.stdout, sys.stderr)
+        return 0
 
     require_windows()
     if args.clear_com_cache:
@@ -2103,35 +1955,45 @@ def main() -> None:
             "powerpoint_addins": list_powerpoint_addins(app),
         }
 
+        probe_result: dict[str, Any] | None = None
         if args.probe_plugin_apis:
             progids = args.plugin_progid or ["iSlideTools.Public", "Slibe.OKPlus"]
-            probe = probe_plugin_apis(app, progids)
+            probe_result = probe_plugin_apis(app, progids)
             inventory_dir = project_dir / ".window-pptx"
             inventory_dir.mkdir(parents=True, exist_ok=True)
             (inventory_dir / "plugin_api_probe.json").write_text(
-                json.dumps(probe, ensure_ascii=False, indent=2),
+                json.dumps(probe_result, ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
-            if args.json:
-                print(json.dumps(probe, ensure_ascii=False, indent=2))
-            else:
+            if args.no_output_deck:
+                if not args.json:
+                    print("PowerPoint plugin API probe:")
+                emit_result(probe_result, args.json, sys.stdout, sys.stderr)
+                return 0
+            if not args.json:
                 print("PowerPoint plugin API probe:")
-                print(json.dumps(probe, ensure_ascii=False, indent=2))
-            if args.no_save:
-                return
+                emit_result(probe_result, False, sys.stdout, sys.stderr)
 
-        if args.list_addins and args.no_save:
-            print_addins(addins, args.json)
-            return
+        if args.list_addins and args.no_output_deck:
+            if args.json:
+                emit_result(addins, True, sys.stdout, sys.stderr)
+            else:
+                print_addins(addins, False)
+            return 0
 
         if args.intake_template_library:
             intake_result = intake_template_library(app, project_dir, args)
-            if args.json:
-                print(json.dumps({"template_library_intake": intake_result}, ensure_ascii=False, indent=2))
-            else:
+            if not args.json:
                 print("Template library intake complete")
-                print(json.dumps(intake_result, ensure_ascii=False, indent=2))
-            return
+            emit_result(
+                {"template_library_intake": intake_result}
+                if args.json
+                else intake_result,
+                args.json,
+                sys.stdout,
+                sys.stderr,
+            )
+            return 0
 
         request_path: Path | None = None
         request_text = ""
@@ -2143,13 +2005,18 @@ def main() -> None:
                 die("No template/source deck available for --extract-media. Pass --template explicitly.")
             media_dir = resolve_path(project_dir, args.media_dir) or (project_dir / ".window-pptx" / "media")
             media_result = extract_media_from_deck(template, media_dir)
-            if args.no_save and not args.export_slides:
-                if args.json:
-                    print(json.dumps({"media_extraction": media_result}, ensure_ascii=False, indent=2))
-                else:
+            if args.no_output_deck and not args.export_slides:
+                if not args.json:
                     print("Media extraction complete")
-                    print(json.dumps(media_result, ensure_ascii=False, indent=2))
-                return
+                emit_result(
+                    {"media_extraction": media_result}
+                    if args.json
+                    else media_result,
+                    args.json,
+                    sys.stdout,
+                    sys.stderr,
+                )
+                return 0
 
         if args.make_ascii_temp_copy:
             if template is None:
@@ -2163,7 +2030,8 @@ def main() -> None:
                 json.dumps(addins, ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
-            print_addins(addins, args.json)
+            if not args.json:
+                print_addins(addins, False)
 
         presentation = open_or_create_presentation(app, effective_template, args.visible)
 
@@ -2208,7 +2076,7 @@ def main() -> None:
             audit_result = audit_presentation(presentation, project_dir)
 
         outputs: dict[str, str] = {}
-        if not args.no_save:
+        if not args.no_output_deck:
             outputs = save_outputs(presentation, output_path, args.export_pdf)
 
         result = {
@@ -2220,16 +2088,16 @@ def main() -> None:
             "effective_template": str(effective_template) if effective_template else None,
             "outputs": outputs,
             "addins_inventory_written": bool(args.list_addins),
+            **({"addins": addins} if args.list_addins else {}),
+            **({"plugin_api_probe": probe_result} if probe_result is not None else {}),
             "slide_export": export_result,
             "qa_export": qa_export_result,
             "deck_audit": audit_result,
             "master_watermark": watermark_result,
         }
-        if args.json:
-            print(json.dumps(result, ensure_ascii=False, indent=2))
-        else:
+        if not args.json:
             print("window-pptx run complete")
-            print(json.dumps(result, ensure_ascii=False, indent=2))
+        emit_result(result, args.json, sys.stdout, sys.stderr)
     finally:
         if presentation is not None and not args.keep_open:
             try:
@@ -2241,7 +2109,8 @@ def main() -> None:
                 app.Quit()
             except Exception:
                 pass
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
