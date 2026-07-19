@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -179,3 +180,63 @@ def test_existing_non_com_json_branch_emits_one_document(
         "init_project": None,
         "pixabay_search": {"ok": True},
     }
+
+
+@pytest.mark.parametrize(
+    ("inspection_flag", "detail", "final_key"),
+    [
+        ("--list-addins", "LIST-ADDIN-DETAIL", "addins"),
+        ("--probe-plugin-apis", "PROBE-API-DETAIL", "plugin_api_probe"),
+    ],
+)
+def test_non_json_inspection_detail_is_not_repeated_in_final_result(
+    inspection_flag: str,
+    detail: str,
+    final_key: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    app = SimpleNamespace(Quit=lambda: None)
+    presentation = SimpleNamespace(Close=lambda: None)
+    monkeypatch.setattr(automation, "require_windows", lambda: None)
+    monkeypatch.setattr(automation, "import_win32com", lambda: object())
+    monkeypatch.setattr(automation, "dispatch_powerpoint", lambda *_args: app)
+    monkeypatch.setattr(
+        automation,
+        "list_com_addins",
+        lambda _app: [{"description": detail, "prog_id": "test", "guid": "test", "connect": True}],
+    )
+    monkeypatch.setattr(automation, "list_powerpoint_addins", lambda _app: [])
+    monkeypatch.setattr(
+        automation,
+        "probe_plugin_apis",
+        lambda *_args: {"detail": detail},
+    )
+    monkeypatch.setattr(automation, "choose_template", lambda *_args: None)
+    monkeypatch.setattr(
+        automation,
+        "open_or_create_presentation",
+        lambda *_args: presentation,
+    )
+    monkeypatch.setattr(
+        automation,
+        "read_request",
+        lambda *_args: (tmp_path / "REQUEST.md", "request"),
+    )
+    monkeypatch.setattr(automation, "add_request_summary_slide", lambda *_args: None)
+    monkeypatch.setattr(
+        automation,
+        "save_outputs",
+        lambda *_args: {"pptx": str(tmp_path / "output" / "final.pptx")},
+    )
+
+    assert automation.main(
+        ["--project-dir", str(tmp_path), inspection_flag]
+    ) == 0
+
+    stdout = capsys.readouterr().out
+    assert stdout.count(detail) == 1
+    final_stdout = stdout.split("window-pptx run complete\n", 1)[1]
+    final_result = json.loads(final_stdout)
+    assert final_key not in final_result

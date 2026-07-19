@@ -2088,8 +2088,12 @@ def main(
             "effective_template": str(effective_template) if effective_template else None,
             "outputs": outputs,
             "addins_inventory_written": bool(args.list_addins),
-            **({"addins": addins} if args.list_addins else {}),
-            **({"plugin_api_probe": probe_result} if probe_result is not None else {}),
+            **({"addins": addins} if args.json and args.list_addins else {}),
+            **(
+                {"plugin_api_probe": probe_result}
+                if args.json and probe_result is not None
+                else {}
+            ),
             "slide_export": export_result,
             "qa_export": qa_export_result,
             "deck_audit": audit_result,
