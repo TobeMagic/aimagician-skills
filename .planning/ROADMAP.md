@@ -469,18 +469,20 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 **Goal:** Inspect five quality layers and repair only safe, measurable defects on isolated candidates.
 **Depends on:** Phase 26
 **Requirements:** [V5-QA-01, V5-QA-02, V5-QA-03, V5-QA-04, V5-QA-05]
-**Status:** In Progress
+**Status:** Complete
+**Completed:** 2026-07-20
 **Success Criteria**:
   1. Stable schemas describe package, COM, geometry, visual, deck, editability, and compatibility findings.
   2. Repair runs at most twice and accepts changes only when weighted defects decrease without hard-gate regression.
   3. Customer-delivery gates reject package/reopen failures, source mutation, rasterized slides, missing native objects, and insufficient editable text coverage.
+**Plans:** 1/1 complete. The quality pipeline suite passes 19 tests and the complete window-pptx suite passes 404 tests. Multiple OpenCode free-model sessions read the review packet but returned no textual verdict; the mandatory final independent verdict remains Phase 29 gate `V5-UAT-04`.
 
 ### Phase 28: Weak-Model Benchmark
 
 **Goal:** Measure whether the governed v5 workflow improves ordinary-model quality and repeatability across common business scenarios.
 **Depends on:** Phase 27
 **Requirements:** [V5-BENCH-01, V5-BENCH-02, V5-BENCH-03, V5-BENCH-04, V5-BENCH-05]
-**Status:** Planned
+**Status:** In Progress
 **Success Criteria**:
   1. Fifteen frozen scenario briefs cover business reports, proposals, launches, analysis, sales, investors, reviews, strategy, research, training, brand, kickoff, operations, and marketing/e-commerce.
   2. Three arms, two ordinary models, repeats, deterministic scoring, and blind review are reproducible from frozen hashes.
@@ -507,8 +509,8 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 | 24. Design System and Layout Registries | Complete | 2026-07-20 |
 | 25. Transactional Core Renderer | Complete | 2026-07-20 |
 | 26. Advanced Editable Objects | Complete | 2026-07-20 |
-| 27. Quality Gates and Repair | In Progress | — |
-| 28. Weak-Model Benchmark | Planned | — |
+| 27. Quality Gates and Repair | Complete | 2026-07-20 |
+| 28. Weak-Model Benchmark | In Progress | — |
 | 29. Windows Acceptance and Closure | Planned | — |
 
-**Current milestone:** 5/8 phases complete. Repository total: 29 phases, 26 complete.
+**Current milestone:** 6/8 phases complete. Repository total: 29 phases, 27 complete.

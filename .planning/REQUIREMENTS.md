@@ -210,11 +210,11 @@ Completion requires the phase evidence and exit gates named in the traceability 
 
 ### Quality Gates and Repair
 
-- [ ] **V5-QA-01**: Package, COM, geometric, visual, and deck-level snapshots form a five-layer inspection model
-- [ ] **V5-QA-02**: Structural, visual, editability, density, repetition, font, chart, and deck checks emit actionable findings
-- [ ] **V5-QA-03**: Candidate-only auto-repair is bounded, monotonic, and rejects hard-gate regressions
-- [ ] **V5-QA-04**: Validation reports and repair logs use stable versioned schemas
-- [ ] **V5-QA-05**: Customer-delivery hard gates enforce package/reopen success, source integrity, editability, and native object coverage
+- [x] **V5-QA-01**: Package, COM, geometric, visual, and deck-level snapshots form a five-layer inspection model
+- [x] **V5-QA-02**: Structural, visual, editability, density, repetition, font, chart, and deck checks emit actionable findings
+- [x] **V5-QA-03**: Candidate-only auto-repair is bounded, monotonic, and rejects hard-gate regressions
+- [x] **V5-QA-04**: Validation reports and repair logs use stable versioned schemas
+- [x] **V5-QA-05**: Customer-delivery hard gates enforce package/reopen success, source integrity, editability, and native object coverage
 
 ### Weak-Model Benchmark
 
@@ -387,16 +387,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | V5-OBJECT-03 | Phase 26 | Complete |
 | V5-OBJECT-04 | Phase 26 | Complete |
 | V5-OBJECT-05 | Phase 26 | Complete |
-| V5-QA-01 | Phase 27 | In Progress |
-| V5-QA-02 | Phase 27 | In Progress |
-| V5-QA-03 | Phase 27 | In Progress |
-| V5-QA-04 | Phase 27 | In Progress |
-| V5-QA-05 | Phase 27 | In Progress |
-| V5-BENCH-01 | Phase 28 | Planned |
-| V5-BENCH-02 | Phase 28 | Planned |
-| V5-BENCH-03 | Phase 28 | Planned |
-| V5-BENCH-04 | Phase 28 | Planned |
-| V5-BENCH-05 | Phase 28 | Planned |
+| V5-QA-01 | Phase 27 | Complete |
+| V5-QA-02 | Phase 27 | Complete |
+| V5-QA-03 | Phase 27 | Complete |
+| V5-QA-04 | Phase 27 | Complete |
+| V5-QA-05 | Phase 27 | Complete |
+| V5-BENCH-01 | Phase 28 | In Progress |
+| V5-BENCH-02 | Phase 28 | In Progress |
+| V5-BENCH-03 | Phase 28 | In Progress |
+| V5-BENCH-04 | Phase 28 | In Progress |
+| V5-BENCH-05 | Phase 28 | In Progress |
 | V5-UAT-01 | Phase 29 | Planned |
 | V5-UAT-02 | Phase 29 | Planned |
 | V5-UAT-03 | Phase 29 | Planned |
@@ -407,10 +407,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 **V5 Coverage:**
 - v5 requirements: 44 total
 - Mapped to exactly one phase: 44
-- Complete: 23
+- Complete: 33
 - In Progress: 5
-- Planned: 21
-- Open: 26
+- Planned: 6
+- Open: 11
 - Unmapped: 0
 
 ---

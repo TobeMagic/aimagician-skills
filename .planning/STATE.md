@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Window-PPTX Verified Production Engine
-current_phase: 27
-current_phase_name: Window-PPTX Quality Gates and Repair
+current_phase: 28
+current_phase_name: Window-PPTX Weak-Model Benchmark
 status: in_progress
-stopped_at: Phase 26 advanced objects passed 28 focused and 385 full tests plus final OpenCode PASS; Phase 27 five-layer QA is next
-last_updated: "2026-07-20T19:02:10+08:00"
+stopped_at: Phase 27 quality gates passed 19 focused and 404 full tests; Phase 28 frozen weak-model benchmark is next
+last_updated: "2026-07-20T19:46:01+08:00"
 last_activity: 2026-07-20
 progress:
   total_phases: 29
-  completed_phases: 26
-  total_plans: 27
-  completed_plans: 26
-  percent: 90
+  completed_phases: 27
+  total_plans: 28
+  completed_plans: 27
+  percent: 93
 ---
 
 # Project State
@@ -26,14 +26,14 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** Phase 27 five-layer quality inspection, stable reports, customer-delivery hard gates, and bounded monotonic candidate repair for the active `v5.0 Window-PPTX Verified Production Engine` milestone.
+**Current focus:** Phase 28 frozen fifteen-scenario weak-model benchmarking, controlled arms, deterministic scoring, hashes, and blind-review evidence for the active `v5.0 Window-PPTX Verified Production Engine` milestone.
 
 ## Current Position
 
 Milestone: v5.0 Window-PPTX Verified Production Engine
-Current Phase: 27 of 29
-Current Phase Name: Window-PPTX Quality Gates and Repair
-Status: In Progress (current milestone 5/8 phases complete)
+Current Phase: 28 of 29
+Current Phase Name: Window-PPTX Weak-Model Benchmark
+Status: In Progress (current milestone 6/8 phases complete)
 Last Activity: 2026-07-20
 
 Foundation completed:
@@ -75,7 +75,7 @@ Active v5 foundation:
 - Phase 24 is complete with 8 themes, 24 families, 72 variants, 582/582 service paths, governed grid/type/color/spacing/effects, deterministic brand/font behavior, safe asset policy, runtime registry gates, and legacy quarantine;
 - Phase 25 is complete with a pure governed render plan, native editable text/shape/image output, deterministic master/footer/group/z-order behavior, strict asset evidence, COM preflight, recording fake COM, transactional saving, 45 focused tests, 357 full tests, and final OpenCode PASS;
 - Phase 26 is complete with native editable charts/tables, six deterministic diagram families, notes, safe links, opt-in motion, ratio-aware PNG/PDF routes, 28 focused tests, 385 full tests, and final OpenCode PASS;
-- Phase 27 now adds five-layer inspection, stable report schemas, hard delivery gates, and bounded monotonic repair.
+- Phase 27 is complete with stable five-layer reports, fail-closed native-object fidelity checks, hard delivery gates, bounded exception-safe repair, atomic audit artifacts, 19 focused tests, and 404 full tests.
 
 ## Decisions
 
@@ -108,12 +108,14 @@ Active v5 foundation:
 - [Phase 25]: DeckPlan, output, template, slide-size, route, and asset-manifest preflight complete before PowerPoint dispatch; the CLI compiles model input exactly once.
 - [Phase 26]: Advanced chart, table, and diagram commands are re-derived from canonical semantic blocks; grouped diagram hyperlinks are applied to editable child shapes and chart gaps never invent zeroes.
 - [Phase 26]: Motion is off by default, only two governed presets are allowed, and every advanced COM failure stops before candidate saving.
+- [Phase 27]: Repair may change only registered candidate page size, geometry, fonts, names, and tags; it is capped at two passes, keeps rename last, and rolls back any non-monotonic or exception-raising pass.
+- [Phase 27]: Native chart/table/diagram data and transaction evidence fail closed, while pre/post-save hard-gate errors atomically persist their report and repair log.
 
 ## Next Actions
 
-1. Define stable five-layer quality snapshots, finding codes, severity weights, and customer-delivery hard gates.
-2. Implement geometry, density, repetition, font, chart, editability, compatibility, and package checks against plans and rendered presentations.
-3. Add candidate-only repairs with a maximum of two passes, monotonic weighted-score acceptance, rollback, and versioned reports/logs.
+1. Freeze fifteen scenario briefs, three benchmark arms, ordinary-model identities, repeat policy, scoring rubric, and release thresholds.
+2. Implement deterministic benchmark manifests, hashing, artifact validation, scorecards, and blind-review packets without fabricating model outputs.
+3. Execute available ordinary-model trials, generate governed artifacts, compare before/after reliability, and carry Windows-only visual evidence into Phase 29.
 
 ## Blockers / Concerns
 
