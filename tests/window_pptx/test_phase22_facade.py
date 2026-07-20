@@ -523,6 +523,69 @@ def test_invalid_output_extension_fails_before_presentation_open(
     assert app.Presentations.add_calls == []
 
 
+def test_invalid_output_extension_with_ascii_copy_writes_no_temp_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    patch_deck_dependencies(monkeypatch, tmp_path)
+    template = tmp_path / "source.pptm"
+    template.write_bytes(b"source deck")
+    temp_target = tmp_path / ".window-pptx" / "temp" / "deck_temp_ascii.pptm"
+    app = RecordingApplication()
+    client = RecordingComClient(app)
+
+    with pytest.raises(OutputPolicyError, match="extension"):
+        automation.main(
+            [
+                "--project-dir",
+                str(tmp_path),
+                "--template",
+                str(template),
+                "--output",
+                "output/final.pdf",
+                "--make-ascii-temp-copy",
+            ],
+            com_client=client,
+        )
+
+    assert not temp_target.exists()
+    assert app.Presentations.open_calls == []
+    assert app.Presentations.add_calls == []
+
+
+def test_ascii_staging_output_conflict_never_overwrites_target(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    patch_deck_dependencies(monkeypatch, tmp_path)
+    template = tmp_path / "source.pptx"
+    template.write_bytes(b"source deck")
+    temp_target = tmp_path / ".window-pptx" / "temp" / "deck_temp_ascii.pptx"
+    temp_target.parent.mkdir(parents=True)
+    temp_target.write_bytes(b"sentinel output")
+    app = RecordingApplication()
+    client = RecordingComClient(app)
+
+    with pytest.raises(OutputPolicyError, match="staging"):
+        automation.main(
+            [
+                "--project-dir",
+                str(tmp_path),
+                "--template",
+                str(template),
+                "--output",
+                str(temp_target),
+                "--make-ascii-temp-copy",
+                "--allow-overwrite",
+            ],
+            com_client=client,
+        )
+
+    assert temp_target.read_bytes() == b"sentinel output"
+    assert app.Presentations.open_calls == []
+    assert app.Presentations.add_calls == []
+
+
 @pytest.mark.parametrize(
     ("flags", "expected"),
     [

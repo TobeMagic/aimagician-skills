@@ -26,6 +26,7 @@ from window_pptx.cli import (
     parse_args as parse_cli_args,
 )
 from window_pptx.com_session import dispatch_powerpoint, macro_security
+from window_pptx.errors import OutputPolicyError
 from window_pptx.models import OutputPolicy, PowerPointHandle
 from window_pptx.output_policy import calculate_export_size, validate_output_policy
 
@@ -380,10 +381,14 @@ def parse_slide_spec(spec: str) -> list[int]:
     return ordered
 
 
+def ascii_temp_copy_path(project_dir: Path, source: Path) -> Path:
+    return project_dir / ".window-pptx" / "temp" / f"deck_temp_ascii{source.suffix}"
+
+
 def ensure_ascii_temp_copy(project_dir: Path, source: Path) -> Path:
-    temp_dir = project_dir / ".window-pptx" / "temp"
+    target = ascii_temp_copy_path(project_dir, source)
+    temp_dir = target.parent
     temp_dir.mkdir(parents=True, exist_ok=True)
-    target = temp_dir / f"deck_temp_ascii{source.suffix}"
     shutil.copy2(source, target)
     return target
 
@@ -2012,6 +2017,16 @@ def main(
         template = choose_template(project_dir, args.template)
         effective_template = template
 
+        validate_output_policy(
+            OutputPolicy(
+                source_path=template,
+                output_path=output_path,
+                dry_run=False,
+                no_output_deck=args.no_output_deck,
+                allow_overwrite=args.allow_overwrite,
+            )
+        )
+
         if args.extract_media:
             if template is None:
                 die("No template/source deck available for --extract-media. Pass --template explicitly.")
@@ -2033,6 +2048,15 @@ def main(
         if args.make_ascii_temp_copy:
             if template is None:
                 die("No template/source deck available for --make-ascii-temp-copy. Pass --template explicitly.")
+            staging_target = ascii_temp_copy_path(project_dir, template)
+            resolved_staging = staging_target.resolve(strict=False)
+            if resolved_staging in {
+                template.resolve(strict=False),
+                output_path.resolve(strict=False),
+            }:
+                raise OutputPolicyError(
+                    "ASCII staging path conflicts with the source or output path."
+                )
             effective_template = ensure_ascii_temp_copy(project_dir, template)
 
         validate_output_policy(
