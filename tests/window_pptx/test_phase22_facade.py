@@ -258,6 +258,29 @@ def test_dry_run_stdout_is_exactly_one_json_document(
     assert payload["mode"] == "dry-run"
 
 
+@pytest.mark.parametrize("extra", [[], ["--no-output-deck"]])
+def test_dry_run_terminal_inspection_reports_zero_writes(
+    extra: list[str],
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    assert automation.main(
+        [
+            "--project-dir",
+            str(tmp_path),
+            "--dry-run",
+            "--list-addins",
+            "--probe-plugin-apis",
+            "--json",
+            *extra,
+        ]
+    ) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["would_run"] == ["list_addins", "probe_plugin_apis"]
+    assert payload["would_write"] == []
+
+
 def test_no_save_is_normalized_with_one_deprecation_warning(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -920,6 +943,10 @@ class FakeWinReg:
         self.open_accesses: list[int] = []
         base = r"Software\Microsoft\Office\PowerPoint\Addins"
         self.data: dict[tuple[str, str, int], dict[str, object]] = {
+            ("HKCU", base, 0): {"subkeys": ["Example.Shared"]},
+            ("HKCU", base + r"\Example.Shared", 0): {
+                "values": {"Description": "Example shared", "LoadBehavior": 3}
+            },
             ("HKLM", base, self.KEY_WOW64_64KEY): {"subkeys": ["Example.Addin64"]},
             ("HKLM", base, self.KEY_WOW64_32KEY): {"subkeys": ["Example.Addin32"]},
             ("HKLM", base + r"\Example.Addin64", self.KEY_WOW64_64KEY): {
@@ -985,6 +1012,7 @@ def test_registry_inventory_reads_and_labels_both_wow64_views(
     rows = automation.list_registered_com_addins()
 
     assert {(row["prog_id"], row["registry_view"], row["guid"]) for row in rows} == {
+        ("Example.Shared", "shared", "<unavailable>"),
         ("Example.Addin64", "64", "{EXAMPLE-64}"),
         ("Example.Addin32", "32", "{EXAMPLE-32}"),
     }

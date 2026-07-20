@@ -1539,6 +1539,16 @@ def registry_view_specs(winreg: Any) -> list[tuple[str, int]]:
     return available or [("default", 0)]
 
 
+def office_registry_view_specs(
+    winreg: Any, root_name: str
+) -> list[tuple[str, int]]:
+    # HKCU\Software is shared across WOW64 views.  Applying both flags there
+    # returns the same physical key twice, so inventory it once.
+    if root_name == "HKCU":
+        return [("shared", 0)]
+    return registry_view_specs(winreg)
+
+
 def registry_get(
     winreg: Any,
     root: Any,
@@ -1655,7 +1665,7 @@ def office_addin_registry_snapshot(winreg: Any, progid: str) -> list[dict[str, A
     ]
     path = rf"Software\Microsoft\Office\PowerPoint\Addins\{progid}"
     for root_name, root in roots:
-        for view_name, view_flag in registry_view_specs(winreg):
+        for view_name, view_flag in office_registry_view_specs(winreg, root_name):
             values = registry_key_values(
                 winreg, root, path, view_flag=view_flag
             )
@@ -1692,7 +1702,7 @@ def list_registered_com_addins() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     seen: set[tuple[str, str, str]] = set()
     for root_name, root in roots:
-        for view_name, view_flag in registry_view_specs(winreg):
+        for view_name, view_flag in office_registry_view_specs(winreg, root_name):
             try:
                 with winreg.OpenKey(
                     root, base_path, 0, registry_access(winreg, view_flag)

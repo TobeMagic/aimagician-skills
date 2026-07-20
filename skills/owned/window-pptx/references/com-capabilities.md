@@ -74,21 +74,17 @@ COM can open decks that contain Office JS add-ins, but COM does not fully manage
 
 Use this decision tree:
 
-1. List add-ins.
-2. Check whether iSlide/OKPlus appears in `COMAddIns` or `AddIns`.
-3. If detected, look for a known ProgID, macro, or documented automation API.
-4. Probe the plugin surface without invoking business methods:
-   - Office add-in registry under `Software\Microsoft\Office\PowerPoint\Addins\<ProgID>`
-   - `HKCR\<ProgID>\CLSID`
-   - direct `Dispatch("<ProgID>")`
-   - `Application.COMAddIns.Item("<ProgID>").Object`
-   - `ITypeInfo` method/property names
-5. If a callable entrypoint exists, use it carefully and log the exact call.
-6. If only Ribbon/UI behavior or lifecycle methods exist, do not depend on it; reproduce the result with native COM or ask for a manual export/material from the plugin.
+1. Run the registry-only inventory; do not start PowerPoint for routine discovery.
+2. Check both HKLM 32/64-bit views and the shared HKCU Office add-in key.
+3. Inspect Office add-in registration, `HKCR\<ProgID>\CLSID`, load behavior, and manifest metadata.
+4. Look for a vendor-documented ProgID, macro, or automation API.
+5. Treat direct `Dispatch`, `Application.COMAddIns.Item().Object`, and `ITypeInfo` as outside the default safe probe. Investigate them only in a separately approved interactive run.
+6. If a documented callable entrypoint exists, use it carefully and log the exact call.
+7. If only Ribbon/UI behavior or registration exists, do not depend on it; reproduce the result with native COM or ask for a manual export/material from the plugin.
 
 ## Observed iSlide / OKPlus Probe Results
 
-These are examples from one Windows PowerPoint environment and should not be treated as universal guarantees.
+These are historical examples from one interactive Windows PowerPoint investigation and are not emitted by the current registry-only command. They should not be treated as universal guarantees.
 
 ### iSlide
 

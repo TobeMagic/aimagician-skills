@@ -353,10 +353,10 @@ Read [template-library-recommendation-workflow.md](./references/template-library
 12. Generate a concrete Windows Python script in `.window-pptx/scripts/`.
 13. Execute the script from Windows PowerShell or CMD.
 14. Save outputs under `output/`.
-13. Export PNG previews for target slides when visual work is involved.
-14. Write audits under `.window-pptx/audits/`.
-15. Verify acceptance criteria with COM object checks and rendered previews.
-16. Report generated files, unresolved ambiguities, and any plugin limitations.
+15. Export PNG previews for target slides when visual work is involved.
+16. Write audits under `.window-pptx/audits/`.
+17. Verify acceptance criteria with COM object checks and rendered previews.
+18. Report generated files, unresolved ambiguities, and any plugin limitations.
 
 ## Advanced Production References
 

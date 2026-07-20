@@ -249,6 +249,21 @@ def build_dry_run_result(args: argparse.Namespace, project_dir: str | Path) -> d
 
     base = Path(project_dir)
     would_write: list[str] = []
+    warnings = [NO_SAVE_WARNING] if args.no_save else []
+
+    if args.list_addins or args.probe_plugin_apis:
+        terminal_actions = [
+            action
+            for action in collect_requested_actions(args)
+            if action in {"list_addins", "probe_plugin_apis"}
+        ]
+        return {
+            "schema_version": "1.0",
+            "mode": "dry-run",
+            "would_run": terminal_actions,
+            "would_write": [],
+            "warnings": warnings,
+        }
 
     if args.init_project:
         would_write.extend(
@@ -287,17 +302,12 @@ def build_dry_run_result(args: argparse.Namespace, project_dir: str | Path) -> d
         would_write.append(str(base / ".window-pptx" / "exports" / "qa"))
     if args.audit_deck:
         would_write.append(str(base / ".window-pptx" / "audits" / "deck_audit.json"))
-    if args.list_addins and not args.no_output_deck:
-        would_write.append(str(base / ".window-pptx" / "addins.json"))
-    if args.probe_plugin_apis:
-        would_write.append(str(base / ".window-pptx" / "plugin_api_probe.json"))
     if not args.no_output_deck and not args.intake_template_library:
         output_path = _requested_path(base, args.output)
         would_write.append(str(output_path))
         if args.export_pdf:
             would_write.append(str(output_path.with_suffix(".pdf")))
 
-    warnings = [NO_SAVE_WARNING] if args.no_save else []
     return {
         "schema_version": "1.0",
         "mode": "dry-run",

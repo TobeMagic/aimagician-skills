@@ -32,11 +32,11 @@ ppt-project/
     temp/
     logs/
     cache/
-    addins.json
     asset_manifest.json
     automate_deck.py
-    plugin_api_probe.json
 ```
+
+Add-in inventory and plugin registration probes are terminal, stdout-only routes. They do not create project files or start PowerPoint.
 
 ## Required File
 
