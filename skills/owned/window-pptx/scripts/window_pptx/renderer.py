@@ -169,7 +169,10 @@ class PowerPointRenderer:
         )
 
     def _render_master(self, plan: RenderPlan, presentation: Any) -> None:
-        shape = presentation.SlideMaster.Shapes.AddShape(
+        shapes = presentation.SlideMaster.Shapes
+        while int(shapes.Count) > 0:
+            shapes.Item(1).Delete()
+        shape = shapes.AddShape(
             MSO_SHAPE_RECTANGLE,
             0,
             0,

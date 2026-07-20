@@ -356,6 +356,23 @@ def _expected_font(component: str, heading: str, body: str) -> str:
     return heading if component in {"title", "kpi", "quote", "cta"} else body
 
 
+def _validate_brand_context(brand: BrandOverrides) -> None:
+    for field in ("primary", "accent"):
+        value = getattr(brand, field)
+        if value is not None and (
+            not isinstance(value, str) or not HEX_COLOR.fullmatch(value)
+        ):
+            raise RenderPlanError(f"brand {field} color is invalid")
+    for field in ("heading_font", "body_font"):
+        value = getattr(brand, field)
+        if value is not None and (
+            not isinstance(value, str) or not value.strip()
+        ):
+            raise RenderPlanError(
+                f"brand {field.replace('_', ' ')} is invalid"
+            )
+
+
 def _resolve_asset_binding(
     binding: object,
     slot: ResolvedSlot,
@@ -482,18 +499,22 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
         raise RenderPlanError(f"render plan theme is not governed: {plan.theme_id}")
     if not isinstance(plan.brand, BrandOverrides):
         raise RenderPlanError("render plan brand context is invalid")
+    _validate_brand_context(plan.brand)
     if not isinstance(plan.locale, str) or not plan.locale.strip():
         raise RenderPlanError("render plan locale is invalid")
     if not isinstance(plan.installed_fonts, tuple) or not all(
         isinstance(font, str) and font.strip() for font in plan.installed_fonts
     ):
         raise RenderPlanError("render plan font inventory is invalid")
-    governed_theme = resolve_theme(
-        plan.theme_id,
-        brand=plan.brand,
-        installed_fonts=set(plan.installed_fonts),
-        locale=plan.locale,
-    )
+    try:
+        governed_theme = resolve_theme(
+            plan.theme_id,
+            brand=plan.brand,
+            installed_fonts=set(plan.installed_fonts),
+            locale=plan.locale,
+        )
+    except ValueError as exc:
+        raise RenderPlanError(f"render plan theme context is invalid: {exc}") from exc
     if plan.background_color != governed_theme.colors["background"]:
         raise RenderPlanError("render plan background diverges from governed theme")
     if not isinstance(plan.project_title, str) or not plan.project_title.strip():
@@ -715,14 +736,20 @@ def _build_render_plan_from_compiled(
         project["scenario"], audience=project.get("audience")
     )
     resolved_brand = brand or BrandOverrides()
+    if not isinstance(resolved_brand, BrandOverrides):
+        raise RenderPlanError("render plan brand context is invalid")
+    _validate_brand_context(resolved_brand)
     locale = project.get("language", "en-US")
     font_inventory = tuple(sorted(installed_fonts, key=str.casefold))
-    theme = resolve_theme(
-        selected_theme,
-        brand=resolved_brand,
-        installed_fonts=set(font_inventory),
-        locale=locale,
-    )
+    try:
+        theme = resolve_theme(
+            selected_theme,
+            brand=resolved_brand,
+            installed_fonts=set(font_inventory),
+            locale=locale,
+        )
+    except ValueError as exc:
+        raise RenderPlanError(f"render plan theme context is invalid: {exc}") from exc
     governed_assets = dict(asset_bindings or {})
     findings: list[RenderFinding] = []
     render_slides: list[RenderSlide] = []
@@ -828,6 +855,17 @@ def _build_render_plan_from_compiled(
                         theme.colors["surface"],
                     ),
                     line_color=theme.colors["primary"],
+                )
+            )
+        for unused_source in available_sources:
+            findings.append(
+                RenderFinding(
+                    "ASSET_SOURCE_UNUSED",
+                    f"slides.{slide['id']}",
+                    (
+                        f"asset source {unused_source} exceeds the selected layout "
+                        "capacity and was not rendered"
+                    ),
                 )
             )
         render_slides.append(

@@ -123,6 +123,16 @@ class RecordingShape:
     def ZOrder(self, command: int) -> None:
         self._owner._record("z-order", self.Name, command)
 
+    def Delete(self) -> None:
+        if self._parent is None or self not in self._parent.items:
+            raise RuntimeError("recording shape is not attached to a collection")
+        self._owner._record(
+            "delete-shape",
+            self.Name or self.kind,
+            self._parent._target,
+        )
+        self._parent.items.remove(self)
+
 
 class RecordingShapeRange:
     def __init__(
@@ -153,7 +163,6 @@ class RecordingShapeRange:
             bottom - top,
             self._shapes,
         )
-        group.Name = "group"
         group.GroupItems = tuple(members)
         self._shapes.items.append(group)
         return group
@@ -330,6 +339,7 @@ class RecordingPresentation:
         *,
         fail_operation: str | None = None,
         initial_slide_count: int = 0,
+        initial_master_shape_count: int = 0,
     ) -> None:
         self.calls: list[RecordingCall] = []
         self.fail_operation = fail_operation
@@ -338,6 +348,18 @@ class RecordingPresentation:
         for index in range(1, initial_slide_count + 1):
             self.Slides.items.append(RecordingSlide(self, self.Slides, index))
         self.SlideMaster = RecordingMaster(self)
+        for index in range(1, initial_master_shape_count + 1):
+            shape = RecordingShape(
+                self,
+                "legacy-master-shape",
+                0,
+                0,
+                100,
+                100,
+                self.SlideMaster.Shapes,
+            )
+            shape.Name = f"legacy_master_{index}"
+            self.SlideMaster.Shapes.items.append(shape)
         self.close_calls = 0
 
     def _record(self, operation: str, target: str, *arguments: Any) -> None:

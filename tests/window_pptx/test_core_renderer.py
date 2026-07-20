@@ -35,6 +35,7 @@ from window_pptx.render_plan import (
 )
 from window_pptx.renderer import PowerPointRenderer, RenderError
 from window_pptx.runner import run_render_pipeline
+from window_pptx.themes import BrandOverrides
 
 
 def sample_deck() -> dict[str, object]:
@@ -367,6 +368,11 @@ def test_multiple_image_frames_consume_distinct_governed_assets(
                     "kind": "image",
                     "source_ref": "asset:third",
                 },
+                {
+                    "id": "gallery-unused",
+                    "kind": "image",
+                    "source_ref": "asset:unused",
+                },
             ],
         }
     )
@@ -379,6 +385,7 @@ def test_multiple_image_frames_consume_distinct_governed_assets(
             "asset:hero": asset_binding(first, asset_id="first"),
             "asset:second": asset_binding(second, asset_id="second"),
             "asset:third": asset_binding(third, asset_id="third"),
+            "asset:unused": asset_binding(first, asset_id="unused"),
         },
     )
 
@@ -388,6 +395,52 @@ def test_multiple_image_frames_consume_distinct_governed_assets(
         if item.kind == "image"
     ]
     assert gallery_images == [second.resolve(), third.resolve()]
+    assert any(
+        finding.code == "ASSET_SOURCE_UNUSED"
+        and "asset:unused" in finding.message
+        for finding in plan.findings
+    )
+
+
+def test_multi_image_layout_marks_missing_slot_as_native_fallback(
+    tmp_path: Path,
+) -> None:
+    image = tmp_path / "only.png"
+    write_png(image)
+    payload = image_deck()
+    payload["slides"].append(  # type: ignore[union-attr]
+        {
+            "id": "partial-gallery",
+            "role": "product-showcase",
+            "title": "Partial gallery",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "partial-one",
+                    "kind": "image",
+                    "source_ref": "asset:only",
+                    "items": ["one", "two"],
+                }
+            ],
+        }
+    )
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        asset_bindings={
+            "asset:hero": asset_binding(image),
+            "asset:only": asset_binding(image, asset_id="only"),
+        },
+    )
+
+    assert sum(item.kind == "image" for item in plan.slides[1].objects) == 1
+    assert any(
+        finding.code == "ASSET_NATIVE_FALLBACK"
+        and "no asset reference" in finding.message
+        for finding in plan.findings
+    )
 
 
 def test_renderer_creates_native_named_tagged_grouped_and_layered_objects(
@@ -438,13 +491,16 @@ def test_renderer_call_log_is_identical_across_repeated_runs() -> None:
     assert first.calls == second.calls
 
 
-def test_renderer_replaces_template_slides_before_rendering() -> None:
+def test_renderer_replaces_template_slides_and_master_content_before_rendering() -> None:
     plan = build_render_plan(
         sample_deck(),
         slide_size=SlideSize(13.333, 7.5),
         installed_fonts={"Arial"},
     )
-    presentation = RecordingPresentation(initial_slide_count=3)
+    presentation = RecordingPresentation(
+        initial_slide_count=3,
+        initial_master_shape_count=2,
+    )
 
     report = PowerPointRenderer().render(plan, presentation)
 
@@ -452,11 +508,22 @@ def test_renderer_replaces_template_slides_before_rendering() -> None:
     assert len(presentation.Slides.items) == 2
     assert sum(call.operation == "delete-slide" for call in presentation.calls) == 3
     assert [slide.index for slide in presentation.Slides.items] == [1, 2]
+    assert [shape.Name for shape in presentation.SlideMaster.Shapes.items] == [
+        "wp_master_background"
+    ]
+    assert sum(call.operation == "delete-shape" for call in presentation.calls) == 2
 
 
 @pytest.mark.parametrize(
     "operation",
-    ["z-order", "shape-range", "group", "crop-cover", "master-background"],
+    [
+        "z-order",
+        "shape-range",
+        "group",
+        "crop-cover",
+        "delete-shape",
+        "master-background",
+    ],
 )
 def test_recording_com_injects_renderer_boundary_failures(
     tmp_path: Path, operation: str
@@ -472,7 +539,13 @@ def test_recording_com_injects_renderer_boundary_failures(
 
     with pytest.raises(RenderError):
         PowerPointRenderer().render(
-            plan, RecordingPresentation(fail_operation=operation)
+            plan,
+            RecordingPresentation(
+                fail_operation=operation,
+                initial_master_shape_count=(
+                    1 if operation == "delete-shape" else 0
+                ),
+            ),
         )
 
 
@@ -544,6 +617,13 @@ def test_render_plan_validator_rejects_duplicate_names_and_unknown_layout() -> N
     weakly_typed = replace(plan, slides=({"id": "not-a-slide"},))  # type: ignore[arg-type]
     with pytest.raises(RenderPlanError, match="render slide"):
         validate_render_plan(weakly_typed)
+
+    invalid_brand = replace(
+        plan,
+        brand=BrandOverrides(primary=42),  # type: ignore[arg-type]
+    )
+    with pytest.raises(RenderPlanError, match="brand primary"):
+        validate_render_plan(invalid_brand)
 
 
 def test_powerpoint_slide_size_limits_are_enforced_before_com() -> None:
