@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "components": [
+    {"id": "title", "object_policy": "native_editable", "min_font_pt": 24, "max_items": 1},
+    {"id": "body-text", "object_policy": "native_editable", "min_font_pt": 16, "max_items": 8},
+    {"id": "card", "object_policy": "native_editable", "min_font_pt": 16, "max_items": 6},
+    {"id": "kpi", "object_policy": "native_editable", "min_font_pt": 16, "max_items": 4},
+    {"id": "image-frame", "object_policy": "linked_asset", "min_font_pt": 11, "max_items": 1},
+    {"id": "icon", "object_policy": "linked_asset", "min_font_pt": 11, "max_items": 8},
+    {"id": "chart", "object_policy": "native_editable", "min_font_pt": 11, "max_items": 10},
+    {"id": "table", "object_policy": "native_editable", "min_font_pt": 11, "max_items": 8},
+    {"id": "process-step", "object_policy": "native_editable", "min_font_pt": 14, "max_items": 6},
+    {"id": "timeline-node", "object_policy": "native_editable", "min_font_pt": 14, "max_items": 6},
+    {"id": "matrix-cell", "object_policy": "native_editable", "min_font_pt": 14, "max_items": 8},
+    {"id": "footer", "object_policy": "native_editable", "min_font_pt": 11, "max_items": 3},
+    {"id": "decoration", "object_policy": "native_editable", "min_font_pt": 11, "max_items": 3},
+    {"id": "quote", "object_policy": "native_editable", "min_font_pt": 20, "max_items": 1},
+    {"id": "team-member", "object_policy": "native_editable", "min_font_pt": 14, "max_items": 6},
+    {"id": "cta", "object_policy": "native_editable", "min_font_pt": 18, "max_items": 3}
+  ],
+  "asset_policy": {
+    "crop_mode": "cover",
+    "allow_stretch": false,
+    "required_provenance": ["source", "license", "retrieved_at"],
+    "icon_style_scope": "one-family-per-deck",
+    "missing_asset_fallback": "native-editable-composition"
+  }
+}

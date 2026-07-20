@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "templates": [
+    {"id": "legacy-cover", "path": "templates/template-library/reference/封面模板.pptx", "status": "legacy_unverified", "auto_recommend": false},
+    {"id": "legacy-one-section", "path": "templates/template-library/reference/一段内容.pptx", "status": "legacy_unverified", "auto_recommend": false},
+    {"id": "legacy-six-section", "path": "templates/template-library/reference/六段内容.pptx", "status": "legacy_unverified", "auto_recommend": false},
+    {"id": "legacy-person", "path": "templates/template-library/reference/人物介绍.pptx", "status": "legacy_unverified", "auto_recommend": false}
+  ]
+}

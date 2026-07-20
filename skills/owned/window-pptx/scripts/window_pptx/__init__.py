@@ -1,5 +1,13 @@
 """Pure safety primitives for Windows PowerPoint automation."""
 
+from .assets import (
+    AssetChoice,
+    AssetIntent,
+    AssetPolicy,
+    AssetRecord,
+    choose_asset,
+    load_asset_policy,
+)
 from .com_session import dispatch_powerpoint, macro_security
 from .cli import build_dry_run_result, collect_requested_actions, emit_result, parse_args
 from .capacity import split_slide
@@ -14,6 +22,16 @@ from .deck_plan import (
     validate_deck_plan,
 )
 from .errors import ComSessionError, OutputPolicyError, WindowPptxError
+from .layouts import (
+    LayoutCapacity,
+    LayoutRegistry,
+    ResolvedLayout,
+    SlideSize,
+    load_components,
+    load_layout_registry,
+    resolve_layout,
+    validate_registry_bundle,
+)
 from .models import CandidateResult, OutputPolicy, PowerPointHandle
 from .output_policy import calculate_export_size, validate_output_policy
 from .registry import Archetype, RegistryError, load_archetypes, resolve_archetype
@@ -27,8 +45,22 @@ from .transaction import (
     sha256_file,
     validate_ooxml_package,
 )
+from .themes import (
+    BrandOverrides,
+    ResolvedTheme,
+    contrast_ratio,
+    load_themes,
+    resolve_theme,
+    select_theme,
+)
 
 __all__ = [
+    "Archetype",
+    "AssetChoice",
+    "AssetIntent",
+    "AssetPolicy",
+    "AssetRecord",
+    "BrandOverrides",
     "ComSessionError",
     "ContentBlock",
     "CandidateResult",
@@ -36,13 +68,17 @@ __all__ = [
     "DeckPlan",
     "DeckPlanValidationError",
     "DecisionTrace",
+    "LayoutCapacity",
+    "LayoutRegistry",
     "OutputPolicy",
     "OutputPolicyError",
     "PowerPointHandle",
     "ProjectIntent",
     "RegistryError",
+    "ResolvedLayout",
+    "ResolvedTheme",
     "SlideIntent",
-    "Archetype",
+    "SlideSize",
     "PartialSaveError",
     "SourceIntegrityError",
     "TransactionError",
@@ -52,18 +88,28 @@ __all__ = [
     "candidate_path_for",
     "collect_requested_actions",
     "compile_deck_plan",
+    "contrast_ratio",
+    "choose_asset",
     "dispatch_powerpoint",
     "emit_result",
     "macro_security",
     "load_archetypes",
+    "load_asset_policy",
+    "load_components",
     "load_deck_plan",
+    "load_layout_registry",
+    "load_themes",
     "parse_args",
     "save_candidate",
     "rank_page_families",
     "resolve_archetype",
+    "resolve_layout",
+    "resolve_theme",
     "sha256_file",
+    "select_theme",
     "validate_ooxml_package",
     "validate_output_policy",
     "validate_deck_plan",
+    "validate_registry_bundle",
     "split_slide",
 ]

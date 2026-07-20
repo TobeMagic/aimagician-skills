@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0",
+  "safe_bounds": {"x": 0.04, "y": 0.055, "width": 0.92, "height": 0.89},
+  "recipes": [
+    {"id": "hero-left", "capacity": {"min_items": 1, "max_items": 3, "densities": ["sparse", "balanced"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.18, "width": 0.50, "height": 0.22},
+      {"id": "body", "component": "body-text", "x": 0.06, "y": 0.46, "width": 0.48, "height": 0.22},
+      {"id": "visual", "component": "image-frame", "x": 0.62, "y": 0.12, "width": 0.32, "height": 0.70},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "hero-right", "capacity": {"min_items": 1, "max_items": 3, "densities": ["sparse", "balanced"]}, "slots": [
+      {"id": "visual", "component": "image-frame", "x": 0.06, "y": 0.12, "width": 0.32, "height": 0.70},
+      {"id": "title", "component": "title", "x": 0.44, "y": 0.18, "width": 0.50, "height": 0.22},
+      {"id": "body", "component": "body-text", "x": 0.46, "y": 0.46, "width": 0.48, "height": 0.22},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "centered", "capacity": {"min_items": 1, "max_items": 2, "densities": ["sparse", "balanced"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.16, "y": 0.22, "width": 0.68, "height": 0.22},
+      {"id": "body", "component": "body-text", "x": 0.20, "y": 0.50, "width": 0.60, "height": 0.22},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "top-band", "capacity": {"min_items": 1, "max_items": 8, "densities": ["sparse", "balanced", "dense"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
+      {"id": "content", "component": "body-text", "x": 0.06, "y": 0.25, "width": 0.88, "height": 0.60},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "split-left", "capacity": {"min_items": 2, "max_items": 6, "densities": ["balanced", "dense"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
+      {"id": "primary", "component": "body-text", "x": 0.06, "y": 0.25, "width": 0.40, "height": 0.60},
+      {"id": "secondary", "component": "image-frame", "x": 0.52, "y": 0.25, "width": 0.42, "height": 0.60},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "split-right", "capacity": {"min_items": 2, "max_items": 6, "densities": ["balanced", "dense"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
+      {"id": "primary", "component": "image-frame", "x": 0.06, "y": 0.25, "width": 0.42, "height": 0.60},
+      {"id": "secondary", "component": "body-text", "x": 0.54, "y": 0.25, "width": 0.40, "height": 0.60},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "three-column", "capacity": {"min_items": 3, "max_items": 6, "densities": ["balanced", "dense"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
+      {"id": "one", "component": "card", "x": 0.06, "y": 0.27, "width": 0.26, "height": 0.55},
+      {"id": "two", "component": "card", "x": 0.37, "y": 0.27, "width": 0.26, "height": 0.55},
+      {"id": "three", "component": "card", "x": 0.68, "y": 0.27, "width": 0.26, "height": 0.55},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "grid-four", "capacity": {"min_items": 4, "max_items": 8, "densities": ["balanced", "dense"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
+      {"id": "one", "component": "card", "x": 0.06, "y": 0.25, "width": 0.42, "height": 0.26},
+      {"id": "two", "component": "card", "x": 0.52, "y": 0.25, "width": 0.42, "height": 0.26},
+      {"id": "three", "component": "card", "x": 0.06, "y": 0.56, "width": 0.42, "height": 0.26},
+      {"id": "four", "component": "card", "x": 0.52, "y": 0.56, "width": 0.42, "height": 0.26},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "chart-focus", "capacity": {"min_items": 1, "max_items": 10, "densities": ["sparse", "balanced", "dense"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
+      {"id": "chart", "component": "chart", "x": 0.06, "y": 0.25, "width": 0.67, "height": 0.60},
+      {"id": "insight", "component": "body-text", "x": 0.77, "y": 0.25, "width": 0.17, "height": 0.60},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "linear-flow", "capacity": {"min_items": 3, "max_items": 6, "densities": ["sparse", "balanced", "dense"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
+      {"id": "flow", "component": "process-step", "x": 0.06, "y": 0.31, "width": 0.88, "height": 0.38},
+      {"id": "notes", "component": "body-text", "x": 0.06, "y": 0.75, "width": 0.88, "height": 0.10},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "timeline-flow", "capacity": {"min_items": 3, "max_items": 6, "densities": ["sparse", "balanced", "dense"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
+      {"id": "timeline", "component": "timeline-node", "x": 0.06, "y": 0.30, "width": 0.88, "height": 0.42},
+      {"id": "notes", "component": "body-text", "x": 0.06, "y": 0.76, "width": 0.88, "height": 0.09},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "matrix-focus", "capacity": {"min_items": 4, "max_items": 8, "densities": ["balanced", "dense"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
+      {"id": "matrix", "component": "matrix-cell", "x": 0.18, "y": 0.25, "width": 0.64, "height": 0.58},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "gallery-two", "capacity": {"min_items": 2, "max_items": 4, "densities": ["sparse", "balanced"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
+      {"id": "one", "component": "image-frame", "x": 0.06, "y": 0.25, "width": 0.42, "height": 0.58},
+      {"id": "two", "component": "image-frame", "x": 0.52, "y": 0.25, "width": 0.42, "height": 0.58},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "table-focus", "capacity": {"min_items": 2, "max_items": 8, "densities": ["balanced", "dense"]}, "slots": [
+      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
+      {"id": "table", "component": "table", "x": 0.06, "y": 0.24, "width": 0.88, "height": 0.61},
+      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    ]},
+    {"id": "full-visual", "capacity": {"min_items": 1, "max_items": 2, "densities": ["sparse", "balanced"]}, "slots": [
+      {"id": "visual", "component": "image-frame", "x": 0.04, "y": 0.055, "width": 0.92, "height": 0.89},
+      {"id": "overlay", "component": "body-text", "x": 0.08, "y": 0.65, "width": 0.54, "height": 0.18, "allow_overlap": true}
+    ]}
+  ],
+  "families": [
+    {"id": "cover", "variants": [{"id": "cover.hero-left", "recipe": "hero-left"}, {"id": "cover.hero-right", "recipe": "hero-right"}, {"id": "cover.centered", "recipe": "centered"}]},
+    {"id": "section", "variants": [{"id": "section.centered", "recipe": "centered"}, {"id": "section.hero-left", "recipe": "hero-left"}, {"id": "section.full-visual", "recipe": "full-visual"}]},
+    {"id": "agenda", "variants": [{"id": "agenda.top-band", "recipe": "top-band"}, {"id": "agenda.three-column", "recipe": "three-column"}, {"id": "agenda.grid-four", "recipe": "grid-four"}]},
+    {"id": "executive-summary", "variants": [{"id": "executive-summary.top-band", "recipe": "top-band"}, {"id": "executive-summary.split-left", "recipe": "split-left"}, {"id": "executive-summary.grid-four", "recipe": "grid-four"}]},
+    {"id": "focal-statement", "variants": [{"id": "focal-statement.centered", "recipe": "centered"}, {"id": "focal-statement.hero-left", "recipe": "hero-left"}, {"id": "focal-statement.full-visual", "recipe": "full-visual"}]},
+    {"id": "big-number", "variants": [{"id": "big-number.hero-left", "recipe": "hero-left", "components": {"body": "kpi"}}, {"id": "big-number.three-column", "recipe": "three-column", "components": {"one": "kpi", "two": "kpi", "three": "kpi"}}, {"id": "big-number.grid-four", "recipe": "grid-four", "components": {"one": "kpi", "two": "kpi", "three": "kpi", "four": "kpi"}}]},
+    {"id": "text-media", "variants": [{"id": "text-media.split-left", "recipe": "split-left"}, {"id": "text-media.split-right", "recipe": "split-right"}, {"id": "text-media.hero-left", "recipe": "hero-left"}]},
+    {"id": "cards", "variants": [{"id": "cards.three-column", "recipe": "three-column"}, {"id": "cards.grid-four", "recipe": "grid-four"}, {"id": "cards.top-band", "recipe": "top-band", "components": {"content": "card"}}]},
+    {"id": "timeline", "variants": [{"id": "timeline.horizontal", "recipe": "timeline-flow"}, {"id": "timeline.split", "recipe": "split-left", "components": {"primary": "timeline-node"}}, {"id": "timeline.focus", "recipe": "top-band", "components": {"content": "timeline-node"}}]},
+    {"id": "process", "variants": [{"id": "process.horizontal", "recipe": "linear-flow"}, {"id": "process.cards", "recipe": "three-column", "components": {"one": "process-step", "two": "process-step", "three": "process-step"}}, {"id": "process.focus", "recipe": "top-band", "components": {"content": "process-step"}}]},
+    {"id": "comparison", "variants": [{"id": "comparison.split", "recipe": "split-left"}, {"id": "comparison.columns", "recipe": "three-column"}, {"id": "comparison.matrix", "recipe": "grid-four"}]},
+    {"id": "matrix", "variants": [{"id": "matrix.focus", "recipe": "matrix-focus"}, {"id": "matrix.grid", "recipe": "grid-four", "components": {"one": "matrix-cell", "two": "matrix-cell", "three": "matrix-cell", "four": "matrix-cell"}}, {"id": "matrix.split", "recipe": "split-left", "components": {"primary": "matrix-cell", "secondary": "matrix-cell"}}]},
+    {"id": "quadrant", "variants": [{"id": "quadrant.focus", "recipe": "matrix-focus"}, {"id": "quadrant.insight", "recipe": "chart-focus"}, {"id": "quadrant.split", "recipe": "split-right", "components": {"primary": "matrix-cell", "secondary": "matrix-cell"}}]},
+    {"id": "funnel", "variants": [{"id": "funnel.focus", "recipe": "chart-focus"}, {"id": "funnel.flow", "recipe": "linear-flow"}, {"id": "funnel.split", "recipe": "split-left", "components": {"primary": "process-step"}}]},
+    {"id": "roadmap", "variants": [{"id": "roadmap.timeline", "recipe": "timeline-flow"}, {"id": "roadmap.flow", "recipe": "linear-flow"}, {"id": "roadmap.columns", "recipe": "three-column", "components": {"one": "timeline-node", "two": "timeline-node", "three": "timeline-node"}}]},
+    {"id": "data-chart", "variants": [{"id": "data-chart.focus", "recipe": "chart-focus"}, {"id": "data-chart.full", "recipe": "top-band", "components": {"content": "chart"}}, {"id": "data-chart.split", "recipe": "split-left", "components": {"primary": "chart", "secondary": "body-text"}}]},
+    {"id": "table", "variants": [{"id": "table.focus", "recipe": "table-focus"}, {"id": "table.split", "recipe": "split-left", "components": {"primary": "table", "secondary": "body-text"}}, {"id": "table.summary", "recipe": "top-band", "components": {"content": "table"}}]},
+    {"id": "product-showcase", "variants": [{"id": "product-showcase.hero-left", "recipe": "hero-left"}, {"id": "product-showcase.hero-right", "recipe": "hero-right"}, {"id": "product-showcase.gallery", "recipe": "gallery-two"}]},
+    {"id": "case-study", "variants": [{"id": "case-study.split", "recipe": "split-left"}, {"id": "case-study.story", "recipe": "top-band"}, {"id": "case-study.gallery", "recipe": "gallery-two"}]},
+    {"id": "team", "variants": [{"id": "team.three", "recipe": "three-column", "components": {"one": "team-member", "two": "team-member", "three": "team-member"}}, {"id": "team.grid", "recipe": "grid-four", "components": {"one": "team-member", "two": "team-member", "three": "team-member", "four": "team-member"}}, {"id": "team.profile", "recipe": "split-right", "components": {"secondary": "team-member"}}]},
+    {"id": "risk-recommendation", "variants": [{"id": "risk-recommendation.split", "recipe": "split-left"}, {"id": "risk-recommendation.matrix", "recipe": "matrix-focus"}, {"id": "risk-recommendation.cards", "recipe": "grid-four"}]},
+    {"id": "summary", "variants": [{"id": "summary.top-band", "recipe": "top-band"}, {"id": "summary.grid", "recipe": "grid-four"}, {"id": "summary.centered", "recipe": "centered"}]},
+    {"id": "cta", "variants": [{"id": "cta.centered", "recipe": "centered", "components": {"body": "cta"}}, {"id": "cta.hero-left", "recipe": "hero-left", "components": {"body": "cta"}}, {"id": "cta.full-visual", "recipe": "full-visual", "components": {"overlay": "cta"}}]},
+    {"id": "image-story", "variants": [{"id": "image-story.full", "recipe": "full-visual"}, {"id": "image-story.gallery", "recipe": "gallery-two"}, {"id": "image-story.split", "recipe": "split-right"}]}
+  ],
+  "semantic_form_map": {
+    "structured-content": "executive-summary", "focal-statement": "focal-statement", "text-media": "text-media",
+    "cards": "cards", "modular-grid": "cards", "process": "process", "timeline": "timeline", "roadmap": "roadmap",
+    "comparison": "comparison", "before-after": "comparison", "table": "table", "big-number": "big-number",
+    "kpi-dashboard": "big-number", "line-chart": "data-chart", "area-chart": "data-chart", "bar-chart": "data-chart",
+    "composition-chart": "data-chart", "stacked-bar": "data-chart", "distribution-chart": "data-chart", "dot-plot": "data-chart",
+    "scatter-plot": "data-chart", "bubble-chart": "data-chart", "matrix": "matrix", "quadrant": "quadrant",
+    "risk-recommendation": "risk-recommendation", "recommendation": "risk-recommendation", "image-story": "image-story",
+    "product-showcase": "product-showcase"
+  }
+}
