@@ -418,23 +418,25 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 **Goal:** Compile versioned semantic content into deterministic narratives, page roles, ranked layouts, and capacity-safe slide sequences.
 **Depends on:** Phase 22
 **Requirements:** [V5-PLAN-01, V5-PLAN-02, V5-PLAN-03, V5-PLAN-04, V5-PLAN-05]
-**Status:** In Progress
+**Status:** Complete
+**Completed:** 2026-07-20
 **Success Criteria**:
   1. DeckPlan v1 rejects raw coordinates, arbitrary colors/fonts, COM calls, and uncontrolled code.
   2. Fifteen business archetypes and semantic mapping rules cover the required deck categories.
   3. Capacity splitting, sparse-content preservation, rhythm, decision traces, and low-confidence defaults are deterministic.
-**Plans:** 1 active plan.
+**Plans:** 1/1 complete. The semantic compiler passes all focused and full window-pptx gates.
 
 ### Phase 24: Design System and Layout Registries
 
 **Goal:** Provide governed themes, components, assets, and page variants so ordinary models select and combine instead of designing from zero.
 **Depends on:** Phase 23
 **Requirements:** [V5-DESIGN-01, V5-DESIGN-02, V5-DESIGN-03, V5-DESIGN-04, V5-DESIGN-05]
-**Status:** Planned
+**Status:** In Progress
 **Success Criteria**:
   1. Eight named themes resolve deterministic tokens, brand overrides, contrast, and font fallbacks.
   2. Twenty-four page families provide at least three validated variants each, for at least 72 layouts.
   3. Component and asset policies enforce safe margins, type minima, crop-not-stretch, provenance, and legacy-template quarantine.
+**Plans:** 1 active plan.
 
 ### Phase 25: Transactional Core Renderer
 
@@ -497,12 +499,12 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 | Phase | Status | Completed |
 |-------|--------|-----------|
 | 22. Baseline and Safety | Complete | 2026-07-20 |
-| 23. DeckPlan and Semantic Rules | In Progress | — |
-| 24. Design System and Layout Registries | Planned | — |
+| 23. DeckPlan and Semantic Rules | Complete | 2026-07-20 |
+| 24. Design System and Layout Registries | In Progress | — |
 | 25. Transactional Core Renderer | Planned | — |
 | 26. Advanced Editable Objects | Planned | — |
 | 27. Quality Gates and Repair | Planned | — |
 | 28. Weak-Model Benchmark | Planned | — |
 | 29. Windows Acceptance and Closure | Planned | — |
 
-**Current milestone:** 1/8 phases complete. Repository total: 29 phases, 22 complete.
+**Current milestone:** 2/8 phases complete. Repository total: 29 phases, 23 complete.

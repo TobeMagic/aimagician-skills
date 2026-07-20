@@ -178,11 +178,11 @@ Completion requires the phase evidence and exit gates named in the traceability 
 
 ### DeckPlan and Semantic Rules
 
-- [ ] **V5-PLAN-01**: A versioned DeckPlan schema accepts semantic intent and rejects uncontrolled raw design instructions
-- [ ] **V5-PLAN-02**: Fifteen common business presentation archetypes provide predefined narrative structures
-- [ ] **V5-PLAN-03**: Deterministic rules map content semantics to ranked page forms and chart/layout candidates
-- [ ] **V5-PLAN-04**: Capacity, splitting, sparse-content, and cross-slide rhythm rules govern deck density and pacing
-- [ ] **V5-PLAN-05**: Decision traces and low-confidence safe defaults support ordinary models reproducibly
+- [x] **V5-PLAN-01**: A versioned DeckPlan schema accepts semantic intent and rejects uncontrolled raw design instructions
+- [x] **V5-PLAN-02**: Fifteen common business presentation archetypes provide predefined narrative structures
+- [x] **V5-PLAN-03**: Deterministic rules map content semantics to ranked page forms and chart/layout candidates
+- [x] **V5-PLAN-04**: Capacity, splitting, sparse-content, and cross-slide rhythm rules govern deck density and pacing
+- [x] **V5-PLAN-05**: Decision traces and low-confidence safe defaults support ordinary models reproducibly
 
 ### Design System and Layout Registries
 
@@ -367,16 +367,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | V5-SAFE-06 | Phase 22 | Complete |
 | V5-SAFE-07 | Phase 22 | Complete |
 | V5-SAFE-08 | Phase 22 | Complete |
-| V5-PLAN-01 | Phase 23 | In Progress |
-| V5-PLAN-02 | Phase 23 | In Progress |
-| V5-PLAN-03 | Phase 23 | In Progress |
-| V5-PLAN-04 | Phase 23 | In Progress |
-| V5-PLAN-05 | Phase 23 | In Progress |
-| V5-DESIGN-01 | Phase 24 | Planned |
-| V5-DESIGN-02 | Phase 24 | Planned |
-| V5-DESIGN-03 | Phase 24 | Planned |
-| V5-DESIGN-04 | Phase 24 | Planned |
-| V5-DESIGN-05 | Phase 24 | Planned |
+| V5-PLAN-01 | Phase 23 | Complete |
+| V5-PLAN-02 | Phase 23 | Complete |
+| V5-PLAN-03 | Phase 23 | Complete |
+| V5-PLAN-04 | Phase 23 | Complete |
+| V5-PLAN-05 | Phase 23 | Complete |
+| V5-DESIGN-01 | Phase 24 | In Progress |
+| V5-DESIGN-02 | Phase 24 | In Progress |
+| V5-DESIGN-03 | Phase 24 | In Progress |
+| V5-DESIGN-04 | Phase 24 | In Progress |
+| V5-DESIGN-05 | Phase 24 | In Progress |
 | V5-RENDER-01 | Phase 25 | Planned |
 | V5-RENDER-02 | Phase 25 | Planned |
 | V5-RENDER-03 | Phase 25 | Planned |
@@ -407,10 +407,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 **V5 Coverage:**
 - v5 requirements: 44 total
 - Mapped to exactly one phase: 44
-- Complete: 8
+- Complete: 13
 - In Progress: 5
-- Planned: 31
-- Open: 36
+- Planned: 26
+- Open: 31
 - Unmapped: 0
 
 ---
