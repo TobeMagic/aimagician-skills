@@ -117,6 +117,10 @@ def test_schema_and_manual_validator_agree_on_whitespace_and_data_item_types() -
     padded_id["slides"][0]["id"] = " summary "
     padded_max_title = minimal_plan()
     padded_max_title["slides"][0]["title"] = " " + ("x" * 200) + " "
+    trailing_lf_title = minimal_plan()
+    trailing_lf_title["slides"][0]["title"] = "title\n"
+    trailing_lf_id = minimal_plan()
+    trailing_lf_id["slides"][0]["id"] = "summary\n"
     explicit_empty_items = minimal_plan(items=[])
     explicit_empty_items["slides"][0]["blocks"][0]["title"] = "Title only"
 
@@ -128,6 +132,8 @@ def test_schema_and_manual_validator_agree_on_whitespace_and_data_item_types() -
         padded_language,
         padded_id,
         padded_max_title,
+        trailing_lf_title,
+        trailing_lf_id,
         explicit_empty_items,
     ):
         assert list(validator.iter_errors(payload))
