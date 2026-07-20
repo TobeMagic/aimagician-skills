@@ -8,6 +8,7 @@ from .assets import (
     AssetSession,
     choose_asset,
     load_asset_policy,
+    read_raster_dimensions,
 )
 from .com_session import dispatch_powerpoint, macro_security
 from .cli import build_dry_run_result, collect_requested_actions, emit_result, parse_args
@@ -40,17 +41,20 @@ from .registry import Archetype, RegistryError, load_archetypes, resolve_archety
 from .recording_com import RecordingCall, RecordingPresentation
 from .renderer import PowerPointRenderer, RenderError, RenderReport
 from .render_plan import (
+    AssetBinding,
     RenderFinding,
     RenderObject,
     RenderPlan,
     RenderPlanError,
     RenderSlide,
     build_render_plan,
+    compile_render_plan,
     inches_to_points,
+    load_asset_bindings,
     validate_render_plan,
 )
 from .rules import CandidateScore, DecisionTrace, rank_page_families
-from .runner import PipelineResult, run_render_pipeline
+from .runner import PipelineResult, execute_render_plan, run_render_pipeline
 from .transaction import (
     PartialSaveError,
     SourceIntegrityError,
@@ -72,6 +76,7 @@ from .themes import (
 __all__ = [
     "Archetype",
     "AssetChoice",
+    "AssetBinding",
     "AssetIntent",
     "AssetPolicy",
     "AssetRecord",
@@ -116,14 +121,17 @@ __all__ = [
     "candidate_path_for",
     "collect_requested_actions",
     "compile_deck_plan",
+    "compile_render_plan",
     "contrast_ratio",
     "choose_asset",
     "dispatch_powerpoint",
     "emit_result",
+    "execute_render_plan",
     "macro_security",
     "inches_to_points",
     "load_archetypes",
     "load_asset_policy",
+    "load_asset_bindings",
     "load_components",
     "load_deck_plan",
     "load_layout_registry",
@@ -131,6 +139,7 @@ __all__ = [
     "parse_args",
     "save_candidate",
     "rank_page_families",
+    "read_raster_dimensions",
     "run_render_pipeline",
     "resolve_archetype",
     "resolve_layout",

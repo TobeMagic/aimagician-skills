@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import struct
 from datetime import date
 from dataclasses import dataclass
 from pathlib import Path
@@ -79,6 +80,74 @@ class AssetSession:
         ):
             self.icon_family = choice.icon_family
         return choice
+
+
+def read_raster_dimensions(path: Path | str) -> tuple[int, int]:
+    """Read trusted PNG/JPEG dimensions and reject mislabeled or corrupt files."""
+
+    asset_path = Path(path)
+    try:
+        payload = asset_path.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"asset cannot be read: {asset_path}") from exc
+    suffix = asset_path.suffix.casefold()
+    if suffix == ".png":
+        if len(payload) < 24 or payload[:8] != b"\x89PNG\r\n\x1a\n":
+            raise ValueError(f"asset is not a valid PNG: {asset_path}")
+        width_px, height_px = struct.unpack(">II", payload[16:24])
+    elif suffix in {".jpg", ".jpeg"}:
+        width_px, height_px = _jpeg_dimensions(payload, asset_path)
+    else:
+        raise ValueError(f"asset type is unsupported: {asset_path.suffix}")
+    if width_px <= 0 or height_px <= 0:
+        raise ValueError(f"asset has invalid dimensions: {asset_path}")
+    return width_px, height_px
+
+
+def _jpeg_dimensions(payload: bytes, path: Path) -> tuple[int, int]:
+    if len(payload) < 4 or payload[:2] != b"\xff\xd8":
+        raise ValueError(f"asset is not a valid JPEG: {path}")
+    offset = 2
+    start_of_frame = {
+        0xC0,
+        0xC1,
+        0xC2,
+        0xC3,
+        0xC5,
+        0xC6,
+        0xC7,
+        0xC9,
+        0xCA,
+        0xCB,
+        0xCD,
+        0xCE,
+        0xCF,
+    }
+    while offset + 4 <= len(payload):
+        while offset < len(payload) and payload[offset] != 0xFF:
+            offset += 1
+        while offset < len(payload) and payload[offset] == 0xFF:
+            offset += 1
+        if offset >= len(payload):
+            break
+        marker = payload[offset]
+        offset += 1
+        if marker in {0xD8, 0xD9}:
+            continue
+        if marker == 0xDA:
+            break
+        if offset + 2 > len(payload):
+            break
+        segment_length = struct.unpack(">H", payload[offset : offset + 2])[0]
+        if segment_length < 2 or offset + segment_length > len(payload):
+            break
+        if marker in start_of_frame and segment_length >= 7:
+            height_px, width_px = struct.unpack(
+                ">HH", payload[offset + 3 : offset + 7]
+            )
+            return width_px, height_px
+        offset += segment_length
+    raise ValueError(f"asset has no JPEG dimensions: {path}")
 
 
 def load_asset_policy(path: Path | str | None = None) -> AssetPolicy:

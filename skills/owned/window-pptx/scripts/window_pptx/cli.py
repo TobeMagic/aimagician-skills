@@ -51,6 +51,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Verified installed font name for deterministic rendering; repeatable.",
     )
     parser.add_argument(
+        "--asset-manifest",
+        help=(
+            "Governed render asset manifest JSON, relative to --project-dir unless "
+            "absolute. Each binding must include Phase 24 provenance evidence."
+        ),
+    )
+    parser.add_argument(
         "--slide-width-in",
         type=float,
         help="Explicit slide width in inches for governed rendering.",
@@ -239,10 +246,41 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--deck-plan is required for DeckPlan compile/render routes")
     if (args.slide_width_in is None) != (args.slide_height_in is None):
         parser.error("--slide-width-in and --slide-height-in must be provided together")
-    if args.slide_width_in is not None and (
-        args.slide_width_in <= 0 or args.slide_height_in <= 0
+    if args.slide_width_in is not None and not all(
+        1 <= value <= 56
+        for value in (args.slide_width_in, args.slide_height_in)
     ):
-        parser.error("slide dimensions must be positive")
+        parser.error("slide dimensions must be between 1 and 56 inches")
+    if args.render_deck_plan and args.attach_existing:
+        parser.error("--render-deck-plan cannot use --attach-existing")
+    if args.asset_manifest and not args.render_deck_plan:
+        parser.error("--asset-manifest requires --render-deck-plan")
+    conflicting_deck_actions = {
+        "init_project",
+        "search_images",
+        "download_image",
+        "download_top_image",
+        "search_icons",
+        "download_icon",
+        "download_top_icon",
+        "intake_template_library",
+        "extract_media",
+        "list_addins",
+        "probe_plugin_apis",
+        "add_master_watermark",
+        "export_slides",
+        "export_qa",
+        "audit_deck",
+    }
+    if args.compile_deck_plan or args.render_deck_plan:
+        conflicts = sorted(
+            name for name in conflicting_deck_actions if getattr(args, name)
+        )
+        if conflicts:
+            parser.error(
+                "DeckPlan compile/render routes cannot be combined with: "
+                + ", ".join(f"--{name.replace('_', '-')}" for name in conflicts)
+            )
     if args.no_save:
         print(NO_SAVE_WARNING, file=sys.stderr)
         args.no_output_deck = True

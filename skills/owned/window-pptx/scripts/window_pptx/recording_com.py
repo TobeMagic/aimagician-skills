@@ -3,7 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Iterable
+
+from .assets import read_raster_dimensions
+
+
+def _image_size_points(path: Path) -> tuple[float, float]:
+    """Read raster dimensions without accepting arbitrary placeholder bytes."""
+
+    width_px, height_px = read_raster_dimensions(path)
+    # PowerPoint imports raster images at 96 DPI, or 0.75 points per pixel.
+    return width_px * 0.75, height_px * 0.75
 
 
 @dataclass(frozen=True)
@@ -90,9 +101,11 @@ class RecordingShape:
         top: float,
         width: float,
         height: float,
+        parent: "RecordingShapes | None" = None,
     ) -> None:
         self._owner = owner
         self.kind = kind
+        self._parent = parent
         self.Left = left
         self.Top = top
         self.Width = 800.0 if width < 0 else width
@@ -105,6 +118,7 @@ class RecordingShape:
         self.PictureFormat = RecordingPictureFormat()
         self.LockAspectRatio = 0
         self.editable = True
+        self.GroupItems: tuple[RecordingShape, ...] = ()
 
     def ZOrder(self, command: int) -> None:
         self._owner._record("z-order", self.Name, command)
@@ -114,15 +128,34 @@ class RecordingShapeRange:
     def __init__(
         self,
         owner: "RecordingPresentation",
+        shapes: "RecordingShapes",
         names: tuple[str, ...],
     ) -> None:
         self._owner = owner
+        self._shapes = shapes
         self._names = names
 
     def Group(self) -> RecordingShape:
         self._owner._record("group", "|".join(self._names), *self._names)
-        group = RecordingShape(self._owner, "group", 0, 0, 0, 0)
+        members = [self._shapes.by_name(name) for name in self._names]
+        left = min(item.Left for item in members)
+        top = min(item.Top for item in members)
+        right = max(item.Left + item.Width for item in members)
+        bottom = max(item.Top + item.Height for item in members)
+        for item in members:
+            self._shapes.items.remove(item)
+        group = RecordingShape(
+            self._owner,
+            "group",
+            left,
+            top,
+            right - left,
+            bottom - top,
+            self._shapes,
+        )
         group.Name = "group"
+        group.GroupItems = tuple(members)
+        self._shapes.items.append(group)
         return group
 
 
@@ -131,6 +164,19 @@ class RecordingShapes:
         self._owner = owner
         self._target = target
         self.items: list[RecordingShape] = []
+
+    @property
+    def Count(self) -> int:
+        return len(self.items)
+
+    def by_name(self, name: str) -> RecordingShape:
+        matches = [shape for shape in self.items if shape.Name == name]
+        if len(matches) != 1:
+            raise KeyError(f"shape range name is missing or ambiguous: {name}")
+        return matches[0]
+
+    def Item(self, key: int | str) -> RecordingShape:
+        return self.items[key - 1] if isinstance(key, int) else self.by_name(key)
 
     def _add(
         self,
@@ -142,7 +188,6 @@ class RecordingShapes:
         height: float,
         *extra: Any,
     ) -> RecordingShape:
-        self._owner._maybe_fail(operation)
         self._owner._record(
             operation,
             self._target,
@@ -152,7 +197,9 @@ class RecordingShapes:
             width,
             height,
         )
-        shape = RecordingShape(self._owner, kind, left, top, width, height)
+        shape = RecordingShape(
+            self._owner, kind, left, top, width, height, self
+        )
         self.items.append(shape)
         return shape
 
@@ -191,13 +238,14 @@ class RecordingShapes:
         width: float = -1,
         height: float = -1,
     ) -> RecordingShape:
+        natural_width, natural_height = _image_size_points(Path(filename))
         return self._add(
             "add-picture",
             "image",
             left,
             top,
-            width,
-            height,
+            natural_width if width < 0 else width,
+            natural_height if height < 0 else height,
             filename,
             link_to_file,
             save_with_document,
@@ -205,15 +253,31 @@ class RecordingShapes:
 
     def Range(self, names: Iterable[str]) -> RecordingShapeRange:
         normalized = tuple(names)
+        if not normalized or len(normalized) != len(set(normalized)):
+            raise ValueError("shape range names must be unique and non-empty")
+        for name in normalized:
+            self.by_name(name)
         self._owner._record("shape-range", self._target, *normalized)
-        return RecordingShapeRange(self._owner, normalized)
+        return RecordingShapeRange(self._owner, self, normalized)
 
 
 class RecordingSlide:
-    def __init__(self, owner: "RecordingPresentation", index: int) -> None:
+    def __init__(
+        self,
+        owner: "RecordingPresentation",
+        collection: "RecordingSlides",
+        index: int,
+    ) -> None:
+        self._owner = owner
+        self._collection = collection
         self.index = index
         self.Shapes = RecordingShapes(owner, f"slide-{index}")
         self.FollowMasterBackground = -1
+
+    def Delete(self) -> None:
+        self._owner._record("delete-slide", f"slide-{self.index}", self.index)
+        self._collection.items.remove(self)
+        self._collection.renumber()
 
 
 class RecordingSlides:
@@ -221,11 +285,29 @@ class RecordingSlides:
         self._owner = owner
         self.items: list[RecordingSlide] = []
 
+    @property
+    def Count(self) -> int:
+        return len(self.items)
+
+    def renumber(self) -> None:
+        for index, slide in enumerate(self.items, start=1):
+            slide.index = index
+
+    def Item(self, index: int) -> RecordingSlide:
+        if type(index) is not int or not 1 <= index <= len(self.items):
+            raise IndexError(f"slide index out of range: {index}")
+        return self.items[index - 1]
+
+    def __call__(self, index: int) -> RecordingSlide:
+        return self.Item(index)
+
     def Add(self, index: int, layout: int) -> RecordingSlide:
-        self._owner._maybe_fail("add-slide")
         self._owner._record("add-slide", "slides", index, layout)
-        slide = RecordingSlide(self._owner, index)
-        self.items.append(slide)
+        if type(index) is not int or not 1 <= index <= len(self.items) + 1:
+            raise IndexError(f"slide insert index out of range: {index}")
+        slide = RecordingSlide(self._owner, self, index)
+        self.items.insert(index - 1, slide)
+        self.renumber()
         return slide
 
 
@@ -243,15 +325,23 @@ class RecordingMaster:
 class RecordingPresentation:
     """PowerPoint-shaped object that records deterministic renderer calls."""
 
-    def __init__(self, *, fail_operation: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        fail_operation: str | None = None,
+        initial_slide_count: int = 0,
+    ) -> None:
         self.calls: list[RecordingCall] = []
         self.fail_operation = fail_operation
         self.PageSetup = RecordingPageSetup()
         self.Slides = RecordingSlides(self)
+        for index in range(1, initial_slide_count + 1):
+            self.Slides.items.append(RecordingSlide(self, self.Slides, index))
         self.SlideMaster = RecordingMaster(self)
         self.close_calls = 0
 
     def _record(self, operation: str, target: str, *arguments: Any) -> None:
+        self._maybe_fail(operation)
         self.calls.append(RecordingCall(operation, target, tuple(arguments)))
 
     def _maybe_fail(self, operation: str) -> None:

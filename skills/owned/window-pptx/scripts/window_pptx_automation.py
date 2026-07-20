@@ -31,7 +31,8 @@ from window_pptx.errors import OutputPolicyError
 from window_pptx.layouts import SlideSize
 from window_pptx.models import CandidateResult, OutputPolicy, PowerPointHandle
 from window_pptx.output_policy import calculate_export_size, validate_output_policy
-from window_pptx.runner import run_render_pipeline
+from window_pptx.render_plan import compile_render_plan, load_asset_bindings
+from window_pptx.runner import execute_render_plan
 from window_pptx.transaction import save_candidate
 
 
@@ -2052,13 +2053,86 @@ def print_addins(addins: dict[str, Any], as_json: bool) -> None:
         print("- none")
 
 
+def read_ooxml_slide_size(template: Path | None) -> SlideSize | None:
+    """Read slide dimensions without starting PowerPoint; invalid packages fall back."""
+
+    if template is None:
+        return None
+    try:
+        with zipfile.ZipFile(template) as archive:
+            root = ET.fromstring(archive.read("ppt/presentation.xml"))
+        node = root.find("{http://schemas.openxmlformats.org/presentationml/2006/main}sldSz")
+        if node is None:
+            return None
+        width = int(node.attrib["cx"]) / 914400
+        height = int(node.attrib["cy"]) / 914400
+        if not all(1 <= value <= 56 for value in (width, height)):
+            return None
+        return SlideSize(width, height)
+    except (KeyError, OSError, ValueError, ET.ParseError, zipfile.BadZipFile):
+        return None
+
+
 def main(
     argv: Sequence[str] | None = None,
     *,
     com_client: Any | None = None,
 ) -> int:
     args = parse_args(argv)
-    project_dir = Path(args.project_dir).expanduser()
+    project_dir = Path(args.project_dir).expanduser().resolve(strict=False)
+    output_path = resolve_path(project_dir, args.output)
+    if output_path is None:
+        die("Output path could not be resolved.")
+
+    template: Path | None = None
+    prepared_compiled: dict[str, Any] | None = None
+    prepared_render_plan = None
+    prepared_render_size: SlideSize | None = None
+    prepared_asset_bindings = {}
+    if args.compile_deck_plan or args.render_deck_plan:
+        deck_plan_path = resolve_path(project_dir, args.deck_plan)
+        if deck_plan_path is None:
+            die("DeckPlan path could not be resolved.")
+        deck_plan = load_deck_plan(deck_plan_path)
+        if args.compile_deck_plan:
+            prepared_compiled = compile_deck_plan(deck_plan)
+        else:
+            if not project_dir.exists():
+                die(f"Project folder not found: {project_dir}")
+            template = choose_template(project_dir, args.template)
+            preflight_policy = OutputPolicy(
+                source_path=template,
+                output_path=output_path,
+                dry_run=args.dry_run,
+                no_output_deck=args.no_output_deck,
+                allow_overwrite=args.allow_overwrite,
+            )
+            validate_output_policy(preflight_policy)
+            if (
+                template is not None
+                and template.resolve(strict=False) == output_path.resolve(strict=False)
+            ):
+                raise OutputPolicyError(
+                    "The renderer cannot use a same-path source/output transaction."
+                )
+            prepared_render_size = (
+                SlideSize(args.slide_width_in, args.slide_height_in)
+                if args.slide_width_in is not None
+                else read_ooxml_slide_size(template) or SlideSize(13.333, 7.5)
+            )
+            if args.asset_manifest:
+                asset_manifest_path = resolve_path(project_dir, args.asset_manifest)
+                if asset_manifest_path is None:
+                    die("Asset manifest path could not be resolved.")
+                prepared_asset_bindings = load_asset_bindings(asset_manifest_path)
+            prepared_compiled, prepared_render_plan = compile_render_plan(
+                deck_plan,
+                slide_size=prepared_render_size,
+                installed_fonts=set(args.installed_font) or {"Arial"},
+                theme_id=args.theme_id,
+                asset_bindings=prepared_asset_bindings,
+            )
+
     if args.dry_run:
         emit_result(
             build_dry_run_result(args, project_dir),
@@ -2068,7 +2142,15 @@ def main(
         )
         return 0
 
-    project_dir = project_dir.resolve()
+    if args.compile_deck_plan:
+        emit_result(
+            {"compiled_deck": prepared_compiled},
+            args.json,
+            sys.stdout,
+            sys.stderr,
+        )
+        return 0
+
     if not project_dir.exists():
         if args.init_project:
             project_dir.mkdir(parents=True, exist_ok=True)
@@ -2078,23 +2160,6 @@ def main(
     init_result: dict[str, Any] | None = None
     if args.init_project:
         init_result = init_project_workspace(project_dir)
-
-    output_path = resolve_path(project_dir, args.output)
-    if output_path is None:
-        die("Output path could not be resolved.")
-
-    if args.compile_deck_plan:
-        deck_plan_path = resolve_path(project_dir, args.deck_plan)
-        if deck_plan_path is None:
-            die("DeckPlan path could not be resolved.")
-        compiled = compile_deck_plan(load_deck_plan(deck_plan_path))
-        emit_result(
-            {"compiled_deck": compiled},
-            args.json,
-            sys.stdout,
-            sys.stderr,
-        )
-        return 0
 
     if args.list_addins or args.probe_plugin_apis:
         require_windows()
@@ -2134,6 +2199,7 @@ def main(
     deck_output_requested = not args.no_output_deck
     deck_input_requested = deck_output_requested or any(
         [
+            args.render_deck_plan,
             args.extract_media,
             args.export_slides,
             args.add_master_watermark,
@@ -2142,9 +2208,9 @@ def main(
             args.make_ascii_temp_copy,
         ]
     )
-    template: Path | None = None
     if not args.intake_template_library and deck_input_requested:
-        template = choose_template(project_dir, args.template)
+        if template is None:
+            template = choose_template(project_dir, args.template)
         if deck_output_requested:
             validate_output_policy(
                 OutputPolicy(
@@ -2342,31 +2408,14 @@ def main(
         presentation = open_or_create_presentation(app, effective_template, args.visible)
 
         if args.render_deck_plan:
-            deck_plan_path = resolve_path(project_dir, args.deck_plan)
-            if deck_plan_path is None:
-                die("DeckPlan path could not be resolved.")
-            deck_plan = load_deck_plan(deck_plan_path)
-            if args.slide_width_in is not None:
-                render_size = SlideSize(
-                    args.slide_width_in, args.slide_height_in
-                )
-            else:
-                page_setup = getattr(presentation, "PageSetup", None)
-                width_pt = float(getattr(page_setup, "SlideWidth", 0) or 0)
-                height_pt = float(getattr(page_setup, "SlideHeight", 0) or 0)
-                render_size = (
-                    SlideSize(width_pt / 72, height_pt / 72)
-                    if width_pt > 0 and height_pt > 0
-                    else SlideSize(13.333, 7.5)
-                )
-            pipeline_result = run_render_pipeline(
-                deck_plan,
+            if prepared_compiled is None or prepared_render_plan is None:
+                raise RuntimeError("DeckPlan renderer preflight did not produce a plan")
+            pipeline_result = execute_render_plan(
+                prepared_compiled,
+                prepared_render_plan,
                 presentation=presentation,
                 app=app,
                 output_policy=output_policy,
-                slide_size=render_size,
-                installed_fonts=set(args.installed_font) or {"Arial"},
-                theme_id=args.theme_id,
                 export_pdf=args.export_pdf,
             )
             emit_result(

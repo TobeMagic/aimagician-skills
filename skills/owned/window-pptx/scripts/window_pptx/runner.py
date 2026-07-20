@@ -3,16 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Callable, Mapping
 
-from .deck_plan import DeckPlan, compile_deck_plan
+from .deck_plan import DeckPlan
 from .layouts import SlideSize
 from .errors import OutputPolicyError
 from .models import CandidateResult, OutputPolicy
 from .output_policy import validate_output_policy
 from .renderer import PowerPointRenderer, RenderReport
-from .render_plan import RenderPlan, build_render_plan
+from .render_plan import (
+    AssetBinding,
+    RenderPlan,
+    compile_render_plan,
+    validate_render_plan,
+)
 from .themes import BrandOverrides
 from .transaction import save_candidate
 
@@ -90,7 +94,7 @@ def run_render_pipeline(
     installed_fonts: set[str],
     theme_id: str | None = None,
     brand: BrandOverrides | None = None,
-    asset_paths: Mapping[str, Path | str] | None = None,
+    asset_bindings: Mapping[str, AssetBinding] | None = None,
     renderer: PowerPointRenderer | None = None,
     inspector: Inspector | None = None,
     repairer: Repairer | None = None,
@@ -99,7 +103,6 @@ def run_render_pipeline(
 ) -> PipelineResult:
     """Run the single governed renderer lifecycle without bypassing dry-run."""
 
-    stages: list[str] = []
     validate_output_policy(output_policy)
     if (
         output_policy.source_path is not None
@@ -110,17 +113,59 @@ def run_render_pipeline(
         raise OutputPolicyError(
             "The renderer cannot use a same-path source/output transaction."
         )
-    compiled = compile_deck_plan(payload)
-    stages.append("validate-compile")
-    plan = build_render_plan(
+    compiled, plan = compile_render_plan(
         payload,
         slide_size=slide_size,
         installed_fonts=installed_fonts,
         theme_id=theme_id,
         brand=brand,
-        asset_paths=asset_paths,
+        asset_bindings=asset_bindings,
     )
-    stages.append("build-render-plan")
+    return execute_render_plan(
+        compiled,
+        plan,
+        presentation=presentation,
+        app=app,
+        output_policy=output_policy,
+        renderer=renderer,
+        inspector=inspector,
+        repairer=repairer,
+        saver=saver,
+        export_pdf=export_pdf,
+    )
+
+
+def execute_render_plan(
+    compiled_deck: Mapping[str, Any],
+    render_plan: RenderPlan,
+    *,
+    presentation: Any,
+    app: Any,
+    output_policy: OutputPolicy,
+    renderer: PowerPointRenderer | None = None,
+    inspector: Inspector | None = None,
+    repairer: Repairer | None = None,
+    saver: Saver = save_candidate,
+    export_pdf: bool = False,
+) -> PipelineResult:
+    """Execute a preflighted plan without compiling model input a second time."""
+
+    validate_output_policy(output_policy)
+    if (
+        output_policy.source_path is not None
+        and output_policy.output_path is not None
+        and output_policy.source_path.resolve(strict=False)
+        == output_policy.output_path.resolve(strict=False)
+    ):
+        raise OutputPolicyError(
+            "The renderer cannot use a same-path source/output transaction."
+        )
+    validate_render_plan(render_plan)
+    if not isinstance(compiled_deck, Mapping):
+        raise ValueError("compiled deck must be a mapping")
+    compiled = dict(compiled_deck)
+    plan = render_plan
+    stages = ["validate-compile", "build-render-plan"]
 
     if output_policy.dry_run:
         stages.append("dry-run")
@@ -158,4 +203,4 @@ def run_render_pipeline(
     )
 
 
-__all__ = ["PipelineResult", "run_render_pipeline"]
+__all__ = ["PipelineResult", "execute_render_plan", "run_render_pipeline"]

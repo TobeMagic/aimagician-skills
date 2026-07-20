@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-import sys
+import binascii
 import json
+import struct
+import sys
+import zipfile
+import zlib
 from dataclasses import replace
 from pathlib import Path
 
@@ -14,6 +18,7 @@ sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 import window_pptx
 import window_pptx_automation as automation
+from window_pptx.assets import AssetRecord
 from window_pptx.cli import build_dry_run_result, collect_requested_actions, parse_args
 from window_pptx.deck_plan import DeckPlanValidationError
 from window_pptx.errors import OutputPolicyError
@@ -21,9 +26,11 @@ from window_pptx.layouts import SlideSize
 from window_pptx.models import CandidateResult, OutputPolicy, PowerPointHandle
 from window_pptx.recording_com import RecordingPresentation
 from window_pptx.render_plan import (
+    AssetBinding,
     RenderPlanError,
     build_render_plan,
     inches_to_points,
+    load_asset_bindings,
     validate_render_plan,
 )
 from window_pptx.renderer import PowerPointRenderer, RenderError
@@ -100,6 +107,77 @@ def image_deck() -> dict[str, object]:
             }
         ],
     }
+
+
+def write_png(path: Path, width: int = 1200, height: int = 1000) -> None:
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + kind
+            + data
+            + struct.pack(">I", binascii.crc32(kind + data) & 0xFFFFFFFF)
+        )
+
+    rows = b"".join(b"\x00" + b"\x00\x00\x00" * width for _ in range(height))
+    payload = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(rows, level=9))
+        + chunk(b"IEND", b"")
+    )
+    path.write_bytes(payload)
+
+
+def asset_binding(
+    path: Path,
+    *,
+    asset_id: str = "hero",
+    width: int = 1200,
+    height: int = 1000,
+) -> AssetBinding:
+    return AssetBinding(
+        path=path,
+        record=AssetRecord(
+            id=asset_id,
+            kind="photo",
+            style="editorial",
+            aspect_ratio=width / height,
+            quality=90,
+            source="https://example.test/asset",
+            license="CC0",
+            retrieved_at="2026-07-20",
+            width_px=width,
+            height_px=height,
+        ),
+    )
+
+
+def write_asset_manifest(path: Path, image: Path) -> None:
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "bindings": {
+                    "asset:hero": {
+                        "path": image.name,
+                        "record": {
+                            "id": "hero",
+                            "kind": "photo",
+                            "style": "editorial",
+                            "aspect_ratio": 1.2,
+                            "quality": 90,
+                            "source": "https://example.test/asset",
+                            "license": "CC0",
+                            "retrieved_at": "2026-07-20",
+                            "width_px": 1200,
+                            "height_px": 1000,
+                        },
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
 
 
 def test_render_plan_is_deterministic_governed_and_serializable() -> None:
@@ -181,13 +259,13 @@ def test_render_plan_uses_trusted_asset_mapping_or_native_fallback(
     tmp_path: Path,
 ) -> None:
     image = tmp_path / "hero.png"
-    image.write_bytes(b"recording-fake-image")
+    write_png(image)
 
     with_asset = build_render_plan(
         image_deck(),
         slide_size=SlideSize(13.333, 7.5),
         installed_fonts={"Arial"},
-        asset_paths={"asset:hero": image},
+        asset_bindings={"asset:hero": asset_binding(image)},
     )
     image_objects = [
         obj for obj in with_asset.slides[0].objects if obj.kind == "image"
@@ -205,17 +283,123 @@ def test_render_plan_uses_trusted_asset_mapping_or_native_fallback(
         finding.code == "ASSET_NATIVE_FALLBACK" for finding in fallback.findings
     )
 
+    readme = tmp_path / "README.md"
+    readme.write_text("not an image", encoding="utf-8")
+    unsafe = build_render_plan(
+        image_deck(),
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        asset_bindings={"asset:hero": asset_binding(readme)},
+    )
+    assert not any(obj.kind == "image" for obj in unsafe.slides[0].objects)
+    assert any(finding.code == "ASSET_POLICY_REJECTED" for finding in unsafe.findings)
+
+    low_resolution = build_render_plan(
+        image_deck(),
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        asset_bindings={
+            "asset:hero": asset_binding(image, width=10, height=10)
+        },
+    )
+    assert not any(obj.kind == "image" for obj in low_resolution.slides[0].objects)
+    assert any(
+        finding.code == "ASSET_POLICY_REJECTED"
+        for finding in low_resolution.findings
+    )
+
+    forged_dimensions = tmp_path / "forged.png"
+    write_png(forged_dimensions, width=100, height=100)
+    forged = build_render_plan(
+        image_deck(),
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        asset_bindings={"asset:hero": asset_binding(forged_dimensions)},
+    )
+    assert not any(obj.kind == "image" for obj in forged.slides[0].objects)
+    assert any(
+        "dimensions do not match" in finding.message
+        for finding in forged.findings
+    )
+
+
+def test_governed_asset_manifest_loads_relative_paths_and_rejects_bad_schema(
+    tmp_path: Path,
+) -> None:
+    image = tmp_path / "hero.png"
+    write_png(image)
+    manifest = tmp_path / "render-assets.json"
+    write_asset_manifest(manifest, image)
+
+    bindings = load_asset_bindings(manifest)
+
+    assert bindings["asset:hero"].path == image.resolve()
+    assert bindings["asset:hero"].record.license == "CC0"
+
+    manifest.write_text('{"schema_version":"2.0","bindings":{}}', encoding="utf-8")
+    with pytest.raises(RenderPlanError, match="schema_version"):
+        load_asset_bindings(manifest)
+
+
+def test_multiple_image_frames_consume_distinct_governed_assets(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "first.png"
+    second = tmp_path / "second.png"
+    third = tmp_path / "third.png"
+    for path in (first, second, third):
+        write_png(path)
+    payload = image_deck()
+    payload["slides"].append(  # type: ignore[union-attr]
+        {
+            "id": "gallery",
+            "role": "product-showcase",
+            "title": "Product gallery",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "gallery-one",
+                    "kind": "image",
+                    "source_ref": "asset:second",
+                },
+                {
+                    "id": "gallery-two",
+                    "kind": "image",
+                    "source_ref": "asset:third",
+                },
+            ],
+        }
+    )
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        asset_bindings={
+            "asset:hero": asset_binding(first, asset_id="first"),
+            "asset:second": asset_binding(second, asset_id="second"),
+            "asset:third": asset_binding(third, asset_id="third"),
+        },
+    )
+
+    gallery_images = [
+        item.source_path
+        for item in plan.slides[1].objects
+        if item.kind == "image"
+    ]
+    assert gallery_images == [second.resolve(), third.resolve()]
+
 
 def test_renderer_creates_native_named_tagged_grouped_and_layered_objects(
     tmp_path: Path,
 ) -> None:
     image = tmp_path / "hero.png"
-    image.write_bytes(b"recording-fake-image")
+    write_png(image)
     plan = build_render_plan(
         image_deck(),
         slide_size=SlideSize(13.333, 7.5),
         installed_fonts={"Arial"},
-        asset_paths={"asset:hero": image},
+        asset_bindings={"asset:hero": asset_binding(image)},
     )
     presentation = RecordingPresentation()
 
@@ -231,7 +415,8 @@ def test_renderer_creates_native_named_tagged_grouped_and_layered_objects(
     assert presentation.SlideMaster.Shapes.items
     slide = presentation.Slides.items[0]
     assert all(shape.Name for shape in slide.Shapes.items)
-    assert all(shape.Tags.values["window-pptx:id"] for shape in slide.Shapes.items)
+    assert any(shape.kind == "group" for shape in slide.Shapes.items)
+    assert not any(shape.Name in report.object_names[:-1] for shape in slide.Shapes.items)
     assert any(call.operation == "group" for call in presentation.calls)
     assert any(call.operation == "z-order" for call in presentation.calls)
     assert any(call.operation == "crop-cover" for call in presentation.calls)
@@ -253,14 +438,59 @@ def test_renderer_call_log_is_identical_across_repeated_runs() -> None:
     assert first.calls == second.calls
 
 
+def test_renderer_replaces_template_slides_before_rendering() -> None:
+    plan = build_render_plan(
+        sample_deck(),
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    )
+    presentation = RecordingPresentation(initial_slide_count=3)
+
+    report = PowerPointRenderer().render(plan, presentation)
+
+    assert report.slide_count == 2
+    assert len(presentation.Slides.items) == 2
+    assert sum(call.operation == "delete-slide" for call in presentation.calls) == 3
+    assert [slide.index for slide in presentation.Slides.items] == [1, 2]
+
+
+@pytest.mark.parametrize(
+    "operation",
+    ["z-order", "shape-range", "group", "crop-cover", "master-background"],
+)
+def test_recording_com_injects_renderer_boundary_failures(
+    tmp_path: Path, operation: str
+) -> None:
+    image = tmp_path / "hero.png"
+    write_png(image)
+    plan = build_render_plan(
+        image_deck(),
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        asset_bindings={"asset:hero": asset_binding(image)},
+    )
+
+    with pytest.raises(RenderError):
+        PowerPointRenderer().render(
+            plan, RecordingPresentation(fail_operation=operation)
+        )
+
+
 @pytest.mark.parametrize(
     ("mutation", "message"),
     [
         (lambda item: replace(item, x=-0.1), "geometry"),
         (lambda item: replace(item, width=0), "geometry"),
+        (lambda item: replace(item, x=item.x + 0.01), "governed layout"),
         (lambda item: replace(item, font_size_pt=8), "font"),
+        (lambda item: replace(item, font_size_pt=99), "governed theme"),
+        (lambda item: replace(item, font_name="Comic Sans MS"), "governed theme"),
         (lambda item: replace(item, component="invented"), "component"),
         (lambda item: replace(item, fill_color="red"), "color"),
+        (lambda item: replace(item, fill_color="#FF00FF"), "governed theme"),
+        (lambda item: replace(item, kind="shape"), "governed component"),
+        (lambda item: replace(item, layer=999), "governed component"),
+        (lambda item: replace(item, group_id="model-group"), "governed component"),
         (lambda item: replace(item, native_editable=False), "editable"),
     ],
 )
@@ -310,6 +540,19 @@ def test_render_plan_validator_rejects_duplicate_names_and_unknown_layout() -> N
     )
     with pytest.raises(RenderPlanError, match="layout"):
         validate_render_plan(unknown_layout)
+
+    weakly_typed = replace(plan, slides=({"id": "not-a-slide"},))  # type: ignore[arg-type]
+    with pytest.raises(RenderPlanError, match="render slide"):
+        validate_render_plan(weakly_typed)
+
+
+def test_powerpoint_slide_size_limits_are_enforced_before_com() -> None:
+    with pytest.raises(RenderPlanError, match="between 1 and 56"):
+        build_render_plan(
+            sample_deck(),
+            slide_size=SlideSize(57, 57),
+            installed_fonts={"Arial"},
+        )
 
 
 def test_render_errors_include_slide_and_object_context() -> None:
@@ -503,6 +746,106 @@ def test_cli_exposes_explicit_compile_and_render_routes() -> None:
     assert dry["would_run"] == ["render_deck_plan"]
     assert dry["would_write"] == ["project/output/final.pptx"]
 
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "--project-dir",
+                "project",
+                "--deck-plan",
+                "deck-plan.json",
+                "--render-deck-plan",
+                "--attach-existing",
+            ]
+        )
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "--project-dir",
+                "project",
+                "--deck-plan",
+                "deck-plan.json",
+                "--render-deck-plan",
+                "--list-addins",
+            ]
+        )
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "--project-dir",
+                "project",
+                "--deck-plan",
+                "deck-plan.json",
+                "--render-deck-plan",
+                "--slide-width-in",
+                "57",
+                "--slide-height-in",
+                "57",
+            ]
+        )
+
+
+def test_render_cli_preflights_plan_and_output_before_com(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    invalid = tmp_path / "invalid.json"
+    payload = sample_deck()
+    payload["slides"][0]["blocks"][0]["x"] = 1  # type: ignore[index]
+    invalid.write_text(json.dumps(payload), encoding="utf-8")
+    events: list[str] = []
+    monkeypatch.setattr(
+        automation, "require_windows", lambda: events.append("require_windows")
+    )
+    monkeypatch.setattr(
+        automation,
+        "dispatch_powerpoint",
+        lambda *args: events.append("dispatch"),
+    )
+
+    with pytest.raises(DeckPlanValidationError):
+        automation.main(
+            [
+                "--project-dir",
+                str(tmp_path),
+                "--deck-plan",
+                invalid.name,
+                "--render-deck-plan",
+                "--no-output-deck",
+            ],
+            com_client=object(),
+        )
+    assert events == []
+
+    valid = tmp_path / "valid.json"
+    valid.write_text(json.dumps(sample_deck()), encoding="utf-8")
+    with pytest.raises(OutputPolicyError):
+        automation.main(
+            [
+                "--project-dir",
+                str(tmp_path),
+                "--deck-plan",
+                valid.name,
+                "--render-deck-plan",
+                "--output",
+                "bad.txt",
+            ],
+            com_client=object(),
+        )
+    assert events == []
+
+    with pytest.raises(DeckPlanValidationError):
+        automation.main(
+            [
+                "--project-dir",
+                str(tmp_path),
+                "--deck-plan",
+                "missing.json",
+                "--render-deck-plan",
+                "--dry-run",
+            ]
+        )
+    assert events == []
+
 
 def test_compile_cli_route_is_cross_platform_and_does_not_start_com(
     tmp_path: Path,
@@ -546,6 +889,9 @@ def test_render_cli_route_uses_governed_pipeline_and_cleanup(
     plan_path.write_text(json.dumps(sample_deck()), encoding="utf-8")
     presentation = RecordingPresentation()
     app = object()
+    template = tmp_path / "template.pptx"
+    template.write_bytes(b"test template is opened by the injected fake")
+    opened_templates: list[Path | None] = []
     monkeypatch.setattr(automation, "require_windows", lambda: None)
     monkeypatch.setattr(
         automation,
@@ -559,7 +905,9 @@ def test_render_cli_route_uses_governed_pipeline_and_cleanup(
     monkeypatch.setattr(
         automation,
         "open_or_create_presentation",
-        lambda current_app, template, visible: presentation,
+        lambda current_app, current_template, visible: (
+            opened_templates.append(current_template) or presentation
+        ),
     )
 
     result = automation.main(
@@ -571,6 +919,8 @@ def test_render_cli_route_uses_governed_pipeline_and_cleanup(
             "--render-deck-plan",
             "--installed-font",
             "Arial",
+            "--template",
+            template.name,
             "--no-output-deck",
             "--json",
         ],
@@ -589,4 +939,72 @@ def test_render_cli_route_uses_governed_pipeline_and_cleanup(
     ]
     assert payload["render_report"]["slide_count"] == 2
     assert payload["candidate_result"]["promoted"] is False
+    assert opened_templates == [template.resolve()]
     assert presentation.close_calls == 1
+
+
+def test_render_cli_uses_ooxml_size_and_governed_asset_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    plan_path = tmp_path / "deck-plan.json"
+    plan_path.write_text(json.dumps(image_deck()), encoding="utf-8")
+    image = tmp_path / "hero.png"
+    write_png(image)
+    manifest = tmp_path / "render-assets.json"
+    write_asset_manifest(manifest, image)
+    template = tmp_path / "template.pptx"
+    with zipfile.ZipFile(template, "w") as archive:
+        archive.writestr(
+            "ppt/presentation.xml",
+            (
+                '<p:presentation xmlns:p="http://schemas.openxmlformats.org/'
+                'presentationml/2006/main"><p:sldSz cx="9144000" '
+                'cy="6858000"/></p:presentation>'
+            ),
+        )
+    presentation = RecordingPresentation(initial_slide_count=2)
+    monkeypatch.setattr(automation, "require_windows", lambda: None)
+    monkeypatch.setattr(
+        automation,
+        "dispatch_powerpoint",
+        lambda attach_existing, client: PowerPointHandle(
+            app=object(), owned=False, dispatch_mode="recording"
+        ),
+    )
+    monkeypatch.setattr(
+        automation,
+        "open_or_create_presentation",
+        lambda app, current_template, visible: presentation,
+    )
+
+    result = automation.main(
+        [
+            "--project-dir",
+            str(tmp_path),
+            "--deck-plan",
+            plan_path.name,
+            "--render-deck-plan",
+            "--template",
+            template.name,
+            "--asset-manifest",
+            manifest.name,
+            "--no-output-deck",
+            "--json",
+        ],
+        com_client=object(),
+    )
+
+    payload = json.loads(capsys.readouterr().out)["render_pipeline"]
+    assert result == 0
+    assert payload["render_plan"]["slide_size"] == {
+        "width_in": 10.0,
+        "height_in": 7.5,
+    }
+    assert any(
+        item["kind"] == "image"
+        for item in payload["render_plan"]["slides"][0]["objects"]
+    )
+    assert sum(call.operation == "delete-slide" for call in presentation.calls) == 2
+    assert any(call.operation == "add-picture" for call in presentation.calls)

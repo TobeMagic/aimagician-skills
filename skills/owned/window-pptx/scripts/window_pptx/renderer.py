@@ -66,6 +66,8 @@ class PowerPointRenderer:
     def render(self, plan: RenderPlan, presentation: Any) -> RenderReport:
         validate_render_plan(plan)
         try:
+            while int(presentation.Slides.Count) > 0:
+                presentation.Slides.Item(1).Delete()
             presentation.PageSetup.SlideWidth = inches_to_points(
                 plan.slide_size.width
             )

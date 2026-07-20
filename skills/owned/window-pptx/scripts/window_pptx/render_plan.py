@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+import json
 import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
+from .assets import (
+    AssetIntent,
+    AssetRecord,
+    choose_asset,
+    read_raster_dimensions,
+)
 from .deck_plan import DeckPlan, compile_deck_plan
 from .layouts import (
     ResolvedSlot,
@@ -21,6 +28,9 @@ from .themes import HEX_COLOR, THEME_IDS, BrandOverrides, resolve_theme, select_
 
 
 RENDER_PLAN_VERSION = "1.0"
+MIN_POWERPOINT_SLIDE_IN = 1.0
+MAX_POWERPOINT_SLIDE_IN = 56.0
+SUPPORTED_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg"}
 ADVANCED_COMPONENTS = {
     "chart",
     "table",
@@ -56,6 +66,14 @@ class RenderPlanError(ValueError):
 
 
 @dataclass(frozen=True)
+class AssetBinding:
+    """A local file paired with the Phase 24 evidence used to select it."""
+
+    path: Path
+    record: AssetRecord
+
+
+@dataclass(frozen=True)
 class RenderFinding:
     code: str
     path: str
@@ -86,6 +104,7 @@ class RenderObject:
     native_editable: bool
     text: str | None
     source_path: Path | None
+    asset_record: AssetRecord | None
     font_name: str
     font_size_pt: int
     text_color: str
@@ -109,6 +128,23 @@ class RenderObject:
             "native_editable": self.native_editable,
             "text": self.text,
             "source_path": str(self.source_path) if self.source_path else None,
+            "asset_record": (
+                {
+                    "id": self.asset_record.id,
+                    "kind": self.asset_record.kind,
+                    "style": self.asset_record.style,
+                    "aspect_ratio": self.asset_record.aspect_ratio,
+                    "quality": self.asset_record.quality,
+                    "source": self.asset_record.source,
+                    "license": self.asset_record.license,
+                    "retrieved_at": self.asset_record.retrieved_at,
+                    "width_px": self.asset_record.width_px,
+                    "height_px": self.asset_record.height_px,
+                    "icon_family": self.asset_record.icon_family,
+                }
+                if self.asset_record is not None
+                else None
+            ),
             "font_name": self.font_name,
             "font_size_pt": self.font_size_pt,
             "text_color": self.text_color,
@@ -125,6 +161,9 @@ class RenderSlide:
     title: str | None
     family_id: str
     layout_id: str
+    item_count: int
+    requested_density: str
+    resolved_density: str
     background_color: str
     objects: tuple[RenderObject, ...]
 
@@ -136,6 +175,9 @@ class RenderSlide:
             "title": self.title,
             "family_id": self.family_id,
             "layout_id": self.layout_id,
+            "item_count": self.item_count,
+            "requested_density": self.requested_density,
+            "resolved_density": self.resolved_density,
             "background_color": self.background_color,
             "objects": [item.to_dict() for item in self.objects],
         }
@@ -147,6 +189,9 @@ class RenderPlan:
     compiler_version: str
     project_title: str
     theme_id: str
+    brand: BrandOverrides
+    locale: str
+    installed_fonts: tuple[str, ...]
     slide_size: SlideSize
     background_color: str
     slides: tuple[RenderSlide, ...]
@@ -158,6 +203,14 @@ class RenderPlan:
             "compiler_version": self.compiler_version,
             "project_title": self.project_title,
             "theme_id": self.theme_id,
+            "brand": {
+                "primary": self.brand.primary,
+                "accent": self.brand.accent,
+                "heading_font": self.brand.heading_font,
+                "body_font": self.brand.body_font,
+            },
+            "locale": self.locale,
+            "installed_fonts": list(self.installed_fonts),
             "slide_size": {
                 "width_in": self.slide_size.width,
                 "height_in": self.slide_size.height,
@@ -225,7 +278,11 @@ def _slide_content(slide: Mapping[str, Any]) -> tuple[list[str], dict[str, str]]
 def _item_count(slide: Mapping[str, Any]) -> int:
     basis_id = slide["semantic_basis"]["block_id"]
     block = next(item for item in slide["blocks"] if item["id"] == basis_id)
-    return len(block.get("items", [])) or 1
+    basis_count = len(block.get("items", [])) or 1
+    referenced_assets = sum(
+        1 for item in slide["blocks"] if item.get("source_ref")
+    )
+    return max(basis_count, referenced_assets)
 
 
 def _slot_texts(slots: tuple[ResolvedSlot, ...], fragments: list[str]) -> dict[str, str]:
@@ -278,6 +335,136 @@ def _valid_number(value: object, *, positive: bool = False) -> bool:
     )
 
 
+def _validate_slide_size(slide_size: SlideSize) -> None:
+    if not isinstance(slide_size, SlideSize) or not all(
+        _valid_number(value, positive=True)
+        for value in (slide_size.width, slide_size.height)
+    ):
+        raise RenderPlanError("render plan slide geometry must be finite and positive")
+    if not all(
+        MIN_POWERPOINT_SLIDE_IN <= value <= MAX_POWERPOINT_SLIDE_IN
+        for value in (slide_size.width, slide_size.height)
+    ):
+        raise RenderPlanError("PowerPoint slide dimensions must be between 1 and 56 inches")
+
+
+def _expected_fill(component: str, background: str, surface: str) -> str:
+    return surface if component not in {"title", "body-text", "footer"} else background
+
+
+def _expected_font(component: str, heading: str, body: str) -> str:
+    return heading if component in {"title", "kpi", "quote", "cta"} else body
+
+
+def _resolve_asset_binding(
+    binding: object,
+    slot: ResolvedSlot,
+) -> tuple[Path | None, AssetRecord | None, str | None]:
+    if not isinstance(binding, AssetBinding) or not isinstance(binding.record, AssetRecord):
+        return None, None, "binding is not a governed AssetBinding"
+    path = Path(binding.path).expanduser().resolve(strict=False)
+    if not path.is_file() or path.suffix.casefold() not in SUPPORTED_IMAGE_SUFFIXES:
+        return None, None, "asset path is missing or not a supported image file"
+    record = binding.record
+    try:
+        actual_width, actual_height = read_raster_dimensions(path)
+    except ValueError as exc:
+        return None, None, str(exc)
+    if (record.width_px, record.height_px) != (actual_width, actual_height):
+        return None, None, "asset dimensions do not match governed evidence"
+    if record.aspect_ratio is None or not math.isclose(
+        record.aspect_ratio,
+        actual_width / actual_height,
+        rel_tol=0.01,
+    ):
+        return None, None, "asset aspect ratio does not match governed evidence"
+    try:
+        choice = choose_asset(
+            AssetIntent(
+                kind=record.kind,
+                style=record.style,
+                aspect_ratio=slot.width / slot.height,
+            ),
+            (record,),
+        )
+    except ValueError as exc:
+        return None, None, str(exc)
+    if choice.asset_id != record.id:
+        reason = choice.rejected.get(record.id, choice.reason or "asset rejected")
+        return None, None, reason
+    return path, record, None
+
+
+def load_asset_bindings(path: Path | str) -> dict[str, AssetBinding]:
+    """Load the strict renderer-only asset manifest and its Phase 24 evidence."""
+
+    manifest_path = Path(path).expanduser().resolve(strict=False)
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RenderPlanError(
+            f"cannot load governed asset manifest {manifest_path}: {exc}"
+        ) from exc
+    if not isinstance(payload, dict) or payload.get("schema_version") != "1.0":
+        raise RenderPlanError("governed asset manifest schema_version must be 1.0")
+    raw_bindings = payload.get("bindings")
+    if not isinstance(raw_bindings, dict):
+        raise RenderPlanError("governed asset manifest bindings must be an object")
+    result: dict[str, AssetBinding] = {}
+    record_fields = {
+        "id",
+        "kind",
+        "style",
+        "aspect_ratio",
+        "quality",
+        "source",
+        "license",
+        "retrieved_at",
+        "width_px",
+        "height_px",
+        "icon_family",
+    }
+    required_record_fields = {
+        "id",
+        "kind",
+        "quality",
+        "source",
+        "license",
+        "retrieved_at",
+    }
+    for source_ref, raw_binding in raw_bindings.items():
+        location = f"bindings.{source_ref}"
+        if not isinstance(source_ref, str) or not source_ref.strip():
+            raise RenderPlanError("asset manifest source references must be non-empty")
+        if not isinstance(raw_binding, dict) or set(raw_binding) != {"path", "record"}:
+            raise RenderPlanError(f"{location} must contain only path and record")
+        raw_path = raw_binding["path"]
+        raw_record = raw_binding["record"]
+        if not isinstance(raw_path, str) or not raw_path.strip():
+            raise RenderPlanError(f"{location}.path must be a non-empty string")
+        if not isinstance(raw_record, dict):
+            raise RenderPlanError(f"{location}.record must be an object")
+        unknown = set(raw_record) - record_fields
+        missing = required_record_fields - set(raw_record)
+        if unknown or missing:
+            details = []
+            if missing:
+                details.append("missing " + ", ".join(sorted(missing)))
+            if unknown:
+                details.append("unknown " + ", ".join(sorted(unknown)))
+            raise RenderPlanError(f"{location}.record is invalid: {'; '.join(details)}")
+        record_payload = {field: raw_record.get(field) for field in record_fields}
+        record = AssetRecord(**record_payload)
+        asset_path = Path(raw_path).expanduser()
+        if not asset_path.is_absolute():
+            asset_path = manifest_path.parent / asset_path
+        result[source_ref] = AssetBinding(
+            path=asset_path.resolve(strict=False),
+            record=record,
+        )
+    return result
+
+
 def validate_render_plan(plan: RenderPlan) -> RenderPlan:
     """Revalidate publicly constructed render models before any COM mutation."""
 
@@ -293,15 +480,25 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
         raise RenderPlanError("render plan schema version is unsupported")
     if plan.theme_id not in THEME_IDS:
         raise RenderPlanError(f"render plan theme is not governed: {plan.theme_id}")
-    if not HEX_COLOR.fullmatch(plan.background_color):
-        raise RenderPlanError("render plan background color is invalid")
+    if not isinstance(plan.brand, BrandOverrides):
+        raise RenderPlanError("render plan brand context is invalid")
+    if not isinstance(plan.locale, str) or not plan.locale.strip():
+        raise RenderPlanError("render plan locale is invalid")
+    if not isinstance(plan.installed_fonts, tuple) or not all(
+        isinstance(font, str) and font.strip() for font in plan.installed_fonts
+    ):
+        raise RenderPlanError("render plan font inventory is invalid")
+    governed_theme = resolve_theme(
+        plan.theme_id,
+        brand=plan.brand,
+        installed_fonts=set(plan.installed_fonts),
+        locale=plan.locale,
+    )
+    if plan.background_color != governed_theme.colors["background"]:
+        raise RenderPlanError("render plan background diverges from governed theme")
     if not isinstance(plan.project_title, str) or not plan.project_title.strip():
         raise RenderPlanError("render plan project title is invalid")
-    if not isinstance(plan.slide_size, SlideSize) or not all(
-        _valid_number(value, positive=True)
-        for value in (plan.slide_size.width, plan.slide_size.height)
-    ):
-        raise RenderPlanError("render plan slide geometry must be finite and positive")
+    _validate_slide_size(plan.slide_size)
     if not isinstance(plan.slides, tuple) or not plan.slides:
         raise RenderPlanError("render plan must contain slides")
 
@@ -311,6 +508,10 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
     object_ids: set[str] = set()
     object_names: set[str] = set()
     for expected_index, slide in enumerate(plan.slides, start=1):
+        if not isinstance(slide, RenderSlide):
+            raise RenderPlanError(
+                f"render slide {expected_index} must be a RenderSlide"
+            )
         if slide.index != expected_index:
             raise RenderPlanError("render slide indices must be sequential")
         if not isinstance(slide.source_id, str) or not slide.source_id.strip():
@@ -323,11 +524,47 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
             raise RenderPlanError(
                 f"render slide {slide.source_id} has an unknown or mismatched layout"
             )
-        if not HEX_COLOR.fullmatch(slide.background_color):
-            raise RenderPlanError(f"render slide {slide.source_id} color is invalid")
+        if slide.background_color != governed_theme.colors["background"]:
+            raise RenderPlanError(
+                f"render slide {slide.source_id} diverges from governed theme"
+            )
+        if (
+            type(slide.item_count) is not int
+            or slide.item_count < 0
+            or slide.requested_density not in {"sparse", "balanced", "dense"}
+        ):
+            raise RenderPlanError(
+                f"render slide {slide.source_id} capacity context is invalid"
+            )
+        try:
+            governed_layout = resolve_layout(
+                slide.layout_id,
+                plan.slide_size,
+                item_count=slide.item_count,
+                density=slide.requested_density,
+            )
+        except ValueError as exc:
+            raise RenderPlanError(
+                f"render slide {slide.source_id} layout cannot be re-resolved: {exc}"
+            ) from exc
+        if governed_layout.resolved_density != slide.resolved_density:
+            raise RenderPlanError(
+                f"render slide {slide.source_id} density diverges from governed layout"
+            )
         if not isinstance(slide.objects, tuple) or not slide.objects:
             raise RenderPlanError(f"render slide {slide.source_id} has no objects")
-        for item in slide.objects:
+        if len(slide.objects) != len(governed_layout.slots):
+            raise RenderPlanError(
+                f"render slide {slide.source_id} object count diverges from governed layout"
+            )
+        for object_index, (item, slot) in enumerate(
+            zip(slide.objects, governed_layout.slots), start=1
+        ):
+            if not isinstance(item, RenderObject):
+                raise RenderPlanError(
+                    f"render slide {slide.source_id} object {object_index} "
+                    "must be a RenderObject"
+                )
             path = f"slides.{slide.source_id}.{getattr(item, 'name', '?')}"
             if not isinstance(item.id, str) or not item.id.strip():
                 raise RenderPlanError(f"{path} has an invalid object id")
@@ -389,34 +626,104 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
                     raise RenderPlanError(f"{path} image component is invalid")
                 if not isinstance(item.source_path, Path) or not item.source_path.is_file():
                     raise RenderPlanError(f"{path} image source is missing")
+                if not isinstance(item.asset_record, AssetRecord):
+                    raise RenderPlanError(f"{path} image asset evidence is missing")
             elif item.source_path is not None:
                 raise RenderPlanError(f"{path} has an unexpected image source")
+            elif item.asset_record is not None:
+                raise RenderPlanError(f"{path} has unexpected asset evidence")
+
+            expected_name = (
+                f"wp_s{slide.index:03d}_{object_index:02d}_"
+                f"{_safe_identifier(slot.id)}"
+            )
+            expected_group = (
+                None if slot.component == "footer" else f"wp_s{slide.index:03d}_content"
+            )
+            expected_kind = _object_kind(
+                slot.component, item.source_path is not None
+            )
+            exact_geometry = all(
+                math.isclose(actual, expected, abs_tol=1e-9)
+                for actual, expected in (
+                    (item.x, slot.x),
+                    (item.y, slot.y),
+                    (item.width, slot.width),
+                    (item.height, slot.height),
+                )
+            )
+            if (
+                item.id != f"{slide.source_id}.{slot.id}"
+                or item.name != expected_name
+                or not exact_geometry
+            ):
+                raise RenderPlanError(f"{path} diverges from governed layout")
+            if (
+                item.component != slot.component
+                or item.kind != expected_kind
+                or item.layer != LAYER_BY_COMPONENT.get(slot.component, 30)
+                or item.group_id != expected_group
+            ):
+                raise RenderPlanError(f"{path} diverges from governed component rules")
+            if (
+                item.font_name
+                != _expected_font(
+                    slot.component,
+                    governed_theme.fonts["heading"],
+                    governed_theme.fonts["body"],
+                )
+                or item.font_size_pt
+                != _font_size(slot.component, governed_theme.typography)
+                or item.text_color != governed_theme.colors["text"]
+                or item.fill_color
+                != _expected_fill(
+                    slot.component,
+                    governed_theme.colors["background"],
+                    governed_theme.colors["surface"],
+                )
+                or item.line_color != governed_theme.colors["primary"]
+            ):
+                raise RenderPlanError(f"{path} diverges from governed theme")
+            if item.kind == "image":
+                resolved_path, resolved_record, reason = _resolve_asset_binding(
+                    AssetBinding(item.source_path, item.asset_record),
+                    slot,
+                )
+                if reason is not None or resolved_path != item.source_path.resolve():
+                    raise RenderPlanError(
+                        f"{path} asset evidence violates policy: {reason}"
+                    )
+                if resolved_record != item.asset_record:
+                    raise RenderPlanError(f"{path} asset evidence changed")
     return plan
 
 
-def build_render_plan(
-    payload: DeckPlan | Mapping[str, Any],
+def _build_render_plan_from_compiled(
+    compiled: Mapping[str, Any],
     *,
     slide_size: SlideSize,
     installed_fonts: set[str],
     theme_id: str | None = None,
     brand: BrandOverrides | None = None,
-    asset_paths: Mapping[str, Path | str] | None = None,
+    asset_bindings: Mapping[str, AssetBinding] | None = None,
 ) -> RenderPlan:
-    """Compile semantic input and join it to exact theme/layout/component commands."""
+    """Join one compiler-owned document to governed render commands."""
 
-    compiled = compile_deck_plan(payload)
+    _validate_slide_size(slide_size)
     project = compiled["project"]
     selected_theme = theme_id or select_theme(
         project["scenario"], audience=project.get("audience")
     )
+    resolved_brand = brand or BrandOverrides()
+    locale = project.get("language", "en-US")
+    font_inventory = tuple(sorted(installed_fonts, key=str.casefold))
     theme = resolve_theme(
         selected_theme,
-        brand=brand,
-        installed_fonts=installed_fonts,
-        locale=project.get("language", "en-US"),
+        brand=resolved_brand,
+        installed_fonts=set(font_inventory),
+        locale=locale,
     )
-    trusted_assets = dict(asset_paths or {})
+    governed_assets = dict(asset_bindings or {})
     findings: list[RenderFinding] = []
     render_slides: list[RenderSlide] = []
     previous_layouts: tuple[str, ...] = ()
@@ -424,17 +731,18 @@ def build_render_plan(
     slide_total = len(compiled["slides"])
 
     for slide_index, slide in enumerate(compiled["slides"], start=1):
+        item_count = _item_count(slide)
         layout = resolve_layout(
             slide["page_family"],
             slide_size,
             previous_layouts,
-            item_count=_item_count(slide),
+            item_count=item_count,
             density=density,
         )
         previous_layouts += (layout.id,)
         fragments, source_refs = _slide_content(slide)
         slot_texts = _slot_texts(layout.slots, fragments)
-        available_sources = tuple(source_refs.values())
+        available_sources = iter(source_refs.values())
         content_group = f"wp_s{slide_index:03d}_content"
         objects: list[RenderObject] = []
         for object_index, slot in enumerate(layout.slots, start=1):
@@ -444,19 +752,19 @@ def build_render_plan(
                 f"{_safe_identifier(slot.id)}"
             )
             source_path: Path | None = None
-            if slot.component == "image-frame" and available_sources:
-                source_ref = available_sources[0]
-                candidate = trusted_assets.get(source_ref)
-                if candidate is not None:
-                    resolved = Path(candidate).expanduser().resolve(strict=False)
-                    if resolved.is_file():
-                        source_path = resolved
-                if source_path is None:
+            asset_record: AssetRecord | None = None
+            source_ref = next(available_sources, None) if slot.component == "image-frame" else None
+            if source_ref is not None and source_ref in governed_assets:
+                source_path, asset_record, rejection = _resolve_asset_binding(
+                    governed_assets.get(source_ref),
+                    slot,
+                )
+                if rejection is not None:
                     findings.append(
                         RenderFinding(
-                            "ASSET_NATIVE_FALLBACK",
+                            "ASSET_POLICY_REJECTED",
                             f"slides.{slide['id']}.{slot.id}",
-                            f"trusted local asset unavailable for {source_ref}",
+                            f"asset {source_ref} rejected: {rejection}",
                         )
                     )
             elif slot.component == "image-frame":
@@ -464,7 +772,12 @@ def build_render_plan(
                     RenderFinding(
                         "ASSET_NATIVE_FALLBACK",
                         f"slides.{slide['id']}.{slot.id}",
-                        "no governed asset was supplied; using native composition",
+                        (
+                            f"no governed asset was supplied for {source_ref}; "
+                            "using native composition"
+                            if source_ref is not None
+                            else "no asset reference was supplied; using native composition"
+                        ),
                     )
                 )
 
@@ -501,6 +814,7 @@ def build_render_plan(
                     native_editable=True,
                     text=text,
                     source_path=source_path,
+                    asset_record=asset_record,
                     font_name=(
                         theme.fonts["heading"]
                         if slot.component in {"title", "kpi", "quote", "cta"}
@@ -508,10 +822,10 @@ def build_render_plan(
                     ),
                     font_size_pt=_font_size(slot.component, theme.typography),
                     text_color=theme.colors["text"],
-                    fill_color=(
-                        theme.colors["surface"]
-                        if slot.component not in {"title", "body-text", "footer"}
-                        else theme.colors["background"]
+                    fill_color=_expected_fill(
+                        slot.component,
+                        theme.colors["background"],
+                        theme.colors["surface"],
                     ),
                     line_color=theme.colors["primary"],
                 )
@@ -524,6 +838,9 @@ def build_render_plan(
                 title=slide.get("title"),
                 family_id=layout.family_id,
                 layout_id=layout.id,
+                item_count=item_count,
+                requested_density=density,
+                resolved_density=layout.resolved_density,
                 background_color=theme.colors["background"],
                 objects=tuple(objects),
             )
@@ -534,6 +851,9 @@ def build_render_plan(
         compiler_version=compiled["compiler_version"],
         project_title=project["title"],
         theme_id=theme.id,
+        brand=resolved_brand,
+        locale=locale,
+        installed_fonts=font_inventory,
         slide_size=slide_size,
         background_color=theme.colors["background"],
         slides=tuple(render_slides),
@@ -542,13 +862,60 @@ def build_render_plan(
     return validate_render_plan(plan)
 
 
+def compile_render_plan(
+    payload: DeckPlan | Mapping[str, Any],
+    *,
+    slide_size: SlideSize,
+    installed_fonts: set[str],
+    theme_id: str | None = None,
+    brand: BrandOverrides | None = None,
+    asset_bindings: Mapping[str, AssetBinding] | None = None,
+) -> tuple[dict[str, Any], RenderPlan]:
+    """Compile semantic input exactly once and build its governed render plan."""
+
+    compiled = compile_deck_plan(payload)
+    plan = _build_render_plan_from_compiled(
+        compiled,
+        slide_size=slide_size,
+        installed_fonts=installed_fonts,
+        theme_id=theme_id,
+        brand=brand,
+        asset_bindings=asset_bindings,
+    )
+    return compiled, plan
+
+
+def build_render_plan(
+    payload: DeckPlan | Mapping[str, Any],
+    *,
+    slide_size: SlideSize,
+    installed_fonts: set[str],
+    theme_id: str | None = None,
+    brand: BrandOverrides | None = None,
+    asset_bindings: Mapping[str, AssetBinding] | None = None,
+) -> RenderPlan:
+    """Compile semantic input and join it to exact governed render commands."""
+
+    return compile_render_plan(
+        payload,
+        slide_size=slide_size,
+        installed_fonts=installed_fonts,
+        theme_id=theme_id,
+        brand=brand,
+        asset_bindings=asset_bindings,
+    )[1]
+
+
 __all__ = [
+    "AssetBinding",
     "RenderFinding",
     "RenderObject",
     "RenderPlan",
     "RenderPlanError",
     "RenderSlide",
     "build_render_plan",
+    "compile_render_plan",
     "inches_to_points",
+    "load_asset_bindings",
     "validate_render_plan",
 ]

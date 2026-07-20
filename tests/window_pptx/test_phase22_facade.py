@@ -187,6 +187,33 @@ def test_dry_run_precedes_every_mutating_branch(
     project_dir.mkdir()
     marker = project_dir / "marker.txt"
     marker.write_text("unchanged", encoding="utf-8")
+    if "--deck-plan" in branch_args:
+        (project_dir / "deck-plan.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": "1.0",
+                    "project": {
+                        "title": "Dry-run preflight",
+                        "scenario": "business-report",
+                    },
+                    "slides": [
+                        {
+                            "id": "summary",
+                            "role": "executive-summary",
+                            "importance": "high",
+                            "blocks": [
+                                {
+                                    "id": "summary-points",
+                                    "kind": "bullets",
+                                    "items": ["Preflight is read-only"],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
 
     def snapshot() -> tuple[tuple[str, bytes], ...]:
         return tuple(
