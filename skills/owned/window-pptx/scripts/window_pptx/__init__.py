@@ -7,6 +7,7 @@ from .models import CandidateResult, OutputPolicy, PowerPointHandle
 from .output_policy import calculate_export_size, validate_output_policy
 from .transaction import (
     PartialSaveError,
+    SourceIntegrityError,
     TransactionError,
     candidate_path_for,
     save_candidate,
@@ -21,6 +22,7 @@ __all__ = [
     "OutputPolicyError",
     "PowerPointHandle",
     "PartialSaveError",
+    "SourceIntegrityError",
     "TransactionError",
     "WindowPptxError",
     "build_dry_run_result",

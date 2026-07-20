@@ -2042,6 +2042,15 @@ def main(
                 allow_overwrite=args.allow_overwrite,
             )
         )
+        if (
+            not args.no_output_deck
+            and template is not None
+            and template.resolve(strict=False) == output_path.resolve(strict=False)
+        ):
+            raise OutputPolicyError(
+                "A same-path overwrite is unsafe while the source presentation is open; "
+                "use a distinct output path."
+            )
 
         if args.extract_media:
             if template is None:

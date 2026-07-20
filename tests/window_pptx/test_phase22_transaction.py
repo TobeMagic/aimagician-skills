@@ -22,6 +22,7 @@ from window_pptx.errors import OutputPolicyError, WindowPptxError  # noqa: E402
 from window_pptx.models import OutputPolicy  # noqa: E402
 from window_pptx.transaction import (  # noqa: E402
     PartialSaveError,
+    SourceIntegrityError,
     TransactionError,
     candidate_path_for,
     save_candidate,
@@ -375,6 +376,35 @@ def test_source_mutation_aborts_before_promotion(tmp_path: Path) -> None:
 
     assert output.read_bytes() == b"existing"
     assert "replace-.pptx" not in events
+
+
+def test_source_mutation_during_promotion_reports_partial_integrity_failure(
+    tmp_path: Path,
+) -> None:
+    events: list[str] = []
+    source = tmp_path / "source.pptx"
+    source.write_bytes(b"source-before")
+    output = tmp_path / "final.pptx"
+
+    def mutating_replace(candidate: str | Path, final: str | Path) -> None:
+        events.append("replace-.pptx")
+        os.replace(candidate, final)
+        source.write_bytes(b"source-after")
+
+    with pytest.raises(SourceIntegrityError) as caught:
+        save_candidate(
+            RecordingPresentation(events),
+            RecordingApp(events),
+            OutputPolicy(source, output),
+            replace=mutating_replace,
+        )
+
+    assert output.exists()
+    assert caught.value.pptx_result.promoted is True
+    assert caught.value.pptx_result.source_hash_before != sha256_file(source)
+    assert caught.value.pptx_result.source_hash_after == sha256_file(source)
+    assert "source integrity" in str(caught.value).lower()
+    assert "pdf delivery failed" not in str(caught.value).lower()
 
 
 def test_same_path_overwrite_is_explicitly_rejected_while_presentation_is_open(

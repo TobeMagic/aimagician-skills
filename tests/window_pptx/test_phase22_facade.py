@@ -519,6 +519,38 @@ def test_allow_overwrite_rejects_open_same_source_and_output(
     assert app.Presentations.open_calls == []
 
 
+def test_ascii_staging_cannot_bypass_logical_source_overwrite_rejection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    patch_deck_dependencies(monkeypatch, tmp_path)
+    template = tmp_path / "source.pptx"
+    template.write_bytes(b"source deck")
+    staging = automation.ascii_temp_copy_path(tmp_path, template)
+    app = RecordingApplication()
+    client = RecordingComClient(app)
+
+    with pytest.raises(OutputPolicyError, match="same-path.*open"):
+        automation.main(
+            [
+                "--project-dir",
+                str(tmp_path),
+                "--template",
+                str(template),
+                "--output",
+                str(template),
+                "--allow-overwrite",
+                "--make-ascii-temp-copy",
+            ],
+            com_client=client,
+        )
+
+    assert template.read_bytes() == b"source deck"
+    assert not staging.exists()
+    assert app.Presentations.open_calls == []
+    assert app.Presentations.add_calls == []
+
+
 def test_invalid_output_extension_fails_before_presentation_open(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -57,6 +57,10 @@ class PartialSaveError(TransactionError):
         self.pptx_result = pptx_result
 
 
+class SourceIntegrityError(PartialSaveError):
+    """An output was promoted but the distinct source failed its final hash check."""
+
+
 def sha256_file(path: Path) -> str:
     """Return the SHA-256 digest of a file without loading it all into memory."""
 
@@ -256,6 +260,43 @@ def save_candidate(
             replace(pdf_candidate, pdf_output)
             steps.append("pdf-atomic-promote")
 
+        if source_hash_before is not None and source is not None:
+            try:
+                source_hash_after = sha256_file(source)
+            except Exception as exc:
+                steps.append("source-integrity-postcheck-failed")
+                failed_result = CandidateResult(
+                    output_path=output_path,
+                    promoted=True,
+                    candidate_path=None,
+                    source_hash_before=source_hash_before,
+                    source_hash_after=None,
+                    validation_steps=tuple(steps),
+                    cleanup_errors=(),
+                )
+                raise SourceIntegrityError(
+                    f"Output was promoted to {output_path}, but the final source "
+                    f"integrity check could not read {source}: {exc}",
+                    pptx_result=failed_result,
+                ) from exc
+            if source_hash_after != source_hash_before:
+                steps.append("source-integrity-postcheck-failed")
+                failed_result = CandidateResult(
+                    output_path=output_path,
+                    promoted=True,
+                    candidate_path=None,
+                    source_hash_before=source_hash_before,
+                    source_hash_after=source_hash_after,
+                    validation_steps=tuple(steps),
+                    cleanup_errors=(),
+                )
+                raise SourceIntegrityError(
+                    f"Output was promoted to {output_path}, but the distinct source "
+                    f"failed its final source integrity check: {source} changed.",
+                    pptx_result=failed_result,
+                )
+            steps.append("source-integrity-postcheck")
+
         return CandidateResult(
             output_path=output_path,
             promoted=True,
@@ -265,6 +306,9 @@ def save_candidate(
             validation_steps=tuple(steps),
             cleanup_errors=(),
         )
+    except SourceIntegrityError:
+        _cleanup_candidates((candidate, pdf_candidate))
+        raise
     except Exception as exc:
         cleanup_errors = _cleanup_candidates((candidate, pdf_candidate))
         _raise_transaction_error(
