@@ -186,11 +186,11 @@ Completion requires the phase evidence and exit gates named in the traceability 
 
 ### Design System and Layout Registries
 
-- [ ] **V5-DESIGN-01**: Eight governed themes cover light, dark, industry, audience, and scenario needs
-- [ ] **V5-DESIGN-02**: Twenty-four page families expose at least three deterministic variants each, for at least 72 layouts
-- [ ] **V5-DESIGN-03**: Design tokens govern grid, safe margins, type hierarchy, color, spacing, border, radius, shadow, and decoration
-- [ ] **V5-DESIGN-04**: Reusable components and asset rules enforce crop, icon, provenance, and editable-object policies
-- [ ] **V5-DESIGN-05**: Brand overrides and font fallbacks are deterministic and explicitly reported
+- [x] **V5-DESIGN-01**: Eight governed themes cover light, dark, industry, audience, and scenario needs
+- [x] **V5-DESIGN-02**: Twenty-four page families expose at least three deterministic variants each, for at least 72 layouts
+- [x] **V5-DESIGN-03**: Design tokens govern grid, safe margins, type hierarchy, color, spacing, border, radius, shadow, and decoration
+- [x] **V5-DESIGN-04**: Reusable components and asset rules enforce crop, icon, provenance, and editable-object policies
+- [x] **V5-DESIGN-05**: Brand overrides and font fallbacks are deterministic and explicitly reported
 
 ### Transactional Core Renderer
 
@@ -372,16 +372,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | V5-PLAN-03 | Phase 23 | Complete |
 | V5-PLAN-04 | Phase 23 | Complete |
 | V5-PLAN-05 | Phase 23 | Complete |
-| V5-DESIGN-01 | Phase 24 | In Progress |
-| V5-DESIGN-02 | Phase 24 | In Progress |
-| V5-DESIGN-03 | Phase 24 | In Progress |
-| V5-DESIGN-04 | Phase 24 | In Progress |
-| V5-DESIGN-05 | Phase 24 | In Progress |
-| V5-RENDER-01 | Phase 25 | Planned |
-| V5-RENDER-02 | Phase 25 | Planned |
-| V5-RENDER-03 | Phase 25 | Planned |
-| V5-RENDER-04 | Phase 25 | Planned |
-| V5-RENDER-05 | Phase 25 | Planned |
+| V5-DESIGN-01 | Phase 24 | Complete |
+| V5-DESIGN-02 | Phase 24 | Complete |
+| V5-DESIGN-03 | Phase 24 | Complete |
+| V5-DESIGN-04 | Phase 24 | Complete |
+| V5-DESIGN-05 | Phase 24 | Complete |
+| V5-RENDER-01 | Phase 25 | In Progress |
+| V5-RENDER-02 | Phase 25 | In Progress |
+| V5-RENDER-03 | Phase 25 | In Progress |
+| V5-RENDER-04 | Phase 25 | In Progress |
+| V5-RENDER-05 | Phase 25 | In Progress |
 | V5-OBJECT-01 | Phase 26 | Planned |
 | V5-OBJECT-02 | Phase 26 | Planned |
 | V5-OBJECT-03 | Phase 26 | Planned |
@@ -407,10 +407,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 **V5 Coverage:**
 - v5 requirements: 44 total
 - Mapped to exactly one phase: 44
-- Complete: 13
+- Complete: 18
 - In Progress: 5
-- Planned: 26
-- Open: 31
+- Planned: 21
+- Open: 26
 - Unmapped: 0
 
 ---

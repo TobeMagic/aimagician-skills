@@ -431,19 +431,19 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 **Goal:** Provide governed themes, components, assets, and page variants so ordinary models select and combine instead of designing from zero.
 **Depends on:** Phase 23
 **Requirements:** [V5-DESIGN-01, V5-DESIGN-02, V5-DESIGN-03, V5-DESIGN-04, V5-DESIGN-05]
-**Status:** In Progress
+**Status:** Complete (2026-07-20)
 **Success Criteria**:
   1. Eight named themes resolve deterministic tokens, brand overrides, contrast, and font fallbacks.
   2. Twenty-four page families provide at least three validated variants each, for at least 72 layouts.
   3. Component and asset policies enforce safe margins, type minima, crop-not-stretch, provenance, and legacy-template quarantine.
-**Plans:** 1 active plan.
+**Plans:** 1/1 complete. The final focused suite passes 148 tests, the complete window-pptx suite passes 310 tests, and two independent reviews returned ✅.
 
 ### Phase 25: Transactional Core Renderer
 
 **Goal:** Render compiled slides into editable native PowerPoint shapes through a transactional, ratio-aware project runner and CLI.
 **Depends on:** Phase 24
 **Requirements:** [V5-RENDER-01, V5-RENDER-02, V5-RENDER-03, V5-RENDER-04, V5-RENDER-05]
-**Status:** Planned
+**Status:** In Progress
 **Success Criteria**:
   1. Core text, shapes, images, masters, footers, grouping, and z-order are editable and deterministic.
   2. Geometry works for 16:9, 4:3, and custom page sizes without fixed-pixel distortion.
@@ -500,11 +500,11 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 |-------|--------|-----------|
 | 22. Baseline and Safety | Complete | 2026-07-20 |
 | 23. DeckPlan and Semantic Rules | Complete | 2026-07-20 |
-| 24. Design System and Layout Registries | In Progress | — |
-| 25. Transactional Core Renderer | Planned | — |
+| 24. Design System and Layout Registries | Complete | 2026-07-20 |
+| 25. Transactional Core Renderer | In Progress | — |
 | 26. Advanced Editable Objects | Planned | — |
 | 27. Quality Gates and Repair | Planned | — |
 | 28. Weak-Model Benchmark | Planned | — |
 | 29. Windows Acceptance and Closure | Planned | — |
 
-**Current milestone:** 2/8 phases complete. Repository total: 29 phases, 23 complete.
+**Current milestone:** 3/8 phases complete. Repository total: 29 phases, 24 complete.

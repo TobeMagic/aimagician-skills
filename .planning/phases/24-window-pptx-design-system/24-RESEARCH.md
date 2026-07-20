@@ -2,7 +2,7 @@
 
 ## Governed Foundations
 
-- 12-column normalized grid; 0.5-inch horizontal and 0.4-inch vertical 16:9 safe margins with proportional custom-size scaling.
+- 12-column normalized grid with absolute 0.5-inch horizontal and 0.4-inch vertical safe margins at every supported page size; 16pt column gutters and 8pt row gutters derive from the governed spacing scale.
 - 8pt spacing scale, explicit type hierarchy, body text at least 16pt, labels/footnotes at least 11pt, and a hard error below 10pt.
 - Semantic color roles, contrast pairs, border/radius/shadow/decoration tokens, and deterministic light/dark behavior.
 - Brand overrides may replace approved semantic tokens only; every override and fallback is reported.
