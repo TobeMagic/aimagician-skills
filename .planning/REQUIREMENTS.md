@@ -202,11 +202,11 @@ Completion requires the phase evidence and exit gates named in the traceability 
 
 ### Advanced Editable Objects
 
-- [ ] **V5-OBJECT-01**: Charts and tables use native editable PowerPoint objects with populated data
-- [ ] **V5-OBJECT-02**: Processes, timelines, matrices, quadrants, funnels, and roadmaps render as editable diagrams
-- [ ] **V5-OBJECT-03**: Speaker notes and hyperlinks remain available in the delivered deck
-- [ ] **V5-OBJECT-04**: Motion uses controlled presets and remains off unless explicitly requested
-- [ ] **V5-OBJECT-05**: PNG/PDF exports preserve page ratio and readable labels
+- [x] **V5-OBJECT-01**: Charts and tables use native editable PowerPoint objects with populated data
+- [x] **V5-OBJECT-02**: Processes, timelines, matrices, quadrants, funnels, and roadmaps render as editable diagrams
+- [x] **V5-OBJECT-03**: Speaker notes and hyperlinks remain available in the delivered deck
+- [x] **V5-OBJECT-04**: Motion uses controlled presets and remains off unless explicitly requested
+- [x] **V5-OBJECT-05**: PNG/PDF exports preserve page ratio and readable labels
 
 ### Quality Gates and Repair
 
@@ -382,16 +382,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | V5-RENDER-03 | Phase 25 | Complete |
 | V5-RENDER-04 | Phase 25 | Complete |
 | V5-RENDER-05 | Phase 25 | Complete |
-| V5-OBJECT-01 | Phase 26 | In Progress |
-| V5-OBJECT-02 | Phase 26 | In Progress |
-| V5-OBJECT-03 | Phase 26 | In Progress |
-| V5-OBJECT-04 | Phase 26 | In Progress |
-| V5-OBJECT-05 | Phase 26 | In Progress |
-| V5-QA-01 | Phase 27 | Planned |
-| V5-QA-02 | Phase 27 | Planned |
-| V5-QA-03 | Phase 27 | Planned |
-| V5-QA-04 | Phase 27 | Planned |
-| V5-QA-05 | Phase 27 | Planned |
+| V5-OBJECT-01 | Phase 26 | Complete |
+| V5-OBJECT-02 | Phase 26 | Complete |
+| V5-OBJECT-03 | Phase 26 | Complete |
+| V5-OBJECT-04 | Phase 26 | Complete |
+| V5-OBJECT-05 | Phase 26 | Complete |
+| V5-QA-01 | Phase 27 | In Progress |
+| V5-QA-02 | Phase 27 | In Progress |
+| V5-QA-03 | Phase 27 | In Progress |
+| V5-QA-04 | Phase 27 | In Progress |
+| V5-QA-05 | Phase 27 | In Progress |
 | V5-BENCH-01 | Phase 28 | Planned |
 | V5-BENCH-02 | Phase 28 | Planned |
 | V5-BENCH-03 | Phase 28 | Planned |

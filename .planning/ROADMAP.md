@@ -456,18 +456,20 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 **Goal:** Add native charts, tables, diagrams, notes, links, controlled motion, and ratio-aware exports without rasterizing editable content.
 **Depends on:** Phase 25
 **Requirements:** [V5-OBJECT-01, V5-OBJECT-02, V5-OBJECT-03, V5-OBJECT-04, V5-OBJECT-05]
-**Status:** In Progress
+**Status:** Complete
+**Completed:** 2026-07-20
 **Success Criteria**:
   1. Expected charts and tables remain native and their data remains editable.
   2. Common business diagrams render as grouped native objects with governed geometry.
   3. Notes, links, optional motion presets, PNG, and PDF work across supported page ratios.
+**Plans:** 1/1 complete. The focused suite passes 28 tests, the complete window-pptx suite passes 385 tests, and final OpenCode review returned PASS with no Critical or Important findings.
 
 ### Phase 27: Quality Gates and Repair
 
 **Goal:** Inspect five quality layers and repair only safe, measurable defects on isolated candidates.
 **Depends on:** Phase 26
 **Requirements:** [V5-QA-01, V5-QA-02, V5-QA-03, V5-QA-04, V5-QA-05]
-**Status:** Planned
+**Status:** In Progress
 **Success Criteria**:
   1. Stable schemas describe package, COM, geometry, visual, deck, editability, and compatibility findings.
   2. Repair runs at most twice and accepts changes only when weighted defects decrease without hard-gate regression.
@@ -504,9 +506,9 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 | 23. DeckPlan and Semantic Rules | Complete | 2026-07-20 |
 | 24. Design System and Layout Registries | Complete | 2026-07-20 |
 | 25. Transactional Core Renderer | Complete | 2026-07-20 |
-| 26. Advanced Editable Objects | In Progress | — |
-| 27. Quality Gates and Repair | Planned | — |
+| 26. Advanced Editable Objects | Complete | 2026-07-20 |
+| 27. Quality Gates and Repair | In Progress | — |
 | 28. Weak-Model Benchmark | Planned | — |
 | 29. Windows Acceptance and Closure | Planned | — |
 
-**Current milestone:** 4/8 phases complete. Repository total: 29 phases, 25 complete.
+**Current milestone:** 5/8 phases complete. Repository total: 29 phases, 26 complete.
