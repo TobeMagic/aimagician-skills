@@ -194,11 +194,11 @@ Completion requires the phase evidence and exit gates named in the traceability 
 
 ### Transactional Core Renderer
 
-- [ ] **V5-RENDER-01**: The production renderer creates editable native PowerPoint core objects
-- [ ] **V5-RENDER-02**: Geometry, text, and images scale correctly across 16:9, 4:3, and custom page sizes
-- [ ] **V5-RENDER-03**: Masters, footers, z-order, and grouping are generated consistently
-- [ ] **V5-RENDER-04**: Compiler CLI and project runner validate, compile, render, inspect, and repair DeckPlans
-- [ ] **V5-RENDER-05**: A recording fake-COM end-to-end path verifies renderer ordering without requiring Windows
+- [x] **V5-RENDER-01**: The production renderer creates editable native PowerPoint core objects
+- [x] **V5-RENDER-02**: Geometry, text, and images scale correctly across 16:9, 4:3, and custom page sizes
+- [x] **V5-RENDER-03**: Masters, footers, z-order, and grouping are generated consistently
+- [x] **V5-RENDER-04**: Compiler CLI and project runner validate, compile, render, inspect, and repair DeckPlans
+- [x] **V5-RENDER-05**: A recording fake-COM end-to-end path verifies renderer ordering without requiring Windows
 
 ### Advanced Editable Objects
 
@@ -377,16 +377,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | V5-DESIGN-03 | Phase 24 | Complete |
 | V5-DESIGN-04 | Phase 24 | Complete |
 | V5-DESIGN-05 | Phase 24 | Complete |
-| V5-RENDER-01 | Phase 25 | In Progress |
-| V5-RENDER-02 | Phase 25 | In Progress |
-| V5-RENDER-03 | Phase 25 | In Progress |
-| V5-RENDER-04 | Phase 25 | In Progress |
-| V5-RENDER-05 | Phase 25 | In Progress |
-| V5-OBJECT-01 | Phase 26 | Planned |
-| V5-OBJECT-02 | Phase 26 | Planned |
-| V5-OBJECT-03 | Phase 26 | Planned |
-| V5-OBJECT-04 | Phase 26 | Planned |
-| V5-OBJECT-05 | Phase 26 | Planned |
+| V5-RENDER-01 | Phase 25 | Complete |
+| V5-RENDER-02 | Phase 25 | Complete |
+| V5-RENDER-03 | Phase 25 | Complete |
+| V5-RENDER-04 | Phase 25 | Complete |
+| V5-RENDER-05 | Phase 25 | Complete |
+| V5-OBJECT-01 | Phase 26 | In Progress |
+| V5-OBJECT-02 | Phase 26 | In Progress |
+| V5-OBJECT-03 | Phase 26 | In Progress |
+| V5-OBJECT-04 | Phase 26 | In Progress |
+| V5-OBJECT-05 | Phase 26 | In Progress |
 | V5-QA-01 | Phase 27 | Planned |
 | V5-QA-02 | Phase 27 | Planned |
 | V5-QA-03 | Phase 27 | Planned |
@@ -407,7 +407,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 **V5 Coverage:**
 - v5 requirements: 44 total
 - Mapped to exactly one phase: 44
-- Complete: 18
+- Complete: 23
 - In Progress: 5
 - Planned: 21
 - Open: 26
