@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimagician.local/window-pptx/quality-report.v1.schema.json",
+  "title": "Window-PPTX Quality Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "layers", "findings", "weighted_score", "hard_gate_failures", "passed", "transaction_status"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "layers": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {"$ref": "#/$defs/layer"}
+    },
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "weighted_score": {"type": "integer", "minimum": 0},
+    "hard_gate_failures": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "passed": {"type": "boolean"},
+    "transaction_status": {"enum": ["pending", "skipped", "promoted", "failed"]}
+  },
+  "$defs": {
+    "scalar": {"type": ["string", "number", "boolean", "null"]},
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["layer", "status", "metrics"],
+      "properties": {
+        "layer": {"enum": ["package", "com", "geometry", "visual", "deck"]},
+        "status": {"enum": ["pass", "warn", "fail", "pending", "skipped"]},
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/scalar"}
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "layer", "severity", "message", "slide_id", "object_name", "repairable", "details"],
+      "properties": {
+        "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]+$"},
+        "layer": {"enum": ["package", "com", "geometry", "visual", "deck"]},
+        "severity": {"enum": ["critical", "error", "warning", "info"]},
+        "message": {"type": "string", "minLength": 1},
+        "slide_id": {"type": ["string", "null"]},
+        "object_name": {"type": ["string", "null"]},
+        "repairable": {"type": "boolean"},
+        "details": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/scalar"}
+        }
+      }
+    }
+  }
+}

@@ -33,6 +33,7 @@ class RecordingColor:
 class RecordingFill:
     ForeColor: RecordingColor = field(default_factory=RecordingColor)
     visible: bool = True
+    Transparency: float = 0.0
 
     def Solid(self) -> None:
         self.visible = True

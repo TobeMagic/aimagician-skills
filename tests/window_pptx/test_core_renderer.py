@@ -283,6 +283,12 @@ def test_render_plan_uses_trusted_asset_mapping_or_native_fallback(
     assert any(
         finding.code == "ASSET_NATIVE_FALLBACK" for finding in fallback.findings
     )
+    fallback_visual = next(
+        obj for obj in fallback.slides[0].objects if obj.component == "image-frame"
+    )
+    assert fallback_visual.text
+    assert fallback_visual.text != "Visual asset unavailable"
+    assert fallback.slides[0].title in fallback_visual.text
 
     readme = tmp_path / "README.md"
     readme.write_text("not an image", encoding="utf-8")
@@ -824,7 +830,11 @@ def test_cli_exposes_explicit_compile_and_render_routes() -> None:
         "project",
     )
     assert dry["would_run"] == ["render_deck_plan"]
-    assert dry["would_write"] == ["project/output/final.pptx"]
+    assert dry["would_write"] == [
+        "project/.window-pptx/audits/quality-report.json",
+        "project/.window-pptx/audits/repair-log.json",
+        "project/output/final.pptx",
+    ]
 
     with pytest.raises(SystemExit):
         parse_args(

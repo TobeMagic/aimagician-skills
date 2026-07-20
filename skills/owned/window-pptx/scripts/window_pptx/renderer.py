@@ -390,6 +390,10 @@ class PowerPointRenderer:
             native_series_collection = chart.SeriesCollection()
             for index in range(1, int(native_series_collection.Count) + 1):
                 native_series = native_series_collection(index)
+                # Keep the editable series name as a literal instead of a
+                # temporary workbook formula so post-render QA can compare it
+                # deterministically after ChartData.Workbook is closed.
+                native_series.Name = spec.series[index - 1].name
                 if spec.chart_type == "line":
                     native_series.Format.Line.ForeColor.RGB = _office_rgb(
                         item.line_color
@@ -463,7 +467,17 @@ class PowerPointRenderer:
         count = len(spec.nodes)
         if count < 1:
             raise RenderError("diagram has no governed nodes")
-        names: list[str] = []
+        frame = slide.Shapes.AddShape(
+            MSO_SHAPE_RECTANGLE, left, top, width, height
+        )
+        frame.Name = f"{item.name}__frame"
+        frame.Tags.Add("window-pptx:diagram-frame", spec.diagram_type)
+        frame.Tags.Add("window-pptx:editable", "true")
+        frame.Fill.Solid()
+        frame.Fill.ForeColor.RGB = _office_rgb(item.fill_color)
+        frame.Fill.Transparency = 100
+        frame.Line.Visible = MSO_FALSE
+        names: list[str] = [frame.Name]
         if spec.diagram_type == "funnel":
             node_height = height / count
             boxes = []
@@ -538,8 +552,6 @@ class PowerPointRenderer:
                 node.label,
                 *box,
             )
-        if len(names) == 1:
-            return slide.Shapes.Item(names[0])
         group = slide.Shapes.Range(tuple(names)).Group()
         group.Name = f"{item.name}__diagram"
         group.Tags.Add("window-pptx:diagram", spec.diagram_type)

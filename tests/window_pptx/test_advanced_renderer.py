@@ -442,7 +442,10 @@ def test_multi_node_diagram_hyperlink_is_applied_to_editable_children() -> None:
         item.name for item in plan.slides[2].objects if item.kind == "diagram"
     )
     diagram = presentation.Slides.items[2].Shapes.Item(diagram_name)
-    assert len(diagram.GroupItems) == 3
+    diagram_nodes = [
+        child for child in diagram.GroupItems if "__node_" in child.Name
+    ]
+    assert len(diagram_nodes) == 3
     assert all(
         child.ActionSettings(1).Hyperlink.Address
         == "https://example.test/process"

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Any, Callable, Mapping
 
 from .deck_plan import DeckPlan
@@ -10,6 +11,15 @@ from .layouts import SlideSize
 from .errors import OutputPolicyError
 from .models import CandidateResult, OutputPolicy
 from .output_policy import validate_output_policy
+from .quality import (
+    QualityGateError,
+    QualityReport,
+    RepairLog,
+    finalize_quality_report,
+    inspect_quality,
+    repair_quality,
+    write_quality_artifacts,
+)
 from .renderer import PowerPointRenderer, RenderReport
 from .render_plan import (
     AssetBinding,
@@ -44,8 +54,16 @@ class PipelineResult:
             "render_report": (
                 self.render_report.to_dict() if self.render_report else None
             ),
-            "inspection": self.inspection,
-            "repair": self.repair,
+            "inspection": (
+                self.inspection.to_dict()
+                if hasattr(self.inspection, "to_dict")
+                else self.inspection
+            ),
+            "repair": (
+                self.repair.to_dict()
+                if hasattr(self.repair, "to_dict")
+                else self.repair
+            ),
             "candidate_result": (
                 {
                     "output_path": str(candidate.output_path),
@@ -100,6 +118,7 @@ def run_render_pipeline(
     repairer: Repairer | None = None,
     saver: Saver = save_candidate,
     export_pdf: bool = False,
+    audit_dir: Path | None = None,
 ) -> PipelineResult:
     """Run the single governed renderer lifecycle without bypassing dry-run."""
 
@@ -132,6 +151,7 @@ def run_render_pipeline(
         repairer=repairer,
         saver=saver,
         export_pdf=export_pdf,
+        audit_dir=audit_dir,
     )
 
 
@@ -147,6 +167,7 @@ def execute_render_plan(
     repairer: Repairer | None = None,
     saver: Saver = save_candidate,
     export_pdf: bool = False,
+    audit_dir: Path | None = None,
 ) -> PipelineResult:
     """Execute a preflighted plan without compiling model input a second time."""
 
@@ -181,10 +202,40 @@ def execute_render_plan(
 
     render_report = (renderer or PowerPointRenderer()).render(plan, presentation)
     stages.append("render")
-    inspection = (inspector or _default_inspector)(plan, render_report)
+    default_quality = inspector is None
+    inspection = (
+        inspect_quality(plan, render_report, presentation)
+        if default_quality
+        else inspector(plan, render_report)
+    )
     stages.append("inspect")
-    repair = (repairer or _default_repairer)(plan, inspection)
+    if repairer is not None:
+        repair = repairer(plan, inspection)
+    elif default_quality:
+        assert isinstance(inspection, QualityReport)
+        repair = repair_quality(
+            plan,
+            render_report,
+            presentation,
+            inspection,
+        )
+        inspection = repair.final_report
+    else:
+        repair = _default_repairer(plan, inspection)
     stages.append("repair")
+    if isinstance(inspection, QualityReport) and inspection.hard_gate_failures:
+        artifacts = (
+            write_quality_artifacts(inspection, repair, audit_dir)
+            if audit_dir is not None and isinstance(repair, RepairLog)
+            else {}
+        )
+        raise QualityGateError(
+            "candidate failed customer-delivery gates before save: "
+            + ", ".join(inspection.hard_gate_failures),
+            report=inspection,
+            repair=repair if isinstance(repair, RepairLog) else None,
+            artifacts=artifacts,
+        )
     candidate_result = saver(
         presentation,
         app,
@@ -192,6 +243,29 @@ def execute_render_plan(
         export_pdf=export_pdf,
     )
     stages.append("transactional-save")
+    if isinstance(inspection, QualityReport):
+        inspection = finalize_quality_report(
+            inspection,
+            candidate_result,
+            output_policy,
+            export_pdf=export_pdf,
+        )
+        if isinstance(repair, RepairLog):
+            repair = replace(repair, final_report=inspection)
+        if inspection.hard_gate_failures:
+            artifacts = (
+                write_quality_artifacts(inspection, repair, audit_dir)
+                if audit_dir is not None and isinstance(repair, RepairLog)
+                else {}
+            )
+            raise QualityGateError(
+                "candidate failed customer-delivery gates after transaction: "
+                + ", ".join(inspection.hard_gate_failures),
+                report=inspection,
+                repair=repair if isinstance(repair, RepairLog) else None,
+                candidate_result=candidate_result,
+                artifacts=artifacts,
+            )
     return PipelineResult(
         compiled_deck=compiled,
         render_plan=plan,

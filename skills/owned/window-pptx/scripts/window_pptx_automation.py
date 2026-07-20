@@ -31,6 +31,7 @@ from window_pptx.errors import OutputPolicyError
 from window_pptx.layouts import SlideSize
 from window_pptx.models import CandidateResult, OutputPolicy, PowerPointHandle
 from window_pptx.output_policy import calculate_export_size, validate_output_policy
+from window_pptx.quality import QualityReport, RepairLog, write_quality_artifacts
 from window_pptx.render_plan import compile_render_plan, load_asset_bindings
 from window_pptx.runner import execute_render_plan
 from window_pptx.transaction import save_candidate
@@ -2417,6 +2418,7 @@ def main(
                 app=app,
                 output_policy=output_policy,
                 export_pdf=args.export_pdf,
+                audit_dir=project_dir / ".window-pptx" / "audits",
             )
             rendered_export_result: dict[str, Any] | None = None
             if args.export_slides:
@@ -2432,11 +2434,21 @@ def main(
                     presentation,
                     project_dir / ".window-pptx" / "exports" / "qa",
                 )
+            quality_artifacts: dict[str, str] | None = None
+            if isinstance(pipeline_result.inspection, QualityReport) and isinstance(
+                pipeline_result.repair, RepairLog
+            ):
+                quality_artifacts = write_quality_artifacts(
+                    pipeline_result.inspection,
+                    pipeline_result.repair,
+                    project_dir / ".window-pptx" / "audits",
+                )
             emit_result(
                 {
                     "render_pipeline": pipeline_result.to_dict(),
                     "slide_export": rendered_export_result,
                     "qa_export": rendered_qa_result,
+                    "quality_artifacts": quality_artifacts,
                 },
                 args.json,
                 sys.stdout,

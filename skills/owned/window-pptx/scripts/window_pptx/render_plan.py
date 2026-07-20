@@ -710,6 +710,16 @@ def _slot_texts(slots: tuple[ResolvedSlot, ...], fragments: list[str]) -> dict[s
     return result
 
 
+def _native_visual_summary(slide_title: str | None, fragments: list[str]) -> str:
+    """Return useful, bounded content for an image slot when no asset is available."""
+
+    detail = next((item.strip() for item in fragments if item.strip()), "")
+    if len(detail) > 96:
+        detail = detail[:93].rstrip() + "…"
+    heading = (slide_title or "Key takeaway").strip()
+    return f"{heading}\n\n{detail}" if detail and detail != heading else heading
+
+
 def _font_size(component: str, typography: Mapping[str, int]) -> int:
     if component == "title":
         return typography["title"]
@@ -1357,7 +1367,11 @@ def _build_render_plan_from_compiled(
             elif slot.component == "footer":
                 text = f"{slide_index} / {slide_total}"
             elif slot.component == "image-frame":
-                text = None if source_path else "Visual asset unavailable"
+                text = (
+                    None
+                    if source_path
+                    else _native_visual_summary(slide.get("title"), fragments)
+                )
             else:
                 text = slot_texts.get(slot.id)
             if advanced is not None:

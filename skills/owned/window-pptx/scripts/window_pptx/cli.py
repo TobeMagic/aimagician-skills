@@ -388,6 +388,13 @@ def build_dry_run_result(args: argparse.Namespace, project_dir: str | Path) -> d
         would_write.append(str(base / ".window-pptx" / "exports" / "qa"))
     if args.audit_deck:
         would_write.append(str(base / ".window-pptx" / "audits" / "deck_audit.json"))
+    if args.render_deck_plan:
+        would_write.extend(
+            [
+                str(base / ".window-pptx" / "audits" / "quality-report.json"),
+                str(base / ".window-pptx" / "audits" / "repair-log.json"),
+            ]
+        )
     if not args.no_output_deck and not args.intake_template_library:
         output_path = _requested_path(base, args.output)
         would_write.append(str(output_path))
