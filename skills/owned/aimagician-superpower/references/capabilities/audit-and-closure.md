@@ -1,64 +1,53 @@
 # Audit And Closure
 
-Use this module at phase end, milestone end, review closeout, or before handing work back to the user.
+Use this module at task, phase, milestone, branch, review, release, or handoff closure.
 
-## Audit Checklist
+## Independent Audit
 
-Check the result against:
+Compare actual files, runtime behavior, and evidence with:
 
-- original objective;
-- locked scope and non-goals;
-- requirements and acceptance IDs;
-- research assumptions;
-- plan tasks;
-- validation evidence;
-- user-visible behavior;
-- regression risk;
-- unresolved TODOs;
-- generated or installed artifacts;
-- documentation and handoff needs.
+- latest accepted user objective;
+- locked specification and boundaries;
+- requirement and acceptance IDs;
+- research facts and confirmed assumptions;
+- plan tasks and dependency outcomes;
+- validation and UAT evidence;
+- integration wiring and installed artifacts;
+- regression, security, compatibility, and migration risk;
+- documentation, state, and handoff obligations.
 
-## Gap Handling
+Do not infer compliance from a completion summary. Spot-check or execute critical evidence and inspect the final diff.
 
-Classify each gap:
+## Gap Classification
 
-- blocker: must be fixed before completion;
-- follow-up: should be tracked, but current objective is usable;
-- deferred: explicitly out of scope or postponed by user decision;
-- invalid: no longer relevant because the plan changed.
+- **Blocker:** accepted objective cannot be called complete.
+- **Follow-up:** current objective is complete, but adjacent work should be tracked.
+- **Deferred:** explicitly excluded by a user decision or locked boundary.
+- **Invalid:** superseded because the accepted requirement changed.
 
-Do not hide gaps in a cheerful summary. State what remains and what proof exists.
+Every gap needs an owner or decision. Do not bury gaps in optimistic prose.
 
-## Closure Summary
+## Complete Gate
 
-A useful closeout includes:
+Closure requires:
 
-- what changed;
-- why it satisfies the objective;
-- files changed;
-- verification run and result;
-- manual checks performed;
-- checks not run;
-- residual risk;
-- next recommended action.
+- all accepted requirements planned;
+- all required evidence `PASS`;
+- user-facing UAT complete when applicable;
+- no unresolved blocking review finding;
+- no stale placeholder or accidental capability loss;
+- state and documentation updated;
+- temporary output handled intentionally;
+- current git, worktree, PR, or installation state reported accurately.
 
-## Learning Extraction
+Use `workflow.mjs validate --gate complete` for supported artifacts.
 
-When work reveals reusable context, preserve it:
+## Learning And Cleanup
 
-- update project docs or wiki;
-- record command patterns;
-- record integration gotchas;
-- add regression tests;
-- update planning state;
-- capture follow-up tasks.
+Preserve reusable architecture, commands, integration behavior, failure patterns, and operational knowledge in docs, tests, or the project wiki. Route secret inventory or sensitive scans to `llm-know-how-wiki`.
 
-## Cleanup
+Remove only temporary files created by the current work. Never clean user files or unrelated dirty state. Confirm local reference mirrors remain ignored and installed targets contain only intended managed skills when installation was in scope.
 
-Before final response:
+## Handoff Summary
 
-- check git status;
-- remove temporary files you created unless they are useful artifacts;
-- ensure generated outputs are intended;
-- ensure local-only reference material is ignored or filtered;
-- confirm installed targets contain only active managed skills when installation was part of the task.
+Record objective, requirement coverage, changed files, key decisions, commands and results, UAT, review and audit status, checks not run, residual risk, commit/worktree/PR state, and the exact next action. Another agent should be able to continue without repeating discovery.

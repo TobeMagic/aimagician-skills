@@ -1,49 +1,37 @@
 # Ideation And Scope
 
-Use this module when the task needs alternatives, design exploration, feature shaping, decomposition, or assumption analysis before planning.
+Use this module to expand the option space briefly, then converge on the smallest defensible implementation direction.
 
-## Intent
+## Brainstorming Loop
 
-Generate better options without losing the user's real goal. The output should narrow the work toward an executable direction, not expand it indefinitely.
+1. Ground the discussion in the user objective and current system.
+2. Separate WHAT/WHY questions from HOW decisions.
+3. Generate two or three viable shapes when architecture, workflow, or UX has real alternatives.
+4. Compare user value, complexity, risk, compatibility, migration, maintenance, and verification.
+5. Identify the irreducible core and optional extensions.
+6. Recommend one direction with concrete reasoning.
+7. Re-discuss findings that change boundaries, behavior, data, dependencies, or acceptance.
+8. Lock the chosen direction and move rejected or deferred ideas outside the active phase.
 
-## Process
+## Assumption Analysis
 
-1. Understand the current product, codebase, and user goal.
-2. Identify independent subsystems or phases.
-3. Ask focused questions only where answers change implementation.
-4. Propose two or three viable approaches with tradeoffs.
-5. Compare by user value, implementation cost, risk, verification cost, maintainability, and compatibility.
-6. Recommend one approach and state why.
-7. Lock assumptions and non-goals before planning.
+Inspect assumptions about users, permissions, data ownership, privacy, scale, performance, accessibility, responsive behavior, deployment, compatibility, migration, manual steps, cost, schedule, and recovery.
 
-## Assumption Review
+Mark each assumption as:
 
-Look for assumptions about:
+- **Confirmed:** explicitly supported by the user or source of truth.
+- **Inferred:** supported by evidence but not explicitly locked.
+- **Risky:** likely to change implementation or acceptance if wrong.
+- **Deferred:** intentionally outside the current delivery unit.
 
-- target users and workflows;
-- data ownership and privacy;
-- permission or authentication boundaries;
-- performance and scale;
-- responsive or accessibility expectations;
-- deployment environment;
-- migration or compatibility requirements;
-- acceptable manual steps;
-- deadline or budget.
-
-Mark each assumption as confirmed, inferred, risky, or deferred.
+Risky assumptions must be confirmed, researched, or converted into an acceptance check before planning.
 
 ## Decomposition
 
-Split the work when:
+Split work when independent outcomes, decision gates, separate owners, conflicting write scopes, broad verification, or staged value justify it. Each phase needs a measurable outcome, requirement IDs, dependencies, explicit boundary, verification, and completion signal.
 
-- multiple independent systems are involved;
-- verification would be too broad for one pass;
-- user decisions are needed between stages;
-- one part can deliver value before the rest;
-- failure in one part should not block another.
+Do not split a tightly coupled vertical slice merely to create more phases. Prefer the smallest end-to-end slice that proves the architecture early.
 
-Each phase should have a user-visible outcome, files likely to change, acceptance checks, and a clear completion signal.
+## Visual And Domain Exploration
 
-## Option Quality
-
-Good options are concrete and comparable. Avoid false choices such as "do it properly" versus "do it quickly." Each option should name the implementation shape, tradeoff, risk, and verification path.
+For visual work, preserve the visual-question and comparison protocol but route detailed design exploration to `interface-design`. Use real screenshots, references, or prototypes when visual evidence is necessary. Do not start a separate local visual service merely to satisfy the workflow.

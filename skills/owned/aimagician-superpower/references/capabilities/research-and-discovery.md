@@ -1,67 +1,53 @@
 # Research And Discovery
 
-Use this module before planning when implementation depends on existing code, external APIs, packages, current behavior, unknown architecture, or uncertain requirements.
+Use this module when planning depends on existing implementation, external APIs, packages, current platform behavior, unknown architecture, or unresolved domain facts.
 
-## Local Discovery
+## Evidence Order
 
-Start with local evidence:
+Start with local source-of-truth evidence:
 
-- repository structure;
-- README and docs;
-- tests and fixtures;
-- config files;
-- schemas and generated types;
-- command surfaces and scripts;
-- previous planning artifacts;
-- recent commits if they explain current behavior.
+- planning artifacts, docs, wiki, ADRs, and recent summaries;
+- entry points, tests, fixtures, configs, schemas, and generated types;
+- relevant history when it explains current behavior;
+- runtime probes that are safe and non-mutating.
 
-Map only the code needed for the current objective. Avoid broad cataloging when a narrow path is enough.
+Browse current primary sources when package behavior, third-party APIs, platforms, standards, costs, security guidance, or other unstable facts affect correctness.
 
-## Research Triggers
+## Exploration Depth
 
-Use web research when information may have changed or is external to the repo:
+- Inspect one or two known files directly.
+- For broad codebase, document corpus, dependency, architecture, or data-flow exploration, delegate through `cli-agent-orchestrator` when available.
+- Give the delegated agent an objective, allowed and forbidden scope, read-only rule, required output structure, and concrete questions.
+- Keep the main agent responsible for spot-checking critical claims and reconciling the report with local evidence.
 
-- package behavior or versions;
-- third-party API behavior;
-- browser, cloud, platform, or CLI rules;
-- legal, financial, medical, or security-sensitive facts;
-- product recommendations or cost tradeoffs;
-- current documentation needed for correctness.
+## Code And System Mapping
 
-Prefer primary documentation, source repositories, release notes, or official standards for technical claims.
+Map only what the objective needs:
 
-## Discovery Outputs
+1. user-facing entry and command or request path;
+2. key modules, functions, services, schemas, routes, hooks, and tests;
+3. control flow, data flow, side effects, external calls, and persisted state;
+4. ownership boundaries and existing patterns to preserve;
+5. error paths, concurrency, security, compatibility, and migration risks;
+6. likely files to change and files that must remain untouched.
 
-Capture research as planning input:
+## Approach Research
 
-- facts confirmed locally;
-- facts confirmed externally;
-- assumptions;
-- unknowns;
-- credible approaches;
-- dependency and compatibility checks;
+Generate at least two credible approaches when a meaningful tradeoff exists. Compare user fit, complexity, maintainability, compatibility, migration, verification cost, rollback, and residual risk. Do not generate fake alternatives where one option is plainly invalid.
+
+Before adopting a dependency, verify existence, supported runtime, current API, license, maintenance, types, install impact, overlap with existing helpers, and a feasible test path.
+
+## Research Output
+
+Record:
+
+- confirmed local facts with paths;
+- confirmed external facts with sources;
+- inference separated from fact;
+- unresolved unknowns;
+- alternatives and tradeoffs;
+- dependency and compatibility findings;
 - risks and mitigations;
-- recommendation.
+- recommendation and assumptions to re-discuss.
 
-Separate facts from inference. If evidence is inconclusive, say what was checked and choose the safest next step or ask for the targeted decision.
-
-## Codebase Mapping
-
-When mapping code:
-
-1. Identify entry points and user-facing flows.
-2. Trace data flow and side effects.
-3. Locate existing helpers, patterns, and tests.
-4. Identify ownership boundaries and files that must not be touched.
-5. Note integration points, environment variables, generated assets, and hidden state.
-
-## Dependency Checks
-
-Before adopting or changing a dependency, verify:
-
-- it exists and supports the target runtime;
-- license and install method are acceptable for the repo;
-- type definitions or SDK support are adequate;
-- maintenance status is acceptable;
-- it does not duplicate an existing local solution;
-- verification can prove the integration works.
+Research ends when enough evidence exists to lock requirements and implementation assumptions. It must not drift into unapproved implementation.

@@ -1,49 +1,49 @@
 # Intake And Boundary
 
-Use this module when the request is ambiguous, multi-step, risky, resumable, or likely to affect user-visible behavior.
+Use this module to convert an ambiguous or substantial request into a bounded delivery unit before research, specification, planning, or edits.
 
-## Objective
+## Ground First
 
-Convert the request into a concrete work unit with explicit success criteria before planning or editing.
+Read existing files, planning state, docs, knowledge base, tests, recent summaries, and git status before asking the user. Separate discoverable facts from preferences that require a decision.
 
-## Process
+## Intake Sequence
 
-1. Load available context first: current files, docs, issue text, previous planning artifacts, recent summaries, and relevant git state.
-2. Restate the target in concrete terms: what will exist, change, or be proven when the work is complete.
-3. Define the delivery unit: quick task, phase, milestone, spike, bug fix, review, or follow-up.
-4. Capture scope boundaries:
-   - in scope;
-   - out of scope;
-   - explicit non-goals;
-   - user preferences;
-   - constraints and dependencies;
-   - rollback or stop conditions.
-5. Identify gray areas that materially change implementation, acceptance, risk, or UX.
-6. Ask only the questions that unblock those gray areas. Prefer concrete options with tradeoffs.
-7. Record decisions, assumptions, rejected options, and deferred ideas.
+1. State what will exist, change, or be proven at completion.
+2. Identify the user or system affected and the observable outcome.
+3. Choose the delivery unit: quick task, phase, milestone, spike, repair, review, or follow-up.
+4. Record in scope, out of scope, constraints, dependencies, compatibility, stop conditions, rollback, and required evidence.
+5. Identify gray areas that materially alter architecture, behavior, UX, data, security, cost, schedule, or acceptance.
+6. Ask only questions that cannot be answered from available evidence. Offer concrete choices and tradeoffs when possible.
+7. Capture decisions, assumptions, rejected options, and deferred work in durable context for resumable tasks.
 
-## Discussion Rules
+## Risk Classification
 
-- Do not ask questions already answered by local context.
-- Do not convert every small request into a heavy process; scale the ceremony to risk.
-- If the user says not to write a spec, still produce a concise implementation plan before editing.
-- If the request is too broad, split it into independent phases and start with the smallest useful phase.
-- Redirect scope creep into deferred items unless the user explicitly changes the current objective.
-- If a missing answer changes architecture, data handling, public behavior, cost, or acceptance, discuss before planning.
+Classify the task before choosing process depth.
+
+- **Low:** at most two known files, reversible, no public contract or data impact, no unresolved decision, one direct verification.
+- **Medium:** several files or one integration boundary, visible behavior, compatibility concerns, or multiple verification layers.
+- **High:** public API, schema or migration, credentials or permissions, production state, destructive action, installation path, cross-module architecture, multiple agents, or hard-to-reverse effects.
+
+Low-risk work may use an inline target and acceptance check. Medium- and high-risk work requires a formal phase specification. When uncertain, use the higher class until evidence lowers it.
+
+## Discussion Contract
+
+- Discuss WHAT and WHY before HOW.
+- Do not re-ask facts already established by source-of-truth files.
+- Do not turn a small reversible edit into a milestone.
+- Do not let scope expand silently; move adjacent ideas to an explicit deferred list.
+- Do not infer a decision that changes public behavior, data, security, cost, or acceptance.
+- If the user requests immediate execution but a blocking ambiguity remains, state the exact ambiguity and resolve it first.
 
 ## Boundary Output
 
-For larger work, preserve this information in a phase context file:
+For formal work, preserve:
 
-- objective;
-- user-visible outcome;
-- success criteria;
-- acceptance scenarios;
-- assumptions;
-- constraints;
-- non-goals;
-- dependencies;
-- risk areas;
-- deferred items.
-
-For small work, keep the same information inline in the conversation.
+- objective and user-visible outcome;
+- measurable success and completion evidence;
+- in-scope deliverables and explicit non-goals;
+- risk class and reasons;
+- assumptions and unresolved questions;
+- dependencies and compatibility constraints;
+- rollback, stop, and escalation conditions;
+- deferred ideas with rationale.

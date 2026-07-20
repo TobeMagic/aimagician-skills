@@ -1,58 +1,37 @@
 # Domain Gates
 
-Use this module to apply specialized quality gates without leaving the main workflow.
+Use this module to add specialized contracts without creating a competing workflow.
 
-## Code Quality
+## Code And API
 
-- Read before editing.
-- Prefer simple local patterns.
-- Add focused tests for changed behavior.
-- Keep changes close to the requested surface.
-- Verify imports, types, build, and runtime behavior as appropriate.
-- Review for security, data handling, error paths, and compatibility.
-
-## Debugging
-
-1. Reproduce the failure.
-2. Isolate the smallest failing behavior.
-3. Trace the cause with evidence.
-4. Patch the cause, not only the symptom.
-5. Add a regression check.
-6. Re-run the failing scenario and nearby checks.
+- Preserve existing architecture, types, error contracts, compatibility, and public behavior unless the specification changes them.
+- Test success, invalid input, error propagation, boundary values, and relevant concurrency.
+- For API or schema changes, specify consumers, versioning, migration, rollback, and observability.
 
 ## UI And Frontend
 
-- Match the product domain and existing design system.
-- Check accessibility, keyboard flow, focus states, contrast, and text overflow.
-- Verify desktop and mobile layouts.
-- Use screenshots or browser probes for meaningful visual changes.
-- Use the dedicated interface workflow when brand, motion, metadata, or polish is central.
+Create a UI contract for substantial visual work: target users, flows, states, design system, typography, color, spacing, copy, accessibility, responsive behavior, loading, empty, error, and interaction acceptance. Route detailed design and visual review to `interface-design`; route browser evidence to `webapp-testing`.
+
+## AI And Evaluation
+
+Create an AI contract when outputs depend on a model: task definition, model/provider constraints, input and output schema, grounding, prompt or tool boundaries, safety, latency/cost, fallback, deterministic components, eval dataset, metrics, thresholds, failure examples, and human review. Verification must compare implemented evals with the contract rather than reporting a few successful samples.
+
+## Security, Secrets, And Permissions
+
+Threat-model trust boundaries, authentication, authorization, secret flow, sensitive logs, dependency risk, abuse cases, least privilege, failure defaults, rotation, and rollback. Never record secret values in planning or evidence. Route inventory, vault, cache, and sensitive scans to `llm-know-how-wiki`.
+
+## Data And Migration
+
+Specify old and new shape, volume, invariants, backfill, idempotency, partial failure, compatibility window, verification queries, rollback, and data-retention effects. Test upgrade and recovery, not only the final schema.
 
 ## Documents And Generated Assets
 
-- Validate generated files by opening, extracting, or inspecting them with an appropriate tool.
-- Preserve templates and styles when editing existing documents.
-- Avoid committing binary churn unless the deliverable requires it.
-- Record the exact generated output paths.
+Preserve source templates and styles, validate generated structure, open or render the output, check content and layout, and record exact deliverable paths. Avoid unrelated binary churn.
 
-## Secrets And Environment
+## Operations And Installation
 
-- Never hardcode credentials into source, docs, screenshots, or logs.
-- Inventory environment variables and secret names separately from secret values.
-- Scan likely caches and generated artifacts when handling credentials.
-- Prefer controlled local vault or env files that are ignored by git.
+Prefer read-only inventory first. Confirm target, permission, blast radius, maintenance window, dry run, rollback, observability, and post-change verification before mutation. Installation must preview managed paths and preserve unmanaged files.
 
-## Git, PR, And Review
+## Git, Worktrees, PR, And Review
 
-- Check dirty state before edits.
-- Do not revert user work.
-- Keep commits scoped when the user asks for a commit.
-- For review tasks, lead with findings and file/line references.
-- For PR tasks, verify CI, reviewer feedback, and linked work items when available.
-
-## Operations
-
-- Treat cloud, production, data, and install paths as higher risk.
-- Prefer read-only inspection before mutation.
-- Confirm target scope and rollback path before changing shared resources.
-- Record commands, outputs, and affected resources.
+Protect dirty user work, use isolated worktrees for interrupting or parallel work, keep commits scoped, and inspect integration results. Route parallel worktrees to `parallel-worktree-pr-flow` and PR/CI/reviewer closure to `github-pr-workflow`.

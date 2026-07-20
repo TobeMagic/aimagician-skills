@@ -1,12 +1,14 @@
 ---
 name: aimagician-superpower
-description: Use when starting or resuming substantial work, shaping ambiguous goals, planning a milestone, executing multi-phase implementation, or closing work with research, verification, audit, and handoff discipline.
+description: Use when starting or resuming substantial work, clarifying ambiguous requirements, applying spec-driven development, planning or executing a milestone, coordinating agents, debugging systematically, or closing work with verified evidence and a durable handoff.
 category: build
 subcategory: workflow
 tags:
   - workflow
+  - sdd
   - planning
   - research
+  - multi-agent
   - execution
   - verification
   - audit
@@ -14,231 +16,153 @@ metadata:
   capability_modules:
     - references/capabilities/intake-and-boundary.md
     - references/capabilities/state-and-continuity.md
+    - references/capabilities/spec-driven-development.md
     - references/capabilities/research-and-discovery.md
     - references/capabilities/ideation-and-scope.md
     - references/capabilities/planning-modes.md
+    - references/capabilities/agent-orchestration.md
     - references/capabilities/execution-modes.md
+    - references/capabilities/debugging-and-forensics.md
     - references/capabilities/verification-and-uat.md
     - references/capabilities/audit-and-closure.md
     - references/capabilities/domain-gates.md
   preferred_companions:
-    - skill-creator
-    - webapp-testing
+    - cli-agent-orchestrator
+    - parallel-worktree-pr-flow
+    - llm-know-how-wiki
     - interface-design
+    - webapp-testing
+    - github-pr-workflow
+    - skill-creator
 compatibility:
-  tools: [bash, git]
+  tools: [bash, git, node]
   requires: A concrete objective, repository context, and a verifiable completion signal
 ---
 
 # AImagician Superpower
 
-Use this skill as the operating system for serious work. It turns an ambiguous request into a researched, discussed, executable, verified, and recoverable delivery loop.
+Use this skill as the control plane for substantial work. It converts an uncertain request into a source-grounded, discussed, specified, planned, implemented, independently reviewed, verified, auditable, and resumable result.
 
-The skill is not a proposal generator. It is a disciplined workflow for preserving intent, avoiding capability loss, and proving completion.
+The workflow is not complete when code exists. It is complete only when every accepted requirement has evidence, unresolved gaps are explicit, and another agent can resume without reconstructing the work.
+
+## Mandatory Start And Resume Gate
+
+Before any non-trivial execution, and always after resume, context compaction, handoff, interruption, or uncertain repository state:
+
+1. Read this `SKILL.md` again.
+2. Read workflow state and planning sources first: `.planning/STATE.md`, `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`, the active phase specification, context, discussion log, research, plans, validation, audit, and latest summary.
+3. Read project sources of truth next: `README*`, relevant `docs/`, ADRs, contributor guidance, architecture, API documentation, and repository-specific workflow files.
+4. Read the project knowledge base when present: `llm-know-how-wiki`, `.llm-know-how-wiki`, `llm-wiki`, `.llm-wiki`, `wiki/`, or the documented equivalent.
+5. Read current git status and separate user changes from planned work.
+6. Reconcile the latest user instruction, planning artifacts, project docs, wiki, and filesystem. Newer explicit user decisions win, but contradictions that affect behavior, scope, data, risk, or acceptance must be confirmed.
+7. Resume from the last verified checkpoint. Do not restart solved discovery or skip an unfinished gate.
+
+If a source is absent, record that fact and decide whether it is blocking. Do not invent missing context. Never present a partial implementation as complete, and do not stop while accepted work remains feasible.
 
 ## Capability Routing
 
-Read these modules only when the task needs their detail. The main loop below is the default path; modules are specialized guidance for larger, riskier, or resumable work.
+Load the smallest set of modules needed for the current stage.
 
 | Need | Module |
 |---|---|
-| Goal alignment, scope boundaries, first discussion, phase kickoff | `references/capabilities/intake-and-boundary.md` |
-| Milestone state, phase artifacts, resume, pause, progress, checkpoints | `references/capabilities/state-and-continuity.md` |
-| Local discovery, codebase mapping, dependency checks, web research | `references/capabilities/research-and-discovery.md` |
+| Goal alignment, boundary, risk classification, first discussion | `references/capabilities/intake-and-boundary.md` |
+| State, milestone, resume, pause, progress, checkpoint | `references/capabilities/state-and-continuity.md` |
+| Formal specification, ambiguity scoring, locked requirements | `references/capabilities/spec-driven-development.md` |
+| Local discovery, architecture mapping, dependency and web research | `references/capabilities/research-and-discovery.md` |
 | Brainstorming, alternatives, decomposition, assumption review | `references/capabilities/ideation-and-scope.md` |
-| Phase planning, plan review, MVP/TDD/research planning modes | `references/capabilities/planning-modes.md` |
-| Execution modes, small changes, parallel workers, branch/worktree discipline | `references/capabilities/execution-modes.md` |
-| Verification, UAT, eval review, regression checks, evidence capture | `references/capabilities/verification-and-uat.md` |
-| Audit, cleanup, closure summary, learning extraction, handoff | `references/capabilities/audit-and-closure.md` |
-| Domain gates for code, UI, docs, security, operations, and reviews | `references/capabilities/domain-gates.md` |
+| Quick, phase, MVP, TDD, repair, and reviewed plans | `references/capabilities/planning-modes.md` |
+| Provider-neutral agent roles, prompts, status, independent reviews | `references/capabilities/agent-orchestration.md` |
+| Sequential, autonomous, parallel, and worktree execution | `references/capabilities/execution-modes.md` |
+| Reproduction, root-cause tracing, waiting, pollution, defense in depth | `references/capabilities/debugging-and-forensics.md` |
+| Tests, validation, UAT, evidence, requirement traceability | `references/capabilities/verification-and-uat.md` |
+| Gap audit, cleanup, learning, milestone closure, handoff | `references/capabilities/audit-and-closure.md` |
+| UI, AI, security, data, documents, operations, Git and PR gates | `references/capabilities/domain-gates.md` |
 
-## Core Standard
+Role prompt templates live under `references/roles/`. Planning templates live under `assets/templates/`. Executable checks live under `scripts/`.
 
-Every substantial task must produce answers to these questions before implementation starts:
+## Workload And Specification Gate
 
-1. What is the real goal?
-2. What is explicitly in scope?
-3. What is explicitly out of scope?
-4. What constraints, risks, dependencies, and user preferences matter?
-5. What evidence will prove completion?
-6. What durable context is needed so the work can survive interruption or handoff?
+Use a formal phase specification when work changes a public behavior or API, schema or stored data, security or permissions, an external integration, a UI or AI contract, production or installation state, multiple modules, multiple agents, multiple phases, or any difficult-to-reverse surface. Also use it whenever material requirements remain ambiguous.
 
-If any answer is missing and materially changes the implementation, discuss it before planning.
+A lightweight inline target is allowed only when all are true:
 
-## Mandatory Context Recovery Gate
+- no more than two known files are involved;
+- the change is reversible and low risk;
+- no public contract, data, security, permission, integration, or production behavior changes;
+- no user decision remains unresolved;
+- one concrete verification command can prove completion.
 
-Before execution begins, this skill must recover the source-of-truth context, especially after a resume, compacted context, handoff, or any request where the current repo state is not already known.
+If any condition fails, read `references/capabilities/spec-driven-development.md` and create or update the phase specification before planning.
 
-1. Reload this `SKILL.md` before acting when the active instructions are not already in context.
-2. Read workflow and planning state first: `.planning/STATE.md`, `.planning/ROADMAP.md`, phase context, discussion logs, research, plans, validation, audit notes, summaries, and any repo-specific workflow docs.
-3. Read project docs next: `README*`, `docs/`, ADRs, contributor docs, architecture docs, API docs, and other committed documentation that defines expected behavior.
-4. Read the project knowledge base when present: `llm-know-how-wiki`, `.llm-know-how-wiki`, `llm-wiki`, `.llm-wiki`, `wiki/`, or the repo's documented wiki location.
-5. Treat the latest user instruction, planning artifacts, project docs, and wiki as the source-of-truth set. Do not rely on memory when they disagree with the filesystem.
-6. If these sources are missing, stale, conflicting, or materially ambiguous, state the uncertainty and confirm with the user before planning or editing.
-7. If the user asks to continue from prior work, resume from the last verified checkpoint instead of restarting or skipping earlier decisions.
+## Canonical Delivery Loop
 
-Do not execute non-trivial changes until this gate is satisfied or the missing context is explicitly recorded as unavailable and non-blocking.
+### 1. Recover Context
 
-## Operating Loop
+Run the Mandatory Start And Resume Gate. Establish the last verified state, current dirty files, active blockers, and next safe action.
 
-Use this loop for each meaningful unit of work.
+### 2. Establish Target And Boundary
 
-### 1. Establish Target And Boundary
+State the measurable objective, user-visible outcome, in-scope work, non-goals, constraints, dependencies, rollback or stop conditions, and completion evidence. Classify the work as quick, phase, milestone, spike, repair, review, or follow-up.
 
-- Restate the objective in concrete terms.
-- Identify the smallest useful delivery unit.
-- Define success criteria, non-goals, user-visible behavior, and rollback or stop conditions.
-- Detect whether this is a quick task, a phase, or a milestone.
-- Run the Mandatory Context Recovery Gate before asking new questions or taking action.
-- For resumable work, read existing `.planning/STATE.md`, roadmap, prior context, open plans, validation notes, recent summaries, project docs, and wiki context before asking new questions.
+### 3. Discuss Baseline Requirements
 
-### 2. Discuss Baseline Requirements
+Ask only questions that change behavior, scope, acceptance, risk, data handling, cost, or architecture. For formal work, create a draft specification with falsifiable requirements and explicit boundaries. Capture rejected and deferred options instead of silently dropping them.
 
-- Ask only questions that change scope, behavior, acceptance, or risk.
-- Prefer concrete options with tradeoffs over open-ended interviews.
-- Capture decisions, assumptions, rejected options, and deferred ideas.
-- Do not allow scope creep to enter the current phase silently; record it as a future item.
-- If the user says not to write a spec, still produce a concise implementation plan before editing.
+### 4. Research And Brainstorm
 
-### 3. Research And Brainstorm
+Inspect local code, tests, docs, configs, schemas, history, and prior artifacts before external research. Compare multiple viable approaches. Delegate broad exploration through `cli-agent-orchestrator` when it would consume substantial main-agent context. Record facts, inference, unknowns, compatibility, risks, and recommendation.
 
-- First inspect local code, docs, tests, configs, schemas, tickets, wiki pages, and prior planning artifacts.
-- Use web research when facts may be current, when third-party APIs or packages are involved, when recommendations affect cost or architecture, or when local evidence is insufficient.
-- Generate multiple viable approaches before choosing one. Compare them by complexity, maintainability, verification cost, compatibility, and user fit.
-- Record assumptions that need confirmation before planning.
-- For package or tool choices, verify that the dependency exists, is compatible with the runtime, and is appropriate for the repo.
+### 5. Re-Discuss And Lock
 
-### 4. Re-Discuss Boundaries And Assumptions
+Bring back findings that affect scope, dependencies, risk, UX, data, schedule, or acceptance. Resolve blocking ambiguity. Lock the specification, boundaries, assumptions, and implementation decisions before planning. If requirements change later, update and re-lock the specification first.
 
-- Bring research findings back to the user when they change scope, risk, timeline, dependency choice, UX, data handling, or acceptance.
-- Lock the chosen direction, explicit non-goals, and assumptions.
-- If research invalidates the original request, recommend the smallest corrected path.
-- If the next step is still ambiguous, continue discussion instead of planning.
+### 6. Plan And Review
 
-### 5. Plan
+Map every requirement ID to one or more atomic tasks and exact verification. Order dependency waves, define file scopes, checkpoints, rollback, and integration. Run an independent plan review for substantial work; revise until requirement coverage and execution clarity pass.
 
-- Write a plan only after target, boundary, research, and assumptions are stable.
-- Keep one plan for one delivery unit; do not split the same workflow across parallel plan systems.
-- Include file or module scope, ordered tasks, dependency waves, exact verification commands, acceptance criteria, and checkpoint rules.
-- Make each task atomic enough to execute and verify independently.
-- Include rollback or recovery notes when the work touches shared infrastructure, data, installation paths, secrets, or user-visible behavior.
-- Review the plan against the verification dimensions before editing.
+### 7. Execute And Checkpoint
 
-### 6. Execute
+Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Use test-first slices when behavior can be pinned down. For delegated implementation, use a fresh implementer context followed by independent specification review and then quality review. Fix and re-review before advancing.
 
-- Read relevant implementation code before changing it.
-- Make the smallest change that satisfies the verified plan.
-- Prefer existing local patterns, helpers, tests, and dependencies.
-- Preserve user edits and dirty worktree state.
-- Avoid unrelated cleanup, formatting churn, broad renames, or speculative abstractions.
-- Use tests or probes before implementation when behavior can be pinned down.
-- Checkpoint after meaningful units of work, especially before risky edits or phase transitions.
-- Keep working until the accepted objective is fully satisfied, verified, or blocked by a concrete external dependency or user decision. Never present a partial implementation as complete.
+### 8. Verify And UAT
 
-### 7. Verify
+Run narrow checks first, then the broader suite justified by blast radius. Trace requirement to task to evidence. Exercise observable UAT for user-facing behavior. Record commands, outputs, inspected artifacts, failures, skipped checks, and residual risk.
 
-- Run the narrowest useful verification first.
-- Broaden to typecheck, lint, build, integration, browser, document, or manual acceptance checks when the blast radius justifies it.
-- Do not claim completion without command output, inspected artifacts, or a concrete manual check.
-- Record validation gaps, skipped checks, flaky results, and residual risk.
-- For user-facing work, define observable acceptance scenarios and verify them directly.
+### 9. Audit
 
-### 8. Audit
+Compare the result with the locked specification, original request, non-goals, plan, and evidence. Check integration wiring, regression risk, capability preservation, stale placeholders, security, cleanup, documentation, and installation state. Classify every gap.
 
-- Compare the result against the original goal, locked assumptions, success criteria, and non-goals.
-- Check requirement coverage, integration wiring, regression risk, unverified claims, and TODO or placeholder debt.
-- Confirm that no prior capability was accidentally removed unless the user explicitly accepted that tradeoff.
-- If gaps remain, classify them as blocker, follow-up, or intentionally deferred.
+### 10. Handoff And Complete
 
-### 9. Handoff And Complete
+Update durable state and summarize what changed, what passed, what was not verified, residual risk, current git state, and the exact next action. Completion requires accepted requirements to have passing evidence or an explicit user-approved exclusion.
 
-- Summarize what changed, what passed, what was not verified, and what remains.
-- Update durable state when the work crosses a phase or milestone boundary.
-- Include enough detail for another agent to resume without re-discovering the same facts.
-- For closure, provide a concise completion summary with evidence, residual risk, and next recommended action.
+## Runtime Assistance
 
-## Durable Artifacts
+From the installed skill directory:
 
-Use durable artifacts when work is large, resumable, risky, or spans multiple turns.
+```bash
+node scripts/workflow.mjs status --project <path> --phase <phase>
+node scripts/workflow.mjs next --project <path> --phase <phase>
+node scripts/workflow.mjs validate --project <path> --phase <phase> --gate spec
+node scripts/workflow.mjs validate --project <path> --phase <phase> --gate execute
+node scripts/workflow.mjs trace --project <path> --phase <phase> --format json
+```
 
-- `.planning/STATE.md`: current phase, status, next action, active assumptions, and resumable context.
-- `.planning/ROADMAP.md`: ordered phases, dependencies, and status.
-- `.planning/phases/<phase>/<phase>-CONTEXT.md`: objective, constraints, decisions, success criteria, and non-goals.
-- `.planning/phases/<phase>/<phase>-DISCUSSION-LOG.md`: questions, answers, rejected options, and deferred ideas.
-- `.planning/phases/<phase>/<phase>-RESEARCH.md`: local evidence, external research, alternatives, dependency checks, and risk findings.
-- `.planning/phases/<phase>/PLAN.md`: executable task plan, file map, verification commands, acceptance criteria, and checkpoints.
-- `.planning/phases/<phase>/<phase>-VALIDATION.md`: command results, manual checks, evidence, gaps, and residual risk.
-- `.planning/phases/<phase>/<phase>-UAT.md`: user-visible acceptance scenarios and outcomes.
-- `.planning/phases/<phase>/<phase>-AUDIT.md`: requirement coverage, regression review, and closure decision.
-- `.planning/phases/<phase>/<phase>-SUMMARY.md`: handoff-ready completion summary.
+`spec` checks locked requirements and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires completed research, discussion, context, and accepted plans. `complete` requires passing evidence, audit, summary, and UAT when user-facing. `init` previews missing artifacts by default and writes only with `--write`. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
 
-For small tasks, keep artifacts inline in the conversation unless persistence is needed.
+## Companion Routing
 
-## Verification Dimensions
+- Broad external-agent exploration and bounded delegated roles: `cli-agent-orchestrator`.
+- Parallel write lanes and worktree integration: `parallel-worktree-pr-flow`.
+- Wiki, durable engineering context, secret inventory, and sensitive scans: `llm-know-how-wiki`.
+- UI contracts, visual decisions, accessibility, and screenshots: `interface-design` and `webapp-testing`.
+- Pull requests, CI, reviewer findings, and merge readiness: `github-pr-workflow`.
+- Skill authoring and behavior evals: `skill-creator`.
 
-Before executing a non-trivial plan, check:
-
-1. Requirement coverage: every stated requirement maps to work or an explicit non-goal.
-2. Boundary clarity: scope, non-goals, and assumptions are locked.
-3. Research adequacy: local and external evidence are sufficient for the chosen path.
-4. Alternative review: credible options were compared before selection.
-5. Task atomicity: each task can be completed and verified independently.
-6. Dependency ordering: prerequisite work appears earlier, and dependency waves are clear.
-7. File scope: expected files or modules are named, and unrelated churn is excluded.
-8. Verification commands: tests, builds, probes, or manual checks are concrete.
-9. Context fit: another agent can resume from artifacts without re-asking solved questions.
-10. Regression safety: existing capability is preserved or intentionally replaced.
-
-## Research Rules
-
-- Browse when information is time-sensitive, high-stakes, externally sourced, package-specific, API-specific, or likely to have changed.
-- Use primary sources for technical claims whenever practical.
-- Clearly separate facts from inferences.
-- Do not let research become implementation. Research ends with options, recommendation, assumptions, and planning inputs.
-- If research is inconclusive, state what was checked and choose the safest next step or ask for a targeted decision.
-
-## Execution Discipline
-
-Use this discipline for every non-trivial code or document change:
-
-1. Think before editing
-   - State assumptions, constraints, and risky unknowns when they affect implementation.
-   - Ask only when the missing answer materially changes the solution.
-2. Simplicity first
-   - Prefer the smallest workable change.
-   - Prefer local conventions over new abstractions.
-3. Surgical edits
-   - Touch only files required for the task.
-   - Do not reformat or refactor unrelated code.
-   - Preserve dirty worktree changes that are not yours.
-4. Evidence-driven completion
-   - Define what proves done.
-   - Run the checks.
-   - Report the result and any remaining uncertainty.
-
-## Related Owned Skills
-
-- Use `skill-creator` when adding, merging, or rewriting owned skills.
-- Use `webapp-testing` when a browser, screenshot, console, network, or responsive check is part of acceptance.
-- Use `interface-design` when the task changes UI, visual language, accessibility, metadata, motion, or brand style.
-- Use `github-readme-highstar` when README quality is part of acceptance.
+The main workflow owns routing, state, requirements, and completion. Companion skills own their specialized execution details.
 
 ## Output Contract
 
-For active work, report:
+For active work, report the objective and boundary, evidence consulted, decisions, current stage, changed files, verification result, blockers, and next action.
 
-- objective and boundary;
-- research or evidence used;
-- decisions made;
-- plan or execution status;
-- files changed;
-- verification run and result;
-- residual risk or next action.
-
-For closure, report:
-
-- completion summary;
-- requirement and acceptance coverage;
-- verification evidence;
-- audit outcome;
-- handoff notes.
+For closure, report requirement coverage, implementation summary, verification and UAT evidence, audit result, checks not run, residual risk, git or installation state, and handoff notes.

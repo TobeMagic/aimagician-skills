@@ -56,21 +56,38 @@ skillbird install --category documents --scope project --target claude
 
 ## Workflow
 
-Skillbird keeps one workflow model:
+Skillbird keeps one risk-scaled workflow model:
 
-1. Establish the target, boundary, success criteria, and non-goals.
-2. Discuss baseline requirements and locked assumptions.
-3. Research local evidence and current external facts when needed.
-4. Brainstorm viable approaches, then re-discuss changed boundaries.
-5. Plan only after the target, research, and assumptions are stable.
-6. Execute with small scoped changes and checkpoints.
-7. Verify, audit, hand off, and close with evidence.
+1. Recover the active Skill, planning state, project docs, wiki, and git context.
+2. Establish the measurable target, boundary, risk, success criteria, and non-goals.
+3. Discuss baseline requirements and create a draft specification when the risk gate requires it.
+4. Research local evidence and current external facts, then compare viable approaches.
+5. Re-discuss changed boundaries and assumptions; lock falsifiable requirements only after ambiguity passes.
+6. Plan atomic requirement-backed tasks and independently review substantial plans.
+7. Execute with test-first slices, checkpoints, and bounded Agent roles.
+8. Review specification compliance before code quality.
+9. Verify requirement-to-plan-to-evidence traceability and run user-facing UAT.
+10. Audit, hand off, and close only when accepted requirements have passing evidence.
+
+The workflow stays light for a reversible one- or two-file edit. Public APIs, schema/data changes, security, integrations, UI/AI contracts, production state, cross-module work, and multi-Agent execution use a formal `SPEC.md` with an ambiguity gate.
+
+The installed skill includes a dependency-free runtime:
+
+```bash
+node scripts/workflow.mjs status --project <path> --phase <phase>
+node scripts/workflow.mjs validate --project <path> --phase <phase> --gate spec
+node scripts/workflow.mjs validate --project <path> --phase <phase> --gate execute
+node scripts/workflow.mjs trace --project <path> --phase <phase> --format json
+node scripts/workflow.mjs next --project <path> --phase <phase>
+```
+
+The `execute` gate requires completed research, renewed discussion, implementation context, requirement-mapped plans, and explicit plan acceptance. `init` previews project and phase artifacts and writes only with `--write`; it never overwrites existing files or follows a planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
 
 The central owned skill is:
 
 | Skill | Role |
 |---|---|
-| `aimagician-superpower` | Research-aware milestone workflow, planning, execution, verification, audit, handoff, and code discipline |
+| `aimagician-superpower` | Risk-scaled SDD, research, planning, multi-Agent execution, systematic debugging, traceable verification, audit, and handoff |
 | `skill-creator` | Skill authoring, merging, taxonomy, formatter rules |
 
 ## Skill Consolidation

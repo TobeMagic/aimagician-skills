@@ -1,63 +1,60 @@
 # Planning Modes
 
-Use this module after target, boundary, research, and assumptions are stable.
+Use this module only after target, boundaries, evidence, locked requirements, and implementation assumptions are stable.
 
-## Standard Plan
+## Plan Contract
 
-A complete plan names:
+A substantial plan names:
 
-- objective and non-goals;
-- file and module scope;
-- ordered tasks;
-- dependency waves;
-- data or state changes;
-- test strategy;
-- exact verification commands;
-- manual acceptance checks;
-- rollback or recovery notes;
-- checkpoint rules.
+- objective, locked requirement IDs, and non-goals;
+- exact files or ownership areas allowed and forbidden;
+- atomic tasks and dependency waves;
+- state, schema, API, migration, or compatibility effects;
+- test-first steps where behavior can be pinned down;
+- exact verification commands and expected outcomes;
+- observable UAT where behavior is user-facing;
+- rollback, recovery, checkpoints, and handoff expectations.
+
+Every accepted requirement must map to at least one task. Every task must map to a requirement, explicit enabling work, or accepted maintenance need.
 
 ## Plan Modes
 
-Choose the mode that fits the work:
+- **Quick:** one or two low-risk edits with one direct check.
+- **Phase:** a resumable sequence with durable artifacts and gates.
+- **Research:** evidence and recommendation are the deliverable; implementation is a later phase.
+- **MVP:** smallest end-to-end slice first, then bounded extensions.
+- **TDD:** failing behavior check, minimal implementation, pass, refactor, broader regression.
+- **Repair:** reproduce, isolate, trace root cause, patch, regression check, nearby audit.
+- **Review:** findings first, then accepted fixes or follow-up tasks.
+- **Gap closure:** convert failed validation or audit findings into the smallest correcting tasks.
+- **Ultra plan:** cross-system work with explicit workstreams, ownership, dependency graph, integration gates, and independent reviewers.
 
-- Quick plan: one or two edits with a narrow verification command.
-- Phase plan: a structured task list for a `.planning/phases/<phase>/PLAN.md` file.
-- Research plan: a plan whose first deliverable is a research note and recommendation.
-- MVP plan: vertical slices that prove the end-to-end workflow early.
-- TDD plan: failing test, minimal implementation, passing test, refactor, broader verification.
-- Repair plan: reproduce, isolate cause, patch, regression test, audit related behavior.
-- Review plan: findings first, then fixes or follow-up tasks.
-- Gap-closure plan: map failed validation or audit gaps to the smallest correcting tasks.
+## Task Shape
 
-## Planning Rules
+Each task states:
 
-- Do not plan before the user-impacting boundary is clear.
-- Do not split one workflow across multiple competing plans.
-- Keep tasks independently executable and verifiable.
-- Place dependency work before dependents.
-- Include exact commands, expected outcomes, and artifact paths.
-- Include acceptance criteria that are observable.
-- If the user rejects a plan assumption, update only the affected tasks.
+1. requirement IDs and objective;
+2. inputs and prerequisite decisions;
+3. allowed and forbidden files;
+4. exact implementation behavior;
+5. test or probe to write or run;
+6. acceptance and expected evidence;
+7. checkpoint and next dependency.
 
-## Plan Review
+Avoid instructions such as "handle errors" or "add tests" without naming the required cases.
 
-Before execution, check:
+## Independent Plan Review
 
-1. Every requirement maps to a task or explicit non-goal.
-2. Every risky assumption is confirmed, mitigated, or documented.
-3. File scope is narrow and realistic.
-4. Verification covers behavior, integration, and regression risk.
-5. Rollback or recovery is defined for shared state.
-6. The plan can be resumed by another agent.
+For substantial work, dispatch a fresh plan reviewer with the specification, research conclusion, context, and complete plan. The reviewer checks:
 
-## Plan Artifacts
+- missing or extra scope;
+- requirement coverage and falsifiability;
+- wrong ordering or hidden dependency;
+- unrealistic file scope;
+- migration, security, concurrency, or compatibility omissions;
+- weak verification or rollback;
+- tasks too large for one focused implementation context.
 
-For durable plans, use:
+Revise and re-review until no blocking or important finding remains. Do not let the plan author self-approval replace independent review.
 
-- `PLAN.md` for tasks;
-- `RESEARCH.md` for evidence and alternatives;
-- `VALIDATION.md` for command results;
-- `UAT.md` for acceptance scenarios;
-- `AUDIT.md` for coverage and risk review;
-- `SUMMARY.md` for handoff.
+Run `workflow.mjs validate --gate plan` while reviewing the plan, then mark accepted plans accordingly and run `validate --gate execute` before implementation. Use `trace` as evidence accumulates.

@@ -1,55 +1,53 @@
 # Execution Modes
 
-Use this module when carrying a plan through edits, commands, reviews, and checkpoints.
+Use this module after the specification and plan gates appropriate to the task have passed.
 
 ## Standard Execution
 
-1. Read the relevant files before editing.
-2. Confirm current git status and protect user changes.
-3. Execute the next task only.
-4. Keep edits small and local to the planned scope.
-5. Run the narrow verification for that task.
-6. Checkpoint the result before moving to the next dependency wave.
+1. Read the exact implementation and test files before editing.
+2. Confirm git status, worktree, allowed scope, and user-owned changes.
+3. Select the next dependency-ready task; do not mix unrelated tasks.
+4. Pin behavior with a failing test or probe when practical.
+5. Implement the smallest change that satisfies the task.
+6. Run the narrow check, inspect the diff, and self-review.
+7. Record a requirement-backed checkpoint before the next wave.
+8. Run the required independent reviews for substantial or delegated work.
 
-## Mode Selection
+## Modes
 
-- Quick mode: small, low-risk change with direct verification.
-- Fast mode: several simple edits with one focused test pass after each meaningful group.
-- Autonomous mode: continue through a locked plan until a blocker changes scope, risk, or acceptance.
-- Repair mode: reproduce the defect first, then patch and prove the regression.
-- Parallel mode: split independent tasks across isolated workers only when file scopes do not conflict.
-- Branch/worktree mode: use isolated workspaces when changes are large, risky, or parallel.
+- **Quick:** a low-risk inline target with one direct verification.
+- **Fast:** several simple, ordered edits with a focused check after each meaningful group.
+- **Autonomous:** continue through a locked plan until complete or a blocker changes scope, risk, or acceptance.
+- **Repair:** reproduce and trace before changing code; prove the regression afterward.
+- **Sequential agent:** one fresh implementer per task with review loops.
+- **Parallel:** independent write scopes in isolated workers with one integration owner.
+- **Branch/worktree:** isolate large, risky, interrupting, or parallel work from the user's active tree.
 
-## Parallel Worker Rules
+## Test-First Discipline
 
-Use parallel workers only when:
+Use red-green-refactor for changed behavior when a reliable test boundary exists:
 
-- tasks are independent;
-- write scopes are explicit;
-- each worker has clear acceptance checks;
-- integration order is defined;
-- one coordinator reviews and merges returned work.
+1. write the smallest failing check that represents the requirement;
+2. run it and confirm failure for the expected reason;
+3. implement only enough to pass;
+4. run the narrow test;
+5. refactor without changing behavior;
+6. run nearby and broader checks based on blast radius.
 
-Each worker brief should include objective, files allowed, files forbidden, tests to run, expected output, and handoff format.
+Do not write tests that merely search source text when behavior can be executed. Avoid mocks that only prove the mock. Preserve the failing evidence when the defect is intermittent or environment-dependent.
+
+## Parallel Worker Brief
+
+Every worker receives objective, requirement and task IDs, context, allowed and forbidden files, mutation permission, dependencies, exact tests, expected output, status protocol, and handoff format. Shared files, migrations, registries, and integration tests have one owner.
 
 ## Code Discipline
 
-- Prefer existing local patterns and helpers.
-- Avoid speculative abstractions.
-- Keep unrelated refactors out of the change.
-- Use structured parsers or APIs instead of fragile string manipulation when available.
-- Add comments only where they clarify non-obvious logic.
-- Preserve formatting outside edited areas.
-- Do not continue executing a stale plan after a new blocker invalidates it.
+- Follow existing helpers, structured APIs, parsers, types, and naming.
+- Avoid unrelated refactors, broad formatting, speculative abstraction, and silent compatibility breaks.
+- Treat generated files, secrets, install roots, production data, and migrations as higher risk.
+- Never continue a stale plan after new evidence invalidates it.
+- Do not claim completion from an implementer report; inspect diff and evidence.
 
-## Checkpoint Content
+## Checkpoint
 
-Record:
-
-- task completed;
-- files changed;
-- commands run;
-- result;
-- problems found;
-- assumptions updated;
-- next task.
+Record task and requirement IDs, files changed, diff summary, commands and results, review status, assumptions changed, open gaps, worktree/commit state, and next task.

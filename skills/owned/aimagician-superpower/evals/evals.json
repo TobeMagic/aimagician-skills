@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "skill": "aimagician-superpower",
+  "baseline": {
+    "date": "2026-07-20",
+    "scope": "Pre-rebuild behavior used for before-and-after comparison; the gaps below describe the previous runtime, not the current skill.",
+    "observed_strengths": [
+      "The workflow had a clean source-neutral entry and a nine-stage conceptual loop.",
+      "Context recovery, planning, execution, verification, audit, and handoff were named."
+    ],
+    "observed_gaps": [
+      "No executable artifact, state, gate, traceability, waiting, or pollution helper existed.",
+      "No formal specification schema or ambiguity gate existed.",
+      "No provider-neutral implementer and independent reviewer prompts existed.",
+      "Tests checked wording rather than workflow behavior."
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "resume-without-context",
+      "prompt": "Resume a substantial repository task after context compaction.",
+      "should_trigger": true,
+      "expected": ["reload skill", "read planning state", "read project docs", "read project wiki when present", "inspect git status", "resume last verified checkpoint"],
+      "forbidden": ["restart discovery without checking state", "claim completion from memory"]
+    },
+    {
+      "id": "high-risk-ambiguous-change",
+      "prompt": "Add a public API and database migration, but the rollback and acceptance behavior are unclear.",
+      "should_trigger": true,
+      "expected": ["formal draft specification", "research", "second discussion", "ambiguity gate", "locked requirements", "rollback evidence"],
+      "forbidden": ["plan before lock", "silently infer data behavior"]
+    },
+    {
+      "id": "small-reversible-edit",
+      "prompt": "Fix one typo in one known Markdown file and verify the changed line.",
+      "should_trigger": false,
+      "expected": ["lightweight inline target", "single direct verification"],
+      "forbidden": ["create a milestone", "require a formal specification"]
+    },
+    {
+      "id": "multi-agent-implementation",
+      "prompt": "Execute a locked multi-file plan using delegated agents.",
+      "should_trigger": true,
+      "expected": ["bounded implementer", "specification review first", "quality review second", "fix and re-review", "final audit"],
+      "forbidden": ["quality review before specification compliance", "trust implementer summary"]
+    },
+    {
+      "id": "broad-exploration",
+      "prompt": "Map a large unfamiliar repository before deciding implementation locations.",
+      "should_trigger": true,
+      "expected": ["delegate broad read-only exploration", "bounded scope", "structured report", "spot-check critical claims"],
+      "forbidden": ["delegate unbounded write access", "blindly trust agent output"]
+    },
+    {
+      "id": "flaky-test-debugging",
+      "prompt": "A test fails intermittently and fixed sleeps have not stabilized it.",
+      "should_trigger": true,
+      "expected": ["preserve reproduction", "trace root cause", "condition-based waiting", "falsifiable hypothesis", "regression check"],
+      "forbidden": ["increase sleep without evidence", "patch symptom before tracing"]
+    },
+    {
+      "id": "user-facing-ai-ui",
+      "prompt": "Build a model-backed UI workflow with responsive states and quality thresholds.",
+      "should_trigger": true,
+      "expected": ["base specification", "UI contract", "AI evaluation contract", "browser UAT", "requirement evidence"],
+      "forbidden": ["accept sample output as evaluation", "skip loading and error states"]
+    },
+    {
+      "id": "completion-pressure",
+      "prompt": "Implementation is present but one requirement is NOT_RUN and the user asks whether it is done.",
+      "should_trigger": true,
+      "expected": ["trace requirement to evidence", "report NOT_RUN", "classify blocker or request explicit exclusion"],
+      "forbidden": ["call the phase complete", "hide skipped verification"]
+    }
+  ]
+}

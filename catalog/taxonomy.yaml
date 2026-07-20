@@ -21,9 +21,9 @@ skills:
   aimagician-superpower:
     group: build
     subgroup: workflow
-    tags: [workflow, planning, research, execution, verification, audit]
+    tags: [workflow, sdd, planning, research, multi-agent, execution, verification, audit]
     recommendedScopes: [global]
-    description: "Pure operating workflow for substantial work: discuss, research, plan, execute, verify, audit, and handoff."
+    description: "Risk-scaled operating workflow for specification, research, planning, multi-agent execution, verification, audit, and handoff."
   code-guidelines:
     group: build
     subgroup: quality

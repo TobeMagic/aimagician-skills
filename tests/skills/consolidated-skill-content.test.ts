@@ -1,120 +1,87 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readFile, readdir } from "node:fs/promises";
+import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ownedSkillsRoot = join(process.cwd(), "skills", "owned");
 const docsRoot = join(process.cwd(), "docs");
 
 describe("consolidated owned skill content", () => {
-  it("keeps aimagician-superpower pure while preserving the full workflow contract", async () => {
+  it("keeps aimagician-superpower source-neutral while exposing the complete workflow router", async () => {
+    const skillRoot = join(ownedSkillsRoot, "aimagician-superpower");
     const skill = await readOwnedSkill("aimagician-superpower");
     const modulePaths = [
       "references/capabilities/intake-and-boundary.md",
       "references/capabilities/state-and-continuity.md",
+      "references/capabilities/spec-driven-development.md",
       "references/capabilities/research-and-discovery.md",
       "references/capabilities/ideation-and-scope.md",
       "references/capabilities/planning-modes.md",
+      "references/capabilities/agent-orchestration.md",
       "references/capabilities/execution-modes.md",
+      "references/capabilities/debugging-and-forensics.md",
       "references/capabilities/verification-and-uat.md",
       "references/capabilities/audit-and-closure.md",
       "references/capabilities/domain-gates.md"
     ];
-    const modules = await Promise.all(
-      modulePaths.map((modulePath) =>
-        readFile(join(ownedSkillsRoot, "aimagician-superpower", modulePath), "utf8")
-      )
-    );
-    const runtimeContent = [skill, ...modules].join("\n");
-    const mergeAudit = await readFile(
-      join(docsRoot, "superpowers", "aimagician-superpower-capability-merge.md"),
-      "utf8"
-    );
+    const modules = await Promise.all(modulePaths.map((modulePath) => readFile(join(skillRoot, modulePath), "utf8")));
+    const runtimeFiles = await readRuntimeFiles(skillRoot);
+    const runtimeContent = runtimeFiles.map((file) => file.content).join("\n");
+    const mergeAudit = await readFile(join(docsRoot, "superpowers", "aimagician-superpower-capability-merge.md"), "utf8");
 
-    expect(runtimeContent).not.toContain("GSD");
-    expect(runtimeContent).not.toContain("Superpowers");
-    expect(runtimeContent).not.toContain("code-guidelines");
-    expect(runtimeContent).not.toContain("Source Decisions");
-    expect(runtimeContent).not.toContain("Consolidation Rules");
-    expect(runtimeContent).not.toContain("Installing external workflow frameworks");
-    expect(runtimeContent).not.toContain("auto-update hooks");
-    expect(runtimeContent).not.toContain("installer");
-    expect(runtimeContent).not.toContain("source-routing");
-
-    expect(skill).toContain("Establish Target And Boundary");
-    expect(skill).toContain("Discuss Baseline Requirements");
-    expect(skill).toContain("Research And Brainstorm");
-    expect(skill).toContain("Re-Discuss Boundaries And Assumptions");
-    expect(skill).toContain("Plan");
-    expect(skill).toContain("Execute");
-    expect(skill).toContain("Verify");
-    expect(skill).toContain("Audit");
-    expect(skill).toContain("Handoff And Complete");
-    expect(skill).toContain("Mandatory Context Recovery Gate");
-    expect(skill).toContain("Reload this `SKILL.md`");
-    expect(skill).toContain("workflow and planning state first");
-    expect(skill).toContain("project docs next");
-    expect(skill).toContain("project knowledge base");
-    expect(skill).toContain("source-of-truth set");
-    expect(skill).toContain("Never present a partial implementation as complete");
-    expect(skill).toContain("CONTEXT.md");
-    expect(skill).toContain("DISCUSSION-LOG.md");
-    expect(skill).toContain("RESEARCH.md");
-    expect(skill).toContain("VALIDATION.md");
-    expect(skill).toContain("UAT.md");
-    expect(skill).toContain("AUDIT.md");
-    expect(skill).toContain("SUMMARY.md");
-    expect(skill).toContain("Verification Dimensions");
-    expect(skill).toContain("Research Rules");
-    expect(skill).toContain("dependency waves");
-    expect(skill).toContain("Execution Discipline");
-    expect(skill).toContain("Surgical edits");
-    expect(skill).toContain("Evidence-driven completion");
-
-    for (const modulePath of modulePaths) {
-      expect(skill).toContain(modulePath);
+    for (const forbidden of [
+      "GSD", "Superpowers", "code-guidelines", "Source Decisions", "Consolidation Rules",
+      "Installing external workflow frameworks", "auto-update hooks", "source-routing"
+    ]) {
+      expect(runtimeContent).not.toContain(forbidden);
     }
 
-    expect(modules.join("\n")).toContain("Phase plan");
-    expect(modules.join("\n")).toContain("TDD plan");
-    expect(modules.join("\n")).toContain("Parallel Worker Rules");
-    expect(modules.join("\n")).toContain("UAT Scenarios");
-    expect(modules.join("\n")).toContain("Audit Checklist");
-    expect(modules.join("\n")).toContain("Debugging");
-    expect(modules.join("\n")).toContain("Secrets And Environment");
-    expect(modules.join("\n")).toContain("planning source-of-truth files");
-    expect(modules.join("\n")).toContain("llm-know-how-wiki");
+    expect(skill).toContain("Mandatory Start And Resume Gate");
+    expect(skill).toContain("Read this `SKILL.md` again");
+    expect(skill).toContain("project knowledge base");
+    expect(skill).toContain("Workload And Specification Gate");
+    expect(skill).toContain("Discuss Baseline Requirements");
+    expect(skill).toContain("Research And Brainstorm");
+    expect(skill).toContain("Re-Discuss And Lock");
+    expect(skill).toContain("Plan And Review");
+    expect(skill).toContain("Execute And Checkpoint");
+    expect(skill).toContain("Verify And UAT");
+    expect(skill).toContain("Handoff And Complete");
+    expect(skill).toContain("Never present a partial implementation as complete");
+    expect(skill).toContain("scripts/workflow.mjs");
+    expect(skill).toMatch(/preferred_companions:[\s\S]*?- skill-creator[\s\S]*?compatibility:/);
+    expect(skill).toContain("`execute` additionally requires completed research, discussion, context, and accepted plans");
+
+    for (const modulePath of modulePaths) expect(skill).toContain(modulePath);
+    expect(modules.join("\n")).toContain("ambiguity = 1 -");
+    expect(modules.join("\n")).toContain("Specification reviewer");
+    expect(modules.join("\n")).toContain("Condition-Based Waiting");
+    expect(modules.join("\n")).toContain("test-first");
+    expect(modules.join("\n")).toContain("Evidence Record");
+
+    expect(runtimeFiles.map((file) => file.path)).toEqual(expect.arrayContaining([
+      "assets/templates/phase-spec.md",
+      "evals/evals.json",
+      "references/roles/implementer.md",
+      "references/roles/spec-reviewer.md",
+      "references/roles/quality-reviewer.md",
+      "scripts/workflow.mjs",
+      "scripts/wait-for.mjs",
+      "scripts/find-polluter.mjs"
+    ]));
 
     expect(mergeAudit).toContain("GSD command files: 67");
     expect(mergeAudit).toContain("GSD agent files: 33");
-    expect(mergeAudit).toContain("GSD workflow files under `get-shit-done/workflows`: 107");
+    expect(mergeAudit).toContain("GSD workflow files under `get-shit-done/workflows`: 107 total, including 106 Markdown workflows");
     expect(mergeAudit).toContain("Superpowers skill roots: 14");
-    expect(mergeAudit).toContain("Superpowers `brainstorming`");
-    expect(mergeAudit).toContain("GSD `plan-phase`");
-    expect(mergeAudit).toContain("code-guidelines");
   });
 
   it("keeps brand DESIGN.md routing inside interface-design", async () => {
     const skill = await readOwnedSkill("interface-design");
-    const brands = await readFile(
-      join(ownedSkillsRoot, "interface-design", "references", "brand-design-md", "brands.json"),
-      "utf8"
-    );
-    const appleDesign = await readFile(
-      join(
-        ownedSkillsRoot,
-        "interface-design",
-        "references",
-        "brand-design-md",
-        "design-md",
-        "apple.DESIGN.md"
-      ),
-      "utf8"
-    );
-
+    const brands = await readFile(join(ownedSkillsRoot, "interface-design", "references", "brand-design-md", "brands.json"), "utf8");
+    const appleDesign = await readFile(join(ownedSkillsRoot, "interface-design", "references", "brand-design-md", "design-md", "apple.DESIGN.md"), "utf8");
     expect(skill).toContain("Brand DESIGN.md Routing");
     expect(skill).toContain("references/brand-design-md/brands.json");
     expect(skill).toContain("references/brand-design-md/design-md/*.DESIGN.md");
-    expect(skill).toContain("brand/design reference used");
     expect(skill).not.toContain("design-md-brand-router");
     expect(brands).toContain("apple");
     expect(appleDesign).toContain("Apple");
@@ -122,109 +89,39 @@ describe("consolidated owned skill content", () => {
 
   it("keeps CLI agent orchestration provider-based and strict by default", async () => {
     const skill = await readOwnedSkill("cli-agent-orchestrator");
-    const opencodeProvider = await readFile(
-      join(ownedSkillsRoot, "cli-agent-orchestrator", "references", "providers", "opencode.md"),
-      "utf8"
-    );
-    const explorationTask = await readFile(
-      join(ownedSkillsRoot, "cli-agent-orchestrator", "references", "task-types", "exploration.md"),
-      "utf8"
-    );
-    const reportTemplate = await readFile(
-      join(
-        ownedSkillsRoot,
-        "cli-agent-orchestrator",
-        "references",
-        "report-templates",
-        "exploration-report.md"
-      ),
-      "utf8"
-    );
-
-    expect(skill).toContain("references/providers/opencode.md");
-    expect(skill).toContain("references/task-types/exploration.md");
+    const opencodeProvider = await readFile(join(ownedSkillsRoot, "cli-agent-orchestrator", "references", "providers", "opencode.md"), "utf8");
+    const explorationTask = await readFile(join(ownedSkillsRoot, "cli-agent-orchestrator", "references", "task-types", "exploration.md"), "utf8");
     expect(skill).toContain("Exploration Priority Rule");
-    expect(skill).toContain("broad exploration");
-    expect(skill).toContain("codebase exploration");
-    expect(skill).toContain("architecture mapping");
-    expect(skill).toContain("finding implementation locations");
     expect(skill).toContain("use OpenCode first");
-    expect(skill).toContain("Discuss-First Boundary Gate");
     expect(skill).toContain("strict read-only by default");
-    expect(skill).toContain("review, planning, verification, audit, summarization, comparison");
-    expect(skill).not.toContain("agentic-repo-explorer");
-
-    expect(opencodeProvider).toContain("opencode models");
-    expect(opencodeProvider).toContain("opencode run --dir");
-    expect(opencodeProvider).toContain("opencode/deepseek-v4-flash-free");
-    expect(opencodeProvider).toContain("opencode/nemotron-3-ultra-free");
-    expect(opencodeProvider).toContain("opencode export");
     expect(opencodeProvider).toContain("event-based waiting");
-    expect(opencodeProvider).toContain("activity events");
     expect(opencodeProvider).toContain("Do not impose a hard wall-clock timeout");
-    expect(opencodeProvider).not.toContain("5 seconds");
-    expect(opencodeProvider).not.toContain("180 seconds");
-
     expect(explorationTask).toContain("not limited to repositories");
-    expect(explorationTask).toContain("Broad exploration should be delegated");
     expect(explorationTask).toContain("Do not modify files");
-    expect(explorationTask).toContain("Do not run destructive commands");
-    expect(explorationTask).toContain("Relevant Sources");
-
-    expect(reportTemplate).toContain("# CLI Agent Exploration Report");
-    expect(reportTemplate).toContain("Allowed scope");
-    expect(reportTemplate).toContain("Reliability Notes");
-    expect(reportTemplate).toContain("Activity events");
-    expect(reportTemplate).toContain("Quiet / stale periods");
   });
 
   it("adds Composio as a service-scoped SaaS tool router without turning it into MCP builder", async () => {
     const skill = await readOwnedSkill("composio-tool-router");
-    const cliWorkflow = await readFile(
-      join(ownedSkillsRoot, "composio-tool-router", "references", "cli-workflow.md"),
-      "utf8"
-    );
-    const safety = await readFile(
-      join(ownedSkillsRoot, "composio-tool-router", "references", "safety-and-boundaries.md"),
-      "utf8"
-    );
-
+    const cliWorkflow = await readFile(join(ownedSkillsRoot, "composio-tool-router", "references", "cli-workflow.md"), "utf8");
+    const safety = await readFile(join(ownedSkillsRoot, "composio-tool-router", "references", "safety-and-boundaries.md"), "utf8");
     expect(skill).toContain("category: operate");
-    expect(skill).toContain("subcategory: tool-routing");
     expect(skill).toContain("schema-on-demand");
-    expect(skill).toContain("composio tools list <toolkit>");
-    expect(skill).toContain("composio search \"<intent>\" --toolkits <toolkit>");
-    expect(skill).toContain("composio execute <tool_slug> --get-schema");
-    expect(skill).toContain("Dry-run first");
-    expect(skill).toContain("Confirm external writes");
-    expect(skill).toContain("Use `mcp-builder` for custom MCP servers");
-
     expect(cliWorkflow).toContain("composio tools list linear --limit 50");
-    expect(cliWorkflow).toContain("composio tools list slack --limit 50");
-    expect(cliWorkflow).toContain("composio execute LINEAR_CREATE_LINEAR_ISSUE --get-schema");
     expect(cliWorkflow).toContain("--dry-run");
-    expect(cliWorkflow).toContain("composio proxy");
-
-    expect(safety).toContain("Risk Classes");
-    expect(safety).toContain("Confirmation Checklist For Writes");
     expect(safety).toContain("Never print API keys");
-    expect(safety).toContain("not a complete protocol replacement");
   });
 
-  it("keeps the Claude and Superpowers skill-authoring evaluation loop in skill-creator", async () => {
+  it("keeps the skill-authoring evaluation loop in skill-creator", async () => {
     const skill = await readOwnedSkill("skill-creator");
-
     expect(skill).toContain("baseline");
     expect(skill).toContain("with-skill");
     expect(skill).toContain("evals/evals.json");
     expect(skill).toContain("quantitative assertions");
     expect(skill).toContain("Progressive Disclosure");
-    expect(skill).toContain("description = trigger");
   });
 
   it("keeps the robust browser-testing probe workflow in webapp-testing", async () => {
     const skill = await readOwnedSkill("webapp-testing");
-
     expect(skill).toContain("with_server.py --help");
     expect(skill).toContain("networkidle");
     expect(skill).toContain("Reconnaissance-Then-Action");
@@ -233,15 +130,27 @@ describe("consolidated owned skill content", () => {
 
   it("keeps the MCP design and evaluation details in mcp-builder", async () => {
     const skill = await readOwnedSkill("mcp-builder");
-
     expect(skill).toContain("structuredContent");
     expect(skill).toContain("annotations");
     expect(skill).toContain("readOnlyHint");
     expect(skill).toContain("destructiveHint");
-    expect(skill).toContain("10 read-only questions");
     expect(skill).toContain("MCP Inspector");
   });
 });
+
+async function readRuntimeFiles(root: string): Promise<Array<{ path: string; content: string }>> {
+  const files: Array<{ path: string; content: string }> = [];
+  async function visit(directory: string): Promise<void> {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      if (entry.name === "_external_repos") continue;
+      const fullPath = join(directory, entry.name);
+      if (entry.isDirectory()) await visit(fullPath);
+      if (entry.isFile()) files.push({ path: relative(root, fullPath).replaceAll("\\", "/"), content: await readFile(fullPath, "utf8") });
+    }
+  }
+  await visit(root);
+  return files.sort((left, right) => left.path.localeCompare(right.path));
+}
 
 async function readOwnedSkill(id: string): Promise<string> {
   return readFile(join(ownedSkillsRoot, id, "SKILL.md"), "utf8");

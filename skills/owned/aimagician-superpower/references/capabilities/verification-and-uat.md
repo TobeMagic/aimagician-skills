@@ -1,61 +1,47 @@
 # Verification And UAT
 
-Use this module before claiming completion and whenever work changes behavior, installation state, documents, UI, integrations, or data handling.
+Use this module before any completion claim and whenever work changes behavior, installation state, documents, UI, integrations, data, or operational state.
 
-## Verification Order
+## Evidence Order
 
-1. Run the narrowest check that proves the changed behavior.
-2. Add or update regression tests when behavior was previously unpinned.
-3. Broaden to typecheck, lint, build, integration, browser, document, or smoke checks based on blast radius.
-4. Inspect generated artifacts directly when tests do not cover them.
-5. Record skipped checks and why they were skipped.
+1. Run the narrowest behavior check for the changed unit.
+2. Run related regression tests and integration checks.
+3. Broaden to typecheck, lint, build, browser, document, security, package, or smoke verification according to blast radius.
+4. Inspect generated or installed artifacts directly when tests cannot prove their real shape.
+5. Exercise UAT for user-facing outcomes.
+6. Trace every accepted requirement to passing evidence.
 
-## Evidence Types
+Fresh command output and inspected artifacts outrank an agent's summary or a previous run. Record the timestamp or commit when stale evidence could be misleading.
 
-Completion can be proven by:
+## Evidence Record
 
-- passing command output;
-- inspected generated files;
-- browser screenshots or console/network checks;
-- document open/extract validation;
-- API response checks;
-- manual acceptance scenarios;
-- before/after comparison;
-- security or secret scan output when data handling is involved.
+For every requirement ID, record:
 
-## UAT Scenarios
+- status: `PASS`, `FAIL`, or `NOT_RUN`;
+- command, scenario, inspection, or artifact path;
+- expected and observed result;
+- environment or target;
+- gap, limitation, or residual risk.
 
-For user-facing behavior, define acceptance scenarios:
+`NOT_RUN` is not a pass. A skipped check needs a reason and an explicit closure decision.
 
-- scenario name;
-- starting state;
-- user action;
-- expected visible result;
-- data or side effect expected;
-- pass/fail result;
-- evidence path or command.
+## UAT Contract
 
-Keep UAT practical. A few high-signal scenarios are better than a broad checklist nobody runs.
+For user-visible work, define scenario, starting state, action, expected visible result, expected side effect, result, and evidence. Include normal, empty or boundary, failure, and recovery cases when they are relevant.
 
-## Regression Review
+Use `interface-design` and `webapp-testing` for visual, responsive, accessibility, console, and network acceptance. Generated documents must be opened, extracted, rendered, or structurally inspected with the appropriate document workflow.
 
-Before closure, check:
+## Traceability Gate
 
-- requirements satisfied;
-- non-goals respected;
-- no accidental capability loss;
-- no stale TODOs or placeholders;
-- no broken imports or paths;
-- no generated noise committed unintentionally;
-- installation or target paths still clean when relevant;
-- known limitations documented.
+Run `workflow.mjs trace` to detect:
+
+- an accepted requirement absent from all plans;
+- a planned requirement with no validation evidence;
+- failed or not-run evidence;
+- evidence that names an unknown requirement.
+
+Before execution, `validate --gate plan` must pass. Before closure, `validate --gate complete` must pass unless the user explicitly accepts and records an exception.
 
 ## Failed Verification
 
-If a check fails:
-
-1. Preserve the failure output.
-2. Classify it as implementation bug, test bug, environment issue, flaky check, or unrelated pre-existing failure.
-3. Fix only the relevant scope.
-4. Re-run the narrow check.
-5. Broaden again only after the narrow check passes.
+Preserve output, classify implementation/test/environment/flaky/pre-existing failure, repair only relevant scope, rerun the narrow check, and broaden only after it passes. Do not hide a failed broad check because a narrow test passed.
