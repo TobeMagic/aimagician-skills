@@ -24,6 +24,7 @@ class AssetPolicy:
     missing_asset_fallback: str
     minimum_quality: float
     minimum_raster_short_edge_px: int
+    allowed_kinds: tuple[str, ...]
     raster_kinds: tuple[str, ...]
 
 
@@ -71,7 +72,11 @@ class AssetSession:
         choice = choose_asset(
             intent, records, active_icon_family=self.icon_family
         )
-        if intent.kind == "icon" and choice.icon_family is not None:
+        if (
+            isinstance(intent.kind, str)
+            and intent.kind.strip().casefold() == "icon"
+            and choice.icon_family is not None
+        ):
             self.icon_family = choice.icon_family
         return choice
 
@@ -90,8 +95,15 @@ def load_asset_policy(path: Path | str | None = None) -> AssetPolicy:
         missing_asset_fallback=raw["missing_asset_fallback"],
         minimum_quality=float(raw["minimum_quality"]),
         minimum_raster_short_edge_px=int(raw["minimum_raster_short_edge_px"]),
+        allowed_kinds=tuple(raw["allowed_kinds"]),
         raster_kinds=tuple(raw["raster_kinds"]),
     )
+
+
+def _normalized_token(value: object, label: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must be a non-empty string")
+    return value.strip().casefold()
 
 
 def choose_asset(
@@ -103,6 +115,14 @@ def choose_asset(
     """Choose the best safe asset with stable quality/aspect/ID ordering."""
 
     policy = load_asset_policy()
+    intent_kind = _normalized_token(intent.kind, "asset kind")
+    if intent_kind not in policy.allowed_kinds:
+        raise ValueError(f"unsupported asset kind: {intent_kind}")
+    intent_style = (
+        _normalized_token(intent.style, "asset style")
+        if intent.style is not None
+        else None
+    )
     if intent.aspect_ratio is not None and (
         not math.isfinite(intent.aspect_ratio) or intent.aspect_ratio <= 0
     ):
@@ -119,6 +139,16 @@ def choose_asset(
             record.id
             if isinstance(record.id, str) and record.id.strip()
             else f"@record-{index}"
+        )
+        record_kind = (
+            record.kind.strip().casefold()
+            if isinstance(record.kind, str) and record.kind.strip()
+            else None
+        )
+        record_style = (
+            record.style.strip().casefold()
+            if isinstance(record.style, str) and record.style.strip()
+            else None
         )
         if not isinstance(record.id, str) or not record.id.strip():
             rejected[record_key] = "INVALID_ID"
@@ -140,9 +170,13 @@ def choose_asset(
             rejected[record_key] = "INVALID_RETRIEVED_AT"
         elif record.license.casefold().strip() in {"unknown", "unverified"}:
             rejected[record_key] = "UNVERIFIED_LICENSE"
-        elif not isinstance(record.kind, str) or record.kind != intent.kind:
+        elif record_kind is None or record_kind not in policy.allowed_kinds:
+            rejected[record_key] = "INVALID_KIND"
+        elif record.style is not None and record_style is None:
+            rejected[record_key] = "INVALID_STYLE"
+        elif record_kind != intent_kind:
             rejected[record_key] = "KIND_MISMATCH"
-        elif intent.style is not None and record.style != intent.style:
+        elif intent_style is not None and record_style != intent_style:
             rejected[record_key] = "STYLE_MISMATCH"
         elif record.aspect_ratio is not None and (
             isinstance(record.aspect_ratio, bool)
@@ -153,19 +187,19 @@ def choose_asset(
             rejected[record_key] = "INVALID_ASPECT"
         elif intent.aspect_ratio is not None and record.aspect_ratio is None:
             rejected[record_key] = "MISSING_ASPECT"
-        elif record.kind in policy.raster_kinds and (
+        elif record_kind in policy.raster_kinds and (
             type(record.width_px) is not int
             or type(record.height_px) is not int
             or min(record.width_px, record.height_px)
             < policy.minimum_raster_short_edge_px
         ):
             rejected[record_key] = "INSUFFICIENT_RESOLUTION"
-        elif record.kind == "icon" and not (
+        elif record_kind == "icon" and not (
             isinstance(record.icon_family, str) and record.icon_family.strip()
         ):
             rejected[record_key] = "MISSING_ICON_FAMILY"
         elif (
-            record.kind == "icon"
+            record_kind == "icon"
             and active_icon_family is not None
             and record.icon_family != active_icon_family
         ):

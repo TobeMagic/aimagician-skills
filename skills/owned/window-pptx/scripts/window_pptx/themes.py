@@ -154,6 +154,8 @@ def load_themes(path: Path | str | None = None) -> dict[str, ThemeDefinition]:
             fonts=entry["fonts"],
             foundation=foundation,
         )
+    if set(result) != THEME_IDS:
+        raise ValueError("theme registry must contain the exact governed theme set")
     return result
 
 

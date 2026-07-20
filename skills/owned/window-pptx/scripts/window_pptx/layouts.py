@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .assets import load_asset_policy
-from .themes import contrast_ratio, load_themes
+from .themes import THEMES_PATH, contrast_ratio, load_themes
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[2]
@@ -601,6 +601,19 @@ def validate_registry_bundle() -> list[RegistryIssue]:
         or asset_policy.minimum_quality < 0
         or asset_policy.minimum_quality > 100
         or asset_policy.minimum_raster_short_edge_px < 1
+        or set(asset_policy.allowed_kinds)
+        != {
+            "photo",
+            "image",
+            "illustration",
+            "screenshot",
+            "background",
+            "texture",
+            "raster",
+            "icon",
+            "vector",
+            "logo",
+        }
         or set(asset_policy.raster_kinds)
         != {
             "photo",
@@ -756,8 +769,16 @@ def validate_registry_bundle() -> list[RegistryIssue]:
         )
     safe_right, safe_bottom = safe_x + safe_width, safe_y + safe_height
     for recipe_id, slots in registry.recipes.items():
-        capacity = registry.recipe_capacities[recipe_id]
-        if (
+        capacity = registry.recipe_capacities.get(recipe_id)
+        if capacity is None:
+            issues.append(
+                RegistryIssue(
+                    "MISSING_RECIPE_CAPACITY",
+                    recipe_id,
+                    "recipe has no capacity contract",
+                )
+            )
+        elif (
             capacity.min_items < 0
             or capacity.max_items < 1
             or capacity.min_items > capacity.max_items
@@ -770,9 +791,18 @@ def validate_registry_bundle() -> list[RegistryIssue]:
                     "RECIPE_CAPACITY", recipe_id, "invalid capacity contract"
                 )
             )
-        capacity_slots = registry.recipe_capacity_slots[recipe_id]
+        capacity_slots = registry.recipe_capacity_slots.get(recipe_id)
+        if capacity_slots is None:
+            issues.append(
+                RegistryIssue(
+                    "MISSING_CAPACITY_SLOTS",
+                    recipe_id,
+                    "recipe has no capacity slot allocation",
+                )
+            )
+            capacity_slots = ()
         slot_ids = {slot.id for slot in slots}
-        if (
+        if recipe_id in registry.recipe_capacity_slots and (
             not capacity_slots
             or len(capacity_slots) != len(set(capacity_slots))
             or not set(capacity_slots) <= slot_ids
@@ -993,13 +1023,37 @@ _RUNTIME_BUNDLE: tuple[
 
 
 def _runtime_gate_key() -> tuple[object, ...]:
-    # Registries are immutable for one generation process. Function identities
-    # also make monkeypatched validation/loaders invalidate the process cache.
+    # Function identities catch injected loaders; file fingerprints catch
+    # in-process registry edits, replacement, deletion, and permission changes.
     return (
         id(validate_registry_bundle),
         id(load_layout_registry),
         id(load_components),
         id(load_themes),
+        id(load_asset_policy),
+        id(load_legacy_templates),
+        id(_read_json),
+        id(Path.read_text),
+        *(
+            _registry_file_fingerprint(path)
+            for path in (LAYOUTS_PATH, COMPONENTS_PATH, THEMES_PATH, LEGACY_PATH)
+        ),
+    )
+
+
+def _registry_file_fingerprint(path: Path) -> tuple[object, ...]:
+    try:
+        stat = path.stat()
+    except OSError as exc:
+        return (str(path), "unavailable", type(exc).__name__, exc.errno)
+    return (
+        str(path),
+        stat.st_dev,
+        stat.st_ino,
+        stat.st_size,
+        stat.st_mtime_ns,
+        stat.st_ctime_ns,
+        stat.st_mode,
     )
 
 

@@ -128,6 +128,18 @@ def test_eight_exact_themes_resolve_complete_design_tokens() -> None:
         )
 
 
+def test_theme_loader_rejects_any_non_governed_theme_set(tmp_path: Path) -> None:
+    payload = json.loads(
+        (SKILL_ROOT / "registries" / "themes.json").read_text(encoding="utf-8")
+    )
+    payload["themes"][0]["id"] = "rogue-theme"
+    path = tmp_path / "themes.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="exact governed theme set"):
+        load_themes(path)
+
+
 def test_theme_contrast_pairs_meet_governed_thresholds() -> None:
     for theme_id in THEME_IDS:
         theme = resolve_theme(theme_id, installed_fonts={"Arial"})
@@ -705,6 +717,63 @@ def test_all_registered_raster_kinds_enforce_resolution_floor() -> None:
     assert choice.rejected[low_resolution.id] == "INSUFFICIENT_RESOLUTION"
 
 
+@pytest.mark.parametrize("kind", ["Photo", " photo "])
+def test_raster_kind_normalization_cannot_bypass_resolution_floor(
+    kind: str,
+) -> None:
+    record = AssetRecord(
+        id="tiny-photo",
+        kind=kind,
+        style=" Editorial ",
+        aspect_ratio=1,
+        quality=90,
+        source="https://example.test/tiny.png",
+        license="CC0",
+        retrieved_at="2026-07-20",
+        width_px=10,
+        height_px=10,
+    )
+
+    choice = choose_asset(
+        AssetIntent(kind="photo", style="editorial"), (record,)
+    )
+
+    assert choice.asset_id is None
+    assert choice.rejected[record.id] == "INSUFFICIENT_RESOLUTION"
+
+
+def test_asset_choice_rejects_invalid_kind_and_style_vocabulary() -> None:
+    base = AssetRecord(
+        id="bad-kind",
+        kind=" ",
+        style=None,
+        aspect_ratio=1,
+        quality=90,
+        source="internal://asset",
+        license="brand-owned",
+        retrieved_at="2026-07-20",
+    )
+    bad_style = replace(
+        base,
+        id="bad-style",
+        kind="icon",
+        style=7,  # type: ignore[arg-type]
+        icon_family="outline-v1",
+    )
+
+    choice = choose_asset(AssetIntent(kind="icon"), (base, bad_style))
+
+    assert choice.asset_id is None
+    assert choice.rejected == {
+        "bad-kind": "INVALID_KIND",
+        "bad-style": "INVALID_STYLE",
+    }
+    with pytest.raises(ValueError, match="asset kind"):
+        choose_asset(AssetIntent(kind=" "), ())
+    with pytest.raises(ValueError, match="asset style"):
+        choose_asset(AssetIntent(kind="icon", style=7), ())  # type: ignore[arg-type]
+
+
 def test_icon_choice_enforces_one_family_per_deck() -> None:
     records = (
         AssetRecord(
@@ -863,6 +932,45 @@ def test_layout_resolution_is_blocked_when_runtime_registry_gate_fails(
         resolve_layout("cards", SlideSize(13.333, 7.5))
 
 
+def test_runtime_registry_gate_invalidates_for_asset_policy_loader_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolve_layout("cards", SlideSize(13.333, 7.5))
+    policy = load_asset_policy()
+    monkeypatch.setattr(
+        layouts_module,
+        "load_asset_policy",
+        lambda: replace(policy, allow_stretch=True),
+    )
+
+    with pytest.raises(ValueError, match="ASSET_POLICY"):
+        resolve_layout("cards", SlideSize(13.333, 7.5))
+
+
+def test_runtime_registry_gate_invalidates_for_registry_file_changes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    resolve_layout("cards", SlideSize(13.333, 7.5))
+    monkeypatch.setattr(layouts_module, "LAYOUTS_PATH", tmp_path / "missing.json")
+
+    with pytest.raises(ValueError, match="REGISTRY_LOAD"):
+        resolve_layout("cards", SlideSize(13.333, 7.5))
+
+
+def test_runtime_registry_gate_invalidates_for_registry_reader_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolve_layout("cards", SlideSize(13.333, 7.5))
+
+    def unreadable(*args: object, **kwargs: object) -> str:
+        raise OSError("registry unreadable")
+
+    monkeypatch.setattr(Path, "read_text", unreadable)
+
+    with pytest.raises(ValueError, match="REGISTRY_LOAD"):
+        resolve_layout("cards", SlideSize(13.333, 7.5))
+
+
 def test_registry_validator_reports_malformed_references_without_crashing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -889,6 +997,32 @@ def test_registry_validator_reports_malformed_references_without_crashing(
         "UNKNOWN_RECIPE",
         "CAPACITY_SLOTS",
     }
+
+
+@pytest.mark.parametrize(
+    ("field", "issue_code"),
+    [
+        ("recipe_capacities", "MISSING_RECIPE_CAPACITY"),
+        ("recipe_capacity_slots", "MISSING_CAPACITY_SLOTS"),
+    ],
+)
+def test_registry_validator_reports_missing_recipe_maps_without_crashing(
+    monkeypatch: pytest.MonkeyPatch, field: str, issue_code: str
+) -> None:
+    registry = load_layout_registry()
+    broken_map = dict(getattr(registry, field))
+    del broken_map["top-band"]
+    monkeypatch.setattr(
+        layouts_module,
+        "load_layout_registry",
+        lambda: replace(registry, **{field: broken_map}),
+    )
+
+    issues = validate_registry_bundle()
+
+    assert any(
+        issue.code == issue_code and issue.path == "top-band" for issue in issues
+    )
 
 
 def test_registry_validator_detects_intermediate_service_holes(
