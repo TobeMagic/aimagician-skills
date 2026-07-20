@@ -134,12 +134,21 @@ def test_theme_contrast_pairs_meet_governed_thresholds() -> None:
         assert contrast_ratio(theme.colors["text"], theme.colors["background"]) >= 4.5
         assert contrast_ratio(theme.colors["on_primary"], theme.colors["primary"]) >= 4.5
         assert contrast_ratio(theme.colors["muted_text"], theme.colors["background"]) >= 3.0
+        for semantic_color in ("primary", "accent"):
+            assert min(
+                contrast_ratio(
+                    theme.colors[semantic_color], theme.colors["background"]
+                ),
+                contrast_ratio(
+                    theme.colors[semantic_color], theme.colors["surface"]
+                ),
+            ) >= 3.0
 
 
 def test_brand_and_font_overrides_are_deterministic_and_reported() -> None:
     brand = BrandOverrides(
         primary="#0057B8",
-        accent="#FFB81C",
+        accent="#7C3AED",
         heading_font="Brand Sans",
         body_font="Brand Text",
     )
@@ -153,7 +162,7 @@ def test_brand_and_font_overrides_are_deterministic_and_reported() -> None:
 
     assert first == second
     assert first.colors["primary"] == "#0057B8"
-    assert first.colors["accent"] == "#FFB81C"
+    assert first.colors["accent"] == "#7C3AED"
     assert first.fonts["heading"] == "Brand Sans"
     assert first.fonts["body"] == "Arial"
     assert {event.code for event in first.events} >= {
@@ -176,6 +185,14 @@ def test_brand_color_with_no_background_contrast_falls_back_explicitly() -> None
     assert sum(
         event.code == "BRAND_COLOR_CONTRAST_FALLBACK" for event in theme.events
     ) == 2
+
+    silver = resolve_theme(
+        "executive-light",
+        brand=BrandOverrides(accent="#C0C0C0"),
+        installed_fonts={"Arial"},
+    )
+    assert silver.colors["accent"] == "#2F80ED"
+    assert silver.events[0].code == "BRAND_COLOR_CONTRAST_FALLBACK"
 
 
 def test_invalid_brand_color_is_rejected() -> None:
@@ -218,6 +235,24 @@ def test_cjk_locale_uses_verified_cjk_profile_before_latin_fonts() -> None:
 
 
 @pytest.mark.parametrize(
+    ("locale", "installed", "expected"),
+    [
+        ("zh-TW", {"Microsoft JhengHei", "Arial"}, "Microsoft JhengHei"),
+        ("ja-JP", {"Yu Gothic", "Microsoft YaHei", "Arial"}, "Yu Gothic"),
+        ("ko-KR", {"Malgun Gothic", "Microsoft YaHei", "Arial"}, "Malgun Gothic"),
+    ],
+)
+def test_east_asian_locales_use_region_correct_font_profiles(
+    locale: str, installed: set[str], expected: str
+) -> None:
+    theme = resolve_theme(
+        "executive-light", installed_fonts=installed, locale=locale
+    )
+
+    assert theme.fonts == {"heading": expected, "body": expected}
+
+
+@pytest.mark.parametrize(
     ("scenario", "audience", "industry", "expected"),
     [
         ("investor-pitch", "investor", None, "finance-investor"),
@@ -238,6 +273,11 @@ def test_project_context_selects_theme_deterministically(
     scenario: str, audience: str, industry: str | None, expected: str
 ) -> None:
     assert select_theme(scenario, audience=audience, industry=industry) == expected
+
+
+@pytest.mark.parametrize("theme_id", sorted(THEME_IDS))
+def test_explicit_theme_id_is_never_reinterpreted(theme_id: str) -> None:
+    assert select_theme(theme_id) == theme_id
 
 
 def test_dark_theme_is_an_explicit_safe_default_not_model_improvisation() -> None:
@@ -267,6 +307,10 @@ def test_layout_geometry_is_derived_from_governed_grid_tokens() -> None:
     assert registry.grid.spacing_base_pt == 8
     assert registry.grid.reference_width_in == pytest.approx(13.333)
     assert registry.grid.reference_height_in == pytest.approx(7.5)
+    assert registry.grid.column_gap_pt == 16
+    assert registry.grid.row_gap_pt == 8
+    assert registry.grid.safe_margin_x_in == 0.5
+    assert registry.grid.safe_margin_y_in == 0.4
     for slots in registry.recipes.values():
         for slot in slots:
             assert 0 <= slot.col < registry.grid.columns
@@ -362,7 +406,7 @@ def test_each_family_has_three_distinct_geometry_component_variants() -> None:
 def test_phase23_outputs_have_a_phase24_layout_service_path(
     form: str, max_items: int, density: str
 ) -> None:
-    for item_count in {1, max_items}:
+    for item_count in range(1, max_items + 1):
         layout = resolve_layout(
             form,
             SlideSize(13.333, 7.5),
@@ -394,6 +438,20 @@ def test_resolved_layout_scales_inside_custom_page(size: SlideSize) -> None:
         assert slot.width > 0 and slot.height > 0
         assert slot.x + slot.width <= size.width + 1e-6
         assert slot.y + slot.height <= size.height + 1e-6
+        assert slot.x >= 0.5 - 1e-6
+        assert slot.y >= 0.4 - 1e-6
+        assert slot.x + slot.width <= size.width - 0.5 + 1e-6
+        assert slot.y + slot.height <= size.height - 0.4 + 1e-6
+
+
+def test_resolved_grid_gutters_are_exact_8pt_scale_multiples() -> None:
+    layout = resolve_layout("cards.three-column", SlideSize(13.333, 7.5))
+    one, two = (
+        next(slot for slot in layout.slots if slot.id == slot_id)
+        for slot_id in ("one", "two")
+    )
+
+    assert two.x - (one.x + one.width) == pytest.approx(16 / 72, abs=1e-6)
 
 
 @pytest.mark.parametrize("bad", [math.nan, math.inf, -math.inf])
@@ -601,6 +659,52 @@ def test_asset_choice_rejects_non_finite_quality_and_blank_provenance() -> None:
     }
 
 
+def test_asset_choice_rejects_weakly_typed_public_records_without_crashing() -> None:
+    invalid_id = AssetRecord(
+        id=None,  # type: ignore[arg-type]
+        kind="icon",
+        style=None,
+        aspect_ratio=1,
+        quality=90,
+        source="internal://bad-id",
+        license="brand-owned",
+        retrieved_at="2026-07-20",
+        icon_family="outline-v1",
+    )
+    invalid_quality = replace(
+        invalid_id,
+        id="bad-quality",
+        quality="high",  # type: ignore[arg-type]
+    )
+
+    choice = choose_asset(
+        AssetIntent(kind="icon"), (invalid_id, invalid_quality)
+    )
+
+    assert choice.asset_id is None
+    assert set(choice.rejected.values()) == {"INVALID_ID", "INVALID_QUALITY"}
+
+
+def test_all_registered_raster_kinds_enforce_resolution_floor() -> None:
+    low_resolution = AssetRecord(
+        id="tiny-illustration",
+        kind="illustration",
+        style="editorial",
+        aspect_ratio=1,
+        quality=90,
+        source="https://example.test/tiny.png",
+        license="CC0",
+        retrieved_at="2026-07-20",
+        width_px=10,
+        height_px=10,
+    )
+
+    choice = choose_asset(AssetIntent(kind="illustration"), (low_resolution,))
+
+    assert choice.asset_id is None
+    assert choice.rejected[low_resolution.id] == "INSUFFICIENT_RESOLUTION"
+
+
 def test_icon_choice_enforces_one_family_per_deck() -> None:
     records = (
         AssetRecord(
@@ -703,9 +807,21 @@ def test_runtime_registry_gate_checks_exact_sets_and_type_minima(
         **broken_foundation["typography"],
         "body": 8,
     }
+    broken_colors = dict(broken_theme.colors)
+    broken_colors["primary"] = broken_colors["background"]
+    broken_colors["accent"] = broken_colors["surface"]
     broken_themes = {
         **themes,
-        "executive-light": replace(broken_theme, foundation=broken_foundation),
+        "executive-light": replace(
+            broken_theme,
+            foundation=broken_foundation,
+            colors=broken_colors,
+        ),
+    }
+    components = load_components()
+    broken_components = {
+        **components,
+        "title": replace(components["title"], min_font_pt=1, max_items=0),
     }
     monkeypatch.setattr(
         layouts_module,
@@ -717,12 +833,116 @@ def test_runtime_registry_gate_checks_exact_sets_and_type_minima(
         ),
     )
     monkeypatch.setattr(layouts_module, "load_themes", lambda: broken_themes)
+    monkeypatch.setattr(
+        layouts_module, "load_components", lambda: broken_components
+    )
 
     assert {issue.code for issue in validate_registry_bundle()} >= {
         "FAMILY_SET",
         "SEMANTIC_FORM_SET",
         "THEME_TYPOGRAPHY",
+        "COMPONENT_CAPACITY",
+        "THEME_COLOR_CONTRAST",
     }
+
+
+def test_layout_resolution_is_blocked_when_runtime_registry_gate_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        layouts_module,
+        "validate_registry_bundle",
+        lambda: [
+            layouts_module.RegistryIssue(
+                "BROKEN_TEST_REGISTRY", "$", "injected failure"
+            )
+        ],
+    )
+
+    with pytest.raises(ValueError, match="BROKEN_TEST_REGISTRY"):
+        resolve_layout("cards", SlideSize(13.333, 7.5))
+
+
+def test_registry_validator_reports_malformed_references_without_crashing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry = load_layout_registry()
+    variants = dict(registry.variants)
+    variants["cards.three-column"] = replace(
+        variants["cards.three-column"], recipe_id="missing-recipe"
+    )
+    capacity_slots = dict(registry.recipe_capacity_slots)
+    capacity_slots["top-band"] = ("missing-slot",)
+    monkeypatch.setattr(
+        layouts_module,
+        "load_layout_registry",
+        lambda: replace(
+            registry,
+            variants=variants,
+            recipe_capacity_slots=capacity_slots,
+        ),
+    )
+
+    issues = validate_registry_bundle()
+
+    assert {issue.code for issue in issues} >= {
+        "UNKNOWN_RECIPE",
+        "CAPACITY_SLOTS",
+    }
+
+
+def test_registry_validator_detects_intermediate_service_holes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry = load_layout_registry()
+    capacities = dict(registry.recipe_capacities)
+    capacities["top-band"] = layouts_module.LayoutCapacity(
+        1, 1, ("sparse", "balanced", "dense")
+    )
+    capacities["three-column"] = layouts_module.LayoutCapacity(
+        5, 5, ("balanced", "dense")
+    )
+    capacities["grid-four"] = layouts_module.LayoutCapacity(
+        5, 5, ("balanced", "dense")
+    )
+    monkeypatch.setattr(
+        layouts_module,
+        "load_layout_registry",
+        lambda: replace(registry, recipe_capacities=capacities),
+    )
+
+    issues = validate_registry_bundle()
+
+    assert any(
+        issue.code == "LAYOUT_SERVICE_GAP"
+        and issue.path == "cards.balanced.2"
+        for issue in issues
+    )
+
+
+def test_registry_validator_handles_empty_theme_registry_stably(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(layouts_module, "load_themes", lambda: {})
+
+    issues = validate_registry_bundle()
+
+    assert issues
+    assert issues[0].code in {"REGISTRY_LOAD", "THEME_COUNT"}
+
+
+def test_layout_registry_rejects_non_integer_grid_coordinates(
+    tmp_path: Path,
+) -> None:
+    payload = json.loads(
+        (SKILL_ROOT / "registries" / "layouts.json").read_text(encoding="utf-8")
+    )
+    payload["recipes"][0]["slots"][0]["col"] = 0.9
+    path = tmp_path / "layouts.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="col must be an integer"):
+        load_layout_registry(path)
 
 
 def test_legacy_templates_are_quarantined_from_recommendation() -> None:

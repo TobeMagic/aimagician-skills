@@ -24,6 +24,7 @@ class AssetPolicy:
     missing_asset_fallback: str
     minimum_quality: float
     minimum_raster_short_edge_px: int
+    raster_kinds: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -89,6 +90,7 @@ def load_asset_policy(path: Path | str | None = None) -> AssetPolicy:
         missing_asset_fallback=raw["missing_asset_fallback"],
         minimum_quality=float(raw["minimum_quality"]),
         minimum_raster_short_edge_px=int(raw["minimum_raster_short_edge_px"]),
+        raster_kinds=tuple(raw["raster_kinds"]),
     )
 
 
@@ -108,52 +110,66 @@ def choose_asset(
     materialized = tuple(records)
     id_counts: dict[str, int] = {}
     for record in materialized:
-        id_counts[record.id] = id_counts.get(record.id, 0) + 1
+        if isinstance(record.id, str) and record.id.strip():
+            id_counts[record.id] = id_counts.get(record.id, 0) + 1
     accepted: list[AssetRecord] = []
     rejected: dict[str, str] = {}
-    for record in materialized:
-        if not record.id.strip():
-            rejected[record.id] = "MISSING_ID"
+    for index, record in enumerate(materialized):
+        record_key = (
+            record.id
+            if isinstance(record.id, str) and record.id.strip()
+            else f"@record-{index}"
+        )
+        if not isinstance(record.id, str) or not record.id.strip():
+            rejected[record_key] = "INVALID_ID"
         elif id_counts[record.id] > 1:
-            rejected[record.id] = "DUPLICATE_ID"
-        elif not math.isfinite(record.quality) or record.quality < policy.minimum_quality:
-            rejected[record.id] = "INVALID_QUALITY"
+            rejected[record_key] = "DUPLICATE_ID"
+        elif (
+            isinstance(record.quality, bool)
+            or not isinstance(record.quality, (int, float))
+            or not math.isfinite(record.quality)
+            or not policy.minimum_quality <= record.quality <= 100
+        ):
+            rejected[record_key] = "INVALID_QUALITY"
         elif not all(
             isinstance(value, str) and bool(value.strip())
             for value in (record.source, record.license, record.retrieved_at)
         ):
-            rejected[record.id] = "MISSING_PROVENANCE"
+            rejected[record_key] = "MISSING_PROVENANCE"
         elif not _valid_date(record.retrieved_at):
-            rejected[record.id] = "INVALID_RETRIEVED_AT"
+            rejected[record_key] = "INVALID_RETRIEVED_AT"
         elif record.license.casefold().strip() in {"unknown", "unverified"}:
-            rejected[record.id] = "UNVERIFIED_LICENSE"
-        elif record.kind != intent.kind:
-            rejected[record.id] = "KIND_MISMATCH"
+            rejected[record_key] = "UNVERIFIED_LICENSE"
+        elif not isinstance(record.kind, str) or record.kind != intent.kind:
+            rejected[record_key] = "KIND_MISMATCH"
         elif intent.style is not None and record.style != intent.style:
-            rejected[record.id] = "STYLE_MISMATCH"
+            rejected[record_key] = "STYLE_MISMATCH"
         elif record.aspect_ratio is not None and (
-            not math.isfinite(record.aspect_ratio) or record.aspect_ratio <= 0
+            isinstance(record.aspect_ratio, bool)
+            or not isinstance(record.aspect_ratio, (int, float))
+            or not math.isfinite(record.aspect_ratio)
+            or record.aspect_ratio <= 0
         ):
-            rejected[record.id] = "INVALID_ASPECT"
+            rejected[record_key] = "INVALID_ASPECT"
         elif intent.aspect_ratio is not None and record.aspect_ratio is None:
-            rejected[record.id] = "MISSING_ASPECT"
-        elif record.kind == "photo" and (
-            not isinstance(record.width_px, int)
-            or not isinstance(record.height_px, int)
+            rejected[record_key] = "MISSING_ASPECT"
+        elif record.kind in policy.raster_kinds and (
+            type(record.width_px) is not int
+            or type(record.height_px) is not int
             or min(record.width_px, record.height_px)
             < policy.minimum_raster_short_edge_px
         ):
-            rejected[record.id] = "INSUFFICIENT_RESOLUTION"
+            rejected[record_key] = "INSUFFICIENT_RESOLUTION"
         elif record.kind == "icon" and not (
             isinstance(record.icon_family, str) and record.icon_family.strip()
         ):
-            rejected[record.id] = "MISSING_ICON_FAMILY"
+            rejected[record_key] = "MISSING_ICON_FAMILY"
         elif (
             record.kind == "icon"
             and active_icon_family is not None
             and record.icon_family != active_icon_family
         ):
-            rejected[record.id] = "ICON_FAMILY_MISMATCH"
+            rejected[record_key] = "ICON_FAMILY_MISMATCH"
         else:
             accepted.append(record)
     if not accepted:

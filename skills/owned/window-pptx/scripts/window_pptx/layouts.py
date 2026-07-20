@@ -168,11 +168,23 @@ class SlideSize:
 class GridDefinition:
     columns: int
     rows: int
-    column_gap: float
-    row_gap: float
+    column_gap_steps: int
+    row_gap_steps: int
     reference_width_in: float
     reference_height_in: float
     spacing_base_pt: int
+    safe_margin_x_in: float
+    safe_margin_y_in: float
+    safe_margin_source: str
+    spacing_source: str
+
+    @property
+    def column_gap_pt(self) -> int:
+        return self.column_gap_steps * self.spacing_base_pt
+
+    @property
+    def row_gap_pt(self) -> int:
+        return self.row_gap_steps * self.spacing_base_pt
 
     def box(
         self,
@@ -183,16 +195,40 @@ class GridDefinition:
         row_span: int,
     ) -> tuple[float, float, float, float]:
         safe_x, safe_y, safe_width, safe_height = safe_bounds
+        column_gap = self.column_gap_pt / 72 / self.reference_width_in
+        row_gap = self.row_gap_pt / 72 / self.reference_height_in
         column_width = (
-            safe_width - (self.columns - 1) * self.column_gap
+            safe_width - (self.columns - 1) * column_gap
         ) / self.columns
         row_height = (
-            safe_height - (self.rows - 1) * self.row_gap
+            safe_height - (self.rows - 1) * row_gap
         ) / self.rows
-        x = safe_x + col * (column_width + self.column_gap)
-        y = safe_y + row * (row_height + self.row_gap)
-        width = col_span * column_width + (col_span - 1) * self.column_gap
-        height = row_span * row_height + (row_span - 1) * self.row_gap
+        x = safe_x + col * (column_width + column_gap)
+        y = safe_y + row * (row_height + row_gap)
+        width = col_span * column_width + (col_span - 1) * column_gap
+        height = row_span * row_height + (row_span - 1) * row_gap
+        return x, y, width, height
+
+    def box_inches(
+        self,
+        slide_size: SlideSize,
+        col: int,
+        row: int,
+        col_span: int,
+        row_span: int,
+    ) -> tuple[float, float, float, float]:
+        column_gap = self.column_gap_pt / 72
+        row_gap = self.row_gap_pt / 72
+        safe_width = slide_size.width - 2 * self.safe_margin_x_in
+        safe_height = slide_size.height - 2 * self.safe_margin_y_in
+        column_width = (
+            safe_width - (self.columns - 1) * column_gap
+        ) / self.columns
+        row_height = (safe_height - (self.rows - 1) * row_gap) / self.rows
+        x = self.safe_margin_x_in + col * (column_width + column_gap)
+        y = self.safe_margin_y_in + row * (row_height + row_gap)
+        width = col_span * column_width + (col_span - 1) * column_gap
+        height = row_span * row_height + (row_span - 1) * row_gap
         return x, y, width, height
 
 
@@ -304,6 +340,21 @@ def _read_json(path: Path) -> dict[str, Any]:
     return raw
 
 
+def _strict_int(value: Any, path: str) -> int:
+    if type(value) is not int:
+        raise ValueError(f"{path} must be an integer")
+    return value
+
+
+def _strict_number(value: Any, path: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{path} must be a finite number")
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"{path} must be a finite number")
+    return result
+
+
 def load_components(
     path: Path | str | None = None,
 ) -> dict[str, ComponentDefinition]:
@@ -314,8 +365,8 @@ def load_components(
         component = ComponentDefinition(
             id=entry["id"],
             object_policy=entry["object_policy"],
-            min_font_pt=int(entry["min_font_pt"]),
-            max_items=int(entry["max_items"]),
+            min_font_pt=_strict_int(entry["min_font_pt"], "component.min_font_pt"),
+            max_items=_strict_int(entry["max_items"], "component.max_items"),
         )
         if component.id in result:
             raise ValueError(f"duplicate component id: {component.id}")
@@ -326,19 +377,46 @@ def load_components(
 def load_layout_registry(path: Path | str | None = None) -> LayoutRegistry:
     registry_path = Path(path) if path is not None else LAYOUTS_PATH
     raw = _read_json(registry_path)
-    safe = raw["safe_bounds"]
-    safe_bounds = (safe["x"], safe["y"], safe["width"], safe["height"])
+    themes = load_themes()
+    if not themes:
+        raise ValueError("theme registry must not be empty")
+    foundation = next(iter(themes.values())).foundation
+    theme_grid = foundation["grid"]
+    spacing_base = next(
+        (value for value in foundation["spacing"] if value > 0), None
+    )
+    if spacing_base is None:
+        raise ValueError("theme spacing scale has no positive base")
     grid_raw = raw["grid"]
     reference = grid_raw["reference_slide"]
     grid = GridDefinition(
-        columns=int(grid_raw["columns"]),
-        rows=int(grid_raw["rows"]),
-        column_gap=float(grid_raw["column_gap"]),
-        row_gap=float(grid_raw["row_gap"]),
-        reference_width_in=float(reference["width_in"]),
-        reference_height_in=float(reference["height_in"]),
-        spacing_base_pt=int(grid_raw["spacing_base_pt"]),
+        columns=_strict_int(theme_grid["columns"], "theme.grid.columns"),
+        rows=_strict_int(grid_raw["rows"], "grid.rows"),
+        column_gap_steps=_strict_int(
+            grid_raw["column_gap_steps"], "grid.column_gap_steps"
+        ),
+        row_gap_steps=_strict_int(
+            grid_raw["row_gap_steps"], "grid.row_gap_steps"
+        ),
+        reference_width_in=_strict_number(
+            reference["width_in"], "grid.reference_slide.width_in"
+        ),
+        reference_height_in=_strict_number(
+            reference["height_in"], "grid.reference_slide.height_in"
+        ),
+        spacing_base_pt=_strict_int(spacing_base, "theme.spacing_base"),
+        safe_margin_x_in=_strict_number(
+            theme_grid["safe_margin_x_in"], "theme.grid.safe_margin_x_in"
+        ),
+        safe_margin_y_in=_strict_number(
+            theme_grid["safe_margin_y_in"], "theme.grid.safe_margin_y_in"
+        ),
+        safe_margin_source=grid_raw["safe_margin_source"],
+        spacing_source=grid_raw["spacing_source"],
     )
+    safe_x = grid.safe_margin_x_in / grid.reference_width_in
+    safe_y = grid.safe_margin_y_in / grid.reference_height_in
+    safe_bounds = (safe_x, safe_y, 1 - 2 * safe_x, 1 - 2 * safe_y)
     recipes: dict[str, tuple[RecipeSlot, ...]] = {}
     recipe_capacities: dict[str, LayoutCapacity] = {}
     recipe_capacity_slots: dict[str, tuple[str, ...]] = {}
@@ -348,17 +426,22 @@ def load_layout_registry(path: Path | str | None = None) -> LayoutRegistry:
             raise ValueError(f"duplicate recipe id: {recipe_id}")
         capacity = entry["capacity"]
         recipe_capacities[recipe_id] = LayoutCapacity(
-            min_items=int(capacity["min_items"]),
-            max_items=int(capacity["max_items"]),
+            min_items=_strict_int(
+                capacity["min_items"], f"recipes.{recipe_id}.min_items"
+            ),
+            max_items=_strict_int(
+                capacity["max_items"], f"recipes.{recipe_id}.max_items"
+            ),
             densities=tuple(capacity["densities"]),
         )
         recipe_capacity_slots[recipe_id] = tuple(entry["capacity_slots"])
         parsed_slots: list[RecipeSlot] = []
         for slot in entry["slots"]:
-            col = int(slot["col"])
-            row = int(slot["row"])
-            col_span = int(slot["col_span"])
-            row_span = int(slot["row_span"])
+            slot_path = f"recipes.{recipe_id}.{slot['id']}"
+            col = _strict_int(slot["col"], f"{slot_path}.col")
+            row = _strict_int(slot["row"], f"{slot_path}.row")
+            col_span = _strict_int(slot["col_span"], f"{slot_path}.col_span")
+            row_span = _strict_int(slot["row_span"], f"{slot_path}.row_span")
             x, y, width, height = grid.box(
                 tuple(float(value) for value in safe_bounds),  # type: ignore[arg-type]
                 col,
@@ -492,6 +575,12 @@ def validate_registry_bundle() -> list[RegistryIssue]:
                     "COMPONENT_POLICY", component.id, "unsupported object policy"
                 )
             )
+        if component.min_font_pt < 11 or component.max_items < 1:
+            issues.append(
+                RegistryIssue(
+                    "COMPONENT_CAPACITY", component.id, "unsafe type or item minimum"
+                )
+            )
     if set(components) != EXPECTED_COMPONENTS:
         issues.append(
             RegistryIssue(
@@ -500,12 +589,6 @@ def validate_registry_bundle() -> list[RegistryIssue]:
                 "component set is incomplete or unexpected",
             )
         )
-        if component.min_font_pt < 11 or component.max_items < 1:
-            issues.append(
-                RegistryIssue(
-                    "COMPONENT_CAPACITY", component.id, "unsafe type or item minimum"
-                )
-            )
 
     if (
         asset_policy.crop_mode != "cover"
@@ -516,7 +599,18 @@ def validate_registry_bundle() -> list[RegistryIssue]:
         or asset_policy.missing_asset_fallback != "native-editable-composition"
         or not math.isfinite(asset_policy.minimum_quality)
         or asset_policy.minimum_quality < 0
+        or asset_policy.minimum_quality > 100
         or asset_policy.minimum_raster_short_edge_px < 1
+        or set(asset_policy.raster_kinds)
+        != {
+            "photo",
+            "image",
+            "illustration",
+            "screenshot",
+            "background",
+            "texture",
+            "raster",
+        }
     ):
         issues.append(
             RegistryIssue("ASSET_POLICY", "asset_policy", "unsafe asset policy")
@@ -555,6 +649,34 @@ def validate_registry_bundle() -> list[RegistryIssue]:
                         f"contrast below {threshold}",
                     )
                 )
+        for semantic_color in ("primary", "accent"):
+            if min(
+                contrast_ratio(
+                    theme.colors[semantic_color], theme.colors["background"]
+                ),
+                contrast_ratio(
+                    theme.colors[semantic_color], theme.colors["surface"]
+                ),
+            ) < 3.0:
+                issues.append(
+                    RegistryIssue(
+                        "THEME_COLOR_CONTRAST",
+                        f"themes.{theme.id}.{semantic_color}",
+                        "semantic color contrast below 3.0",
+                    )
+                )
+        on_primary_contrast = max(
+            contrast_ratio("#000000", theme.colors["primary"]),
+            contrast_ratio("#FFFFFF", theme.colors["primary"]),
+        )
+        if on_primary_contrast < 4.5:
+            issues.append(
+                RegistryIssue(
+                    "THEME_COLOR_CONTRAST",
+                    f"themes.{theme.id}.on_primary",
+                    "on-primary contrast below 4.5",
+                )
+            )
 
     if set(registry.families) != EXPECTED_FAMILIES:
         issues.append(
@@ -594,16 +716,12 @@ def validate_registry_bundle() -> list[RegistryIssue]:
         or registry.grid.spacing_base_pt != next(
             (value for value in spacing if value > 0), None
         )
-        or abs(
-            safe_x
-            - theme_grid["safe_margin_x_in"] / registry.grid.reference_width_in
-        )
-        > 0.005
-        or abs(
-            safe_y
-            - theme_grid["safe_margin_y_in"] / registry.grid.reference_height_in
-        )
-        > 0.005
+        or registry.grid.safe_margin_x_in != theme_grid["safe_margin_x_in"]
+        or registry.grid.safe_margin_y_in != theme_grid["safe_margin_y_in"]
+        or registry.grid.safe_margin_source != "themes.foundation.grid"
+        or registry.grid.spacing_source != "themes.foundation.spacing"
+        or registry.grid.column_gap_pt % registry.grid.spacing_base_pt != 0
+        or registry.grid.row_gap_pt % registry.grid.spacing_base_pt != 0
     ):
         issues.append(
             RegistryIssue(
@@ -616,18 +734,22 @@ def validate_registry_bundle() -> list[RegistryIssue]:
         not all(
             math.isfinite(value)
             for value in (
-                registry.grid.column_gap,
-                registry.grid.row_gap,
+                registry.grid.column_gap_pt,
+                registry.grid.row_gap_pt,
                 registry.grid.reference_width_in,
                 registry.grid.reference_height_in,
+                registry.grid.safe_margin_x_in,
+                registry.grid.safe_margin_y_in,
             )
         )
         or registry.grid.columns < 1
         or registry.grid.rows < 1
-        or registry.grid.column_gap < 0
-        or registry.grid.row_gap < 0
+        or registry.grid.column_gap_steps < 0
+        or registry.grid.row_gap_steps < 0
         or registry.grid.reference_width_in <= 0
         or registry.grid.reference_height_in <= 0
+        or registry.grid.safe_margin_x_in <= 0
+        or registry.grid.safe_margin_y_in <= 0
     ):
         issues.append(
             RegistryIssue("INVALID_GRID", "grid", "grid values must be finite and positive")
@@ -744,15 +866,25 @@ def validate_registry_bundle() -> list[RegistryIssue]:
             slot_id in recipe_slots and component_id in components
             for slot_id, component_id in variant.component_overrides
         ):
-            effective = _effective_capacity(registry, components, variant)
-            if effective.max_items < effective.min_items:
+            try:
+                effective = _effective_capacity(registry, components, variant)
+            except KeyError as exc:
                 issues.append(
                     RegistryIssue(
-                        "VARIANT_CAPACITY",
+                        "VARIANT_CAPACITY_REFERENCE",
                         variant.id,
-                        "component capacity is below declared minimum",
+                        f"invalid capacity reference: {exc}",
                     )
                 )
+            else:
+                if effective.max_items < effective.min_items:
+                    issues.append(
+                        RegistryIssue(
+                            "VARIANT_CAPACITY",
+                            variant.id,
+                            "component capacity is below declared minimum",
+                        )
+                    )
     for family in registry.families.values():
         if len(family.variant_ids) < 3:
             issues.append(
@@ -761,7 +893,16 @@ def validate_registry_bundle() -> list[RegistryIssue]:
         signatures: set[tuple[tuple[object, ...], ...]] = set()
         required_components = FAMILY_COMPONENT_REQUIREMENTS.get(family.id)
         for variant_id in family.variant_ids:
-            variant = registry.variants[variant_id]
+            variant = registry.variants.get(variant_id)
+            if variant is None:
+                issues.append(
+                    RegistryIssue(
+                        "UNKNOWN_VARIANT", family.id, variant_id
+                    )
+                )
+                continue
+            if variant.recipe_id not in registry.recipes:
+                continue
             overrides = dict(variant.component_overrides)
             slots = registry.recipes[variant.recipe_id]
             signatures.add(
@@ -803,10 +944,12 @@ def validate_registry_bundle() -> list[RegistryIssue]:
         if family is None:
             continue
         for density in ("sparse", "balanced", "dense"):
-            for item_count in {1, maximum}:
+            for item_count in range(1, maximum + 1):
                 serviceable = False
                 for variant_id in family.variant_ids:
-                    variant = registry.variants[variant_id]
+                    variant = registry.variants.get(variant_id)
+                    if variant is None or variant.recipe_id not in registry.recipes:
+                        continue
                     try:
                         capacity = _effective_capacity(
                             registry, components, variant
@@ -841,6 +984,51 @@ def validate_registry_bundle() -> list[RegistryIssue]:
     return sorted(issues, key=lambda issue: (issue.code, issue.path, issue.message))
 
 
+_RUNTIME_GATE_KEY: tuple[object, ...] | None = None
+_RUNTIME_GATE_ISSUES: tuple[RegistryIssue, ...] = ()
+_RUNTIME_BUNDLE_KEY: tuple[object, ...] | None = None
+_RUNTIME_BUNDLE: tuple[
+    LayoutRegistry, dict[str, ComponentDefinition]
+] | None = None
+
+
+def _runtime_gate_key() -> tuple[object, ...]:
+    # Registries are immutable for one generation process. Function identities
+    # also make monkeypatched validation/loaders invalidate the process cache.
+    return (
+        id(validate_registry_bundle),
+        id(load_layout_registry),
+        id(load_components),
+        id(load_themes),
+    )
+
+
+def _enforce_runtime_registry_gate() -> None:
+    global _RUNTIME_GATE_KEY, _RUNTIME_GATE_ISSUES
+
+    key = _runtime_gate_key()
+    if key != _RUNTIME_GATE_KEY:
+        _RUNTIME_GATE_ISSUES = tuple(validate_registry_bundle())
+        _RUNTIME_GATE_KEY = key
+    if _RUNTIME_GATE_ISSUES:
+        summary = "; ".join(
+            f"{issue.code}:{issue.path}" for issue in _RUNTIME_GATE_ISSUES[:5]
+        )
+        raise ValueError(f"design registry validation failed: {summary}")
+
+
+def _runtime_registry_bundle() -> tuple[
+    LayoutRegistry, dict[str, ComponentDefinition]
+]:
+    global _RUNTIME_BUNDLE_KEY, _RUNTIME_BUNDLE
+
+    key = _runtime_gate_key()
+    if key != _RUNTIME_BUNDLE_KEY or _RUNTIME_BUNDLE is None:
+        _RUNTIME_BUNDLE = (load_layout_registry(), load_components())
+        _RUNTIME_BUNDLE_KEY = key
+    return _RUNTIME_BUNDLE
+
+
 def resolve_layout(
     selector: str,
     slide_size: SlideSize,
@@ -866,8 +1054,18 @@ def resolve_layout(
         or item_count < 0
     ):
         raise ValueError("item_count must be a non-negative integer")
-    registry = load_layout_registry()
-    components = load_components()
+    _enforce_runtime_registry_gate()
+    registry, components = _runtime_registry_bundle()
+    minimum_width = (
+        2 * registry.grid.safe_margin_x_in
+        + (registry.grid.columns - 1) * registry.grid.column_gap_pt / 72
+    )
+    minimum_height = (
+        2 * registry.grid.safe_margin_y_in
+        + (registry.grid.rows - 1) * registry.grid.row_gap_pt / 72
+    )
+    if slide_size.width <= minimum_width or slide_size.height <= minimum_height:
+        raise ValueError("slide size is too small for governed margins and gutters")
     if selector in registry.variants:
         variant = registry.variants[selector]
         capacity = _effective_capacity(registry, components, variant)
@@ -920,20 +1118,28 @@ def resolve_layout(
         _, capacity, resolved_density = next(
             candidate for candidate in candidates if candidate[0] == variant_id
         )
-    slots = tuple(
-        ResolvedSlot(
-            id=slot.id,
-            component=dict(variant.component_overrides).get(
-                slot.id, slot.component
-            ),
-            x=round(slot.x * slide_size.width, 6),
-            y=round(slot.y * slide_size.height, 6),
-            width=round(slot.width * slide_size.width, 6),
-            height=round(slot.height * slide_size.height, 6),
-            allow_overlap=slot.allow_overlap,
+    resolved_slots: list[ResolvedSlot] = []
+    overrides = dict(variant.component_overrides)
+    for slot in registry.recipes[variant.recipe_id]:
+        x, y, width, height = registry.grid.box_inches(
+            slide_size,
+            slot.col,
+            slot.row,
+            slot.col_span,
+            slot.row_span,
         )
-        for slot in registry.recipes[variant.recipe_id]
-    )
+        resolved_slots.append(
+            ResolvedSlot(
+                id=slot.id,
+                component=overrides.get(slot.id, slot.component),
+                x=round(x, 6),
+                y=round(y, 6),
+                width=round(width, 6),
+                height=round(height, 6),
+                allow_overlap=slot.allow_overlap,
+            )
+        )
+    slots = tuple(resolved_slots)
     return ResolvedLayout(
         id=variant.id,
         family_id=variant.family_id,

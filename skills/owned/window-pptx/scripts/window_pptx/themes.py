@@ -11,6 +11,17 @@ from typing import Any
 
 THEMES_PATH = Path(__file__).resolve().parents[2] / "registries" / "themes.json"
 HEX_COLOR = re.compile(r"^#[0-9A-Fa-f]{6}$")
+THEME_IDS = {
+    "executive-light",
+    "executive-dark",
+    "technology",
+    "finance-investor",
+    "marketing-vibrant",
+    "ecommerce-editorial",
+    "education-training",
+    "public-enterprise",
+}
+SCRIPT_PROFILE_IDS = {"zh-hans", "zh-hant", "ja", "ko"}
 
 
 @dataclass(frozen=True)
@@ -125,12 +136,16 @@ def load_themes(path: Path | str | None = None) -> dict[str, ThemeDefinition]:
             "heading",
             "body",
             "fallbacks",
-            "cjk_heading",
-            "cjk_body",
-            "cjk_fallbacks",
+            "scripts",
         }
         if set(entry["fonts"]) != required_fonts:
             raise ValueError(f"theme {theme_id} has incomplete font profiles")
+        scripts = entry["fonts"]["scripts"]
+        if set(scripts) != SCRIPT_PROFILE_IDS or any(
+            set(profile) != {"heading", "body", "fallbacks"}
+            for profile in scripts.values()
+        ):
+            raise ValueError(f"theme {theme_id} has incomplete script profiles")
         result[theme_id] = ThemeDefinition(
             id=theme_id,
             mode=entry["mode"],
@@ -150,6 +165,12 @@ def select_theme(
     prefer_dark: bool = False,
 ) -> str:
     """Choose a governed theme from project context using stable priorities."""
+
+    normalized_scenario = re.sub(
+        r"[\s_]+", "-", scenario.casefold()
+    ).strip("-")
+    if normalized_scenario in THEME_IDS:
+        return normalized_scenario
 
     context = " ".join(
         re.sub(r"[\s_]+", "-", value.casefold()).strip("-")
@@ -262,7 +283,7 @@ def resolve_theme(
         if requested is None:
             continue
         resolved = _normalize_color(requested, field)
-        minimum_contrast = 3.0 if field == "primary" else 1.5
+        minimum_contrast = 3.0
         if min(
             contrast_ratio(resolved, colors["background"]),
             contrast_ratio(resolved, colors["surface"]),
@@ -284,15 +305,25 @@ def resolve_theme(
 
     available = {font.casefold(): font for font in (installed_fonts or set())}
     normalized_locale = locale.casefold().replace("_", "-")
-    script = (
-        "cjk"
-        if normalized_locale.split("-", 1)[0] in {"zh", "ja", "ko"}
-        else "latin"
-    )
-    if script == "cjk":
-        heading_preferred = definition.fonts["cjk_heading"]
-        body_preferred = definition.fonts["cjk_body"]
-        fallbacks = tuple(definition.fonts["cjk_fallbacks"])
+    language = normalized_locale.split("-", 1)[0]
+    if language == "zh":
+        script = (
+            "zh-hant"
+            if any(
+                token in normalized_locale.split("-")
+                for token in ("hant", "tw", "hk", "mo")
+            )
+            else "zh-hans"
+        )
+    elif language in {"ja", "ko"}:
+        script = language
+    else:
+        script = "latin"
+    if script != "latin":
+        profile = definition.fonts["scripts"][script]
+        heading_preferred = profile["heading"]
+        body_preferred = profile["body"]
+        fallbacks = tuple(profile["fallbacks"])
         script_fonts = {
             name.casefold()
             for name in (heading_preferred, body_preferred, *fallbacks)

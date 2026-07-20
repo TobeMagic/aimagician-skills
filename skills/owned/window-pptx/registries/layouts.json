@@ -1,7 +1,6 @@
 {
   "schema_version": "1.0",
-  "safe_bounds": {"x": 0.04, "y": 0.055, "width": 0.92, "height": 0.89},
-  "grid": {"columns": 12, "rows": 24, "column_gap": 0.015, "row_gap": 0.01, "reference_slide": {"width_in": 13.333, "height_in": 7.5}, "spacing_base_pt": 8},
+  "grid": {"rows": 24, "column_gap_steps": 2, "row_gap_steps": 1, "reference_slide": {"width_in": 13.333, "height_in": 7.5}, "safe_margin_source": "themes.foundation.grid", "spacing_source": "themes.foundation.spacing"},
   "recipes": [
     {"id": "hero-left", "capacity": {"min_items": 1, "max_items": 4, "densities": ["sparse", "balanced"]}, "capacity_slots": ["body"], "slots": [
       {"id": "title", "component": "title", "col": 0, "row": 3, "col_span": 7, "row_span": 6},

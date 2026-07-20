@@ -28,6 +28,7 @@
     "icon_style_scope": "one-family-per-deck",
     "missing_asset_fallback": "native-editable-composition",
     "minimum_quality": 70,
-    "minimum_raster_short_edge_px": 1000
+    "minimum_raster_short_edge_px": 1000,
+    "raster_kinds": ["photo", "image", "illustration", "screenshot", "background", "texture", "raster"]
   }
 }
