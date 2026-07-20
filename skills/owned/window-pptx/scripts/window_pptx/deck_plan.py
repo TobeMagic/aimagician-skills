@@ -15,6 +15,9 @@ from .registry import Archetype, RegistryError, resolve_archetype
 
 SCHEMA_VERSION = "1.0"
 IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9._-]{0,79}$")
+EXTERNAL_HYPERLINK = re.compile(
+    r"^(?:https?://[^\s]+|mailto:[^\s@]+@[^\s@]+)$", re.IGNORECASE
+)
 
 FORBIDDEN_RAW_FIELDS = {
     "x",
@@ -63,6 +66,10 @@ CONTENT_KINDS = {
     "comparison",
     "sequence",
     "timeline",
+    "process",
+    "roadmap",
+    "quadrant",
+    "funnel",
     "trend",
     "composition",
     "matrix",
@@ -123,6 +130,7 @@ PREFERENCE_VALUES = {
     "tone": {"conservative", "professional", "bold", "editorial", "educational"},
     "density": {"sparse", "balanced", "dense"},
     "audience_mode": {"executive", "customer", "investor", "internal", "learner", "general"},
+    "motion": {"off", "subtle-fade", "step-reveal"},
 }
 
 
@@ -157,10 +165,18 @@ class ContentBlock:
     role_hint: str | None = None
     chart_intent: str | None = None
     source_ref: str | None = None
+    hyperlink: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {"id": self.id, "kind": self.kind}
-        for key in ("title", "text", "role_hint", "chart_intent", "source_ref"):
+        for key in (
+            "title",
+            "text",
+            "role_hint",
+            "chart_intent",
+            "source_ref",
+            "hyperlink",
+        ):
             value = getattr(self, key)
             if value is not None:
                 result[key] = value
@@ -177,6 +193,7 @@ class SlideIntent:
     importance: str
     blocks: tuple[ContentBlock, ...]
     continuation_of: str | None = None
+    speaker_notes: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {
@@ -189,6 +206,8 @@ class SlideIntent:
             result["title"] = self.title
         if self.continuation_of is not None:
             result["continuation_of"] = self.continuation_of
+        if self.speaker_notes is not None:
+            result["speaker_notes"] = self.speaker_notes
         return result
 
 
@@ -280,6 +299,24 @@ def _identifier(value: Any, path: str) -> str:
     return result
 
 
+def _hyperlink(value: Any, path: str) -> str | None:
+    result = _string(value, path, required=False, maximum=2048)
+    if result is None:
+        return None
+    if result.startswith("slide:"):
+        target = result.removeprefix("slide:")
+        if not IDENTIFIER.fullmatch(target):
+            raise DeckPlanValidationError(
+                f"{path} has an invalid internal slide hyperlink"
+            )
+        return result
+    if not EXTERNAL_HYPERLINK.fullmatch(result):
+        raise DeckPlanValidationError(
+            f"{path} must use http, https, mailto, or slide:<id>"
+        )
+    return result
+
+
 def _parse_project(value: Any) -> tuple[ProjectIntent, Archetype]:
     raw = _object(value, "$.project")
     _reject_unknown(raw, {"title", "scenario", "audience", "objective", "language"}, "$.project")
@@ -329,6 +366,7 @@ def _parse_block(value: Any, path: str) -> ContentBlock:
         "role_hint",
         "chart_intent",
         "source_ref",
+        "hyperlink",
     }
     _reject_unknown(raw, allowed, path)
     block_id = _identifier(raw.get("id"), f"{path}.id")
@@ -415,12 +453,17 @@ def _parse_block(value: Any, path: str) -> ContentBlock:
         role_hint=role_hint,
         chart_intent=chart_intent,
         source_ref=source_ref,
+        hyperlink=_hyperlink(raw.get("hyperlink"), f"{path}.hyperlink"),
     )
 
 
 def _parse_slide(value: Any, path: str) -> SlideIntent:
     raw = _object(value, path)
-    _reject_unknown(raw, {"id", "role", "title", "importance", "blocks"}, path)
+    _reject_unknown(
+        raw,
+        {"id", "role", "title", "importance", "blocks", "speaker_notes"},
+        path,
+    )
     blocks = tuple(
         _parse_block(block, f"{path}.blocks[{index}]")
         for index, block in enumerate(_array(raw.get("blocks"), f"{path}.blocks"))
@@ -437,6 +480,12 @@ def _parse_slide(value: Any, path: str) -> SlideIntent:
         title=_string(raw.get("title"), f"{path}.title", required=False, maximum=200),
         importance=importance,
         blocks=blocks,
+        speaker_notes=_string(
+            raw.get("speaker_notes"),
+            f"{path}.speaker_notes",
+            required=False,
+            maximum=5000,
+        ),
     )
 
 
@@ -447,6 +496,10 @@ _ROLE_CANDIDATES: dict[str, tuple[str, ...]] = {
     "comparison": ("competition", "options", "positioning", "current-state", "insights"),
     "sequence": ("process", "approach", "workstreams", "implementation", "next-steps"),
     "timeline": ("timeline", "roadmap", "calendar", "milestones", "next-steps"),
+    "process": ("process", "approach", "workstreams", "implementation", "next-steps"),
+    "roadmap": ("roadmap", "timeline", "milestones", "implementation", "next-steps"),
+    "quadrant": ("choices", "competition", "risks", "insights"),
+    "funnel": ("funnel", "channels", "performance", "insights", "findings"),
     "matrix": ("choices", "competition", "risks", "insights"),
     "risk": ("risks", "issues", "limitations", "challenges"),
     "recommendation": ("recommendations", "action-plan", "next-steps", "immediate-actions"),
@@ -542,6 +595,15 @@ def validate_deck_plan(payload: Any) -> DeckPlan:
     block_ids = [block.id for slide in slides for block in slide.blocks]
     if len(block_ids) != len(set(block_ids)):
         raise DeckPlanValidationError("DeckPlan contains duplicate block ids")
+    known_slide_ids = set(slide_ids)
+    for slide in slides:
+        for block in slide.blocks:
+            if block.hyperlink is not None and block.hyperlink.startswith("slide:"):
+                target = block.hyperlink.removeprefix("slide:")
+                if target not in known_slide_ids:
+                    raise DeckPlanValidationError(
+                        f"block {block.id} hyperlink targets unknown slide: {target}"
+                    )
     return DeckPlan(
         schema_version=SCHEMA_VERSION,
         project=project,
@@ -578,8 +640,12 @@ _SEMANTIC_PRIORITY = {
     "composition": 96,
     "comparison": 94,
     "timeline": 92,
+    "roadmap": 92,
+    "process": 90,
     "sequence": 90,
+    "quadrant": 88,
     "matrix": 88,
+    "funnel": 87,
     "risk": 86,
     "recommendation": 84,
     "table": 82,

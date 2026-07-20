@@ -11,6 +11,28 @@ SAFE_DEFAULT_FAMILY = "structured-content"
 
 
 _CANDIDATES: dict[str, tuple[tuple[str, float], ...]] = {
+    "process": (
+        ("process", 0.96),
+        ("timeline", 0.72),
+        ("structured-content", 0.58),
+    ),
+    "roadmap": (
+        ("roadmap", 0.96),
+        ("timeline", 0.82),
+        ("process", 0.68),
+        ("structured-content", 0.58),
+    ),
+    "quadrant": (
+        ("quadrant", 0.96),
+        ("matrix", 0.84),
+        ("structured-content", 0.58),
+    ),
+    "funnel": (
+        ("funnel", 0.96),
+        ("process", 0.76),
+        ("data-chart", 0.68),
+        ("structured-content", 0.58),
+    ),
     "sequence": (
         ("process", 0.94),
         ("timeline", 0.73),

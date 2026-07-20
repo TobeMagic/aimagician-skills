@@ -2418,8 +2418,26 @@ def main(
                 output_policy=output_policy,
                 export_pdf=args.export_pdf,
             )
+            rendered_export_result: dict[str, Any] | None = None
+            if args.export_slides:
+                rendered_export_result = export_slides_to_png(
+                    presentation,
+                    parse_slide_spec(args.export_slides),
+                    resolve_path(project_dir, args.export_dir)
+                    or (project_dir / ".window-pptx" / "exports"),
+                )
+            rendered_qa_result: dict[str, Any] | None = None
+            if args.export_qa:
+                rendered_qa_result = export_all_slides_to_png(
+                    presentation,
+                    project_dir / ".window-pptx" / "exports" / "qa",
+                )
             emit_result(
-                {"render_pipeline": pipeline_result.to_dict()},
+                {
+                    "render_pipeline": pipeline_result.to_dict(),
+                    "slide_export": rendered_export_result,
+                    "qa_export": rendered_qa_result,
+                },
                 args.json,
                 sys.stdout,
                 sys.stderr,

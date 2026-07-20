@@ -258,6 +258,66 @@ py ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py --project-dir C
 
 The helper is intentionally conservative. For a real one-to-one deck, generate a project-specific Python COM script under `.window-pptx/`, using the helper as the base for environment setup, add-in discovery, open/save/export, and safe cleanup.
 
+## Governed DeckPlan Mode
+
+Prefer DeckPlan mode when the model needs to create a new deck from content. It moves page selection, capacity, typography, theme, geometry, editable-object construction, and transaction safety into the skill instead of asking the model to design with raw coordinates.
+
+The model may provide only semantic intent. The schema rejects raw `x/y/width/height`, layout ids, template ids, fonts, colors, COM calls, code, macros, and scripts. Use `schemas/deck-plan.v1.schema.json` as the contract.
+
+Stable semantic mappings include:
+
+- `trend` → editable line chart
+- `composition` → editable doughnut or governed stacked chart
+- `comparison` → comparison layout or editable chart
+- `table` → editable native table
+- `sequence` / `process` → process diagram
+- `timeline` → timeline diagram
+- `roadmap` → roadmap diagram
+- `matrix` → matrix diagram
+- `quadrant` → quadrant diagram
+- `funnel` → funnel diagram
+- `metrics` → governed KPI layout
+- `bullets` → cards or structured content according to capacity
+
+Each slide should have one dominant semantic block. Put numeric chart data in controlled items such as `category`, `series`, and `value`; put table rows in repeated controlled data items. Use `speaker_notes` on the slide and `hyperlink` on a content block. Hyperlinks are limited to `http`, `https`, `mailto`, and `slide:<id>`. Motion is `off` by default; the only opt-in presets are `subtle-fade` and `step-reveal`.
+
+Compile without PowerPoint to inspect decisions:
+
+```powershell
+python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
+  --project-dir C:\ppt-project `
+  --deck-plan deck-plan.json `
+  --compile-deck-plan `
+  --no-output-deck `
+  --json
+```
+
+Render through the governed native-object and candidate-save pipeline:
+
+```powershell
+python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
+  --project-dir C:\ppt-project `
+  --deck-plan deck-plan.json `
+  --render-deck-plan `
+  --output output\final.pptx `
+  --export-qa `
+  --export-pdf `
+  --json
+```
+
+For weaker models, use this constrained sequence:
+
+1. Select one registered business scenario; do not invent an outline when an archetype exists.
+2. Write one action title and one dominant semantic block per slide.
+3. Select a registered content kind; do not select a layout, coordinates, font, or color.
+4. Keep each item atomic and within the schema capacity. Let the compiler split overflow into continuation slides.
+5. Use `generic` only when no stronger semantic relationship exists.
+6. Leave motion off unless the presentation context explicitly benefits from it.
+7. Compile first and inspect `decision_trace`, continuation pages, findings, and chosen page families.
+8. Render only after the semantic plan validates; export previews and run QA before delivery.
+
+The renderer produces named, tagged, editable native PowerPoint text, shapes, images, charts, tables, and grouped diagrams. It revalidates layout, theme, semantic advanced-object data, links, assets, and slide geometry before the first COM mutation. A missing or unsuitable asset falls back to a native editable composition rather than a placeholder screenshot.
+
 Search and download stock images through Pixabay without committing API keys:
 
 ```powershell

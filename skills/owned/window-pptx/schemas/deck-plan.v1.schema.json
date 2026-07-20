@@ -46,6 +46,7 @@
         "role": {"$ref": "#/$defs/identifier"},
         "title": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^\\S(?:[\\s\\S]*\\S)?$(?![\\s\\S])"},
         "importance": {"enum": ["low", "normal", "high", "critical"]},
+        "speaker_notes": {"type": "string", "minLength": 1, "maxLength": 5000, "pattern": "^\\S(?:[\\s\\S]*\\S)?$(?![\\s\\S])"},
         "blocks": {
           "type": "array",
           "minItems": 1,
@@ -66,7 +67,7 @@
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
         "kind": {
-          "enum": ["bullets", "metrics", "comparison", "sequence", "timeline", "trend", "composition", "matrix", "risk", "recommendation", "quote", "table", "image", "statement", "generic"]
+          "enum": ["bullets", "metrics", "comparison", "sequence", "timeline", "process", "roadmap", "quadrant", "funnel", "trend", "composition", "matrix", "risk", "recommendation", "quote", "table", "image", "statement", "generic"]
         },
         "title": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^\\S(?:[\\s\\S]*\\S)?$(?![\\s\\S])"},
         "text": {"type": "string", "minLength": 1, "maxLength": 4000, "pattern": "^\\S(?:[\\s\\S]*\\S)?$(?![\\s\\S])"},
@@ -85,7 +86,8 @@
         },
         "role_hint": {"$ref": "#/$defs/identifier"},
         "chart_intent": {"enum": ["trend", "comparison", "composition", "distribution", "relationship"]},
-        "source_ref": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^\\S(?:[\\s\\S]*\\S)?$(?![\\s\\S])"}
+        "source_ref": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^\\S(?:[\\s\\S]*\\S)?$(?![\\s\\S])"},
+        "hyperlink": {"type": "string", "minLength": 1, "maxLength": 2048, "pattern": "^(?:https?://[^\\s]+|mailto:[^\\s@]+@[^\\s@]+|slide:[a-z0-9][a-z0-9._-]{0,79})$(?![\\s\\S])"}
       }
     },
     "dataItem": {
@@ -135,7 +137,8 @@
       "properties": {
         "tone": {"enum": ["conservative", "professional", "bold", "editorial", "educational"]},
         "density": {"enum": ["sparse", "balanced", "dense"]},
-        "audience_mode": {"enum": ["executive", "customer", "investor", "internal", "learner", "general"]}
+        "audience_mode": {"enum": ["executive", "customer", "investor", "internal", "learner", "general"]},
+        "motion": {"enum": ["off", "subtle-fade", "step-reveal"]}
       }
     },
     "identifier": {

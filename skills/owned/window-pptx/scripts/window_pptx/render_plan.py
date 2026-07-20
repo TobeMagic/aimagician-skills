@@ -15,7 +15,15 @@ from .assets import (
     choose_asset,
     read_raster_dimensions,
 )
-from .deck_plan import DeckPlan, compile_deck_plan
+from .deck_plan import (
+    CHART_INTENTS,
+    CONTENT_KINDS,
+    DATA_ITEM_FIELDS,
+    EXTERNAL_HYPERLINK,
+    IDENTIFIER,
+    DeckPlan,
+    compile_deck_plan,
+)
 from .layouts import (
     ResolvedSlot,
     SlideSize,
@@ -38,6 +46,9 @@ ADVANCED_COMPONENTS = {
     "timeline-node",
     "matrix-cell",
 }
+ADVANCED_KINDS = {"chart", "table", "diagram"}
+CHART_TYPES = {"line", "column", "bar", "doughnut", "stacked-column", "scatter"}
+DIAGRAM_TYPES = {"process", "timeline", "matrix", "quadrant", "funnel", "roadmap"}
 TEXT_COMPONENTS = {"title", "body-text", "footer", "quote", "cta"}
 LAYER_BY_COMPONENT = {
     "decoration": 10,
@@ -90,6 +101,78 @@ class RenderFinding:
 
 
 @dataclass(frozen=True)
+class ChartSeries:
+    name: str
+    values: tuple[float | None, ...]
+    x_values: tuple[float, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        result: dict[str, Any] = {
+            "name": self.name,
+            "values": list(self.values),
+        }
+        if self.x_values:
+            result["x_values"] = list(self.x_values)
+        return result
+
+
+@dataclass(frozen=True)
+class ChartSpec:
+    chart_type: str
+    categories: tuple[str, ...]
+    series: tuple[ChartSeries, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": "chart",
+            "chart_type": self.chart_type,
+            "categories": list(self.categories),
+            "series": [item.to_dict() for item in self.series],
+        }
+
+
+@dataclass(frozen=True)
+class TableSpec:
+    columns: tuple[str, ...]
+    rows: tuple[tuple[str, ...], ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": "table",
+            "columns": list(self.columns),
+            "rows": [list(row) for row in self.rows],
+        }
+
+
+@dataclass(frozen=True)
+class DiagramNode:
+    label: str
+    detail: str | None = None
+
+    def to_dict(self) -> dict[str, str]:
+        result = {"label": self.label}
+        if self.detail is not None:
+            result["detail"] = self.detail
+        return result
+
+
+@dataclass(frozen=True)
+class DiagramSpec:
+    diagram_type: str
+    nodes: tuple[DiagramNode, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": "diagram",
+            "diagram_type": self.diagram_type,
+            "nodes": [node.to_dict() for node in self.nodes],
+        }
+
+
+AdvancedSpec = ChartSpec | TableSpec | DiagramSpec
+
+
+@dataclass(frozen=True)
 class RenderObject:
     id: str
     name: str
@@ -110,6 +193,9 @@ class RenderObject:
     text_color: str
     fill_color: str
     line_color: str
+    advanced: AdvancedSpec | None
+    semantic_source: str | None
+    hyperlink: str | None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -150,6 +236,9 @@ class RenderObject:
             "text_color": self.text_color,
             "fill_color": self.fill_color,
             "line_color": self.line_color,
+            "advanced": self.advanced.to_dict() if self.advanced is not None else None,
+            "semantic_source": self.semantic_source,
+            "hyperlink": self.hyperlink,
         }
 
 
@@ -166,6 +255,8 @@ class RenderSlide:
     resolved_density: str
     background_color: str
     objects: tuple[RenderObject, ...]
+    speaker_notes: str | None
+    motion: str
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -180,6 +271,8 @@ class RenderSlide:
             "resolved_density": self.resolved_density,
             "background_color": self.background_color,
             "objects": [item.to_dict() for item in self.objects],
+            "speaker_notes": self.speaker_notes,
+            "motion": self.motion,
         }
 
 
@@ -257,6 +350,317 @@ def _format_item(value: Any) -> str:
     return str(value)
 
 
+def _canonical_semantic_block(block: Mapping[str, Any]) -> str:
+    return json.dumps(
+        dict(block),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+
+
+def _load_semantic_block(source: str) -> dict[str, Any]:
+    try:
+        value = json.loads(source)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise RenderPlanError("advanced semantic source is not canonical JSON") from exc
+    if not isinstance(value, dict) or _canonical_semantic_block(value) != source:
+        raise RenderPlanError("advanced semantic source is not canonical JSON")
+    allowed = {
+        "id",
+        "kind",
+        "title",
+        "text",
+        "items",
+        "role_hint",
+        "chart_intent",
+        "source_ref",
+        "hyperlink",
+    }
+    if set(value) - allowed or not isinstance(value.get("id"), str):
+        raise RenderPlanError("advanced semantic source crossed the governed boundary")
+    if not isinstance(value.get("kind"), str):
+        raise RenderPlanError("advanced semantic source has no registered kind")
+    if value["kind"] not in CONTENT_KINDS:
+        raise RenderPlanError("advanced semantic source has an unregistered kind")
+    chart_intent = value.get("chart_intent")
+    if chart_intent is not None and chart_intent not in CHART_INTENTS:
+        raise RenderPlanError("advanced semantic source has an unregistered chart intent")
+    hyperlink = value.get("hyperlink")
+    if hyperlink is not None:
+        if not isinstance(hyperlink, str) or len(hyperlink) > 2048:
+            raise RenderPlanError("advanced semantic source hyperlink is invalid")
+        if hyperlink.startswith("slide:"):
+            if not IDENTIFIER.fullmatch(hyperlink.removeprefix("slide:")):
+                raise RenderPlanError("advanced semantic source hyperlink is invalid")
+        elif not EXTERNAL_HYPERLINK.fullmatch(hyperlink):
+            raise RenderPlanError("advanced semantic source hyperlink is unsafe")
+    items = value.get("items", [])
+    if not isinstance(items, list):
+        raise RenderPlanError("advanced semantic source items must be an array")
+    for item in items:
+        if isinstance(item, dict):
+            if not item or len(item) > 5 or set(item) - DATA_ITEM_FIELDS:
+                raise RenderPlanError(
+                    "advanced semantic source contains an ungoverned data item"
+                )
+            if any(
+                nested is not None
+                and not isinstance(nested, (str, int, float, bool))
+                for nested in item.values()
+            ):
+                raise RenderPlanError(
+                    "advanced semantic source data items must contain scalars"
+                )
+        elif item is not None and not isinstance(item, (str, int, float, bool)):
+            raise RenderPlanError(
+                "advanced semantic source items must be scalar or controlled data"
+            )
+        numeric_values = item.values() if isinstance(item, dict) else (item,)
+        if any(
+            isinstance(nested, float) and not math.isfinite(nested)
+            for nested in numeric_values
+        ):
+            raise RenderPlanError("advanced semantic source contains a non-finite number")
+    return value
+
+
+def _numeric(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    result = float(value)
+    return result if math.isfinite(result) else None
+
+
+def _item_label(item: Any, index: int) -> str:
+    if isinstance(item, dict):
+        for field in ("category", "date", "label", "title", "name", "id"):
+            value = item.get(field)
+            if isinstance(value, str) and value:
+                return value
+    if isinstance(item, str) and item:
+        return item
+    return f"Item {index + 1}"
+
+
+def _chart_value(item: Mapping[str, Any]) -> float | None:
+    for field in (
+        "value",
+        "actual",
+        "primary",
+        "secondary",
+        "target",
+        "before",
+        "after",
+        "probability",
+        "impact",
+        "start",
+        "end",
+    ):
+        value = _numeric(item.get(field))
+        if value is not None:
+            return value
+    return None
+
+
+def _chart_spec(block: Mapping[str, Any]) -> ChartSpec | None:
+    raw_items = block.get("items", [])
+    if not isinstance(raw_items, list):
+        return None
+    intent = block.get("chart_intent") or block.get("kind")
+    chart_type = {
+        "trend": "line",
+        "comparison": "column",
+        "composition": "doughnut",
+        "distribution": "column",
+        "relationship": "scatter",
+    }.get(intent, "column")
+    if chart_type == "scatter":
+        points: list[tuple[str, float, float]] = []
+        for index, item in enumerate(raw_items):
+            if not isinstance(item, dict):
+                continue
+            x_value = next(
+                (
+                    value
+                    for field in ("primary", "actual", "start", "before", "value")
+                    if (value := _numeric(item.get(field))) is not None
+                ),
+                None,
+            )
+            y_value = next(
+                (
+                    value
+                    for field in ("secondary", "target", "end", "after", "impact")
+                    if (value := _numeric(item.get(field))) is not None
+                ),
+                None,
+            )
+            if x_value is not None and y_value is not None:
+                points.append((_item_label(item, index), x_value, y_value))
+        if not points:
+            return None
+        return ChartSpec(
+            chart_type="scatter",
+            categories=tuple(point[0] for point in points),
+            series=(
+                ChartSeries(
+                    name=str(block.get("title") or "Relationship"),
+                    values=tuple(point[2] for point in points),
+                    x_values=tuple(point[1] for point in points),
+                ),
+            ),
+        )
+
+    categories: list[str] = []
+    series_order: list[str] = []
+    values_by_series: dict[str, dict[str, float]] = {}
+    default_series = str(block.get("title") or "Value")
+    for index, item in enumerate(raw_items):
+        if not isinstance(item, dict):
+            continue
+        value = _chart_value(item)
+        if value is None:
+            continue
+        category = _item_label(item, index)
+        series_name = str(item.get("series") or default_series)
+        if category not in categories:
+            categories.append(category)
+        if series_name not in series_order:
+            series_order.append(series_name)
+        values_by_series.setdefault(series_name, {})[category] = value
+    if not categories or not series_order:
+        return None
+    if chart_type == "doughnut" and len(series_order) > 1:
+        chart_type = "stacked-column"
+    return ChartSpec(
+        chart_type=chart_type,
+        categories=tuple(categories),
+        series=tuple(
+            ChartSeries(
+                name=name,
+                values=tuple(values_by_series[name].get(category) for category in categories),
+            )
+            for name in series_order
+        ),
+    )
+
+
+_TABLE_FIELD_ORDER = (
+    "label",
+    "title",
+    "name",
+    "category",
+    "series",
+    "value",
+    "unit",
+    "actual",
+    "target",
+    "before",
+    "after",
+    "status",
+    "date",
+    "owner",
+    "probability",
+    "impact",
+    "primary",
+    "secondary",
+    "start",
+    "end",
+    "group",
+    "source",
+    "description",
+    "text",
+    "id",
+)
+
+
+def _display_scalar(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "Yes" if value else "No"
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
+
+
+def _table_spec(block: Mapping[str, Any]) -> TableSpec | None:
+    items = block.get("items", [])
+    if not isinstance(items, list) or not items:
+        return None
+    if all(isinstance(item, dict) for item in items):
+        fields = tuple(
+            field
+            for field in _TABLE_FIELD_ORDER
+            if any(field in item for item in items)
+        )[:5]
+        if not fields:
+            return None
+        return TableSpec(
+            columns=tuple(field.replace("_", " ").title() for field in fields),
+            rows=tuple(
+                tuple(_display_scalar(item.get(field)) for field in fields)
+                for item in items
+            ),
+        )
+    return TableSpec(
+        columns=("Value",),
+        rows=tuple((_display_scalar(item),) for item in items),
+    )
+
+
+def _diagram_nodes(block: Mapping[str, Any]) -> tuple[DiagramNode, ...]:
+    items = block.get("items", [])
+    result: list[DiagramNode] = []
+    for index, item in enumerate(items if isinstance(items, list) else []):
+        label = _item_label(item, index)
+        detail: str | None = None
+        if isinstance(item, dict):
+            for field in ("description", "text", "status", "date", "owner"):
+                value = item.get(field)
+                if value is not None and str(value) != label:
+                    detail = str(value)
+                    break
+        result.append(DiagramNode(label=label, detail=detail))
+    if not result:
+        text = block.get("text") or block.get("title")
+        if isinstance(text, str) and text:
+            result.append(DiagramNode(label=text))
+    return tuple(result)
+
+
+def _advanced_spec(
+    component: str,
+    family_id: str,
+    block: Mapping[str, Any],
+    *,
+    advanced_index: int,
+    advanced_count: int,
+) -> AdvancedSpec | None:
+    if family_id in DIAGRAM_TYPES:
+        nodes = _diagram_nodes(block)
+        if advanced_count > 1:
+            nodes = nodes[advanced_index : advanced_index + 1]
+        return DiagramSpec(family_id, nodes) if nodes else None
+    if component == "chart":
+        return _chart_spec(block)
+    if component == "table":
+        return _table_spec(block)
+    if component in {"process-step", "timeline-node", "matrix-cell"}:
+        diagram_type = {
+            "process-step": "process",
+            "timeline-node": "timeline",
+            "matrix-cell": "matrix",
+        }[component]
+        nodes = _diagram_nodes(block)
+        if advanced_count > 1:
+            nodes = nodes[advanced_index : advanced_index + 1]
+        return DiagramSpec(diagram_type, nodes) if nodes else None
+    return None
+
+
 def _slide_content(slide: Mapping[str, Any]) -> tuple[list[str], dict[str, str]]:
     fragments: list[str] = []
     sources: dict[str, str] = {}
@@ -318,7 +722,15 @@ def _font_size(component: str, typography: Mapping[str, int]) -> int:
     return typography["body"]
 
 
-def _object_kind(component: str, has_image: bool) -> str:
+def _object_kind(
+    component: str, has_image: bool, advanced: AdvancedSpec | None = None
+) -> str:
+    if isinstance(advanced, ChartSpec):
+        return "chart"
+    if isinstance(advanced, TableSpec):
+        return "table"
+    if isinstance(advanced, DiagramSpec):
+        return "diagram"
     if component == "image-frame" and has_image:
         return "image"
     if component in TEXT_COMPONENTS:
@@ -528,6 +940,11 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
     slide_ids: set[str] = set()
     object_ids: set[str] = set()
     object_names: set[str] = set()
+    known_slide_ids = {
+        slide.source_id
+        for slide in plan.slides
+        if isinstance(slide, RenderSlide) and isinstance(slide.source_id, str)
+    }
     for expected_index, slide in enumerate(plan.slides, start=1):
         if not isinstance(slide, RenderSlide):
             raise RenderPlanError(
@@ -548,6 +965,19 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
         if slide.background_color != governed_theme.colors["background"]:
             raise RenderPlanError(
                 f"render slide {slide.source_id} diverges from governed theme"
+            )
+        if slide.speaker_notes is not None and (
+            not isinstance(slide.speaker_notes, str)
+            or not slide.speaker_notes.strip()
+            or slide.speaker_notes != slide.speaker_notes.strip()
+            or len(slide.speaker_notes) > 5000
+        ):
+            raise RenderPlanError(
+                f"render slide {slide.source_id} speaker notes are invalid"
+            )
+        if slide.motion not in {"off", "subtle-fade", "step-reveal"}:
+            raise RenderPlanError(
+                f"render slide {slide.source_id} motion preset is not governed"
             )
         if (
             type(slide.item_count) is not int
@@ -578,6 +1008,18 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
             raise RenderPlanError(
                 f"render slide {slide.source_id} object count diverges from governed layout"
             )
+        advanced_slots = tuple(
+            slot
+            for slot in governed_layout.slots
+            if slot.component in ADVANCED_COMPONENTS
+        )
+        linked_slots = advanced_slots or tuple(
+            slot
+            for slot in governed_layout.slots
+            if slot.component not in {"title", "footer", "decoration"}
+        )
+        hyperlink_slot_id = linked_slots[0].id if linked_slots else None
+        governed_semantic_source: str | None = None
         for object_index, (item, slot) in enumerate(
             zip(slide.objects, governed_layout.slots), start=1
         ):
@@ -601,7 +1043,7 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
             object_names.add(item.name)
             if item.component not in components:
                 raise RenderPlanError(f"{path} has an unknown component")
-            if item.kind not in {"text", "shape", "image"}:
+            if item.kind not in {"text", "shape", "image", *ADVANCED_KINDS}:
                 raise RenderPlanError(f"{path} has an invalid object kind")
             if item.native_editable is not True:
                 raise RenderPlanError(f"{path} violates the editable object policy")
@@ -642,6 +1084,67 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
                 raise RenderPlanError(f"{path} group id is invalid")
             if item.text is not None and not isinstance(item.text, str):
                 raise RenderPlanError(f"{path} text is invalid")
+            is_advanced_slot = slot.component in ADVANCED_COMPONENTS
+            carries_semantics = is_advanced_slot or slot.id == hyperlink_slot_id
+            semantic_block: dict[str, Any] | None = None
+            if carries_semantics:
+                if not isinstance(item.semantic_source, str):
+                    raise RenderPlanError(
+                        f"{path} is missing its governed semantic source"
+                    )
+                semantic_block = _load_semantic_block(item.semantic_source)
+                if governed_semantic_source is None:
+                    governed_semantic_source = item.semantic_source
+                elif item.semantic_source != governed_semantic_source:
+                    raise RenderPlanError(
+                        f"{path} advanced semantics diverge within the slide"
+                    )
+            elif item.semantic_source is not None:
+                raise RenderPlanError(f"{path} has an unexpected semantic source")
+
+            expected_advanced: AdvancedSpec | None = None
+            if is_advanced_slot:
+                assert semantic_block is not None
+                advanced_index = advanced_slots.index(slot)
+                expected_advanced = _advanced_spec(
+                    slot.component,
+                    governed_layout.family_id,
+                    semantic_block,
+                    advanced_index=advanced_index,
+                    advanced_count=len(advanced_slots),
+                )
+            if item.advanced != expected_advanced:
+                raise RenderPlanError(
+                    f"{path} advanced semantics diverge from governed derivation"
+                )
+            if item.advanced is not None and item.text is not None:
+                raise RenderPlanError(
+                    f"{path} advanced native object must not carry fallback text"
+                )
+            expected_hyperlink = (
+                semantic_block.get("hyperlink")
+                if slot.id == hyperlink_slot_id and semantic_block is not None
+                else None
+            )
+            if expected_hyperlink is not None:
+                if not isinstance(expected_hyperlink, str):
+                    raise RenderPlanError(f"{path} hyperlink is invalid")
+                if expected_hyperlink.startswith("slide:"):
+                    target_id = expected_hyperlink.removeprefix("slide:")
+                    if target_id not in known_slide_ids:
+                        raise RenderPlanError(
+                            f"{path} hyperlink targets an unknown slide"
+                        )
+                elif not re.fullmatch(
+                    r"(?:https?://[^\s]+|mailto:[^\s@]+@[^\s@]+)",
+                    expected_hyperlink,
+                    re.IGNORECASE,
+                ):
+                    raise RenderPlanError(f"{path} hyperlink is unsafe")
+            if item.hyperlink != expected_hyperlink:
+                raise RenderPlanError(
+                    f"{path} hyperlink diverges from governed semantics"
+                )
             if item.kind == "image":
                 if item.component != "image-frame":
                     raise RenderPlanError(f"{path} image component is invalid")
@@ -659,10 +1162,12 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
                 f"{_safe_identifier(slot.id)}"
             )
             expected_group = (
-                None if slot.component == "footer" else f"wp_s{slide.index:03d}_content"
+                None
+                if slot.component == "footer" or slide.motion == "step-reveal"
+                else f"wp_s{slide.index:03d}_content"
             )
             expected_kind = _object_kind(
-                slot.component, item.source_path is not None
+                slot.component, item.source_path is not None, expected_advanced
             )
             exact_geometry = all(
                 math.isclose(actual, expected, abs_tol=1e-9)
@@ -755,6 +1260,7 @@ def _build_render_plan_from_compiled(
     render_slides: list[RenderSlide] = []
     previous_layouts: tuple[str, ...] = ()
     density = compiled.get("preferences", {}).get("density", "balanced")
+    motion = compiled.get("preferences", {}).get("motion", "off")
     slide_total = len(compiled["slides"])
 
     for slide_index, slide in enumerate(compiled["slides"], start=1):
@@ -769,9 +1275,24 @@ def _build_render_plan_from_compiled(
         previous_layouts += (layout.id,)
         fragments, source_refs = _slide_content(slide)
         slot_texts = _slot_texts(layout.slots, fragments)
+        basis_id = slide["semantic_basis"]["block_id"]
+        basis_block = next(block for block in slide["blocks"] if block["id"] == basis_id)
+        semantic_source = _canonical_semantic_block(basis_block)
+        advanced_slots = tuple(
+            slot
+            for slot in layout.slots
+            if slot.component in ADVANCED_COMPONENTS
+        )
+        linked_slots = advanced_slots or tuple(
+            slot
+            for slot in layout.slots
+            if slot.component not in {"title", "footer", "decoration"}
+        )
+        hyperlink_slot_id = linked_slots[0].id if linked_slots else None
         available_sources = iter(source_refs.values())
         content_group = f"wp_s{slide_index:03d}_content"
         objects: list[RenderObject] = []
+        advanced_index = 0
         for object_index, slot in enumerate(layout.slots, start=1):
             object_id = f"{slide['id']}.{slot.id}"
             name = (
@@ -808,6 +1329,29 @@ def _build_render_plan_from_compiled(
                     )
                 )
 
+            advanced: AdvancedSpec | None = None
+            is_advanced_slot = slot.component in ADVANCED_COMPONENTS
+            if is_advanced_slot:
+                advanced = _advanced_spec(
+                    slot.component,
+                    layout.family_id,
+                    basis_block,
+                    advanced_index=advanced_index,
+                    advanced_count=len(advanced_slots),
+                )
+                advanced_index += 1
+                if advanced is None:
+                    findings.append(
+                        RenderFinding(
+                            "ADVANCED_NATIVE_FALLBACK",
+                            f"slides.{slide['id']}.{slot.id}",
+                            (
+                                f"{slot.component} semantic data is incomplete; "
+                                "using a native editable fallback"
+                            ),
+                        )
+                    )
+
             if slot.component == "title":
                 text = slide.get("title") or slide["role"].replace("-", " ").title()
             elif slot.component == "footer":
@@ -816,22 +1360,22 @@ def _build_render_plan_from_compiled(
                 text = None if source_path else "Visual asset unavailable"
             else:
                 text = slot_texts.get(slot.id)
-            if slot.component in ADVANCED_COMPONENTS:
-                findings.append(
-                    RenderFinding(
-                        "DEFERRED_ADVANCED_COMPONENT",
-                        f"slides.{slide['id']}.{slot.id}",
-                        f"{slot.component} uses an editable native fallback until Phase 26",
-                        "info",
-                    )
-                )
-            group_id = None if slot.component == "footer" else content_group
+            if advanced is not None:
+                text = None
+            group_id = (
+                None
+                if slot.component == "footer" or motion == "step-reveal"
+                else content_group
+            )
+            carries_semantics = is_advanced_slot or slot.id == hyperlink_slot_id
             objects.append(
                 RenderObject(
                     id=object_id,
                     name=name,
                     component=slot.component,
-                    kind=_object_kind(slot.component, source_path is not None),
+                    kind=_object_kind(
+                        slot.component, source_path is not None, advanced
+                    ),
                     x=slot.x,
                     y=slot.y,
                     width=slot.width,
@@ -855,6 +1399,13 @@ def _build_render_plan_from_compiled(
                         theme.colors["surface"],
                     ),
                     line_color=theme.colors["primary"],
+                    advanced=advanced,
+                    semantic_source=semantic_source if carries_semantics else None,
+                    hyperlink=(
+                        basis_block.get("hyperlink")
+                        if slot.id == hyperlink_slot_id
+                        else None
+                    ),
                 )
             )
         for unused_source in available_sources:
@@ -881,6 +1432,8 @@ def _build_render_plan_from_compiled(
                 resolved_density=layout.resolved_density,
                 background_color=theme.colors["background"],
                 objects=tuple(objects),
+                speaker_notes=slide.get("speaker_notes"),
+                motion=motion,
             )
         )
 
@@ -946,11 +1499,16 @@ def build_render_plan(
 
 __all__ = [
     "AssetBinding",
+    "ChartSeries",
+    "ChartSpec",
+    "DiagramNode",
+    "DiagramSpec",
     "RenderFinding",
     "RenderObject",
     "RenderPlan",
     "RenderPlanError",
     "RenderSlide",
+    "TableSpec",
     "build_render_plan",
     "compile_render_plan",
     "inches_to_points",

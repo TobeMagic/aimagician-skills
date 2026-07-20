@@ -273,8 +273,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "audit_deck",
     }
     if args.compile_deck_plan or args.render_deck_plan:
+        route_conflicts = set(conflicting_deck_actions)
+        if args.render_deck_plan:
+            route_conflicts -= {"export_slides", "export_qa"}
         conflicts = sorted(
-            name for name in conflicting_deck_actions if getattr(args, name)
+            name for name in route_conflicts if getattr(args, name)
         )
         if conflicts:
             parser.error(

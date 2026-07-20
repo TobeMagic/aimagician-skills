@@ -92,6 +92,91 @@ class RecordingPictureFormat:
     Crop: RecordingCrop = field(default_factory=RecordingCrop)
 
 
+@dataclass
+class RecordingHyperlink:
+    Address: str = ""
+    SubAddress: str = ""
+
+
+@dataclass
+class RecordingActionSetting:
+    Hyperlink: RecordingHyperlink = field(default_factory=RecordingHyperlink)
+
+
+class RecordingActionSettings:
+    def __init__(self) -> None:
+        self._settings: dict[int, RecordingActionSetting] = {}
+
+    def __call__(self, index: int) -> RecordingActionSetting:
+        return self._settings.setdefault(index, RecordingActionSetting())
+
+    def Item(self, index: int) -> RecordingActionSetting:
+        return self(index)
+
+
+@dataclass
+class RecordingCellShape:
+    TextFrame: RecordingTextFrame = field(default_factory=RecordingTextFrame)
+    Fill: RecordingFill = field(default_factory=RecordingFill)
+    Line: RecordingLine = field(default_factory=RecordingLine)
+
+
+@dataclass
+class RecordingTableCell:
+    Shape: RecordingCellShape = field(default_factory=RecordingCellShape)
+
+
+class RecordingTable:
+    def __init__(self, rows: int, columns: int) -> None:
+        self.rows = rows
+        self.columns = columns
+        self._cells = {
+            (row, column): RecordingTableCell()
+            for row in range(1, rows + 1)
+            for column in range(1, columns + 1)
+        }
+
+    def Cell(self, row: int, column: int) -> RecordingTableCell:
+        return self._cells[(row, column)]
+
+
+class RecordingChartData:
+    def __init__(self) -> None:
+        self.activated = False
+
+    def Activate(self) -> None:
+        self.activated = True
+
+
+class RecordingChart:
+    def __init__(self) -> None:
+        self.ChartData = RecordingChartData()
+        self.HasTitle = 0
+        self.HasLegend = 0
+        self.DisplayBlanksAs = 1
+        self.spec: Any = None
+
+    def _set_data(self, spec: Any) -> None:
+        self.spec = spec
+
+
+class RecordingSequence:
+    def __init__(self) -> None:
+        self.effects: list[tuple[Any, int, int, int]] = []
+
+    def AddEffect(
+        self, shape: Any, effect_id: int, level: int, trigger: int
+    ) -> tuple[Any, int, int, int]:
+        effect = (shape, effect_id, level, trigger)
+        self.effects.append(effect)
+        return effect
+
+
+class RecordingTimeline:
+    def __init__(self) -> None:
+        self.MainSequence = RecordingSequence()
+
+
 class RecordingShape:
     def __init__(
         self,
@@ -116,6 +201,9 @@ class RecordingShape:
         self.Line = RecordingLine()
         self.TextFrame = RecordingTextFrame()
         self.PictureFormat = RecordingPictureFormat()
+        self.ActionSettings = RecordingActionSettings()
+        self.Chart: RecordingChart | None = None
+        self.Table: RecordingTable | None = None
         self.LockAspectRatio = 0
         self.editable = True
         self.GroupItems: tuple[RecordingShape, ...] = ()
@@ -260,6 +348,52 @@ class RecordingShapes:
             save_with_document,
         )
 
+    def AddChart2(
+        self,
+        style: int,
+        chart_type: int,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+        new_layout: int,
+    ) -> RecordingShape:
+        shape = self._add(
+            "add-chart",
+            "chart",
+            left,
+            top,
+            width,
+            height,
+            style,
+            chart_type,
+            new_layout,
+        )
+        shape.Chart = RecordingChart()
+        return shape
+
+    def AddTable(
+        self,
+        rows: int,
+        columns: int,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+    ) -> RecordingShape:
+        shape = self._add(
+            "add-table",
+            "table",
+            left,
+            top,
+            width,
+            height,
+            rows,
+            columns,
+        )
+        shape.Table = RecordingTable(rows, columns)
+        return shape
+
     def Range(self, names: Iterable[str]) -> RecordingShapeRange:
         normalized = tuple(names)
         if not normalized or len(normalized) != len(set(normalized)):
@@ -282,11 +416,30 @@ class RecordingSlide:
         self.index = index
         self.Shapes = RecordingShapes(owner, f"slide-{index}")
         self.FollowMasterBackground = -1
+        self.SlideID = 255 + index
+        self.notes_text = ""
+        self.TimeLine = RecordingTimeline()
 
     def Delete(self) -> None:
         self._owner._record("delete-slide", f"slide-{self.index}", self.index)
         self._collection.items.remove(self)
         self._collection.renumber()
+
+    def Export(
+        self,
+        filename: str,
+        filter_name: str,
+        width: int,
+        height: int,
+    ) -> None:
+        self._owner._record(
+            "export-slide",
+            f"slide-{self.index}",
+            filename,
+            filter_name,
+            width,
+            height,
+        )
 
 
 class RecordingSlides:
