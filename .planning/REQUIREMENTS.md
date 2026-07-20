@@ -163,18 +163,18 @@
 
 ## v5 Requirements (Window-PPTX Verified Production Engine)
 
-All v5 requirements are active and unchecked. Completion requires the phase evidence and exit gates named in the traceability table; a unit-test implementation alone is not sufficient.
+Completion requires the phase evidence and exit gates named in the traceability table; a unit-test implementation alone is not sufficient.
 
 ### Baseline and Safety
 
-- [ ] **V5-SAFE-01**: Strict dry-run reports intended actions without filesystem, network, COM, or presentation writes
-- [ ] **V5-SAFE-02**: Resolved source/output and staging guards prevent implicit source overwrite
-- [ ] **V5-SAFE-03**: COM session ownership is explicit, and cleanup quits only a PowerPoint application proven to be tool-owned
-- [ ] **V5-SAFE-04**: Programmatic opens disable macros and restore the exact prior automation-security value
-- [ ] **V5-SAFE-05**: PPTX/PDF outputs are written to validated candidates and atomically promoted with source-integrity evidence
-- [ ] **V5-SAFE-06**: Add-in listing and probing are terminal read-only inspection routes with one machine-readable result
-- [ ] **V5-SAFE-07**: Macro-enabled suffixes and presentation/export geometry are preserved
-- [ ] **V5-SAFE-08**: The baseline and real Windows safety matrix are reproducible and evidence-backed
+- [x] **V5-SAFE-01**: Strict dry-run reports intended actions without filesystem, network, COM, or presentation writes
+- [x] **V5-SAFE-02**: Resolved source/output and staging guards prevent implicit source overwrite
+- [x] **V5-SAFE-03**: COM session ownership is explicit, and cleanup quits only a PowerPoint application proven to be tool-owned
+- [x] **V5-SAFE-04**: Programmatic opens disable macros and restore the exact prior automation-security value
+- [x] **V5-SAFE-05**: PPTX/PDF outputs are written to validated candidates and atomically promoted with source-integrity evidence
+- [x] **V5-SAFE-06**: Add-in listing and probing are terminal read-only inspection routes with one machine-readable result
+- [x] **V5-SAFE-07**: Macro-enabled suffixes and presentation/export geometry are preserved
+- [x] **V5-SAFE-08**: The baseline and real Windows safety matrix are reproducible and evidence-backed
 
 ### DeckPlan and Semantic Rules
 
@@ -359,56 +359,58 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | V5 Phase | Status |
 |-------------|----------|--------|
-| V5-SAFE-01 | Phase 22 | Active |
-| V5-SAFE-02 | Phase 22 | Active |
-| V5-SAFE-03 | Phase 22 | Active |
-| V5-SAFE-04 | Phase 22 | Active |
-| V5-SAFE-05 | Phase 22 | Active |
-| V5-SAFE-06 | Phase 22 | Active |
-| V5-SAFE-07 | Phase 22 | Active |
-| V5-SAFE-08 | Phase 22 | Active |
-| V5-PLAN-01 | Phase 23 | Active |
-| V5-PLAN-02 | Phase 23 | Active |
-| V5-PLAN-03 | Phase 23 | Active |
-| V5-PLAN-04 | Phase 23 | Active |
-| V5-PLAN-05 | Phase 23 | Active |
-| V5-DESIGN-01 | Phase 24 | Active |
-| V5-DESIGN-02 | Phase 24 | Active |
-| V5-DESIGN-03 | Phase 24 | Active |
-| V5-DESIGN-04 | Phase 24 | Active |
-| V5-DESIGN-05 | Phase 24 | Active |
-| V5-RENDER-01 | Phase 25 | Active |
-| V5-RENDER-02 | Phase 25 | Active |
-| V5-RENDER-03 | Phase 25 | Active |
-| V5-RENDER-04 | Phase 25 | Active |
-| V5-RENDER-05 | Phase 25 | Active |
-| V5-OBJECT-01 | Phase 26 | Active |
-| V5-OBJECT-02 | Phase 26 | Active |
-| V5-OBJECT-03 | Phase 26 | Active |
-| V5-OBJECT-04 | Phase 26 | Active |
-| V5-OBJECT-05 | Phase 26 | Active |
-| V5-QA-01 | Phase 27 | Active |
-| V5-QA-02 | Phase 27 | Active |
-| V5-QA-03 | Phase 27 | Active |
-| V5-QA-04 | Phase 27 | Active |
-| V5-QA-05 | Phase 27 | Active |
-| V5-BENCH-01 | Phase 28 | Active |
-| V5-BENCH-02 | Phase 28 | Active |
-| V5-BENCH-03 | Phase 28 | Active |
-| V5-BENCH-04 | Phase 28 | Active |
-| V5-BENCH-05 | Phase 28 | Active |
-| V5-UAT-01 | Phase 29 | Active |
-| V5-UAT-02 | Phase 29 | Active |
-| V5-UAT-03 | Phase 29 | Active |
-| V5-UAT-04 | Phase 29 | Active |
-| V5-UAT-05 | Phase 29 | Active |
-| V5-UAT-06 | Phase 29 | Active |
+| V5-SAFE-01 | Phase 22 | Complete |
+| V5-SAFE-02 | Phase 22 | Complete |
+| V5-SAFE-03 | Phase 22 | Complete |
+| V5-SAFE-04 | Phase 22 | Complete |
+| V5-SAFE-05 | Phase 22 | Complete |
+| V5-SAFE-06 | Phase 22 | Complete |
+| V5-SAFE-07 | Phase 22 | Complete |
+| V5-SAFE-08 | Phase 22 | Complete |
+| V5-PLAN-01 | Phase 23 | In Progress |
+| V5-PLAN-02 | Phase 23 | In Progress |
+| V5-PLAN-03 | Phase 23 | In Progress |
+| V5-PLAN-04 | Phase 23 | In Progress |
+| V5-PLAN-05 | Phase 23 | In Progress |
+| V5-DESIGN-01 | Phase 24 | Planned |
+| V5-DESIGN-02 | Phase 24 | Planned |
+| V5-DESIGN-03 | Phase 24 | Planned |
+| V5-DESIGN-04 | Phase 24 | Planned |
+| V5-DESIGN-05 | Phase 24 | Planned |
+| V5-RENDER-01 | Phase 25 | Planned |
+| V5-RENDER-02 | Phase 25 | Planned |
+| V5-RENDER-03 | Phase 25 | Planned |
+| V5-RENDER-04 | Phase 25 | Planned |
+| V5-RENDER-05 | Phase 25 | Planned |
+| V5-OBJECT-01 | Phase 26 | Planned |
+| V5-OBJECT-02 | Phase 26 | Planned |
+| V5-OBJECT-03 | Phase 26 | Planned |
+| V5-OBJECT-04 | Phase 26 | Planned |
+| V5-OBJECT-05 | Phase 26 | Planned |
+| V5-QA-01 | Phase 27 | Planned |
+| V5-QA-02 | Phase 27 | Planned |
+| V5-QA-03 | Phase 27 | Planned |
+| V5-QA-04 | Phase 27 | Planned |
+| V5-QA-05 | Phase 27 | Planned |
+| V5-BENCH-01 | Phase 28 | Planned |
+| V5-BENCH-02 | Phase 28 | Planned |
+| V5-BENCH-03 | Phase 28 | Planned |
+| V5-BENCH-04 | Phase 28 | Planned |
+| V5-BENCH-05 | Phase 28 | Planned |
+| V5-UAT-01 | Phase 29 | Planned |
+| V5-UAT-02 | Phase 29 | Planned |
+| V5-UAT-03 | Phase 29 | Planned |
+| V5-UAT-04 | Phase 29 | Planned |
+| V5-UAT-05 | Phase 29 | Planned |
+| V5-UAT-06 | Phase 29 | Planned |
 
 **V5 Coverage:**
 - v5 requirements: 44 total
 - Mapped to exactly one phase: 44
-- Complete: 0
-- Active: 44
+- Complete: 8
+- In Progress: 5
+- Planned: 31
+- Open: 36
 - Unmapped: 0
 
 ---

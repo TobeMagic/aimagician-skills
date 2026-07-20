@@ -404,24 +404,26 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 **Goal:** Establish a reproducible capability baseline and make every legacy helper route safe before expanding the renderer.
 **Depends on:** Phase 21
 **Requirements:** [V5-SAFE-01, V5-SAFE-02, V5-SAFE-03, V5-SAFE-04, V5-SAFE-05, V5-SAFE-06, V5-SAFE-07, V5-SAFE-08]
-**Status:** In Progress
+**Status:** Complete
+**Completed:** 2026-07-20
 **Success Criteria**:
   1. Strict dry-run performs no writes, network access, or COM dispatch and emits one stable summary.
   2. Resolved paths, staging guards, candidate validation, atomic promotion, and pre/post hashes protect source decks.
   3. Attached PowerPoint sessions are preserved, isolated owned sessions are cleaned up, and macro security is restored exactly.
   4. Focused Linux/fake-COM tests and the real Windows PowerPoint safety matrix both pass with recorded evidence.
-**Plans:** 1 active plan; completion is pending validation.
+**Plans:** 1/1 complete. The 13-case native Windows matrix passed twice consecutively.
 
 ### Phase 23: DeckPlan and Semantic Rules
 
 **Goal:** Compile versioned semantic content into deterministic narratives, page roles, ranked layouts, and capacity-safe slide sequences.
 **Depends on:** Phase 22
 **Requirements:** [V5-PLAN-01, V5-PLAN-02, V5-PLAN-03, V5-PLAN-04, V5-PLAN-05]
-**Status:** Planned
+**Status:** In Progress
 **Success Criteria**:
   1. DeckPlan v1 rejects raw coordinates, arbitrary colors/fonts, COM calls, and uncontrolled code.
   2. Fifteen business archetypes and semantic mapping rules cover the required deck categories.
   3. Capacity splitting, sparse-content preservation, rhythm, decision traces, and low-confidence defaults are deterministic.
+**Plans:** 1 active plan.
 
 ### Phase 24: Design System and Layout Registries
 
@@ -494,8 +496,8 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 
 | Phase | Status | Completed |
 |-------|--------|-----------|
-| 22. Baseline and Safety | In Progress | — |
-| 23. DeckPlan and Semantic Rules | Planned | — |
+| 22. Baseline and Safety | Complete | 2026-07-20 |
+| 23. DeckPlan and Semantic Rules | In Progress | — |
 | 24. Design System and Layout Registries | Planned | — |
 | 25. Transactional Core Renderer | Planned | — |
 | 26. Advanced Editable Objects | Planned | — |
@@ -503,4 +505,4 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 | 28. Weak-Model Benchmark | Planned | — |
 | 29. Windows Acceptance and Closure | Planned | — |
 
-**Current milestone:** 0/8 phases complete. Repository total: 29 phases, 21 complete.
+**Current milestone:** 1/8 phases complete. Repository total: 29 phases, 22 complete.
