@@ -27,8 +27,9 @@ from window_pptx.cli import (
 )
 from window_pptx.com_session import dispatch_powerpoint, macro_security
 from window_pptx.errors import OutputPolicyError
-from window_pptx.models import OutputPolicy, PowerPointHandle
+from window_pptx.models import CandidateResult, OutputPolicy, PowerPointHandle
 from window_pptx.output_policy import calculate_export_size, validate_output_policy
+from window_pptx.transaction import save_candidate
 
 
 MISSING = "<unavailable>"
@@ -36,8 +37,6 @@ MSO_FALSE = 0
 MSO_TRUE = -1
 PP_LAYOUT_BLANK = 12
 MSO_TEXT_ORIENTATION_HORIZONTAL = 1
-PP_FIXED_FORMAT_TYPE_PDF = 2
-PP_FIXED_FORMAT_INTENT_PRINT = 2
 REQUEST_TEMPLATE = """# PowerPoint Request
 
 ## Goal
@@ -1824,21 +1823,38 @@ def add_request_summary_slide(presentation: Any, request_text: str, template: Pa
     footer.TextFrame.TextRange.Font.Size = 10
 
 
-def save_outputs(presentation: Any, output_path: Path, export_pdf: bool) -> dict[str, str]:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    presentation.SaveAs(str(output_path))
-    result = {"pptx": str(output_path)}
+def candidate_result_metadata(result: CandidateResult) -> dict[str, Any]:
+    """Convert transactional evidence to the JSON-compatible facade shape."""
 
+    return {
+        "output_path": str(result.output_path),
+        "promoted": result.promoted,
+        "candidate_path": str(result.candidate_path) if result.candidate_path else None,
+        "source_hash_before": result.source_hash_before,
+        "source_hash_after": result.source_hash_after,
+        "validation_steps": list(result.validation_steps),
+        "cleanup_errors": list(result.cleanup_errors),
+    }
+
+
+def save_outputs(
+    presentation: Any,
+    app: Any,
+    policy: OutputPolicy,
+    export_pdf: bool,
+) -> tuple[dict[str, str], dict[str, Any]]:
+    """Transactionally save compatible outputs plus validation evidence."""
+
+    result = save_candidate(
+        presentation,
+        app,
+        policy,
+        export_pdf=export_pdf,
+    )
+    outputs = {"pptx": str(result.output_path)}
     if export_pdf:
-        pdf_path = output_path.with_suffix(".pdf")
-        presentation.ExportAsFixedFormat(
-            str(pdf_path),
-            PP_FIXED_FORMAT_TYPE_PDF,
-            PP_FIXED_FORMAT_INTENT_PRINT,
-        )
-        result["pdf"] = str(pdf_path)
-
-    return result
+        outputs["pdf"] = str(result.output_path.with_suffix(".pdf"))
+    return outputs, candidate_result_metadata(result)
 
 
 def print_addins(addins: dict[str, Any], as_json: bool) -> None:
@@ -2059,15 +2075,23 @@ def main(
                 )
             effective_template = ensure_ascii_temp_copy(project_dir, template)
 
-        validate_output_policy(
-            OutputPolicy(
-                source_path=effective_template,
-                output_path=output_path,
-                dry_run=False,
-                no_output_deck=args.no_output_deck,
-                allow_overwrite=args.allow_overwrite,
-            )
+        output_policy = OutputPolicy(
+            source_path=effective_template,
+            output_path=output_path,
+            dry_run=False,
+            no_output_deck=args.no_output_deck,
+            allow_overwrite=args.allow_overwrite,
         )
+        validate_output_policy(output_policy)
+        if (
+            effective_template is not None
+            and effective_template.resolve(strict=False)
+            == output_path.resolve(strict=False)
+        ):
+            raise OutputPolicyError(
+                "A same-path overwrite is unsafe while the source presentation is open; "
+                "use a distinct output path."
+            )
 
         presentation = open_or_create_presentation(app, effective_template, args.visible)
 
@@ -2112,8 +2136,14 @@ def main(
             audit_result = audit_presentation(presentation, project_dir)
 
         outputs: dict[str, str] = {}
+        transaction_result: dict[str, Any] | None = None
         if not args.no_output_deck:
-            outputs = save_outputs(presentation, output_path, args.export_pdf)
+            outputs, transaction_result = save_outputs(
+                presentation,
+                app,
+                output_policy,
+                args.export_pdf,
+            )
 
         result = {
             "project_dir": str(project_dir),
@@ -2123,6 +2153,7 @@ def main(
             "template": str(template) if template else None,
             "effective_template": str(effective_template) if effective_template else None,
             "outputs": outputs,
+            "transaction": transaction_result,
             "addins_inventory_written": False,
             "slide_export": export_result,
             "qa_export": qa_export_result,

@@ -18,6 +18,19 @@ class OutputPolicy:
     allow_overwrite: bool = False
 
 
+@dataclass(frozen=True)
+class CandidateResult:
+    """Evidence produced by a transactional presentation save."""
+
+    output_path: Path
+    promoted: bool
+    candidate_path: Path | None
+    source_hash_before: str | None
+    source_hash_after: str | None
+    validation_steps: tuple[str, ...]
+    cleanup_errors: tuple[str, ...]
+
+
 @dataclass
 class PowerPointHandle:
     """A PowerPoint application together with its proven ownership."""

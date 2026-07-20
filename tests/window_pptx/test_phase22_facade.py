@@ -20,7 +20,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 import window_pptx_automation as automation  # noqa: E402
 from window_pptx.cli import parse_args  # noqa: E402
 from window_pptx.errors import OutputPolicyError  # noqa: E402
-from window_pptx.models import PowerPointHandle  # noqa: E402
+from window_pptx.models import CandidateResult, PowerPointHandle  # noqa: E402
 
 
 class RecordingPresentation:
@@ -128,7 +128,20 @@ def patch_deck_dependencies(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> 
     monkeypatch.setattr(
         automation,
         "save_outputs",
-        lambda _presentation, output_path, _export_pdf: {"pptx": str(output_path)},
+        lambda _presentation, _app, policy, _export_pdf: (
+            {"pptx": str(policy.output_path)},
+            automation.candidate_result_metadata(
+                CandidateResult(
+                    output_path=policy.output_path,
+                    promoted=True,
+                    candidate_path=None,
+                    source_hash_before=None,
+                    source_hash_after=None,
+                    validation_steps=("test-save",),
+                    cleanup_errors=(),
+                )
+            ),
+        ),
     )
 
 
@@ -479,7 +492,7 @@ def test_same_source_and_output_fails_before_presentation_open(
     assert app.Presentations.add_calls == []
 
 
-def test_allow_overwrite_permits_same_source_and_output(
+def test_allow_overwrite_rejects_open_same_source_and_output(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -489,20 +502,21 @@ def test_allow_overwrite_permits_same_source_and_output(
     app = RecordingApplication()
     client = RecordingComClient(app)
 
-    assert automation.main(
-        [
-            "--project-dir",
-            str(tmp_path),
-            "--template",
-            str(template),
-            "--output",
-            str(template),
-            "--allow-overwrite",
-        ],
-        com_client=client,
-    ) == 0
+    with pytest.raises(OutputPolicyError, match="same-path.*open"):
+        automation.main(
+            [
+                "--project-dir",
+                str(tmp_path),
+                "--template",
+                str(template),
+                "--output",
+                str(template),
+                "--allow-overwrite",
+            ],
+            com_client=client,
+        )
 
-    assert len(app.Presentations.open_calls) == 1
+    assert app.Presentations.open_calls == []
 
 
 def test_invalid_output_extension_fails_before_presentation_open(
