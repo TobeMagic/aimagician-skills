@@ -161,6 +161,78 @@
 - [x] **V4-ACC-01**: Accept a real global install of core workflow skills after preview confirmation
 - [x] **V4-ACC-02**: Accept a real project install of one category bundle after preview confirmation
 
+## v5 Requirements (Window-PPTX Verified Production Engine)
+
+All v5 requirements are active and unchecked. Completion requires the phase evidence and exit gates named in the traceability table; a unit-test implementation alone is not sufficient.
+
+### Baseline and Safety
+
+- [ ] **V5-SAFE-01**: Strict dry-run reports intended actions without filesystem, network, COM, or presentation writes
+- [ ] **V5-SAFE-02**: Resolved source/output and staging guards prevent implicit source overwrite
+- [ ] **V5-SAFE-03**: COM session ownership is explicit, and cleanup quits only a PowerPoint application proven to be tool-owned
+- [ ] **V5-SAFE-04**: Programmatic opens disable macros and restore the exact prior automation-security value
+- [ ] **V5-SAFE-05**: PPTX/PDF outputs are written to validated candidates and atomically promoted with source-integrity evidence
+- [ ] **V5-SAFE-06**: Add-in listing and probing are terminal read-only inspection routes with one machine-readable result
+- [ ] **V5-SAFE-07**: Macro-enabled suffixes and presentation/export geometry are preserved
+- [ ] **V5-SAFE-08**: The baseline and real Windows safety matrix are reproducible and evidence-backed
+
+### DeckPlan and Semantic Rules
+
+- [ ] **V5-PLAN-01**: A versioned DeckPlan schema accepts semantic intent and rejects uncontrolled raw design instructions
+- [ ] **V5-PLAN-02**: Fifteen common business presentation archetypes provide predefined narrative structures
+- [ ] **V5-PLAN-03**: Deterministic rules map content semantics to ranked page forms and chart/layout candidates
+- [ ] **V5-PLAN-04**: Capacity, splitting, sparse-content, and cross-slide rhythm rules govern deck density and pacing
+- [ ] **V5-PLAN-05**: Decision traces and low-confidence safe defaults support ordinary models reproducibly
+
+### Design System and Layout Registries
+
+- [ ] **V5-DESIGN-01**: Eight governed themes cover light, dark, industry, audience, and scenario needs
+- [ ] **V5-DESIGN-02**: Twenty-four page families expose at least three deterministic variants each, for at least 72 layouts
+- [ ] **V5-DESIGN-03**: Design tokens govern grid, safe margins, type hierarchy, color, spacing, border, radius, shadow, and decoration
+- [ ] **V5-DESIGN-04**: Reusable components and asset rules enforce crop, icon, provenance, and editable-object policies
+- [ ] **V5-DESIGN-05**: Brand overrides and font fallbacks are deterministic and explicitly reported
+
+### Transactional Core Renderer
+
+- [ ] **V5-RENDER-01**: The production renderer creates editable native PowerPoint core objects
+- [ ] **V5-RENDER-02**: Geometry, text, and images scale correctly across 16:9, 4:3, and custom page sizes
+- [ ] **V5-RENDER-03**: Masters, footers, z-order, and grouping are generated consistently
+- [ ] **V5-RENDER-04**: Compiler CLI and project runner validate, compile, render, inspect, and repair DeckPlans
+- [ ] **V5-RENDER-05**: A recording fake-COM end-to-end path verifies renderer ordering without requiring Windows
+
+### Advanced Editable Objects
+
+- [ ] **V5-OBJECT-01**: Charts and tables use native editable PowerPoint objects with populated data
+- [ ] **V5-OBJECT-02**: Processes, timelines, matrices, quadrants, funnels, and roadmaps render as editable diagrams
+- [ ] **V5-OBJECT-03**: Speaker notes and hyperlinks remain available in the delivered deck
+- [ ] **V5-OBJECT-04**: Motion uses controlled presets and remains off unless explicitly requested
+- [ ] **V5-OBJECT-05**: PNG/PDF exports preserve page ratio and readable labels
+
+### Quality Gates and Repair
+
+- [ ] **V5-QA-01**: Package, COM, geometric, visual, and deck-level snapshots form a five-layer inspection model
+- [ ] **V5-QA-02**: Structural, visual, editability, density, repetition, font, chart, and deck checks emit actionable findings
+- [ ] **V5-QA-03**: Candidate-only auto-repair is bounded, monotonic, and rejects hard-gate regressions
+- [ ] **V5-QA-04**: Validation reports and repair logs use stable versioned schemas
+- [ ] **V5-QA-05**: Customer-delivery hard gates enforce package/reopen success, source integrity, editability, and native object coverage
+
+### Weak-Model Benchmark
+
+- [ ] **V5-BENCH-01**: Fifteen business scenarios cover the required commercial presentation types
+- [ ] **V5-BENCH-02**: Three frozen arms, two ordinary models, and defined repeats support controlled comparison
+- [ ] **V5-BENCH-03**: Deterministic checks and blind human review produce comparable delivery scores
+- [ ] **V5-BENCH-04**: Inputs, model outputs, generated artifacts, and scorecards carry frozen hashes
+- [ ] **V5-BENCH-05**: Release thresholds quantify improvement, reliability, and customer-delivery readiness
+
+### Windows Acceptance and Closure
+
+- [ ] **V5-UAT-01**: A real Windows PowerPoint matrix covers isolated/attached sessions, formats, sizes, fonts, add-ins, and path variants
+- [ ] **V5-UAT-02**: Ten-run reliability, locking, source protection, and format/path cases pass without hidden state leakage
+- [ ] **V5-UAT-03**: Canonical outputs, exports, contact sheets, and quality reports exist for all benchmark scenarios
+- [ ] **V5-UAT-04**: A final read-only OpenCode audit is independently checked against repository and runtime evidence
+- [ ] **V5-UAT-05**: The Skill and references describe the compiler, weak-model mode, QA loop, failures, and output contract
+- [ ] **V5-UAT-06**: v5.0 closes only when every customer-delivery hard gate and mapped requirement has fresh evidence
+
 ## Out of Scope
 
 | Feature | Reason |
@@ -285,6 +357,60 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Complete: 20
 - Open: 0
 
+| Requirement | V5 Phase | Status |
+|-------------|----------|--------|
+| V5-SAFE-01 | Phase 22 | Active |
+| V5-SAFE-02 | Phase 22 | Active |
+| V5-SAFE-03 | Phase 22 | Active |
+| V5-SAFE-04 | Phase 22 | Active |
+| V5-SAFE-05 | Phase 22 | Active |
+| V5-SAFE-06 | Phase 22 | Active |
+| V5-SAFE-07 | Phase 22 | Active |
+| V5-SAFE-08 | Phase 22 | Active |
+| V5-PLAN-01 | Phase 23 | Active |
+| V5-PLAN-02 | Phase 23 | Active |
+| V5-PLAN-03 | Phase 23 | Active |
+| V5-PLAN-04 | Phase 23 | Active |
+| V5-PLAN-05 | Phase 23 | Active |
+| V5-DESIGN-01 | Phase 24 | Active |
+| V5-DESIGN-02 | Phase 24 | Active |
+| V5-DESIGN-03 | Phase 24 | Active |
+| V5-DESIGN-04 | Phase 24 | Active |
+| V5-DESIGN-05 | Phase 24 | Active |
+| V5-RENDER-01 | Phase 25 | Active |
+| V5-RENDER-02 | Phase 25 | Active |
+| V5-RENDER-03 | Phase 25 | Active |
+| V5-RENDER-04 | Phase 25 | Active |
+| V5-RENDER-05 | Phase 25 | Active |
+| V5-OBJECT-01 | Phase 26 | Active |
+| V5-OBJECT-02 | Phase 26 | Active |
+| V5-OBJECT-03 | Phase 26 | Active |
+| V5-OBJECT-04 | Phase 26 | Active |
+| V5-OBJECT-05 | Phase 26 | Active |
+| V5-QA-01 | Phase 27 | Active |
+| V5-QA-02 | Phase 27 | Active |
+| V5-QA-03 | Phase 27 | Active |
+| V5-QA-04 | Phase 27 | Active |
+| V5-QA-05 | Phase 27 | Active |
+| V5-BENCH-01 | Phase 28 | Active |
+| V5-BENCH-02 | Phase 28 | Active |
+| V5-BENCH-03 | Phase 28 | Active |
+| V5-BENCH-04 | Phase 28 | Active |
+| V5-BENCH-05 | Phase 28 | Active |
+| V5-UAT-01 | Phase 29 | Active |
+| V5-UAT-02 | Phase 29 | Active |
+| V5-UAT-03 | Phase 29 | Active |
+| V5-UAT-04 | Phase 29 | Active |
+| V5-UAT-05 | Phase 29 | Active |
+| V5-UAT-06 | Phase 29 | Active |
+
+**V5 Coverage:**
+- v5 requirements: 44 total
+- Mapped to exactly one phase: 44
+- Complete: 0
+- Active: 44
+- Unmapped: 0
+
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-05-30 after defining v3.0 configuration orchestration requirements*
+*Last updated: 2026-07-20 after defining v5.0 Window-PPTX requirements*

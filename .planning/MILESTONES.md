@@ -1,5 +1,23 @@
 # Milestones
 
+## v5.0 Window-PPTX Verified Production Engine (Active)
+
+**Goal:** Turn `window-pptx` into a deterministic, Windows-first presentation compiler that lets ordinary models produce editable, client-delivery-quality PowerPoint decks through semantic planning, governed design registries, native rendering, and measurable quality gates.
+
+**Phase gates:**
+- Phase 22: Baseline and Safety
+- Phase 23: DeckPlan and Semantic Rules
+- Phase 24: Design System and Layout Registries
+- Phase 25: Transactional Core Renderer
+- Phase 26: Advanced Editable Objects
+- Phase 27: Quality Gates and Repair
+- Phase 28: Weak-Model Benchmark
+- Phase 29: Windows Acceptance and Closure
+
+**Status:** In progress. Phase 22 is active; 0/8 v5 phases are complete. v4.0 remains shipped history. The milestone must not be marked shipped until Phase 29 hard gates have fresh evidence.
+
+---
+
 ## v4.0 AImagician Superpower + Skillbird Consolidation (Shipped: 2026-06-14)
 
 **Goal:** Rename and consolidate the project into `aimagician_superpower` with `skillbird` as the owned-skill manager. External skill collections become disabled reference material; durable capabilities move into `skills/owned` and are classified by the six-category taxonomy.

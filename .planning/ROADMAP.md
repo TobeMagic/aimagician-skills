@@ -394,3 +394,113 @@ Plans:
   1. A global install of core workflow skills succeeds
   2. A project install of document or build category skills succeeds
   3. External default-disabled sources do not mutate target homes unless explicitly enabled
+
+## Milestone v5.0 — Window-PPTX Verified Production Engine
+
+The v5 milestone lowers model-dependence by moving narrative patterns, layout selection, design tokens, editability rules, and delivery checks into deterministic code and registries. It is active and unshipped.
+
+### Phase 22: Window-PPTX Baseline and Safety
+
+**Goal:** Establish a reproducible capability baseline and make every legacy helper route safe before expanding the renderer.
+**Depends on:** Phase 21
+**Requirements:** [V5-SAFE-01, V5-SAFE-02, V5-SAFE-03, V5-SAFE-04, V5-SAFE-05, V5-SAFE-06, V5-SAFE-07, V5-SAFE-08]
+**Status:** In Progress
+**Success Criteria**:
+  1. Strict dry-run performs no writes, network access, or COM dispatch and emits one stable summary.
+  2. Resolved paths, staging guards, candidate validation, atomic promotion, and pre/post hashes protect source decks.
+  3. Attached PowerPoint sessions are preserved, isolated owned sessions are cleaned up, and macro security is restored exactly.
+  4. Focused Linux/fake-COM tests and the real Windows PowerPoint safety matrix both pass with recorded evidence.
+**Plans:** 1 active plan; completion is pending validation.
+
+### Phase 23: DeckPlan and Semantic Rules
+
+**Goal:** Compile versioned semantic content into deterministic narratives, page roles, ranked layouts, and capacity-safe slide sequences.
+**Depends on:** Phase 22
+**Requirements:** [V5-PLAN-01, V5-PLAN-02, V5-PLAN-03, V5-PLAN-04, V5-PLAN-05]
+**Status:** Planned
+**Success Criteria**:
+  1. DeckPlan v1 rejects raw coordinates, arbitrary colors/fonts, COM calls, and uncontrolled code.
+  2. Fifteen business archetypes and semantic mapping rules cover the required deck categories.
+  3. Capacity splitting, sparse-content preservation, rhythm, decision traces, and low-confidence defaults are deterministic.
+
+### Phase 24: Design System and Layout Registries
+
+**Goal:** Provide governed themes, components, assets, and page variants so ordinary models select and combine instead of designing from zero.
+**Depends on:** Phase 23
+**Requirements:** [V5-DESIGN-01, V5-DESIGN-02, V5-DESIGN-03, V5-DESIGN-04, V5-DESIGN-05]
+**Status:** Planned
+**Success Criteria**:
+  1. Eight named themes resolve deterministic tokens, brand overrides, contrast, and font fallbacks.
+  2. Twenty-four page families provide at least three validated variants each, for at least 72 layouts.
+  3. Component and asset policies enforce safe margins, type minima, crop-not-stretch, provenance, and legacy-template quarantine.
+
+### Phase 25: Transactional Core Renderer
+
+**Goal:** Render compiled slides into editable native PowerPoint shapes through a transactional, ratio-aware project runner and CLI.
+**Depends on:** Phase 24
+**Requirements:** [V5-RENDER-01, V5-RENDER-02, V5-RENDER-03, V5-RENDER-04, V5-RENDER-05]
+**Status:** Planned
+**Success Criteria**:
+  1. Core text, shapes, images, masters, footers, grouping, and z-order are editable and deterministic.
+  2. Geometry works for 16:9, 4:3, and custom page sizes without fixed-pixel distortion.
+  3. Recording fake-COM end-to-end tests verify compiler-to-renderer sequencing before Windows execution.
+
+### Phase 26: Advanced Editable Objects
+
+**Goal:** Add native charts, tables, diagrams, notes, links, controlled motion, and ratio-aware exports without rasterizing editable content.
+**Depends on:** Phase 25
+**Requirements:** [V5-OBJECT-01, V5-OBJECT-02, V5-OBJECT-03, V5-OBJECT-04, V5-OBJECT-05]
+**Status:** Planned
+**Success Criteria**:
+  1. Expected charts and tables remain native and their data remains editable.
+  2. Common business diagrams render as grouped native objects with governed geometry.
+  3. Notes, links, optional motion presets, PNG, and PDF work across supported page ratios.
+
+### Phase 27: Quality Gates and Repair
+
+**Goal:** Inspect five quality layers and repair only safe, measurable defects on isolated candidates.
+**Depends on:** Phase 26
+**Requirements:** [V5-QA-01, V5-QA-02, V5-QA-03, V5-QA-04, V5-QA-05]
+**Status:** Planned
+**Success Criteria**:
+  1. Stable schemas describe package, COM, geometry, visual, deck, editability, and compatibility findings.
+  2. Repair runs at most twice and accepts changes only when weighted defects decrease without hard-gate regression.
+  3. Customer-delivery gates reject package/reopen failures, source mutation, rasterized slides, missing native objects, and insufficient editable text coverage.
+
+### Phase 28: Weak-Model Benchmark
+
+**Goal:** Measure whether the governed v5 workflow improves ordinary-model quality and repeatability across common business scenarios.
+**Depends on:** Phase 27
+**Requirements:** [V5-BENCH-01, V5-BENCH-02, V5-BENCH-03, V5-BENCH-04, V5-BENCH-05]
+**Status:** Planned
+**Success Criteria**:
+  1. Fifteen frozen scenario briefs cover business reports, proposals, launches, analysis, sales, investors, reviews, strategy, research, training, brand, kickoff, operations, and marketing/e-commerce.
+  2. Three arms, two ordinary models, repeats, deterministic scoring, and blind review are reproducible from frozen hashes.
+  3. Release thresholds demonstrate quality, safety, editability, and repeatability improvement.
+
+### Phase 29: Windows Acceptance and Closure
+
+**Goal:** Prove the complete compiler in real Windows PowerPoint, publish canonical evidence, and close only when every hard gate passes.
+**Depends on:** Phase 28
+**Requirements:** [V5-UAT-01, V5-UAT-02, V5-UAT-03, V5-UAT-04, V5-UAT-05, V5-UAT-06]
+**Status:** Planned
+**Success Criteria**:
+  1. The Windows matrix and ten-run reliability cases pass for sessions, paths, formats, ratios, fonts, add-ins, locks, and edit sentinels.
+  2. All fifteen canonical outputs have exports, contact sheets, reports, hashes, and final human review evidence.
+  3. The final OpenCode audit is independently verified and the Skill documents the production compiler workflow.
+  4. v5.0 remains active if any mapped requirement or customer-delivery hard gate lacks fresh evidence.
+
+## v5.0 Progress
+
+| Phase | Status | Completed |
+|-------|--------|-----------|
+| 22. Baseline and Safety | In Progress | — |
+| 23. DeckPlan and Semantic Rules | Planned | — |
+| 24. Design System and Layout Registries | Planned | — |
+| 25. Transactional Core Renderer | Planned | — |
+| 26. Advanced Editable Objects | Planned | — |
+| 27. Quality Gates and Repair | Planned | — |
+| 28. Weak-Model Benchmark | Planned | — |
+| 29. Windows Acceptance and Closure | Planned | — |
+
+**Current milestone:** 0/8 phases complete. Repository total: 29 phases, 21 complete.

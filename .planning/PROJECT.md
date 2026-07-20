@@ -4,26 +4,27 @@
 
 AImagician Skills / Skillbee is a local-first personal skill configuration orchestrator for AI coding CLIs. It lets AImagician keep self-authored skills in-repo, register external skill sources from GitHub or install commands, persist user intent in YAML, preview safe sync plans, and install the resolved skill set into global or project-level CLI skill directories.
 
-The product is for one primary user first: AImagician. The v3.0 goal is to make Skillbee trustworthy as a configuration console: catalog defaults remain searchable, user overrides decide what is eligible, project/global scopes are isolated, and real installs happen only after preview confirmation.
+The product is for one primary user first: AImagician. The active v5.0 goal is to make the owned `window-pptx` skill a verified production engine while preserving the shipped Skillbird configuration and installation foundation.
 
 ## Core Value
 
-Skillbee resolves catalog defaults plus user YAML overrides into safe, previewed, repeatable sync plans for the selected CLI targets and scope.
+Skillbird resolves catalog defaults plus user YAML overrides into safe, previewed, repeatable sync plans. For v5.0, the same safety discipline extends to semantic PowerPoint planning, deterministic design selection, native editable rendering, and hard-gated customer delivery.
 
 ## Requirements
 
 ### Validated
 
-(None yet - ship to validate)
+- [x] v4.0 Skillbird consolidation and install acceptance are shipped with audit evidence.
+- [x] Phase 22 Linux/fake-COM safety slices have focused tests and independent review evidence.
 
 ### Active
 
-- [ ] Implement global/project independent scopes with separate override YAML and manifests
-- [ ] Resolve source enablement plus skill include/exclude into an explainable install eligibility set
-- [ ] Preserve searchable default-disabled sources such as `slavingia/skill` while preventing bulk install by default
-- [ ] Add preview-confirmed sync that touches only selected CLI targets and only Skillbee-managed items
-- [ ] Provide TUI controls for scope, source state, include/exclude, preview, and Target × Skill reports
-- [ ] Run unit, integration, TUI, project-scope, and real global-directory acceptance against the PRD
+- [ ] Complete Phase 22 real Windows PowerPoint safety and transactional acceptance.
+- [ ] Compile versioned semantic DeckPlans through deterministic narrative, layout, capacity, and fallback rules.
+- [ ] Provide eight themes and at least 72 governed layout variants across 24 page families.
+- [ ] Render editable PowerPoint objects transactionally and validate package, COM, visual, and deck quality.
+- [ ] Benchmark three generation arms across two ordinary models and 15 business scenarios.
+- [ ] Ship only after the Windows acceptance matrix and customer-delivery hard gates pass.
 
 ### Out of Scope
 
@@ -32,17 +33,17 @@ Skillbee resolves catalog defaults plus user YAML overrides into safe, previewed
 - Deep plugin lifecycle management across every CLI - plugin support is conditional and secondary to skills deployment
 
 
-## Current Milestone: v3.0 Configuration Orchestration & Verified Sync
+## Current Milestone: v5.0 Window-PPTX Verified Production Engine
 
-**Goal:** Implement the full `docs/PRD.md` configuration-orchestration model and verify it end-to-end against project and real global CLI skill directories.
+**Goal:** Move presentation quality from model improvisation into a versioned compiler, design system, layout/component registries, native renderer, bounded repair loop, and reproducible weak-model benchmark.
 
 **Target features:**
-- Layered config model: repo defaults, user override YAML, scope manifests, transient TUI state
-- Global and project scope isolation with CLI-specific target paths
-- Source visible/searchable state, default-disabled packages, and include/exclude resolution
-- Preview-confirmed sync that touches only selected CLI targets and only Skillbee-managed items
-- TUI controls and reports for scope, source state, eligibility reasons, preview, and Target × Skill outcomes
-- Automated and real acceptance for manual-file preservation, project/global isolation, command-source global-only behavior, and real global installs
+- Strict dry-run, source/output protection, COM ownership, macro-security restoration, and transactional candidate promotion
+- DeckPlan schema, 15 business archetypes, semantic layout ranking, capacity splitting, rhythm, and weak-model fallbacks
+- Eight themes, 24 layout families, at least 72 deterministic variants, reusable components, and brand/font fallbacks
+- Native editable charts, tables, diagrams, notes, links, controlled motion, and ratio-aware exports
+- Five-layer quality inspection with bounded monotonic repair and stable report schemas
+- Fifteen-scenario, three-arm weak-model benchmark plus final Windows PowerPoint acceptance
 
 ## Context
 
@@ -86,6 +87,9 @@ The user expects all major targets to be covered in v1 because the integration i
 | `exclude` is the strongest eligibility rule | Prevents unwanted skills from being installed even when sources or includes would otherwise select them | - Pending |
 | Project and global scopes are independent | The user wants current-project installs such as `<project>/.claude/skills` without affecting global CLI homes | - Pending |
 | v3.0 treats Skillbee as configuration orchestration first | The PRD requires YAML intent, eligibility resolution, preview, and managed sync rather than direct install side effects | - Pending |
+| v5.0 uses semantic DeckPlan input | Ordinary models should choose governed semantic roles, not invent raw coordinates, fonts, or colors | Active |
+| v5.0 keeps native PowerPoint as production renderer | Client deliverables require editable objects and real PowerPoint compatibility | Active |
+| v5.0 gates promotion on measurable evidence | Package validity, source integrity, editability, and reopen checks must precede delivery | Active |
 
 ---
-*Last updated: 2026-05-30 after starting v3.0 configuration orchestration milestone*
+*Last updated: 2026-07-20 after starting the v5.0 Window-PPTX Verified Production Engine milestone*
