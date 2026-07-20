@@ -5,6 +5,7 @@ from .assets import (
     AssetIntent,
     AssetPolicy,
     AssetRecord,
+    AssetSession,
     choose_asset,
     load_asset_policy,
 )
@@ -23,6 +24,7 @@ from .deck_plan import (
 )
 from .errors import ComSessionError, OutputPolicyError, WindowPptxError
 from .layouts import (
+    GridDefinition,
     LayoutCapacity,
     LayoutRegistry,
     ResolvedLayout,
@@ -60,6 +62,7 @@ __all__ = [
     "AssetIntent",
     "AssetPolicy",
     "AssetRecord",
+    "AssetSession",
     "BrandOverrides",
     "ComSessionError",
     "ContentBlock",
@@ -68,6 +71,7 @@ __all__ = [
     "DeckPlan",
     "DeckPlanValidationError",
     "DecisionTrace",
+    "GridDefinition",
     "LayoutCapacity",
     "LayoutRegistry",
     "OutputPolicy",

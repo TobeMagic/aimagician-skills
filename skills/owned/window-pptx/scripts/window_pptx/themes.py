@@ -121,6 +121,16 @@ def load_themes(path: Path | str | None = None) -> dict[str, ThemeDefinition]:
         }
         if set(colors) != required_colors:
             raise ValueError(f"theme {theme_id} has incomplete semantic colors")
+        required_fonts = {
+            "heading",
+            "body",
+            "fallbacks",
+            "cjk_heading",
+            "cjk_body",
+            "cjk_fallbacks",
+        }
+        if set(entry["fonts"]) != required_fonts:
+            raise ValueError(f"theme {theme_id} has incomplete font profiles")
         result[theme_id] = ThemeDefinition(
             id=theme_id,
             mode=entry["mode"],
@@ -142,15 +152,31 @@ def select_theme(
     """Choose a governed theme from project context using stable priorities."""
 
     context = " ".join(
-        value.casefold().replace("_", "-")
+        re.sub(r"[\s_]+", "-", value.casefold()).strip("-")
         for value in (scenario, audience, industry)
         if value
     )
-    if any(token in context for token in ("government", "public-sector", "state-owned")):
+    if any(
+        token in context
+        for token in (
+            "government",
+            "public-sector",
+            "public-enterprise",
+            "state-owned",
+        )
+    ):
         return "public-enterprise"
     if any(
         token in context
-        for token in ("investor", "fundraising", "investment", "finance", "banking")
+        for token in (
+            "investor",
+            "fundraising",
+            "investment",
+            "finance",
+            "financial",
+            "fintech",
+            "banking",
+        )
     ):
         return "finance-investor"
     if any(token in context for token in ("training", "learner", "education", "course")):
@@ -179,6 +205,10 @@ def _resolve_font(
     override: str | None,
     fallbacks: tuple[str, ...],
     installed: dict[str, str],
+    *,
+    required_script: str,
+    script_fonts: set[str],
+    font_scripts: dict[str, set[str]],
 ) -> tuple[str, tuple[ResolutionEvent, ...]]:
     events: list[ResolutionEvent] = []
     candidates = tuple(
@@ -189,7 +219,12 @@ def _resolve_font(
     chosen: str | None = None
     for candidate in candidates:
         installed_name = installed.get(candidate.casefold())
-        if installed_name is not None:
+        supports_script = (
+            required_script == "latin"
+            or required_script in font_scripts.get(candidate.casefold(), set())
+            or candidate.casefold() in script_fonts
+        )
+        if installed_name is not None and supports_script:
             chosen = installed_name
             break
     if chosen is None:
@@ -210,6 +245,9 @@ def resolve_theme(
     theme_id: str,
     brand: BrandOverrides | None = None,
     installed_fonts: set[str] | None = None,
+    *,
+    locale: str = "en-US",
+    font_scripts: dict[str, set[str]] | None = None,
 ) -> ResolvedTheme:
     """Resolve one immutable theme and report every brand/font substitution."""
 
@@ -224,25 +262,72 @@ def resolve_theme(
         if requested is None:
             continue
         resolved = _normalize_color(requested, field)
-        colors[field] = resolved
-        events.append(ResolutionEvent("BRAND_COLOR_OVERRIDE", field, requested, resolved))
+        minimum_contrast = 3.0 if field == "primary" else 1.5
+        if min(
+            contrast_ratio(resolved, colors["background"]),
+            contrast_ratio(resolved, colors["surface"]),
+        ) < minimum_contrast:
+            events.append(
+                ResolutionEvent(
+                    "BRAND_COLOR_CONTRAST_FALLBACK",
+                    field,
+                    requested,
+                    colors[field],
+                )
+            )
+        else:
+            colors[field] = resolved
+            events.append(
+                ResolutionEvent("BRAND_COLOR_OVERRIDE", field, requested, resolved)
+            )
     colors["on_primary"] = _on_color(colors["primary"])
 
     available = {font.casefold(): font for font in (installed_fonts or set())}
-    fallbacks = tuple(definition.fonts["fallbacks"])
+    normalized_locale = locale.casefold().replace("_", "-")
+    script = (
+        "cjk"
+        if normalized_locale.split("-", 1)[0] in {"zh", "ja", "ko"}
+        else "latin"
+    )
+    if script == "cjk":
+        heading_preferred = definition.fonts["cjk_heading"]
+        body_preferred = definition.fonts["cjk_body"]
+        fallbacks = tuple(definition.fonts["cjk_fallbacks"])
+        script_fonts = {
+            name.casefold()
+            for name in (heading_preferred, body_preferred, *fallbacks)
+        }
+        events.append(
+            ResolutionEvent("FONT_SCRIPT_PROFILE", "profile", locale, script)
+        )
+    else:
+        heading_preferred = definition.fonts["heading"]
+        body_preferred = definition.fonts["body"]
+        fallbacks = tuple(definition.fonts["fallbacks"])
+        script_fonts = set()
+    capabilities = {
+        name.casefold(): {script_name.casefold() for script_name in scripts}
+        for name, scripts in (font_scripts or {}).items()
+    }
     heading, heading_events = _resolve_font(
         "heading",
-        definition.fonts["heading"],
+        heading_preferred,
         brand.heading_font,
         fallbacks,
         available,
+        required_script=script,
+        script_fonts=script_fonts,
+        font_scripts=capabilities,
     )
     body, body_events = _resolve_font(
         "body",
-        definition.fonts["body"],
+        body_preferred,
         brand.body_font,
         fallbacks,
         available,
+        required_script=script,
+        script_fonts=script_fonts,
+        font_scripts=capabilities,
     )
     events.extend(heading_events)
     events.extend(body_events)

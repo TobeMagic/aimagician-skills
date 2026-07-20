@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import math
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -12,9 +14,11 @@ SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 import window_pptx
+import window_pptx.layouts as layouts_module
 from window_pptx.assets import (
     AssetIntent,
     AssetRecord,
+    AssetSession,
     choose_asset,
     load_asset_policy,
 )
@@ -160,6 +164,20 @@ def test_brand_and_font_overrides_are_deterministic_and_reported() -> None:
     assert contrast_ratio(first.colors["on_primary"], first.colors["primary"]) >= 4.5
 
 
+def test_brand_color_with_no_background_contrast_falls_back_explicitly() -> None:
+    theme = resolve_theme(
+        "executive-light",
+        brand=BrandOverrides(primary="#FFFFFF", accent="#F7F8FA"),
+        installed_fonts={"Arial"},
+    )
+
+    assert theme.colors["primary"] == "#0B3A67"
+    assert theme.colors["accent"] == "#2F80ED"
+    assert sum(
+        event.code == "BRAND_COLOR_CONTRAST_FALLBACK" for event in theme.events
+    ) == 2
+
+
 def test_invalid_brand_color_is_rejected() -> None:
     with pytest.raises(ValueError, match="color"):
         resolve_theme(
@@ -185,6 +203,20 @@ def test_unavailable_font_override_is_reported_even_when_preferred_exists() -> N
     )
 
 
+def test_cjk_locale_uses_verified_cjk_profile_before_latin_fonts() -> None:
+    theme = resolve_theme(
+        "executive-light",
+        installed_fonts={"Aptos Display", "Aptos", "Microsoft YaHei", "Arial"},
+        locale="zh-CN",
+    )
+
+    assert theme.fonts == {
+        "heading": "Microsoft YaHei",
+        "body": "Microsoft YaHei",
+    }
+    assert {event.code for event in theme.events} >= {"FONT_SCRIPT_PROFILE"}
+
+
 @pytest.mark.parametrize(
     ("scenario", "audience", "industry", "expected"),
     [
@@ -194,7 +226,10 @@ def test_unavailable_font_override_is_reported_even_when_preferred_exists() -> N
         ("brand-introduction", "customer", None, "marketing-vibrant"),
         ("product-launch", "customer", None, "marketing-vibrant"),
         ("business-report", "executive", "government", "public-enterprise"),
+        ("public-enterprise", "executive", None, "public-enterprise"),
+        ("public enterprise", "executive", None, "public-enterprise"),
         ("business-report", "executive", "banking", "finance-investor"),
+        ("financial-report", "executive", None, "finance-investor"),
         ("data-analysis", "executive", "technology", "technology"),
         ("business-report", "executive", None, "executive-light"),
     ],
@@ -225,6 +260,21 @@ def test_twenty_four_families_have_at_least_three_unique_variants() -> None:
         assert recipe_id in registry.recipes
 
 
+def test_layout_geometry_is_derived_from_governed_grid_tokens() -> None:
+    registry = load_layout_registry()
+
+    assert registry.grid.columns == 12
+    assert registry.grid.spacing_base_pt == 8
+    assert registry.grid.reference_width_in == pytest.approx(13.333)
+    assert registry.grid.reference_height_in == pytest.approx(7.5)
+    for slots in registry.recipes.values():
+        for slot in slots:
+            assert 0 <= slot.col < registry.grid.columns
+            assert 1 <= slot.col_span <= registry.grid.columns - slot.col
+            assert 0 <= slot.row < registry.grid.rows
+            assert 1 <= slot.row_span <= registry.grid.rows - slot.row
+
+
 def test_every_phase23_form_resolves_to_a_registered_family() -> None:
     registry = load_layout_registry()
 
@@ -239,10 +289,16 @@ def test_specialized_families_keep_semantic_components_in_every_variant() -> Non
     required = {
         "big-number": {"kpi"},
         "cards": {"card"},
+        "comparison": {"comparison-panel"},
         "timeline": {"timeline-node"},
         "process": {"process-step"},
         "matrix": {"matrix-cell"},
         "quadrant": {"matrix-cell", "chart"},
+        "risk-recommendation": {
+            "risk-panel",
+            "recommendation-panel",
+            "matrix-cell",
+        },
         "funnel": {"process-step", "chart"},
         "roadmap": {"timeline-node", "process-step"},
         "data-chart": {"chart"},
@@ -257,6 +313,65 @@ def test_specialized_families_keep_semantic_components_in_every_variant() -> Non
         for variant_id in registry.families[family_id].variant_ids:
             layout = resolve_layout(variant_id, SlideSize(13.333, 7.5))
             assert component_ids & {slot.component for slot in layout.slots}, variant_id
+
+
+def test_each_family_has_three_distinct_geometry_component_variants() -> None:
+    registry = load_layout_registry()
+    size = SlideSize(13.333, 7.5)
+
+    for family in registry.families.values():
+        signatures = {
+            tuple(
+                (slot.component, slot.x, slot.y, slot.width, slot.height)
+                for slot in resolve_layout(variant_id, size).slots
+            )
+            for variant_id in family.variant_ids
+        }
+        assert len(signatures) >= 3, family.id
+
+
+@pytest.mark.parametrize(
+    ("form", "max_items"),
+    [
+        ("cards", 5),
+        ("process", 6),
+        ("timeline", 6),
+        ("roadmap", 6),
+        ("comparison", 5),
+        ("before-after", 5),
+        ("table", 9),
+        ("big-number", 5),
+        ("kpi-dashboard", 5),
+        ("line-chart", 10),
+        ("area-chart", 10),
+        ("bar-chart", 10),
+        ("composition-chart", 9),
+        ("distribution-chart", 10),
+        ("scatter-plot", 10),
+        ("matrix", 9),
+        ("quadrant", 9),
+        ("risk-recommendation", 5),
+        ("recommendation", 5),
+        ("image-story", 4),
+        ("product-showcase", 4),
+        ("text-media", 4),
+        ("focal-statement", 1),
+    ],
+)
+@pytest.mark.parametrize("density", ["sparse", "balanced", "dense"])
+def test_phase23_outputs_have_a_phase24_layout_service_path(
+    form: str, max_items: int, density: str
+) -> None:
+    for item_count in {1, max_items}:
+        layout = resolve_layout(
+            form,
+            SlideSize(13.333, 7.5),
+            item_count=item_count,
+            density=density,
+        )
+        assert layout.capacity.min_items <= item_count <= layout.capacity.max_items
+        assert layout.requested_density == density
+        assert layout.resolved_density in layout.capacity.densities
 
 
 def test_registry_bundle_has_no_geometry_or_contract_issues() -> None:
@@ -281,6 +396,12 @@ def test_resolved_layout_scales_inside_custom_page(size: SlideSize) -> None:
         assert slot.y + slot.height <= size.height + 1e-6
 
 
+@pytest.mark.parametrize("bad", [math.nan, math.inf, -math.inf])
+def test_non_finite_slide_size_is_rejected(bad: float) -> None:
+    with pytest.raises(ValueError, match="finite and positive"):
+        resolve_layout("cards", SlideSize(bad, 7.5))
+
+
 def test_layout_selection_varies_deterministically_after_repetition() -> None:
     size = SlideSize(13.333, 7.5)
     first = resolve_layout("cards", size)
@@ -297,15 +418,27 @@ def test_layout_selection_varies_deterministically_after_repetition() -> None:
     )
 
 
+def test_layout_rhythm_cycles_after_all_compatible_variants_are_used() -> None:
+    size = SlideSize(13.333, 7.5)
+    history: tuple[str, ...] = ()
+    selected: list[str] = []
+    for _ in range(6):
+        layout = resolve_layout("cards", size, previous_layouts=history)
+        selected.append(layout.id)
+        history += (layout.id,)
+
+    assert selected[:3] == selected[3:]
+
+
 def test_layout_capacity_filters_incompatible_variants_before_rhythm() -> None:
     size = SlideSize(13.333, 7.5)
 
     sparse = resolve_layout("cards", size, item_count=1, density="sparse")
-    dense = resolve_layout("cards", size, item_count=7, density="dense")
+    dense = resolve_layout("cards", size, item_count=5, density="dense")
 
     assert sparse.capacity.min_items <= 1 <= sparse.capacity.max_items
     assert "sparse" in sparse.capacity.densities
-    assert dense.capacity.min_items <= 7 <= dense.capacity.max_items
+    assert dense.capacity.min_items <= 5 <= dense.capacity.max_items
     assert "dense" in dense.capacity.densities
 
 
@@ -322,10 +455,22 @@ def test_layout_capacity_rejects_invalid_or_unserviceable_requests() -> None:
         resolve_layout("cards.three-column", size, item_count=1, density="sparse")
 
 
+def test_effective_capacity_never_exceeds_overridden_component_capacity() -> None:
+    size = SlideSize(13.333, 7.5)
+
+    assert resolve_layout("process.focus", size, item_count=6).capacity.max_items == 6
+    assert resolve_layout("cards.top-band", size, item_count=5).capacity.max_items == 5
+    with pytest.raises(ValueError, match="cannot fit"):
+        resolve_layout("process.focus", size, item_count=7)
+    with pytest.raises(ValueError, match="cannot fit"):
+        resolve_layout("cards.top-band", size, item_count=6)
+
+
 def test_phase24_runtime_is_exposed_from_the_public_package() -> None:
     assert window_pptx.select_theme is select_theme
     assert window_pptx.resolve_layout is resolve_layout
     assert window_pptx.choose_asset is choose_asset
+
 
 def test_required_editable_components_and_font_minima_exist() -> None:
     components = load_components()
@@ -373,6 +518,8 @@ def test_asset_choice_is_deterministic_and_rejects_missing_provenance() -> None:
             source=None,
             license="CC0",
             retrieved_at="2026-07-20",
+            width_px=2400,
+            height_px=1600,
         ),
         AssetRecord(
             id="valid-b",
@@ -383,6 +530,8 @@ def test_asset_choice_is_deterministic_and_rejects_missing_provenance() -> None:
             source="https://example.test/b",
             license="CC0",
             retrieved_at="2026-07-20",
+            width_px=2400,
+            height_px=1600,
         ),
         AssetRecord(
             id="valid-a",
@@ -393,6 +542,8 @@ def test_asset_choice_is_deterministic_and_rejects_missing_provenance() -> None:
             source="https://example.test/a",
             license="CC0",
             retrieved_at="2026-07-20",
+            width_px=3200,
+            height_px=1800,
         ),
     )
 
@@ -410,6 +561,168 @@ def test_asset_choice_uses_editable_fallback_when_no_safe_asset_exists() -> None
     assert choice.asset_id is None
     assert choice.fallback == "native-editable-composition"
     assert choice.reason == "NO_SAFE_ASSET"
+
+
+def test_asset_choice_rejects_non_finite_quality_and_blank_provenance() -> None:
+    intent = AssetIntent(kind="photo", aspect_ratio=16 / 9)
+    records = (
+        AssetRecord(
+            id="nan",
+            kind="photo",
+            style=None,
+            aspect_ratio=16 / 9,
+            quality=math.nan,
+            source="https://example.test/nan",
+            license="CC0",
+            retrieved_at="2026-07-20",
+            width_px=1920,
+            height_px=1080,
+        ),
+        AssetRecord(
+            id="blank",
+            kind="photo",
+            style=None,
+            aspect_ratio=16 / 9,
+            quality=100,
+            source=" ",
+            license=" ",
+            retrieved_at=" ",
+            width_px=1920,
+            height_px=1080,
+        ),
+    )
+
+    choice = choose_asset(intent, records)
+
+    assert choice.asset_id is None
+    assert choice.rejected == {
+        "blank": "MISSING_PROVENANCE",
+        "nan": "INVALID_QUALITY",
+    }
+
+
+def test_icon_choice_enforces_one_family_per_deck() -> None:
+    records = (
+        AssetRecord(
+            id="outline-home",
+            kind="icon",
+            style="outline",
+            aspect_ratio=1,
+            quality=90,
+            source="internal://icons/outline/home",
+            license="brand-owned",
+            retrieved_at="2026-07-20",
+            icon_family="outline-v1",
+        ),
+        AssetRecord(
+            id="filled-home",
+            kind="icon",
+            style="filled",
+            aspect_ratio=1,
+            quality=99,
+            source="internal://icons/filled/home",
+            license="brand-owned",
+            retrieved_at="2026-07-20",
+            icon_family="filled-v1",
+        ),
+    )
+
+    choice = choose_asset(
+        AssetIntent(kind="icon"), records, active_icon_family="outline-v1"
+    )
+
+    assert choice.asset_id == "outline-home"
+    assert choice.icon_family == "outline-v1"
+    assert choice.rejected["filled-home"] == "ICON_FAMILY_MISMATCH"
+
+
+def test_asset_session_locks_icon_family_after_first_selection() -> None:
+    outline = AssetRecord(
+        id="outline-home",
+        kind="icon",
+        style="outline",
+        aspect_ratio=1,
+        quality=90,
+        source="internal://icons/outline/home",
+        license="brand-owned",
+        retrieved_at="2026-07-20",
+        icon_family="outline-v1",
+    )
+    filled = replace(
+        outline,
+        id="filled-home",
+        style="filled",
+        quality=99,
+        source="internal://icons/filled/home",
+        icon_family="filled-v1",
+    )
+    session = AssetSession()
+
+    assert session.choose(AssetIntent(kind="icon"), (outline,)).asset_id == outline.id
+    second = session.choose(AssetIntent(kind="icon"), (filled, outline))
+
+    assert session.icon_family == "outline-v1"
+    assert second.asset_id == outline.id
+    assert second.rejected[filled.id] == "ICON_FAMILY_MISMATCH"
+
+
+def test_duplicate_asset_ids_are_rejected_independent_of_input_order() -> None:
+    base = AssetRecord(
+        id="duplicate",
+        kind="icon",
+        style="outline",
+        aspect_ratio=1,
+        quality=90,
+        source="internal://icons/outline/home",
+        license="brand-owned",
+        retrieved_at="2026-07-20",
+        icon_family="outline-v1",
+    )
+    duplicate = replace(base, source="internal://icons/outline/other")
+
+    first = choose_asset(AssetIntent(kind="icon"), (base, duplicate))
+    second = choose_asset(AssetIntent(kind="icon"), (duplicate, base))
+
+    assert first == second
+    assert first.asset_id is None
+    assert first.rejected == {"duplicate": "DUPLICATE_ID"}
+
+
+def test_runtime_registry_gate_checks_exact_sets_and_type_minima(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry = load_layout_registry()
+    themes = load_themes()
+    broken_families = dict(registry.families)
+    del broken_families["cta"]
+    broken_map = dict(registry.semantic_form_map)
+    del broken_map["line-chart"]
+    broken_theme = themes["executive-light"]
+    broken_foundation = dict(broken_theme.foundation)
+    broken_foundation["typography"] = {
+        **broken_foundation["typography"],
+        "body": 8,
+    }
+    broken_themes = {
+        **themes,
+        "executive-light": replace(broken_theme, foundation=broken_foundation),
+    }
+    monkeypatch.setattr(
+        layouts_module,
+        "load_layout_registry",
+        lambda: replace(
+            registry,
+            families=broken_families,
+            semantic_form_map=broken_map,
+        ),
+    )
+    monkeypatch.setattr(layouts_module, "load_themes", lambda: broken_themes)
+
+    assert {issue.code for issue in validate_registry_bundle()} >= {
+        "FAMILY_SET",
+        "SEMANTIC_FORM_SET",
+        "THEME_TYPOGRAPHY",
+    }
 
 
 def test_legacy_templates_are_quarantined_from_recommendation() -> None:

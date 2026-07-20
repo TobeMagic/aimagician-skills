@@ -1,93 +1,94 @@
 {
   "schema_version": "1.0",
   "safe_bounds": {"x": 0.04, "y": 0.055, "width": 0.92, "height": 0.89},
+  "grid": {"columns": 12, "rows": 24, "column_gap": 0.015, "row_gap": 0.01, "reference_slide": {"width_in": 13.333, "height_in": 7.5}, "spacing_base_pt": 8},
   "recipes": [
-    {"id": "hero-left", "capacity": {"min_items": 1, "max_items": 3, "densities": ["sparse", "balanced"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.18, "width": 0.50, "height": 0.22},
-      {"id": "body", "component": "body-text", "x": 0.06, "y": 0.46, "width": 0.48, "height": 0.22},
-      {"id": "visual", "component": "image-frame", "x": 0.62, "y": 0.12, "width": 0.32, "height": 0.70},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "hero-left", "capacity": {"min_items": 1, "max_items": 4, "densities": ["sparse", "balanced"]}, "capacity_slots": ["body"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 3, "col_span": 7, "row_span": 6},
+      {"id": "body", "component": "body-text", "col": 0, "row": 11, "col_span": 6, "row_span": 6},
+      {"id": "visual", "component": "image-frame", "col": 8, "row": 2, "col_span": 4, "row_span": 18},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "hero-right", "capacity": {"min_items": 1, "max_items": 3, "densities": ["sparse", "balanced"]}, "slots": [
-      {"id": "visual", "component": "image-frame", "x": 0.06, "y": 0.12, "width": 0.32, "height": 0.70},
-      {"id": "title", "component": "title", "x": 0.44, "y": 0.18, "width": 0.50, "height": 0.22},
-      {"id": "body", "component": "body-text", "x": 0.46, "y": 0.46, "width": 0.48, "height": 0.22},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "hero-right", "capacity": {"min_items": 1, "max_items": 4, "densities": ["sparse", "balanced"]}, "capacity_slots": ["body"], "slots": [
+      {"id": "visual", "component": "image-frame", "col": 0, "row": 2, "col_span": 4, "row_span": 18},
+      {"id": "title", "component": "title", "col": 5, "row": 3, "col_span": 7, "row_span": 6},
+      {"id": "body", "component": "body-text", "col": 6, "row": 11, "col_span": 6, "row_span": 6},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "centered", "capacity": {"min_items": 1, "max_items": 2, "densities": ["sparse", "balanced"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.16, "y": 0.22, "width": 0.68, "height": 0.22},
-      {"id": "body", "component": "body-text", "x": 0.20, "y": 0.50, "width": 0.60, "height": 0.22},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "centered", "capacity": {"min_items": 1, "max_items": 2, "densities": ["sparse", "balanced"]}, "capacity_slots": ["body"], "slots": [
+      {"id": "title", "component": "title", "col": 2, "row": 4, "col_span": 8, "row_span": 6},
+      {"id": "body", "component": "body-text", "col": 3, "row": 12, "col_span": 6, "row_span": 6},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "top-band", "capacity": {"min_items": 1, "max_items": 8, "densities": ["sparse", "balanced", "dense"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
-      {"id": "content", "component": "body-text", "x": 0.06, "y": 0.25, "width": 0.88, "height": 0.60},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "top-band", "capacity": {"min_items": 1, "max_items": 10, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["content"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "content", "component": "body-text", "col": 0, "row": 6, "col_span": 12, "row_span": 16},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "split-left", "capacity": {"min_items": 2, "max_items": 6, "densities": ["balanced", "dense"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
-      {"id": "primary", "component": "body-text", "x": 0.06, "y": 0.25, "width": 0.40, "height": 0.60},
-      {"id": "secondary", "component": "image-frame", "x": 0.52, "y": 0.25, "width": 0.42, "height": 0.60},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "split-left", "capacity": {"min_items": 1, "max_items": 8, "densities": ["balanced", "dense"]}, "capacity_slots": ["primary", "secondary"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "primary", "component": "body-text", "col": 0, "row": 6, "col_span": 5, "row_span": 16},
+      {"id": "secondary", "component": "image-frame", "col": 6, "row": 6, "col_span": 6, "row_span": 16},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "split-right", "capacity": {"min_items": 2, "max_items": 6, "densities": ["balanced", "dense"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
-      {"id": "primary", "component": "image-frame", "x": 0.06, "y": 0.25, "width": 0.42, "height": 0.60},
-      {"id": "secondary", "component": "body-text", "x": 0.54, "y": 0.25, "width": 0.40, "height": 0.60},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "split-right", "capacity": {"min_items": 1, "max_items": 8, "densities": ["balanced", "dense"]}, "capacity_slots": ["primary", "secondary"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "primary", "component": "image-frame", "col": 0, "row": 6, "col_span": 6, "row_span": 16},
+      {"id": "secondary", "component": "body-text", "col": 7, "row": 6, "col_span": 5, "row_span": 16},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "three-column", "capacity": {"min_items": 3, "max_items": 6, "densities": ["balanced", "dense"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
-      {"id": "one", "component": "card", "x": 0.06, "y": 0.27, "width": 0.26, "height": 0.55},
-      {"id": "two", "component": "card", "x": 0.37, "y": 0.27, "width": 0.26, "height": 0.55},
-      {"id": "three", "component": "card", "x": 0.68, "y": 0.27, "width": 0.26, "height": 0.55},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "three-column", "capacity": {"min_items": 3, "max_items": 6, "densities": ["balanced", "dense"]}, "capacity_slots": ["one", "two", "three"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "one", "component": "card", "col": 0, "row": 6, "col_span": 4, "row_span": 15},
+      {"id": "two", "component": "card", "col": 4, "row": 6, "col_span": 4, "row_span": 15},
+      {"id": "three", "component": "card", "col": 8, "row": 6, "col_span": 4, "row_span": 15},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "grid-four", "capacity": {"min_items": 4, "max_items": 8, "densities": ["balanced", "dense"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
-      {"id": "one", "component": "card", "x": 0.06, "y": 0.25, "width": 0.42, "height": 0.26},
-      {"id": "two", "component": "card", "x": 0.52, "y": 0.25, "width": 0.42, "height": 0.26},
-      {"id": "three", "component": "card", "x": 0.06, "y": 0.56, "width": 0.42, "height": 0.26},
-      {"id": "four", "component": "card", "x": 0.52, "y": 0.56, "width": 0.42, "height": 0.26},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "grid-four", "capacity": {"min_items": 4, "max_items": 8, "densities": ["balanced", "dense"]}, "capacity_slots": ["one", "two", "three", "four"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "one", "component": "card", "col": 0, "row": 5, "col_span": 6, "row_span": 7},
+      {"id": "two", "component": "card", "col": 6, "row": 5, "col_span": 6, "row_span": 7},
+      {"id": "three", "component": "card", "col": 0, "row": 13, "col_span": 6, "row_span": 8},
+      {"id": "four", "component": "card", "col": 6, "row": 13, "col_span": 6, "row_span": 8},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "chart-focus", "capacity": {"min_items": 1, "max_items": 10, "densities": ["sparse", "balanced", "dense"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
-      {"id": "chart", "component": "chart", "x": 0.06, "y": 0.25, "width": 0.67, "height": 0.60},
-      {"id": "insight", "component": "body-text", "x": 0.77, "y": 0.25, "width": 0.17, "height": 0.60},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "chart-focus", "capacity": {"min_items": 1, "max_items": 10, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["chart"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "chart", "component": "chart", "col": 0, "row": 5, "col_span": 9, "row_span": 17},
+      {"id": "insight", "component": "body-text", "col": 9, "row": 5, "col_span": 3, "row_span": 17},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "linear-flow", "capacity": {"min_items": 3, "max_items": 6, "densities": ["sparse", "balanced", "dense"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
-      {"id": "flow", "component": "process-step", "x": 0.06, "y": 0.31, "width": 0.88, "height": 0.38},
-      {"id": "notes", "component": "body-text", "x": 0.06, "y": 0.75, "width": 0.88, "height": 0.10},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "linear-flow", "capacity": {"min_items": 1, "max_items": 6, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["flow"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "flow", "component": "process-step", "col": 0, "row": 7, "col_span": 12, "row_span": 10},
+      {"id": "notes", "component": "body-text", "col": 0, "row": 19, "col_span": 12, "row_span": 3},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "timeline-flow", "capacity": {"min_items": 3, "max_items": 6, "densities": ["sparse", "balanced", "dense"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
-      {"id": "timeline", "component": "timeline-node", "x": 0.06, "y": 0.30, "width": 0.88, "height": 0.42},
-      {"id": "notes", "component": "body-text", "x": 0.06, "y": 0.76, "width": 0.88, "height": 0.09},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "timeline-flow", "capacity": {"min_items": 1, "max_items": 6, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["timeline"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "timeline", "component": "timeline-node", "col": 0, "row": 7, "col_span": 12, "row_span": 11},
+      {"id": "notes", "component": "body-text", "col": 0, "row": 20, "col_span": 12, "row_span": 2},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "matrix-focus", "capacity": {"min_items": 4, "max_items": 8, "densities": ["balanced", "dense"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
-      {"id": "matrix", "component": "matrix-cell", "x": 0.18, "y": 0.25, "width": 0.64, "height": 0.58},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "matrix-focus", "capacity": {"min_items": 1, "max_items": 9, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["matrix"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "matrix", "component": "matrix-cell", "col": 2, "row": 5, "col_span": 8, "row_span": 17},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "gallery-two", "capacity": {"min_items": 2, "max_items": 4, "densities": ["sparse", "balanced"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
-      {"id": "one", "component": "image-frame", "x": 0.06, "y": 0.25, "width": 0.42, "height": 0.58},
-      {"id": "two", "component": "image-frame", "x": 0.52, "y": 0.25, "width": 0.42, "height": 0.58},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "gallery-two", "capacity": {"min_items": 2, "max_items": 4, "densities": ["sparse", "balanced"]}, "capacity_slots": ["one", "two"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "one", "component": "image-frame", "col": 0, "row": 5, "col_span": 6, "row_span": 17},
+      {"id": "two", "component": "image-frame", "col": 6, "row": 5, "col_span": 6, "row_span": 17},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "table-focus", "capacity": {"min_items": 2, "max_items": 8, "densities": ["balanced", "dense"]}, "slots": [
-      {"id": "title", "component": "title", "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.12},
-      {"id": "table", "component": "table", "x": 0.06, "y": 0.24, "width": 0.88, "height": 0.61},
-      {"id": "footer", "component": "footer", "x": 0.06, "y": 0.90, "width": 0.88, "height": 0.035}
+    {"id": "table-focus", "capacity": {"min_items": 1, "max_items": 9, "densities": ["balanced", "dense"]}, "capacity_slots": ["table"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "table", "component": "table", "col": 0, "row": 5, "col_span": 12, "row_span": 17},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
-    {"id": "full-visual", "capacity": {"min_items": 1, "max_items": 2, "densities": ["sparse", "balanced"]}, "slots": [
-      {"id": "visual", "component": "image-frame", "x": 0.04, "y": 0.055, "width": 0.92, "height": 0.89},
-      {"id": "overlay", "component": "body-text", "x": 0.08, "y": 0.65, "width": 0.54, "height": 0.18, "allow_overlap": true}
+    {"id": "full-visual", "capacity": {"min_items": 1, "max_items": 4, "densities": ["sparse", "balanced"]}, "capacity_slots": ["visual"], "slots": [
+      {"id": "visual", "component": "image-frame", "col": 0, "row": 0, "col_span": 12, "row_span": 24},
+      {"id": "overlay", "component": "body-text", "col": 1, "row": 16, "col_span": 7, "row_span": 5, "allow_overlap": true}
     ]}
   ],
   "families": [
@@ -101,7 +102,7 @@
     {"id": "cards", "variants": [{"id": "cards.three-column", "recipe": "three-column"}, {"id": "cards.grid-four", "recipe": "grid-four"}, {"id": "cards.top-band", "recipe": "top-band", "components": {"content": "card"}}]},
     {"id": "timeline", "variants": [{"id": "timeline.horizontal", "recipe": "timeline-flow"}, {"id": "timeline.split", "recipe": "split-left", "components": {"primary": "timeline-node"}}, {"id": "timeline.focus", "recipe": "top-band", "components": {"content": "timeline-node"}}]},
     {"id": "process", "variants": [{"id": "process.horizontal", "recipe": "linear-flow"}, {"id": "process.cards", "recipe": "three-column", "components": {"one": "process-step", "two": "process-step", "three": "process-step"}}, {"id": "process.focus", "recipe": "top-band", "components": {"content": "process-step"}}]},
-    {"id": "comparison", "variants": [{"id": "comparison.split", "recipe": "split-left"}, {"id": "comparison.columns", "recipe": "three-column"}, {"id": "comparison.matrix", "recipe": "grid-four"}]},
+    {"id": "comparison", "variants": [{"id": "comparison.split", "recipe": "split-left", "components": {"primary": "comparison-panel", "secondary": "comparison-panel"}}, {"id": "comparison.columns", "recipe": "three-column", "components": {"one": "comparison-panel", "two": "comparison-panel", "three": "comparison-panel"}}, {"id": "comparison.matrix", "recipe": "grid-four", "components": {"one": "comparison-panel", "two": "comparison-panel", "three": "comparison-panel", "four": "comparison-panel"}}]},
     {"id": "matrix", "variants": [{"id": "matrix.focus", "recipe": "matrix-focus"}, {"id": "matrix.grid", "recipe": "grid-four", "components": {"one": "matrix-cell", "two": "matrix-cell", "three": "matrix-cell", "four": "matrix-cell"}}, {"id": "matrix.split", "recipe": "split-left", "components": {"primary": "matrix-cell", "secondary": "matrix-cell"}}]},
     {"id": "quadrant", "variants": [{"id": "quadrant.focus", "recipe": "matrix-focus"}, {"id": "quadrant.insight", "recipe": "chart-focus"}, {"id": "quadrant.split", "recipe": "split-right", "components": {"primary": "matrix-cell", "secondary": "matrix-cell"}}]},
     {"id": "funnel", "variants": [{"id": "funnel.focus", "recipe": "chart-focus"}, {"id": "funnel.flow", "recipe": "linear-flow"}, {"id": "funnel.split", "recipe": "split-left", "components": {"primary": "process-step"}}]},
@@ -111,7 +112,7 @@
     {"id": "product-showcase", "variants": [{"id": "product-showcase.hero-left", "recipe": "hero-left"}, {"id": "product-showcase.hero-right", "recipe": "hero-right"}, {"id": "product-showcase.gallery", "recipe": "gallery-two"}]},
     {"id": "case-study", "variants": [{"id": "case-study.split", "recipe": "split-left"}, {"id": "case-study.story", "recipe": "top-band"}, {"id": "case-study.gallery", "recipe": "gallery-two"}]},
     {"id": "team", "variants": [{"id": "team.three", "recipe": "three-column", "components": {"one": "team-member", "two": "team-member", "three": "team-member"}}, {"id": "team.grid", "recipe": "grid-four", "components": {"one": "team-member", "two": "team-member", "three": "team-member", "four": "team-member"}}, {"id": "team.profile", "recipe": "split-right", "components": {"secondary": "team-member"}}]},
-    {"id": "risk-recommendation", "variants": [{"id": "risk-recommendation.split", "recipe": "split-left"}, {"id": "risk-recommendation.matrix", "recipe": "matrix-focus"}, {"id": "risk-recommendation.cards", "recipe": "grid-four"}]},
+    {"id": "risk-recommendation", "variants": [{"id": "risk-recommendation.split", "recipe": "split-left", "components": {"primary": "risk-panel", "secondary": "recommendation-panel"}}, {"id": "risk-recommendation.matrix", "recipe": "matrix-focus"}, {"id": "risk-recommendation.cards", "recipe": "grid-four", "components": {"one": "risk-panel", "two": "risk-panel", "three": "recommendation-panel", "four": "recommendation-panel"}}]},
     {"id": "summary", "variants": [{"id": "summary.top-band", "recipe": "top-band"}, {"id": "summary.grid", "recipe": "grid-four"}, {"id": "summary.centered", "recipe": "centered"}]},
     {"id": "cta", "variants": [{"id": "cta.centered", "recipe": "centered", "components": {"body": "cta"}}, {"id": "cta.hero-left", "recipe": "hero-left", "components": {"body": "cta"}}, {"id": "cta.full-visual", "recipe": "full-visual", "components": {"overlay": "cta"}}]},
     {"id": "image-story", "variants": [{"id": "image-story.full", "recipe": "full-visual"}, {"id": "image-story.gallery", "recipe": "gallery-two"}, {"id": "image-story.split", "recipe": "split-right"}]}

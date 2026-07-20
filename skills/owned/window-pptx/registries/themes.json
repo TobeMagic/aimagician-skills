@@ -15,42 +15,42 @@
     {
       "id": "executive-light", "mode": "light", "audiences": ["executive", "customer", "general"],
       "colors": {"background": "#F7F8FA", "surface": "#FFFFFF", "text": "#111827", "muted_text": "#4B5563", "primary": "#0B3A67", "accent": "#2F80ED", "positive": "#15803D", "warning": "#B45309", "negative": "#B91C1C"},
-      "fonts": {"heading": "Aptos Display", "body": "Aptos", "fallbacks": ["Microsoft YaHei", "Noto Sans CJK SC", "Arial"]}
+      "fonts": {"heading": "Aptos Display", "body": "Aptos", "fallbacks": ["Arial"], "cjk_heading": "Microsoft YaHei", "cjk_body": "Microsoft YaHei", "cjk_fallbacks": ["Noto Sans CJK SC", "Arial Unicode MS"]}
     },
     {
       "id": "executive-dark", "mode": "dark", "audiences": ["executive", "customer"],
       "colors": {"background": "#101828", "surface": "#1D2939", "text": "#F9FAFB", "muted_text": "#D0D5DD", "primary": "#84ADFF", "accent": "#36BFFA", "positive": "#6CE9A6", "warning": "#FEC84B", "negative": "#FDA29B"},
-      "fonts": {"heading": "Aptos Display", "body": "Aptos", "fallbacks": ["Microsoft YaHei", "Noto Sans CJK SC", "Arial"]}
+      "fonts": {"heading": "Aptos Display", "body": "Aptos", "fallbacks": ["Arial"], "cjk_heading": "Microsoft YaHei", "cjk_body": "Microsoft YaHei", "cjk_fallbacks": ["Noto Sans CJK SC", "Arial Unicode MS"]}
     },
     {
       "id": "technology", "mode": "dark", "audiences": ["customer", "investor", "internal"],
       "colors": {"background": "#07111F", "surface": "#10243B", "text": "#F8FAFC", "muted_text": "#B6C2D1", "primary": "#22D3EE", "accent": "#8B5CF6", "positive": "#34D399", "warning": "#FBBF24", "negative": "#FB7185"},
-      "fonts": {"heading": "Segoe UI Semibold", "body": "Segoe UI", "fallbacks": ["Microsoft YaHei", "Noto Sans CJK SC", "Arial"]}
+      "fonts": {"heading": "Segoe UI Semibold", "body": "Segoe UI", "fallbacks": ["Arial"], "cjk_heading": "Microsoft YaHei", "cjk_body": "Microsoft YaHei", "cjk_fallbacks": ["Noto Sans CJK SC", "Arial Unicode MS"]}
     },
     {
       "id": "finance-investor", "mode": "light", "audiences": ["investor", "executive"],
       "colors": {"background": "#FFFFFF", "surface": "#F1F5F9", "text": "#0F172A", "muted_text": "#475569", "primary": "#0F766E", "accent": "#C89B3C", "positive": "#15803D", "warning": "#A16207", "negative": "#B91C1C"},
-      "fonts": {"heading": "Aptos Display", "body": "Aptos", "fallbacks": ["Microsoft YaHei", "Noto Sans CJK SC", "Arial"]}
+      "fonts": {"heading": "Aptos Display", "body": "Aptos", "fallbacks": ["Arial"], "cjk_heading": "Microsoft YaHei", "cjk_body": "Microsoft YaHei", "cjk_fallbacks": ["Noto Sans CJK SC", "Arial Unicode MS"]}
     },
     {
       "id": "marketing-vibrant", "mode": "light", "audiences": ["customer", "general"],
       "colors": {"background": "#FFF7ED", "surface": "#FFFFFF", "text": "#431407", "muted_text": "#7C2D12", "primary": "#E11D48", "accent": "#7C3AED", "positive": "#15803D", "warning": "#C2410C", "negative": "#BE123C"},
-      "fonts": {"heading": "Arial", "body": "Arial", "fallbacks": ["Microsoft YaHei", "Noto Sans CJK SC"]}
+      "fonts": {"heading": "Arial", "body": "Arial", "fallbacks": ["Arial"], "cjk_heading": "Microsoft YaHei", "cjk_body": "Microsoft YaHei", "cjk_fallbacks": ["Noto Sans CJK SC", "Arial Unicode MS"]}
     },
     {
       "id": "ecommerce-editorial", "mode": "light", "audiences": ["customer", "internal"],
       "colors": {"background": "#FAF7F2", "surface": "#FFFFFF", "text": "#2B2118", "muted_text": "#6B5B4B", "primary": "#B45309", "accent": "#0F766E", "positive": "#15803D", "warning": "#A16207", "negative": "#B91C1C"},
-      "fonts": {"heading": "Georgia", "body": "Arial", "fallbacks": ["Microsoft YaHei", "Noto Serif CJK SC", "Noto Sans CJK SC"]}
+      "fonts": {"heading": "Georgia", "body": "Arial", "fallbacks": ["Arial"], "cjk_heading": "Noto Serif CJK SC", "cjk_body": "Microsoft YaHei", "cjk_fallbacks": ["Noto Sans CJK SC", "Arial Unicode MS"]}
     },
     {
       "id": "education-training", "mode": "light", "audiences": ["learner", "internal"],
       "colors": {"background": "#F7FAFC", "surface": "#FFFFFF", "text": "#1A202C", "muted_text": "#4A5568", "primary": "#2B6CB0", "accent": "#805AD5", "positive": "#2F855A", "warning": "#B7791F", "negative": "#C53030"},
-      "fonts": {"heading": "Arial", "body": "Arial", "fallbacks": ["Microsoft YaHei", "Noto Sans CJK SC"]}
+      "fonts": {"heading": "Arial", "body": "Arial", "fallbacks": ["Arial"], "cjk_heading": "Microsoft YaHei", "cjk_body": "Microsoft YaHei", "cjk_fallbacks": ["Noto Sans CJK SC", "Arial Unicode MS"]}
     },
     {
       "id": "public-enterprise", "mode": "light", "audiences": ["executive", "internal", "general"],
       "colors": {"background": "#F5F7FA", "surface": "#FFFFFF", "text": "#172033", "muted_text": "#4A5568", "primary": "#1F4E79", "accent": "#9A6A16", "positive": "#2F6B3C", "warning": "#8A5A00", "negative": "#9B2C2C"},
-      "fonts": {"heading": "Arial", "body": "Arial", "fallbacks": ["Microsoft YaHei", "Noto Sans CJK SC"]}
+      "fonts": {"heading": "Arial", "body": "Arial", "fallbacks": ["Arial"], "cjk_heading": "Microsoft YaHei", "cjk_body": "Microsoft YaHei", "cjk_fallbacks": ["Noto Sans CJK SC", "Arial Unicode MS"]}
     }
   ]
 }
