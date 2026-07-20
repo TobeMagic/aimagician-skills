@@ -37,7 +37,20 @@ from .layouts import (
 from .models import CandidateResult, OutputPolicy, PowerPointHandle
 from .output_policy import calculate_export_size, validate_output_policy
 from .registry import Archetype, RegistryError, load_archetypes, resolve_archetype
+from .recording_com import RecordingCall, RecordingPresentation
+from .renderer import PowerPointRenderer, RenderError, RenderReport
+from .render_plan import (
+    RenderFinding,
+    RenderObject,
+    RenderPlan,
+    RenderPlanError,
+    RenderSlide,
+    build_render_plan,
+    inches_to_points,
+    validate_render_plan,
+)
 from .rules import CandidateScore, DecisionTrace, rank_page_families
+from .runner import PipelineResult, run_render_pipeline
 from .transaction import (
     PartialSaveError,
     SourceIntegrityError,
@@ -77,8 +90,18 @@ __all__ = [
     "OutputPolicy",
     "OutputPolicyError",
     "PowerPointHandle",
+    "PowerPointRenderer",
     "ProjectIntent",
     "RegistryError",
+    "RecordingCall",
+    "RecordingPresentation",
+    "RenderError",
+    "RenderFinding",
+    "RenderObject",
+    "RenderPlan",
+    "RenderPlanError",
+    "RenderReport",
+    "RenderSlide",
     "ResolvedLayout",
     "ResolvedTheme",
     "SlideIntent",
@@ -88,6 +111,7 @@ __all__ = [
     "TransactionError",
     "WindowPptxError",
     "build_dry_run_result",
+    "build_render_plan",
     "calculate_export_size",
     "candidate_path_for",
     "collect_requested_actions",
@@ -97,6 +121,7 @@ __all__ = [
     "dispatch_powerpoint",
     "emit_result",
     "macro_security",
+    "inches_to_points",
     "load_archetypes",
     "load_asset_policy",
     "load_components",
@@ -106,6 +131,7 @@ __all__ = [
     "parse_args",
     "save_candidate",
     "rank_page_families",
+    "run_render_pipeline",
     "resolve_archetype",
     "resolve_layout",
     "resolve_theme",
@@ -115,5 +141,7 @@ __all__ = [
     "validate_output_policy",
     "validate_deck_plan",
     "validate_registry_bundle",
+    "validate_render_plan",
     "split_slide",
+    "PipelineResult",
 ]

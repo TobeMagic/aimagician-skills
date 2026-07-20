@@ -172,6 +172,8 @@ def test_parse_args_accepts_explicit_argv_and_new_flags() -> None:
         ["--export-qa"],
         ["--list-addins"],
         ["--probe-plugin-apis"],
+        ["--compile-deck-plan", "--deck-plan", "deck-plan.json"],
+        ["--render-deck-plan", "--deck-plan", "deck-plan.json"],
         [],
     ],
 )

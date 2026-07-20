@@ -26,9 +26,12 @@ from window_pptx.cli import (
     parse_args as parse_cli_args,
 )
 from window_pptx.com_session import dispatch_powerpoint, macro_security
+from window_pptx.deck_plan import compile_deck_plan, load_deck_plan
 from window_pptx.errors import OutputPolicyError
+from window_pptx.layouts import SlideSize
 from window_pptx.models import CandidateResult, OutputPolicy, PowerPointHandle
 from window_pptx.output_policy import calculate_export_size, validate_output_policy
+from window_pptx.runner import run_render_pipeline
 from window_pptx.transaction import save_candidate
 
 
@@ -2080,6 +2083,19 @@ def main(
     if output_path is None:
         die("Output path could not be resolved.")
 
+    if args.compile_deck_plan:
+        deck_plan_path = resolve_path(project_dir, args.deck_plan)
+        if deck_plan_path is None:
+            die("DeckPlan path could not be resolved.")
+        compiled = compile_deck_plan(load_deck_plan(deck_plan_path))
+        emit_result(
+            {"compiled_deck": compiled},
+            args.json,
+            sys.stdout,
+            sys.stderr,
+        )
+        return 0
+
     if args.list_addins or args.probe_plugin_apis:
         require_windows()
         inspection_result: dict[str, Any] = {}
@@ -2196,6 +2212,7 @@ def main(
 
     com_needed = any(
         [
+            args.render_deck_plan,
             args.export_slides,
             args.intake_template_library,
             args.add_master_watermark,
@@ -2324,8 +2341,45 @@ def main(
 
         presentation = open_or_create_presentation(app, effective_template, args.visible)
 
+        if args.render_deck_plan:
+            deck_plan_path = resolve_path(project_dir, args.deck_plan)
+            if deck_plan_path is None:
+                die("DeckPlan path could not be resolved.")
+            deck_plan = load_deck_plan(deck_plan_path)
+            if args.slide_width_in is not None:
+                render_size = SlideSize(
+                    args.slide_width_in, args.slide_height_in
+                )
+            else:
+                page_setup = getattr(presentation, "PageSetup", None)
+                width_pt = float(getattr(page_setup, "SlideWidth", 0) or 0)
+                height_pt = float(getattr(page_setup, "SlideHeight", 0) or 0)
+                render_size = (
+                    SlideSize(width_pt / 72, height_pt / 72)
+                    if width_pt > 0 and height_pt > 0
+                    else SlideSize(13.333, 7.5)
+                )
+            pipeline_result = run_render_pipeline(
+                deck_plan,
+                presentation=presentation,
+                app=app,
+                output_policy=output_policy,
+                slide_size=render_size,
+                installed_fonts=set(args.installed_font) or {"Arial"},
+                theme_id=args.theme_id,
+                export_pdf=args.export_pdf,
+            )
+            emit_result(
+                {"render_pipeline": pipeline_result.to_dict()},
+                args.json,
+                sys.stdout,
+                sys.stderr,
+            )
+            return 0
+
         should_add_summary = not any(
             [
+                args.render_deck_plan,
                 args.add_master_watermark,
                 args.audit_deck,
                 args.export_qa,

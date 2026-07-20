@@ -26,6 +26,41 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--template", help="Template/source deck path. Defaults to auto-detect.")
     parser.add_argument("--output", default="output/final.pptx", help="Output PPTX path.")
     parser.add_argument(
+        "--deck-plan",
+        help="DeckPlan v1 JSON path, relative to --project-dir unless absolute.",
+    )
+    deck_plan_route = parser.add_mutually_exclusive_group()
+    deck_plan_route.add_argument(
+        "--compile-deck-plan",
+        action="store_true",
+        help="Validate and compile DeckPlan JSON without starting PowerPoint.",
+    )
+    deck_plan_route.add_argument(
+        "--render-deck-plan",
+        action="store_true",
+        help="Compile and render DeckPlan JSON through the governed COM pipeline.",
+    )
+    parser.add_argument(
+        "--theme-id",
+        help="Trusted governed theme override for --render-deck-plan.",
+    )
+    parser.add_argument(
+        "--installed-font",
+        action="append",
+        default=[],
+        help="Verified installed font name for deterministic rendering; repeatable.",
+    )
+    parser.add_argument(
+        "--slide-width-in",
+        type=float,
+        help="Explicit slide width in inches for governed rendering.",
+    )
+    parser.add_argument(
+        "--slide-height-in",
+        type=float,
+        help="Explicit slide height in inches for governed rendering.",
+    )
+    parser.add_argument(
         "--init-project",
         action="store_true",
         help="Create standard window-pptx workspace folders plus planning files if missing.",
@@ -200,6 +235,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Leave PowerPoint open after the run. Use carefully with --attach-existing.",
     )
     args = parser.parse_args(argv)
+    if (args.compile_deck_plan or args.render_deck_plan) and not args.deck_plan:
+        parser.error("--deck-plan is required for DeckPlan compile/render routes")
+    if (args.slide_width_in is None) != (args.slide_height_in is None):
+        parser.error("--slide-width-in and --slide-height-in must be provided together")
+    if args.slide_width_in is not None and (
+        args.slide_width_in <= 0 or args.slide_height_in <= 0
+    ):
+        parser.error("slide dimensions must be positive")
     if args.no_save:
         print(NO_SAVE_WARNING, file=sys.stderr)
         args.no_output_deck = True
@@ -211,6 +254,8 @@ def collect_requested_actions(args: argparse.Namespace) -> list[str]:
 
     actions: list[str] = []
     for attribute in (
+        "compile_deck_plan",
+        "render_deck_plan",
         "init_project",
         "search_images",
         "download_image",
