@@ -111,6 +111,12 @@ def test_schema_and_manual_validator_agree_on_whitespace_and_data_item_types() -
     long_label = minimal_plan(items=[{"label": "x" * 301, "value": 7}])
     short_language = minimal_plan()
     short_language["project"]["language"] = "x"
+    padded_language = minimal_plan()
+    padded_language["project"]["language"] = " x "
+    padded_id = minimal_plan()
+    padded_id["slides"][0]["id"] = " summary "
+    padded_max_title = minimal_plan()
+    padded_max_title["slides"][0]["title"] = " " + ("x" * 200) + " "
     explicit_empty_items = minimal_plan(items=[])
     explicit_empty_items["slides"][0]["blocks"][0]["title"] = "Title only"
 
@@ -119,6 +125,9 @@ def test_schema_and_manual_validator_agree_on_whitespace_and_data_item_types() -
         wrong_label,
         long_label,
         short_language,
+        padded_language,
+        padded_id,
+        padded_max_title,
         explicit_empty_items,
     ):
         assert list(validator.iter_errors(payload))
@@ -219,6 +228,31 @@ def test_oversized_atomic_item_is_rejected_by_both_validation_paths() -> None:
 
     assert list(jsonschema.Draft202012Validator(schema).iter_errors(payload))
     with pytest.raises(DeckPlanValidationError, match="600"):
+        validate_deck_plan(payload)
+
+
+def test_data_item_aggregate_budget_is_enforced_by_both_validation_paths() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    schema = json.loads(
+        (SKILL_ROOT / "schemas" / "deck-plan.v1.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload = minimal_plan(
+        items=[
+            {
+                "label": "a" * 160,
+                "title": "b" * 160,
+                "name": "c" * 160,
+                "description": "d" * 160,
+                "category": "e" * 160,
+                "series": "f" * 160,
+            }
+        ]
+    )
+
+    assert list(jsonschema.Draft202012Validator(schema).iter_errors(payload))
+    with pytest.raises(DeckPlanValidationError, match="at most 5"):
         validate_deck_plan(payload)
 
 
@@ -450,6 +484,25 @@ def test_mixed_text_and_items_split_once_without_duplication() -> None:
     assert [item for part in split for item in part.blocks[0].items] == items
     assert sum(1 for part in split if part.blocks[0].text) >= 2
     assert sum(1 for part in split if part.blocks[0].items) == 2
+
+
+def test_mixed_chart_text_continuations_do_not_claim_data_chart_semantics() -> None:
+    payload = minimal_plan(kind="trend", items=[1, 2])
+    payload["slides"][0]["blocks"][0]["chart_intent"] = "trend"
+    payload["slides"][0]["blocks"][0]["text"] = "趋势背景说明。" * 180
+
+    compiled = compile_deck_plan(payload)
+
+    text_pages = [
+        slide for slide in compiled["slides"] if slide["blocks"][0].get("text")
+    ]
+    data_pages = [
+        slide for slide in compiled["slides"] if slide["blocks"][0].get("items")
+    ]
+    assert text_pages and data_pages
+    assert all(slide["page_family"] not in {"line-chart", "area-chart"} for slide in text_pages)
+    assert all(slide["semantic_basis"]["semantic_type"] == "statement" for slide in text_pages)
+    assert all(slide["page_family"] in {"line-chart", "area-chart"} for slide in data_pages)
 
 
 def test_content_only_plan_is_ordered_by_archetype_not_model_input_order() -> None:

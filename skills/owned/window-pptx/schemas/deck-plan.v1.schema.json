@@ -30,11 +30,11 @@
       "additionalProperties": false,
       "required": ["title", "scenario"],
       "properties": {
-        "title": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S"},
-        "scenario": {"type": "string", "minLength": 1, "maxLength": 100, "pattern": "\\S"},
-        "audience": {"type": "string", "minLength": 1, "maxLength": 120, "pattern": "\\S"},
-        "objective": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "\\S"},
-        "language": {"type": "string", "minLength": 2, "maxLength": 20, "pattern": "\\S"}
+        "title": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "scenario": {"type": "string", "minLength": 1, "maxLength": 100, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "audience": {"type": "string", "minLength": 1, "maxLength": 120, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "objective": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "language": {"type": "string", "minLength": 2, "maxLength": 20, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"}
       }
     },
     "slide": {
@@ -44,7 +44,7 @@
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
         "role": {"$ref": "#/$defs/identifier"},
-        "title": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
         "importance": {"enum": ["low", "normal", "high", "critical"]},
         "blocks": {
           "type": "array",
@@ -68,14 +68,14 @@
         "kind": {
           "enum": ["bullets", "metrics", "comparison", "sequence", "timeline", "trend", "composition", "matrix", "risk", "recommendation", "quote", "table", "image", "statement", "generic"]
         },
-        "title": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S"},
-        "text": {"type": "string", "minLength": 1, "maxLength": 4000, "pattern": "\\S"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "text": {"type": "string", "minLength": 1, "maxLength": 4000, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
         "items": {
           "type": "array",
           "minItems": 1,
           "items": {
             "anyOf": [
-              {"type": "string", "minLength": 1, "maxLength": 600, "pattern": "\\S"},
+              {"type": "string", "minLength": 1, "maxLength": 600, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
               {"type": "number"},
               {"type": "boolean"},
               {"type": "null"},
@@ -85,30 +85,31 @@
         },
         "role_hint": {"$ref": "#/$defs/identifier"},
         "chart_intent": {"enum": ["trend", "comparison", "composition", "distribution", "relationship"]},
-        "source_ref": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "\\S"}
+        "source_ref": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"}
       }
     },
     "dataItem": {
       "type": "object",
       "additionalProperties": false,
       "minProperties": 1,
+      "maxProperties": 5,
       "properties": {
-        "id": {"type": "string", "minLength": 1, "maxLength": 100, "pattern": "\\S"},
-        "label": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "\\S"},
-        "title": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "\\S"},
-        "name": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "\\S"},
+        "id": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
         "value": {"$ref": "#/$defs/scalar"},
-        "unit": {"type": "string", "minLength": 1, "maxLength": 40, "pattern": "\\S"},
-        "category": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S"},
-        "series": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S"},
-        "description": {"type": "string", "minLength": 1, "maxLength": 600, "pattern": "\\S"},
-        "text": {"type": "string", "minLength": 1, "maxLength": 600, "pattern": "\\S"},
-        "status": {"type": "string", "minLength": 1, "maxLength": 100, "pattern": "\\S"},
-        "date": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "\\S"},
+        "unit": {"type": "string", "minLength": 1, "maxLength": 40, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "category": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "series": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "description": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "text": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "status": {"type": "string", "minLength": 1, "maxLength": 100, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "date": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
         "start": {"$ref": "#/$defs/scalar"},
         "end": {"$ref": "#/$defs/scalar"},
-        "source": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "\\S"},
-        "group": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S"},
+        "source": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "group": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
         "primary": {"$ref": "#/$defs/scalar"},
         "secondary": {"$ref": "#/$defs/scalar"},
         "before": {"$ref": "#/$defs/scalar"},
@@ -117,12 +118,12 @@
         "actual": {"$ref": "#/$defs/scalar"},
         "probability": {"$ref": "#/$defs/scalar"},
         "impact": {"$ref": "#/$defs/scalar"},
-        "owner": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S"}
+        "owner": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"}
       }
     },
     "scalar": {
       "anyOf": [
-        {"type": "string", "minLength": 1, "maxLength": 600, "pattern": "\\S"},
+        {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
         {"type": "number"},
         {"type": "boolean"},
         {"type": "null"}

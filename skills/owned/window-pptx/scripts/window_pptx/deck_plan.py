@@ -104,20 +104,20 @@ DATA_ITEM_FIELDS = {
     "owner",
 }
 DATA_STRING_LIMITS = {
-    "id": 100,
-    "label": 300,
-    "title": 300,
-    "name": 300,
+    "id": 160,
+    "label": 160,
+    "title": 160,
+    "name": 160,
     "unit": 40,
-    "category": 200,
-    "series": 200,
-    "description": 600,
-    "text": 600,
+    "category": 160,
+    "series": 160,
+    "description": 160,
+    "text": 160,
     "status": 100,
     "date": 80,
-    "source": 500,
-    "group": 200,
-    "owner": 200,
+    "source": 160,
+    "group": 160,
+    "owner": 160,
 }
 PREFERENCE_VALUES = {
     "tone": {"conservative", "professional", "bold", "editorial", "educational"},
@@ -258,7 +258,11 @@ def _string(
         return None
     if not isinstance(value, str) or not value.strip():
         raise DeckPlanValidationError(f"{path} must be a non-empty string")
-    result = value.strip()
+    if value != value.strip():
+        raise DeckPlanValidationError(
+            f"{path} must not contain leading or trailing whitespace"
+        )
+    result = value
     if len(result) < minimum:
         raise DeckPlanValidationError(f"{path} must contain at least {minimum} characters")
     if len(result) > maximum:
@@ -343,6 +347,10 @@ def _parse_block(value: Any, path: str) -> ContentBlock:
                 raise DeckPlanValidationError(
                     f"{item_path} must contain at least one semantic field"
                 )
+            if len(item) > 5:
+                raise DeckPlanValidationError(
+                    f"{item_path} must contain at most 5 semantic fields"
+                )
             _reject_unknown(item, DATA_ITEM_FIELDS, item_path)
             normalized_item: dict[str, Any] = {}
             for field, field_value in item.items():
@@ -357,7 +365,7 @@ def _parse_block(value: Any, path: str) -> ContentBlock:
                     normalized_item[field] = _string(
                         field_value,
                         field_path,
-                        maximum=600,
+                        maximum=160,
                     )
                 elif field_value is None or isinstance(
                     field_value, (int, float, bool)

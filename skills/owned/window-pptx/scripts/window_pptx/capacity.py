@@ -38,11 +38,13 @@ def _item_units(item: object) -> int:
     if isinstance(item, str):
         return max(1, (len(item) + 159) // 160)
     if isinstance(item, dict):
-        longest = max(
-            (len(value) for value in item.values() if isinstance(value, str)),
-            default=0,
+        text_size = sum(
+            len(value) for value in item.values() if isinstance(value, str)
         )
-        return max(1, (longest + 159) // 160)
+        scalar_count = sum(
+            1 for value in item.values() if not isinstance(value, str)
+        )
+        return max(1, (text_size + scalar_count * 20 + 159) // 160)
     return 1
 
 
@@ -122,7 +124,16 @@ def _split_block(block: ContentBlock, density: str) -> tuple[ContentBlock, ...]:
         return (block,)
 
     parts: list[ContentBlock] = []
-    parts.extend(replace(block, text=text, items=()) for text in text_chunks)
+    parts.extend(
+        replace(
+            block,
+            kind="statement",
+            chart_intent=None,
+            text=text,
+            items=(),
+        )
+        for text in text_chunks
+    )
     parts.extend(replace(block, text=None, items=items) for items in item_groups)
     if not parts:
         return (block,)
