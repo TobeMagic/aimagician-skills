@@ -49,6 +49,8 @@ def macro_security(app: Any, force_disable: int = 3) -> Iterator[None]:
 
     try:
         previous = app.AutomationSecurity
+        if callable(previous):
+            previous = previous()
     except Exception as exc:
         raise ComSessionError(
             "PowerPoint AutomationSecurity is unavailable."

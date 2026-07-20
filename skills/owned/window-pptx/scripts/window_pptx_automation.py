@@ -1480,11 +1480,6 @@ def collection_items(collection: Any) -> list[Any]:
 
 def list_com_addins(app: Any) -> list[dict[str, Any]]:
     try:
-        app.COMAddIns.Update()
-    except Exception:
-        pass
-
-    try:
         collection = app.COMAddIns
     except Exception:
         return []
@@ -1595,6 +1590,72 @@ def office_addin_registry_snapshot(winreg: Any, progid: str) -> list[dict[str, A
             values = registry_key_values(winreg, root, path)
             if values is not None:
                 rows.append({"root": root_name, "path": path, "values": values})
+    return rows
+
+
+def import_registry_module() -> Any:
+    try:
+        import winreg  # type: ignore
+    except ImportError as exc:
+        die(f"Missing Windows registry dependency: {exc}")
+        raise exc
+    return winreg
+
+
+def list_registered_com_addins() -> list[dict[str, Any]]:
+    """List PowerPoint COM add-ins from registration without starting Office."""
+
+    winreg = import_registry_module()
+    roots = [
+        ("HKCU", winreg.HKEY_CURRENT_USER),
+        ("HKLM", winreg.HKEY_LOCAL_MACHINE),
+    ]
+    base_paths = [
+        r"Software\Microsoft\Office\PowerPoint\Addins",
+        r"Software\WOW6432Node\Microsoft\Office\PowerPoint\Addins",
+    ]
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for root_name, root in roots:
+        for base_path in base_paths:
+            try:
+                with winreg.OpenKey(root, base_path) as key:
+                    index = 0
+                    progids: list[str] = []
+                    while True:
+                        try:
+                            progids.append(str(winreg.EnumKey(key, index)))
+                            index += 1
+                        except OSError:
+                            break
+            except OSError:
+                continue
+            for progid in progids:
+                identity = (root_name, base_path, progid.lower())
+                if identity in seen:
+                    continue
+                seen.add(identity)
+                path = rf"{base_path}\{progid}"
+                values = registry_key_values(winreg, root, path) or {}
+                clsid = clsid_registry_snapshot(winreg, progid).get("clsid")
+                load_behavior = values.get("LoadBehavior")
+                rows.append(
+                    {
+                        "description": str(
+                            values.get("Description")
+                            or values.get("FriendlyName")
+                            or progid
+                        ),
+                        "prog_id": progid,
+                        "guid": str(clsid or MISSING),
+                        "connect": None,
+                        "load_behavior": load_behavior,
+                        "manifest": values.get("Manifest"),
+                        "source": "registry",
+                        "root": root_name,
+                        "path": path,
+                    }
+                )
     return rows
 
 
@@ -1744,19 +1805,34 @@ def probe_addin_object(app: Any, pythoncom: Any, progid: str) -> dict[str, Any]:
 
 
 def probe_plugin_apis(app: Any, progids: list[str]) -> dict[str, Any]:
-    pythoncom, dynamic, winreg = import_probe_modules()
+    """Inspect registration only; live dispatch can load or block third-party code."""
+
+    del app
+    winreg = import_registry_module()
     return {
+        "mode": "registry_only",
         "probed_progids": progids,
         "registry": {progid: clsid_registry_snapshot(winreg, progid) for progid in progids},
         "office_addin_registry": {
             progid: office_addin_registry_snapshot(winreg, progid) for progid in progids
         },
         "direct_dispatch": {
-            progid: probe_direct_dispatch(dynamic, pythoncom, progid) for progid in progids
+            progid: {
+                "skipped": True,
+                "reason": "Live COM dispatch is disabled in safe inspection mode.",
+            }
+            for progid in progids
         },
-        "addin_object": {progid: probe_addin_object(app, pythoncom, progid) for progid in progids},
+        "addin_object": {
+            progid: {
+                "skipped": True,
+                "reason": "PowerPoint startup and add-in Object access are disabled in safe inspection mode.",
+            }
+            for progid in progids
+        },
         "notes": [
-            "This probe only reads COM registration and type information.",
+            "This probe reads registry metadata only and does not start PowerPoint.",
+            "Live type information is intentionally unavailable in safe mode.",
             "It does not invoke business methods exposed by the add-ins.",
         ],
     }
@@ -1912,6 +1988,77 @@ def main(
     if output_path is None:
         die("Output path could not be resolved.")
 
+    if args.list_addins or args.probe_plugin_apis:
+        require_windows()
+        inspection_result: dict[str, Any] = {}
+        if args.list_addins:
+            inspection_result["addins"] = {
+                "mode": "registry_only",
+                "com_addins": list_registered_com_addins(),
+                "powerpoint_addins": [],
+                "notes": [
+                    "Safe inspection does not start PowerPoint or load add-in code.",
+                    "Loaded PowerPoint .ppa/.ppam add-ins are unavailable in registry-only mode.",
+                ],
+            }
+        if args.probe_plugin_apis:
+            progids = args.plugin_progid or ["iSlideTools.Public", "Slibe.OKPlus"]
+            inspection_result["plugin_api_probe"] = probe_plugin_apis(None, progids)
+
+        if args.json:
+            emit_result(inspection_result, True, sys.stdout, sys.stderr)
+        else:
+            if "addins" in inspection_result:
+                print_addins(inspection_result["addins"], False)
+            if "plugin_api_probe" in inspection_result:
+                print("PowerPoint plugin API probe:")
+                emit_result(
+                    inspection_result["plugin_api_probe"],
+                    False,
+                    sys.stdout,
+                    sys.stderr,
+                )
+        return 0
+
+    # Resolve and reject unsafe deck-output requests before any network write,
+    # staging copy, or PowerPoint process can be started.  The checks inside
+    # the COM block remain as defense in depth after paths are materialized.
+    template: Path | None = None
+    if not args.intake_template_library:
+        template = choose_template(project_dir, args.template)
+        validate_output_policy(
+            OutputPolicy(
+                source_path=template,
+                output_path=output_path,
+                dry_run=False,
+                no_output_deck=args.no_output_deck,
+                allow_overwrite=args.allow_overwrite,
+            )
+        )
+        if (
+            not args.no_output_deck
+            and template is not None
+            and template.resolve(strict=False) == output_path.resolve(strict=False)
+        ):
+            raise OutputPolicyError(
+                "A same-path overwrite is unsafe while the source presentation is open; "
+                "use a distinct output path."
+            )
+        if args.make_ascii_temp_copy:
+            if template is None:
+                die(
+                    "No template/source deck available for --make-ascii-temp-copy. "
+                    "Pass --template explicitly."
+                )
+            staging_target = ascii_temp_copy_path(project_dir, template)
+            if staging_target.resolve(strict=False) in {
+                template.resolve(strict=False),
+                output_path.resolve(strict=False),
+            }:
+                raise OutputPolicyError(
+                    "ASCII staging path conflicts with the source or output path."
+                )
+
     non_com_results: dict[str, Any] = {}
 
     search_result: dict[str, Any] | None = None
@@ -1946,8 +2093,6 @@ def main(
 
     com_needed = any(
         [
-            args.list_addins,
-            args.probe_plugin_apis,
             args.export_slides,
             args.intake_template_library,
             args.add_master_watermark,
@@ -1988,32 +2133,6 @@ def main(
             except Exception:
                 pass
 
-        if args.list_addins or args.probe_plugin_apis:
-            inspection_result: dict[str, Any] = {}
-            if args.list_addins:
-                inspection_result["addins"] = {
-                    "com_addins": list_com_addins(app),
-                    "powerpoint_addins": list_powerpoint_addins(app),
-                }
-            if args.probe_plugin_apis:
-                progids = args.plugin_progid or ["iSlideTools.Public", "Slibe.OKPlus"]
-                inspection_result["plugin_api_probe"] = probe_plugin_apis(app, progids)
-
-            if args.json:
-                emit_result(inspection_result, True, sys.stdout, sys.stderr)
-            else:
-                if "addins" in inspection_result:
-                    print_addins(inspection_result["addins"], False)
-                if "plugin_api_probe" in inspection_result:
-                    print("PowerPoint plugin API probe:")
-                    emit_result(
-                        inspection_result["plugin_api_probe"],
-                        False,
-                        sys.stdout,
-                        sys.stderr,
-                    )
-            return 0
-
         if args.intake_template_library:
             intake_result = intake_template_library(app, project_dir, args)
             if not args.json:
@@ -2030,7 +2149,6 @@ def main(
 
         request_path: Path | None = None
         request_text = ""
-        template = choose_template(project_dir, args.template)
         effective_template = template
 
         validate_output_policy(

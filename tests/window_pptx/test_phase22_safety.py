@@ -298,6 +298,30 @@ def test_macro_security_restores_exact_value_after_body_exception() -> None:
     assert app.AutomationSecurity == 2
 
 
+def test_macro_security_supports_late_bound_callable_property_getter() -> None:
+    class LateBoundApplication:
+        def __init__(self) -> None:
+            object.__setattr__(self, "security_value", 1)
+
+        def __getattr__(self, name: str) -> object:
+            if name == "AutomationSecurity":
+                return lambda: self.security_value
+            raise AttributeError(name)
+
+        def __setattr__(self, name: str, value: object) -> None:
+            if name == "AutomationSecurity":
+                object.__setattr__(self, "security_value", value)
+                return
+            object.__setattr__(self, name, value)
+
+    app = LateBoundApplication()
+
+    with macro_security(app):
+        assert app.security_value == 3
+
+    assert app.security_value == 1
+
+
 def test_macro_security_unavailable_raises_before_entering_body() -> None:
     class ApplicationWithoutMacroSecurity:
         @property

@@ -321,24 +321,29 @@ def test_non_json_inspection_detail_is_not_repeated_in_final_result(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    app = SimpleNamespace(Quit=lambda: None)
     monkeypatch.setattr(automation, "require_windows", lambda: None)
-    monkeypatch.setattr(automation, "import_win32com", lambda: object())
     monkeypatch.setattr(
         automation,
         "dispatch_powerpoint",
-        lambda *_args: PowerPointHandle(app, owned=True, dispatch_mode="test"),
+        lambda *_args: (_ for _ in ()).throw(
+            AssertionError("safe inspection started PowerPoint")
+        ),
     )
     monkeypatch.setattr(
         automation,
-        "list_com_addins",
-        lambda _app: [{"description": detail, "prog_id": "test", "guid": "test", "connect": True}],
+        "list_registered_com_addins",
+        lambda: [
+            {
+                "description": detail,
+                "prog_id": "test",
+                "guid": "test",
+                "connect": None,
+            }
+        ],
     )
-    monkeypatch.setattr(automation, "list_powerpoint_addins", lambda _app: [])
     monkeypatch.setattr(
         automation,
-        "probe_plugin_apis",
-        lambda *_args: {"detail": detail},
+        "probe_plugin_apis", lambda *_args: {"mode": "registry_only", "detail": detail}
     )
     assert automation.main(
         ["--project-dir", str(tmp_path), inspection_flag]
@@ -490,6 +495,7 @@ def test_same_source_and_output_fails_before_presentation_open(
 
     assert app.Presentations.open_calls == []
     assert app.Presentations.add_calls == []
+    assert client.dispatch_ex_calls == []
 
 
 def test_allow_overwrite_rejects_open_same_source_and_output(
@@ -517,6 +523,7 @@ def test_allow_overwrite_rejects_open_same_source_and_output(
         )
 
     assert app.Presentations.open_calls == []
+    assert client.dispatch_ex_calls == []
 
 
 def test_ascii_staging_cannot_bypass_logical_source_overwrite_rejection(
@@ -549,6 +556,7 @@ def test_ascii_staging_cannot_bypass_logical_source_overwrite_rejection(
     assert not staging.exists()
     assert app.Presentations.open_calls == []
     assert app.Presentations.add_calls == []
+    assert client.dispatch_ex_calls == []
 
 
 def test_invalid_output_extension_fails_before_presentation_open(
@@ -567,6 +575,7 @@ def test_invalid_output_extension_fails_before_presentation_open(
 
     assert app.Presentations.open_calls == []
     assert app.Presentations.add_calls == []
+    assert client.dispatch_ex_calls == []
 
 
 def test_invalid_output_extension_with_ascii_copy_writes_no_temp_file(
@@ -597,6 +606,7 @@ def test_invalid_output_extension_with_ascii_copy_writes_no_temp_file(
     assert not temp_target.exists()
     assert app.Presentations.open_calls == []
     assert app.Presentations.add_calls == []
+    assert client.dispatch_ex_calls == []
 
 
 def test_ascii_staging_output_conflict_never_overwrites_target(
@@ -630,6 +640,7 @@ def test_ascii_staging_output_conflict_never_overwrites_target(
     assert temp_target.read_bytes() == b"sentinel output"
     assert app.Presentations.open_calls == []
     assert app.Presentations.add_calls == []
+    assert client.dispatch_ex_calls == []
 
 
 @pytest.mark.parametrize(
@@ -656,27 +667,30 @@ def test_inspection_routes_are_terminal_and_emit_one_requested_json_object(
         "import_win32com",
         lambda: (_ for _ in ()).throw(AssertionError("injected COM client ignored")),
     )
-    monkeypatch.setattr(automation, "list_com_addins", lambda _app: [{"prog_id": "A"}])
-    monkeypatch.setattr(automation, "list_powerpoint_addins", lambda _app: [{"name": "B"}])
+    monkeypatch.setattr(
+        automation,
+        "dispatch_powerpoint",
+        lambda *_args: (_ for _ in ()).throw(
+            AssertionError("terminal inspection started PowerPoint")
+        ),
+    )
+    monkeypatch.setattr(
+        automation,
+        "list_registered_com_addins",
+        lambda: [{"prog_id": "A", "source": "registry"}],
+    )
     monkeypatch.setattr(
         automation,
         "probe_plugin_apis",
         lambda _app, progids: {"probed_progids": progids},
     )
-    app = RecordingApplication()
-    client = RecordingComClient(app)
-
     assert automation.main(
-        ["--project-dir", str(tmp_path), "--json", *flags],
-        com_client=client,
+        ["--project-dir", str(tmp_path), "--json", *flags]
     ) == 0
 
     payload = json.loads(capsys.readouterr().out)
     assert set(payload) == expected
-    assert app.Presentations.open_calls == []
-    assert app.Presentations.add_calls == []
     assert not (tmp_path / ".window-pptx").exists()
-    assert app.quit_calls == 1
 
 
 @pytest.mark.parametrize("suffix", [".pptm", ".potm"])
@@ -743,3 +757,92 @@ def test_png_export_uses_presentation_geometry(
             expected_size[1],
         )
     ]
+
+
+def test_com_addin_inventory_is_read_only_and_never_calls_update() -> None:
+    class FakeAddin:
+        Description = "Safe add-in"
+        ProgID = "Example.Safe"
+        Guid = "{00000000-0000-0000-0000-000000000000}"
+        Connect = True
+
+    class FakeComAddins:
+        Count = 1
+
+        def __init__(self) -> None:
+            self.update_calls = 0
+
+        def Update(self) -> None:
+            self.update_calls += 1
+
+        def Item(self, index: int) -> FakeAddin:
+            assert index == 1
+            return FakeAddin()
+
+    addins = FakeComAddins()
+    app = SimpleNamespace(COMAddIns=addins)
+
+    rows = automation.list_com_addins(app)
+
+    assert addins.update_calls == 0
+    assert rows == [
+        {
+            "description": "Safe add-in",
+            "prog_id": "Example.Safe",
+            "guid": "{00000000-0000-0000-0000-000000000000}",
+            "connect": True,
+        }
+    ]
+
+
+def test_terminal_inspection_uses_registry_only_and_never_starts_powerpoint(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(automation, "require_windows", lambda: None)
+    monkeypatch.setattr(
+        automation,
+        "dispatch_powerpoint",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("terminal inspection started PowerPoint")
+        ),
+    )
+    monkeypatch.setattr(
+        automation,
+        "import_win32com",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("terminal inspection imported a COM client")
+        ),
+    )
+    monkeypatch.setattr(
+        automation,
+        "list_registered_com_addins",
+        lambda: [{"prog_id": "Example.Safe", "source": "registry"}],
+        raising=False,
+    )
+    monkeypatch.setattr(
+        automation,
+        "probe_plugin_apis",
+        lambda app, progids: {
+            "mode": "registry_only",
+            "app_is_none": app is None,
+            "probed_progids": progids,
+        },
+    )
+
+    assert automation.main(
+        [
+            "--project-dir",
+            str(tmp_path),
+            "--list-addins",
+            "--probe-plugin-apis",
+            "--json",
+        ]
+    ) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["addins"]["mode"] == "registry_only"
+    assert payload["addins"]["com_addins"][0]["prog_id"] == "Example.Safe"
+    assert payload["plugin_api_probe"]["mode"] == "registry_only"
+    assert payload["plugin_api_probe"]["app_is_none"] is True
