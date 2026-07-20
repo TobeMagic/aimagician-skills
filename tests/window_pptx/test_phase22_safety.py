@@ -102,7 +102,11 @@ def test_output_policy_is_immutable() -> None:
 
 def test_source_overwrite_is_rejected_after_path_resolution(tmp_path: Path) -> None:
     source = tmp_path / "source.pptx"
-    policy = OutputPolicy(source, source.parent / "." / source.name)
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    unresolved_output = nested / ".." / source.name
+    assert source != unresolved_output
+    policy = OutputPolicy(source, unresolved_output)
 
     with pytest.raises(OutputPolicyError, match="source"):
         validate_output_policy(policy)

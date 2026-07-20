@@ -25,6 +25,9 @@ from window_pptx.cli import (
     emit_result,
     parse_args as parse_cli_args,
 )
+from window_pptx.com_session import dispatch_powerpoint, macro_security
+from window_pptx.models import OutputPolicy, PowerPointHandle
+from window_pptx.output_policy import calculate_export_size, validate_output_policy
 
 
 MISSING = "<unavailable>"
@@ -380,7 +383,7 @@ def parse_slide_spec(spec: str) -> list[int]:
 def ensure_ascii_temp_copy(project_dir: Path, source: Path) -> Path:
     temp_dir = project_dir / ".window-pptx" / "temp"
     temp_dir.mkdir(parents=True, exist_ok=True)
-    target = temp_dir / "deck_temp_ascii.pptx"
+    target = temp_dir / f"deck_temp_ascii{source.suffix}"
     shutil.copy2(source, target)
     return target
 
@@ -402,11 +405,20 @@ def export_slides_to_png(presentation: Any, slide_numbers: list[int], export_dir
     export_dir.mkdir(parents=True, exist_ok=True)
     exported: list[str] = []
     max_count = int(presentation.Slides.Count)
+    export_width, export_height = calculate_export_size(
+        float(presentation.PageSetup.SlideWidth),
+        float(presentation.PageSetup.SlideHeight),
+    )
     for slide_number in slide_numbers:
         if slide_number < 1 or slide_number > max_count:
             continue
         target = export_dir / f"slide-{slide_number}.png"
-        presentation.Slides(slide_number).Export(str(target), "PNG", 1600, 900)
+        presentation.Slides(slide_number).Export(
+            str(target),
+            "PNG",
+            export_width,
+            export_height,
+        )
         exported.append(str(target))
     return {"export_dir": str(export_dir), "slides": slide_numbers, "files": exported}
 
@@ -913,7 +925,20 @@ def build_initial_intake_fields(category: str, objective: dict[str, Any], issue:
 
 
 def open_template_presentation(app: Any, deck_path: Path) -> Any:
-    return app.Presentations.Open(str(deck_path), MSO_TRUE, MSO_TRUE, MSO_FALSE)
+    validate_output_policy(
+        OutputPolicy(
+            source_path=deck_path,
+            output_path=None,
+            no_output_deck=True,
+        )
+    )
+    with macro_security(app):
+        return app.Presentations.Open(
+            str(deck_path),
+            MSO_TRUE,
+            MSO_TRUE,
+            MSO_FALSE,
+        )
 
 
 def intake_template_library(app: Any, project_dir: Path, args: argparse.Namespace) -> dict[str, Any]:
@@ -1733,31 +1758,17 @@ def probe_plugin_apis(app: Any, progids: list[str]) -> dict[str, Any]:
     }
 
 
-def dispatch_powerpoint(win32com: Any, attach_existing: bool, visible: bool) -> Any:
-    try:
-        if attach_existing:
-            app = win32com.Dispatch("PowerPoint.Application")
-        else:
-            app = win32com.DispatchEx("PowerPoint.Application")
-    except Exception:
-        # Fall back to late binding when a broken makepy/gen_py cache prevents wrapping.
-        import win32com.client.dynamic  # type: ignore
-
-        app = win32com.client.dynamic.Dispatch("PowerPoint.Application")
-
-    if visible:
-        try:
-            app.Visible = MSO_TRUE
-        except Exception:
-            pass
-    return app
-
-
 def open_or_create_presentation(app: Any, template: Path | None, visible: bool) -> Any:
     with_window = MSO_TRUE if visible else MSO_FALSE
-    if template:
-        return app.Presentations.Open(str(template), MSO_TRUE, MSO_TRUE, with_window)
-    return app.Presentations.Add(with_window)
+    with macro_security(app):
+        if template:
+            return app.Presentations.Open(
+                str(template),
+                MSO_TRUE,
+                MSO_TRUE,
+                with_window,
+            )
+        return app.Presentations.Add(with_window)
 
 
 def truncate_lines(text: str, max_lines: int = 14, max_chars: int = 1100) -> str:
@@ -1942,43 +1953,44 @@ def main(
     require_windows()
     if args.clear_com_cache:
         maybe_clear_com_cache()
-    win32com = import_win32com()
+    client = com_client if com_client is not None else import_win32com()
 
-    app = None
+    handle: PowerPointHandle | None = None
     presentation = None
-    created_isolated_app = not args.attach_existing
 
     try:
-        app = dispatch_powerpoint(win32com, args.attach_existing, args.visible)
-        addins = {
-            "com_addins": list_com_addins(app),
-            "powerpoint_addins": list_powerpoint_addins(app),
-        }
+        handle = dispatch_powerpoint(args.attach_existing, client)
+        app = handle.app
+        if args.visible:
+            try:
+                app.Visible = MSO_TRUE
+            except Exception:
+                pass
 
-        probe_result: dict[str, Any] | None = None
-        if args.probe_plugin_apis:
-            progids = args.plugin_progid or ["iSlideTools.Public", "Slibe.OKPlus"]
-            probe_result = probe_plugin_apis(app, progids)
-            inventory_dir = project_dir / ".window-pptx"
-            inventory_dir.mkdir(parents=True, exist_ok=True)
-            (inventory_dir / "plugin_api_probe.json").write_text(
-                json.dumps(probe_result, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
-            if args.no_output_deck:
-                if not args.json:
-                    print("PowerPoint plugin API probe:")
-                emit_result(probe_result, args.json, sys.stdout, sys.stderr)
-                return 0
-            if not args.json:
-                print("PowerPoint plugin API probe:")
-                emit_result(probe_result, False, sys.stdout, sys.stderr)
+        if args.list_addins or args.probe_plugin_apis:
+            inspection_result: dict[str, Any] = {}
+            if args.list_addins:
+                inspection_result["addins"] = {
+                    "com_addins": list_com_addins(app),
+                    "powerpoint_addins": list_powerpoint_addins(app),
+                }
+            if args.probe_plugin_apis:
+                progids = args.plugin_progid or ["iSlideTools.Public", "Slibe.OKPlus"]
+                inspection_result["plugin_api_probe"] = probe_plugin_apis(app, progids)
 
-        if args.list_addins and args.no_output_deck:
             if args.json:
-                emit_result(addins, True, sys.stdout, sys.stderr)
+                emit_result(inspection_result, True, sys.stdout, sys.stderr)
             else:
-                print_addins(addins, False)
+                if "addins" in inspection_result:
+                    print_addins(inspection_result["addins"], False)
+                if "plugin_api_probe" in inspection_result:
+                    print("PowerPoint plugin API probe:")
+                    emit_result(
+                        inspection_result["plugin_api_probe"],
+                        False,
+                        sys.stdout,
+                        sys.stderr,
+                    )
             return 0
 
         if args.intake_template_library:
@@ -2023,15 +2035,15 @@ def main(
                 die("No template/source deck available for --make-ascii-temp-copy. Pass --template explicitly.")
             effective_template = ensure_ascii_temp_copy(project_dir, template)
 
-        if args.list_addins:
-            inventory_dir = project_dir / ".window-pptx"
-            inventory_dir.mkdir(parents=True, exist_ok=True)
-            (inventory_dir / "addins.json").write_text(
-                json.dumps(addins, ensure_ascii=False, indent=2),
-                encoding="utf-8",
+        validate_output_policy(
+            OutputPolicy(
+                source_path=effective_template,
+                output_path=output_path,
+                dry_run=False,
+                no_output_deck=args.no_output_deck,
+                allow_overwrite=args.allow_overwrite,
             )
-            if not args.json:
-                print_addins(addins, False)
+        )
 
         presentation = open_or_create_presentation(app, effective_template, args.visible)
 
@@ -2087,13 +2099,7 @@ def main(
             "template": str(template) if template else None,
             "effective_template": str(effective_template) if effective_template else None,
             "outputs": outputs,
-            "addins_inventory_written": bool(args.list_addins),
-            **({"addins": addins} if args.json and args.list_addins else {}),
-            **(
-                {"plugin_api_probe": probe_result}
-                if args.json and probe_result is not None
-                else {}
-            ),
+            "addins_inventory_written": False,
             "slide_export": export_result,
             "qa_export": qa_export_result,
             "deck_audit": audit_result,
@@ -2103,16 +2109,10 @@ def main(
             print("window-pptx run complete")
         emit_result(result, args.json, sys.stdout, sys.stderr)
     finally:
-        if presentation is not None and not args.keep_open:
-            try:
-                presentation.Close()
-            except Exception:
-                pass
-        if app is not None and created_isolated_app and not args.keep_open:
-            try:
-                app.Quit()
-            except Exception:
-                pass
+        if handle is not None:
+            if presentation is not None:
+                handle.close_presentation(presentation, keep_open=args.keep_open)
+            handle.quit(keep_open=args.keep_open)
     return 0
 
 

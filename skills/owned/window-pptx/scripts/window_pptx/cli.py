@@ -185,6 +185,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Run requested checks without saving an output deck.",
     )
     parser.add_argument(
+        "--allow-overwrite",
+        action="store_true",
+        help="Explicitly allow the output deck to replace the source deck.",
+    )
+    parser.add_argument(
         "--no-save",
         action="store_true",
         help="Deprecated alias for --no-output-deck.",
