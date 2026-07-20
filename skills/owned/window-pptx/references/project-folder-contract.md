@@ -225,14 +225,13 @@ Use `.window-pptx/` for generated implementation files:
   temp/
   logs/
   cache/
-  addins.json
   asset_manifest.json
   run.log
   automate_deck.py
-  plugin_api_probe.json
 ```
 
 Keep `output/` for user-facing results only.
+Registry-only add-in inspection remains stdout-only and does not create a generated artifact.
 
 
 ## Template Library Inputs
