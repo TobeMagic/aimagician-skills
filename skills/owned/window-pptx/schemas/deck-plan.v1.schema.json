@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimagician.local/window-pptx/deck-plan.v1.schema.json",
+  "title": "Window-PPTX DeckPlan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "project": {"$ref": "#/$defs/project"},
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/slide"}
+    },
+    "content": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/contentBlock"}
+    },
+    "preferences": {"$ref": "#/$defs/preferences"}
+  },
+  "oneOf": [
+    {"required": ["slides"], "not": {"required": ["content"]}},
+    {"required": ["content"], "not": {"required": ["slides"]}}
+  ],
+  "$defs": {
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "scenario"],
+      "properties": {
+        "title": {"type": "string", "minLength": 1, "maxLength": 200},
+        "scenario": {"type": "string", "minLength": 1, "maxLength": 100},
+        "audience": {"type": "string", "minLength": 1, "maxLength": 120},
+        "objective": {"type": "string", "minLength": 1, "maxLength": 300},
+        "language": {"type": "string", "minLength": 2, "maxLength": 20}
+      }
+    },
+    "slide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "blocks"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "role": {"$ref": "#/$defs/identifier"},
+        "title": {"type": "string", "maxLength": 200},
+        "importance": {"enum": ["low", "normal", "high", "critical"]},
+        "blocks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/contentBlock"}
+        }
+      }
+    },
+    "contentBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "kind": {
+          "enum": ["bullets", "metrics", "comparison", "sequence", "timeline", "trend", "composition", "matrix", "risk", "recommendation", "quote", "table", "image", "statement", "generic"]
+        },
+        "title": {"type": "string", "maxLength": 200},
+        "text": {"type": "string", "maxLength": 4000},
+        "items": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {"type": "string"},
+              {"type": "number"},
+              {"type": "boolean"},
+              {"type": "null"},
+              {"$ref": "#/$defs/dataItem"}
+            ]
+          }
+        },
+        "role_hint": {"$ref": "#/$defs/identifier"},
+        "chart_intent": {"enum": ["trend", "comparison", "composition", "distribution", "relationship"]},
+        "source_ref": {"type": "string", "maxLength": 500}
+      }
+    },
+    "dataItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "maxLength": 100},
+        "label": {"type": "string", "maxLength": 300},
+        "title": {"type": "string", "maxLength": 300},
+        "name": {"type": "string", "maxLength": 300},
+        "value": {"$ref": "#/$defs/scalar"},
+        "unit": {"type": "string", "maxLength": 40},
+        "category": {"type": "string", "maxLength": 200},
+        "series": {"type": "string", "maxLength": 200},
+        "description": {"type": "string", "maxLength": 1000},
+        "text": {"type": "string", "maxLength": 1000},
+        "status": {"type": "string", "maxLength": 100},
+        "date": {"type": "string", "maxLength": 80},
+        "start": {"$ref": "#/$defs/scalar"},
+        "end": {"$ref": "#/$defs/scalar"},
+        "source": {"type": "string", "maxLength": 500},
+        "group": {"type": "string", "maxLength": 200},
+        "primary": {"$ref": "#/$defs/scalar"},
+        "secondary": {"$ref": "#/$defs/scalar"},
+        "before": {"$ref": "#/$defs/scalar"},
+        "after": {"$ref": "#/$defs/scalar"},
+        "target": {"$ref": "#/$defs/scalar"},
+        "actual": {"$ref": "#/$defs/scalar"},
+        "probability": {"$ref": "#/$defs/scalar"},
+        "impact": {"$ref": "#/$defs/scalar"},
+        "owner": {"type": "string", "maxLength": 200}
+      }
+    },
+    "scalar": {
+      "type": ["string", "number", "boolean", "null"]
+    },
+    "preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tone": {"enum": ["conservative", "professional", "bold", "editorial", "educational"]},
+        "density": {"enum": ["sparse", "balanced", "dense"]},
+        "audience_mode": {"enum": ["executive", "customer", "investor", "internal", "learner", "general"]}
+      }
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,79}$"
+    }
+  }
+}

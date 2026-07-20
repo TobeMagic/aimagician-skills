@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "archetypes": [
+    {
+      "id": "business-report",
+      "name": "Business Report",
+      "aliases": ["business report", "management report", "商业汇报", "经营汇报"],
+      "sections": ["cover", "agenda", "executive-summary", "performance", "insights", "risks", "recommendations", "next-steps", "closing"]
+    },
+    {
+      "id": "project-proposal",
+      "name": "Project Proposal",
+      "aliases": ["project proposal", "proposal", "项目提案", "项目建议书"],
+      "sections": ["cover", "context", "problem", "objectives", "solution", "scope", "approach", "timeline", "team", "investment", "risks", "next-steps", "closing"]
+    },
+    {
+      "id": "product-launch",
+      "name": "Product Launch",
+      "aliases": ["product launch", "launch deck", "产品发布", "新品发布"],
+      "sections": ["cover", "market-context", "customer-problem", "product-vision", "value-proposition", "product-showcase", "differentiation", "go-to-market", "roadmap", "call-to-action", "closing"]
+    },
+    {
+      "id": "market-analysis",
+      "name": "Market Analysis",
+      "aliases": ["market analysis", "market research", "市场分析", "行业分析"],
+      "sections": ["cover", "executive-summary", "market-definition", "market-size", "market-trends", "customer-segments", "competition", "opportunities", "risks", "recommendations", "closing"]
+    },
+    {
+      "id": "sales-proposal",
+      "name": "Sales Proposal",
+      "aliases": ["sales proposal", "sales deck", "销售提案", "客户方案"],
+      "sections": ["cover", "customer-context", "pain-points", "desired-outcomes", "solution", "value-proof", "case-study", "implementation", "commercials", "next-steps", "closing"]
+    },
+    {
+      "id": "investor-pitch",
+      "name": "Investor Pitch",
+      "aliases": ["investor pitch", "pitch deck", "融资路演", "投资人演示"],
+      "sections": ["cover", "problem", "solution", "market-size", "product", "business-model", "traction", "competition", "go-to-market", "team", "financials", "funding-ask", "closing"]
+    },
+    {
+      "id": "annual-review",
+      "name": "Annual Review",
+      "aliases": ["annual review", "year in review", "年度总结", "年终总结"],
+      "sections": ["cover", "year-at-a-glance", "objectives", "performance", "milestones", "wins", "lessons", "team", "risks", "next-year-priorities", "closing"]
+    },
+    {
+      "id": "strategic-plan",
+      "name": "Strategic Plan",
+      "aliases": ["strategic plan", "strategy", "战略规划", "战略方案"],
+      "sections": ["cover", "executive-summary", "current-state", "strategic-context", "vision", "choices", "strategic-pillars", "initiatives", "roadmap", "resources", "risks", "governance", "closing"]
+    },
+    {
+      "id": "data-analysis",
+      "name": "Data Analysis",
+      "aliases": ["data analysis", "analytics report", "数据分析报告", "数据报告"],
+      "sections": ["cover", "executive-summary", "questions", "data-scope", "method", "key-metrics", "trends", "segments", "drivers", "anomalies", "insights", "recommendations", "closing"]
+    },
+    {
+      "id": "research-report",
+      "name": "Research Report",
+      "aliases": ["research report", "study", "研究报告", "调研报告"],
+      "sections": ["cover", "abstract", "research-question", "background", "method", "evidence", "findings", "discussion", "limitations", "implications", "recommendations", "closing"]
+    },
+    {
+      "id": "training",
+      "name": "Training",
+      "aliases": ["training", "courseware", "培训课件", "课程培训"],
+      "sections": ["cover", "learning-objectives", "agenda", "context", "concepts", "framework", "demonstration", "practice", "knowledge-check", "takeaways", "resources", "closing"]
+    },
+    {
+      "id": "brand-introduction",
+      "name": "Brand Introduction",
+      "aliases": ["brand introduction", "company profile", "品牌介绍", "公司介绍"],
+      "sections": ["cover", "brand-story", "mission", "vision", "values", "positioning", "audience", "identity", "offerings", "proof", "brand-experience", "closing"]
+    },
+    {
+      "id": "project-kickoff",
+      "name": "Project Kickoff",
+      "aliases": ["project kickoff", "kickoff", "项目启动会", "启动会"],
+      "sections": ["cover", "why-now", "objectives", "scope", "deliverables", "workstreams", "timeline", "roles", "ways-of-working", "governance", "risks", "immediate-actions", "closing"]
+    },
+    {
+      "id": "operations-review",
+      "name": "Operations Review",
+      "aliases": ["operations review", "business review", "运营复盘", "经营复盘"],
+      "sections": ["cover", "executive-summary", "targets", "performance", "funnel", "channels", "campaigns", "customer", "drivers", "issues", "lessons", "action-plan", "closing"]
+    },
+    {
+      "id": "ecommerce-marketing",
+      "name": "E-commerce and Marketing Plan",
+      "aliases": ["ecommerce marketing", "marketing plan", "电商营销方案", "营销方案"],
+      "sections": ["cover", "executive-summary", "market-context", "audience", "objectives", "positioning", "campaign-concept", "channel-plan", "content-plan", "commerce-funnel", "calendar", "budget", "measurement", "risks", "closing"]
+    }
+  ]
+}
