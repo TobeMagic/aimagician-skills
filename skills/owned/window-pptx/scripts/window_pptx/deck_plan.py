@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import copy
+import json
 import math
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Mapping
 
 from .registry import Archetype, RegistryError, resolve_archetype
@@ -100,6 +102,22 @@ DATA_ITEM_FIELDS = {
     "probability",
     "impact",
     "owner",
+}
+DATA_STRING_LIMITS = {
+    "id": 100,
+    "label": 300,
+    "title": 300,
+    "name": 300,
+    "unit": 40,
+    "category": 200,
+    "series": 200,
+    "description": 600,
+    "text": 600,
+    "status": 100,
+    "date": 80,
+    "source": 500,
+    "group": 200,
+    "owner": 200,
 }
 PREFERENCE_VALUES = {
     "tone": {"conservative", "professional", "bold", "editorial", "educational"},
@@ -233,6 +251,7 @@ def _string(
     path: str,
     *,
     required: bool = True,
+    minimum: int = 1,
     maximum: int = 4000,
 ) -> str | None:
     if value is None and not required:
@@ -240,6 +259,8 @@ def _string(
     if not isinstance(value, str) or not value.strip():
         raise DeckPlanValidationError(f"{path} must be a non-empty string")
     result = value.strip()
+    if len(result) < minimum:
+        raise DeckPlanValidationError(f"{path} must contain at least {minimum} characters")
     if len(result) > maximum:
         raise DeckPlanValidationError(f"{path} exceeds {maximum} characters")
     return result
@@ -269,9 +290,25 @@ def _parse_project(value: Any) -> tuple[ProjectIntent, Archetype]:
         ProjectIntent(
             title=title,
             scenario=archetype.id,
-            audience=_string(raw.get("audience"), "$.project.audience", required=False, maximum=120),
-            objective=_string(raw.get("objective"), "$.project.objective", required=False, maximum=300),
-            language=_string(raw.get("language"), "$.project.language", required=False, maximum=20),
+            audience=_string(
+                raw.get("audience"),
+                "$.project.audience",
+                required=False,
+                maximum=120,
+            ),
+            objective=_string(
+                raw.get("objective"),
+                "$.project.objective",
+                required=False,
+                maximum=300,
+            ),
+            language=_string(
+                raw.get("language"),
+                "$.project.language",
+                required=False,
+                minimum=2,
+                maximum=20,
+            ),
         ),
         archetype,
     )
@@ -279,27 +316,63 @@ def _parse_project(value: Any) -> tuple[ProjectIntent, Archetype]:
 
 def _parse_block(value: Any, path: str) -> ContentBlock:
     raw = _object(value, path)
-    allowed = {"id", "kind", "title", "text", "items", "role_hint", "chart_intent", "source_ref"}
+    allowed = {
+        "id",
+        "kind",
+        "title",
+        "text",
+        "items",
+        "role_hint",
+        "chart_intent",
+        "source_ref",
+    }
     _reject_unknown(raw, allowed, path)
     block_id = _identifier(raw.get("id"), f"{path}.id")
     kind = _string(raw.get("kind"), f"{path}.kind", maximum=40)
     assert kind is not None
     if kind not in CONTENT_KINDS:
         raise DeckPlanValidationError(f"{path}.kind is not registered: {kind}")
-    items_raw = raw.get("items", [])
-    items = _array(items_raw, f"{path}.items", non_empty=False)
+    items = (
+        _array(raw["items"], f"{path}.items") if "items" in raw else []
+    )
+    normalized_items: list[Any] = []
     for index, item in enumerate(items):
         item_path = f"{path}.items[{index}]"
         if isinstance(item, dict):
+            if not item:
+                raise DeckPlanValidationError(
+                    f"{item_path} must contain at least one semantic field"
+                )
             _reject_unknown(item, DATA_ITEM_FIELDS, item_path)
+            normalized_item: dict[str, Any] = {}
             for field, field_value in item.items():
-                if field_value is not None and not isinstance(
-                    field_value, (str, int, float, bool)
-                ):
-                    raise DeckPlanValidationError(
-                        f"{item_path}.{field} must be a scalar semantic value"
+                field_path = f"{item_path}.{field}"
+                if field in DATA_STRING_LIMITS:
+                    normalized_item[field] = _string(
+                        field_value,
+                        field_path,
+                        maximum=DATA_STRING_LIMITS[field],
                     )
-        elif item is not None and not isinstance(item, (str, int, float, bool)):
+                elif isinstance(field_value, str):
+                    normalized_item[field] = _string(
+                        field_value,
+                        field_path,
+                        maximum=600,
+                    )
+                elif field_value is None or isinstance(
+                    field_value, (int, float, bool)
+                ):
+                    normalized_item[field] = field_value
+                else:
+                    raise DeckPlanValidationError(
+                        f"{field_path} must be a scalar semantic value"
+                    )
+            normalized_items.append(normalized_item)
+        elif isinstance(item, str):
+            normalized_items.append(_string(item, item_path, maximum=600))
+        elif item is None or isinstance(item, (int, float, bool)):
+            normalized_items.append(item)
+        else:
             raise DeckPlanValidationError(
                 f"{item_path} must be a scalar or controlled data item"
             )
@@ -321,7 +394,7 @@ def _parse_block(value: Any, path: str) -> ContentBlock:
     source_ref = _string(
         raw.get("source_ref"), f"{path}.source_ref", required=False, maximum=500
     )
-    if not items and title is None and text is None and source_ref is None:
+    if not normalized_items and title is None and text is None and source_ref is None:
         raise DeckPlanValidationError(
             f"{path} must contain semantic content in title, text, items, or source_ref"
         )
@@ -330,7 +403,7 @@ def _parse_block(value: Any, path: str) -> ContentBlock:
         kind=kind,
         title=title,
         text=text,
-        items=tuple(copy.deepcopy(items)),
+        items=tuple(copy.deepcopy(normalized_items)),
         role_hint=role_hint,
         chart_intent=chart_intent,
         source_ref=source_ref,
@@ -348,7 +421,7 @@ def _parse_slide(value: Any, path: str) -> SlideIntent:
     if len(block_ids) != len(set(block_ids)):
         raise DeckPlanValidationError(f"{path}.blocks contains duplicate block ids")
     importance = raw.get("importance", "normal")
-    if importance not in IMPORTANCE_LEVELS:
+    if not isinstance(importance, str) or importance not in IMPORTANCE_LEVELS:
         raise DeckPlanValidationError(f"{path}.importance is not registered: {importance}")
     return SlideIntent(
         id=_identifier(raw.get("id"), f"{path}.id"),
@@ -382,7 +455,8 @@ def _role_for_block(block: ContentBlock, archetype: Archetype) -> str:
     if block.role_hint is not None:
         if block.role_hint not in archetype.sections:
             raise DeckPlanValidationError(
-                f"content block {block.id} role_hint {block.role_hint!r} is not in archetype {archetype.id}"
+                f"content block {block.id} role_hint {block.role_hint!r} is not in "
+                f"archetype {archetype.id}"
             )
         return block.role_hint
     for candidate in _ROLE_CANDIDATES.get(block.kind, _ROLE_CANDIDATES["generic"]):
@@ -428,7 +502,7 @@ def _parse_preferences(value: Any) -> tuple[tuple[str, str], ...]:
     result: list[tuple[str, str]] = []
     for key in sorted(raw):
         item = raw[key]
-        if item not in PREFERENCE_VALUES[key]:
+        if not isinstance(item, str) or item not in PREFERENCE_VALUES[key]:
             raise DeckPlanValidationError(f"$.preferences.{key} is not registered: {item}")
         result.append((key, item))
     return tuple(result)
@@ -457,6 +531,9 @@ def validate_deck_plan(payload: Any) -> DeckPlan:
     slide_ids = [slide.id for slide in slides]
     if len(slide_ids) != len(set(slide_ids)):
         raise DeckPlanValidationError("DeckPlan contains duplicate slide ids")
+    block_ids = [block.id for slide in slides for block in slide.blocks]
+    if len(block_ids) != len(set(block_ids)):
+        raise DeckPlanValidationError("DeckPlan contains duplicate block ids")
     return DeckPlan(
         schema_version=SCHEMA_VERSION,
         project=project,
@@ -465,22 +542,83 @@ def validate_deck_plan(payload: Any) -> DeckPlan:
     )
 
 
+def load_deck_plan(path: Path | str) -> DeckPlan:
+    """Read one UTF-8 DeckPlan JSON document and apply semantic validation."""
+
+    deck_path = Path(path)
+    try:
+        payload = json.loads(deck_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise DeckPlanValidationError(f"cannot load DeckPlan {deck_path}: {exc}") from exc
+    return validate_deck_plan(payload)
+
+
+def _deck_plan_payload(plan: DeckPlan) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "schema_version": plan.schema_version,
+        "project": plan.project.to_dict(),
+        "slides": [slide.to_dict() for slide in plan.slides],
+    }
+    if plan.preferences:
+        payload["preferences"] = plan.preferences_dict()
+    return payload
+
+
+_SEMANTIC_PRIORITY = {
+    "metrics": 100,
+    "trend": 98,
+    "composition": 96,
+    "comparison": 94,
+    "timeline": 92,
+    "sequence": 90,
+    "matrix": 88,
+    "risk": 86,
+    "recommendation": 84,
+    "table": 82,
+    "image": 80,
+    "bullets": 70,
+    "quote": 62,
+    "statement": 60,
+    "generic": 10,
+}
+
+
+def _dominant_semantic_block(
+    slide: SlideIntent,
+) -> tuple[ContentBlock, str, int]:
+    ranked: list[tuple[int, int, int, ContentBlock, str]] = []
+    for index, block in enumerate(slide.blocks):
+        semantic_type = block.chart_intent or block.kind
+        priority = (
+            200
+            if block.chart_intent is not None
+            else _SEMANTIC_PRIORITY.get(block.kind, 0)
+        )
+        richness = len(block.items) or (1 if block.text or block.title else 0)
+        ranked.append((priority, richness, -index, block, semantic_type))
+    _, _, negative_index, block, semantic_type = max(
+        ranked, key=lambda item: item[:3]
+    )
+    return block, semantic_type, -negative_index
+
+
 def compile_deck_plan(payload: Any) -> dict[str, Any]:
     """Compile validated semantic intent into deterministic, design-neutral slides."""
 
     from .capacity import split_slide
     from .rules import rank_page_families
 
-    plan = validate_deck_plan(payload)
+    plan = validate_deck_plan(
+        _deck_plan_payload(payload) if isinstance(payload, DeckPlan) else payload
+    )
     archetype = resolve_archetype(plan.project.scenario)
     compiled_slides: list[dict[str, Any]] = []
     previous_families: list[str] = []
     density = plan.preferences_dict().get("density", "balanced")
     for source_slide in plan.slides:
         for slide in split_slide(source_slide, density=density):
-            primary = slide.blocks[0]
+            primary, semantic_type, block_index = _dominant_semantic_block(slide)
             item_count = len(primary.items) or (1 if primary.text or primary.title else 0)
-            semantic_type = primary.chart_intent or primary.kind
             decision = rank_page_families(
                 semantic_type,
                 item_count=item_count,
@@ -488,6 +626,12 @@ def compile_deck_plan(payload: Any) -> dict[str, Any]:
             )
             compiled = slide.to_dict()
             compiled["page_family"] = decision.selected
+            compiled["semantic_basis"] = {
+                "block_id": primary.id,
+                "block_index": block_index,
+                "semantic_type": semantic_type,
+                "rule_id": "DOMINANT_SEMANTIC_BLOCK",
+            }
             compiled["decision_trace"] = decision.to_dict()
             compiled_slides.append(compiled)
             previous_families.append(decision.selected)

@@ -187,13 +187,13 @@ def _score_candidate(
 
     if semantic_type == "bullets" and item_count == 1:
         if candidate_id == "text-media":
-            score += 0.12
+            score += 0.20
             rule_ids.append("SPARSE_SINGLE_POINT")
             reasons.append("single point receives a quieter emphasis form")
-        elif candidate_id == "cards":
-            score -= 0.12
+        elif candidate_id in {"cards", "modular-grid"}:
+            score -= 0.18
             rule_ids.append("SPARSE_AVOID_EMPTY_CARDS")
-            reasons.append("avoids manufacturing empty peer cards")
+            reasons.append("avoids manufacturing empty peer modules")
     if semantic_type == "bullets" and item_count >= 4 and candidate_id == "modular-grid":
         score += 0.03
         rule_ids.append("PARALLEL_DENSITY_GRID")
@@ -216,7 +216,9 @@ def rank_page_families(
 ) -> DecisionTrace:
     """Rank registered page families with stable ties and rhythm penalties."""
 
-    normalized = semantic_type.casefold().strip() if isinstance(semantic_type, str) else ""
+    normalized = (
+        semantic_type.casefold().strip() if isinstance(semantic_type, str) else ""
+    )
     candidates = _CANDIDATES.get(normalized, _CANDIDATES["generic"])
     history = tuple(previous_families)
     scored = [
@@ -228,15 +230,35 @@ def rank_page_families(
     if confidence < confidence_threshold:
         selected = SAFE_DEFAULT_FAMILY
         fallback_reason = "LOW_CONFIDENCE_SAFE_DEFAULT"
+        registered_default = next(
+            (item for item in ranked if item.candidate_id == SAFE_DEFAULT_FAMILY),
+            CandidateScore(
+                candidate_id=SAFE_DEFAULT_FAMILY,
+                score=confidence,
+                rule_ids=(),
+                reasons=(),
+            ),
+        )
+        selected_candidate = CandidateScore(
+            candidate_id=registered_default.candidate_id,
+            score=registered_default.score,
+            rule_ids=registered_default.rule_ids + (fallback_reason,),
+            reasons=registered_default.reasons
+            + ("selected by the governed low-confidence fallback policy",),
+        )
+        ordered = (selected_candidate,) + tuple(
+            item for item in ranked if item.candidate_id != SAFE_DEFAULT_FAMILY
+        )
     else:
         selected = ranked[0].candidate_id
         fallback_reason = None
+        ordered = ranked
     return DecisionTrace(
         semantic_type=normalized or "generic",
         selected=selected,
         confidence=confidence,
         confidence_threshold=confidence_threshold,
-        top_candidates=ranked[:3],
-        rejected_candidates=ranked[3:],
+        top_candidates=ordered[:3],
+        rejected_candidates=ordered[3:],
         fallback_reason=fallback_reason,
     )

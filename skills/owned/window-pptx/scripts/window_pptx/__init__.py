@@ -10,6 +10,7 @@ from .deck_plan import (
     ProjectIntent,
     SlideIntent,
     compile_deck_plan,
+    load_deck_plan,
     validate_deck_plan,
 )
 from .errors import ComSessionError, OutputPolicyError, WindowPptxError
@@ -55,6 +56,7 @@ __all__ = [
     "emit_result",
     "macro_security",
     "load_archetypes",
+    "load_deck_plan",
     "parse_args",
     "save_candidate",
     "rank_page_families",

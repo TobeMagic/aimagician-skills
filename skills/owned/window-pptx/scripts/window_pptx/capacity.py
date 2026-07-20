@@ -30,12 +30,27 @@ DENSITY_UNIT_LIMIT = {"sparse": 6, "balanced": 8, "dense": 10}
 DENSITY_TEXT_LIMIT = {"sparse": 480, "balanced": 720, "dense": 960}
 
 
-def _block_units(block: ContentBlock) -> int:
-    if block.items:
-        return max(1, len(block.items))
-    if block.text:
-        return max(1, (len(block.text) + 159) // 160)
+def _text_units(text: str | None) -> int:
+    return 0 if not text else max(1, (len(text) + 159) // 160)
+
+
+def _item_units(item: object) -> int:
+    if isinstance(item, str):
+        return max(1, (len(item) + 159) // 160)
+    if isinstance(item, dict):
+        longest = max(
+            (len(value) for value in item.values() if isinstance(value, str)),
+            default=0,
+        )
+        return max(1, (longest + 159) // 160)
     return 1
+
+
+def _block_units(block: ContentBlock) -> int:
+    content_units = _text_units(block.text) + sum(
+        _item_units(item) for item in block.items
+    )
+    return max(1, content_units)
 
 
 def _split_text(text: str, limit: int) -> tuple[str, ...]:
@@ -62,33 +77,62 @@ def _split_text(text: str, limit: int) -> tuple[str, ...]:
     return tuple(chunks)
 
 
+def _split_item_groups(
+    items: tuple[object, ...], count_limit: int, unit_limit: int
+) -> tuple[tuple[object, ...], ...]:
+    if not items:
+        return ()
+    groups: list[tuple[object, ...]] = []
+    current: list[object] = []
+    units = 0
+    for item in items:
+        item_units = _item_units(item)
+        if item_units > unit_limit:
+            raise ValueError("one semantic item exceeds the registered density capacity")
+        if current and (
+            len(current) >= count_limit or units + item_units > unit_limit
+        ):
+            groups.append(tuple(current))
+            current = []
+            units = 0
+        current.append(item)
+        units += item_units
+    if current:
+        groups.append(tuple(current))
+    return tuple(groups)
+
+
 def _split_block(block: ContentBlock, density: str) -> tuple[ContentBlock, ...]:
-    limit = max(1, ITEM_LIMITS[block.kind] + DENSITY_ITEM_ADJUSTMENT[density])
-    if block.items and len(block.items) > limit:
-        chunks: list[ContentBlock] = []
-        for offset in range(0, len(block.items), limit):
-            number = offset // limit + 1
-            block_id = block.id if number == 1 else f"{block.id}--part-{number}"
-            chunks.append(
-                replace(
-                    block,
-                    id=block_id,
-                    items=block.items[offset : offset + limit],
-                )
-            )
-        return tuple(chunks)
-    if block.text:
-        text_chunks = _split_text(block.text, DENSITY_TEXT_LIMIT[density])
-        if len(text_chunks) > 1:
-            return tuple(
-                replace(
-                    block,
-                    id=block.id if number == 1 else f"{block.id}--part-{number}",
-                    text=text,
-                )
-                for number, text in enumerate(text_chunks, start=1)
-            )
-    return (block,)
+    unit_limit = DENSITY_UNIT_LIMIT[density]
+    count_limit = min(
+        unit_limit,
+        max(1, ITEM_LIMITS[block.kind] + DENSITY_ITEM_ADJUSTMENT[density]),
+    )
+    text_chunks = (
+        _split_text(block.text, DENSITY_TEXT_LIMIT[density])
+        if block.text
+        else ()
+    )
+    item_groups = _split_item_groups(block.items, count_limit, unit_limit)
+    if (
+        len(text_chunks) <= 1
+        and len(item_groups) <= 1
+        and _block_units(block) <= unit_limit
+    ):
+        return (block,)
+
+    parts: list[ContentBlock] = []
+    parts.extend(replace(block, text=text, items=()) for text in text_chunks)
+    parts.extend(replace(block, text=None, items=items) for items in item_groups)
+    if not parts:
+        return (block,)
+    return tuple(
+        replace(
+            part,
+            id=block.id if number == 1 else f"{block.id}--part-{number}",
+        )
+        for number, part in enumerate(parts, start=1)
+    )
 
 
 def _pack_small_blocks(
@@ -99,6 +143,8 @@ def _pack_small_blocks(
     units = 0
     for block in blocks:
         block_units = _block_units(block)
+        if block_units > unit_limit:
+            raise ValueError("normalized content block exceeds density capacity")
         if current and (
             len(current) >= MAX_BLOCKS_PER_SLIDE
             or units + block_units > unit_limit

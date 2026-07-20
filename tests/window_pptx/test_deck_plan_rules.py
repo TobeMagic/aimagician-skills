@@ -15,8 +15,13 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 from window_pptx.capacity import split_slide
 from window_pptx.deck_plan import (
+    ContentBlock,
+    DeckPlan,
     DeckPlanValidationError,
+    ProjectIntent,
+    SlideIntent,
     compile_deck_plan,
+    load_deck_plan,
     validate_deck_plan,
 )
 from window_pptx.registry import load_archetypes, resolve_archetype
@@ -87,6 +92,38 @@ def test_schema_artifact_is_versioned_and_strict() -> None:
     assert schema["$defs"]["slide"]["additionalProperties"] is False
     assert schema["$defs"]["contentBlock"]["additionalProperties"] is False
     assert schema["$defs"]["dataItem"]["additionalProperties"] is False
+    assert schema["$defs"]["dataItem"]["minProperties"] == 1
+    assert schema["$defs"]["contentBlock"]["anyOf"]
+    assert schema["$defs"]["contentBlock"]["properties"]["items"]["minItems"] == 1
+
+
+def test_schema_and_manual_validator_agree_on_whitespace_and_data_item_types() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    schema = json.loads(
+        (SKILL_ROOT / "schemas" / "deck-plan.v1.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    validator = jsonschema.Draft202012Validator(schema)
+    whitespace = minimal_plan()
+    whitespace["slides"][0]["title"] = "   "
+    wrong_label = minimal_plan(items=[{"label": 42, "value": 7}])
+    long_label = minimal_plan(items=[{"label": "x" * 301, "value": 7}])
+    short_language = minimal_plan()
+    short_language["project"]["language"] = "x"
+    explicit_empty_items = minimal_plan(items=[])
+    explicit_empty_items["slides"][0]["blocks"][0]["title"] = "Title only"
+
+    for payload in (
+        whitespace,
+        wrong_label,
+        long_label,
+        short_language,
+        explicit_empty_items,
+    ):
+        assert list(validator.iter_errors(payload))
+        with pytest.raises(DeckPlanValidationError):
+            validate_deck_plan(payload)
 
 
 def test_minimal_semantic_plan_validates_without_design_geometry() -> None:
@@ -96,6 +133,27 @@ def test_minimal_semantic_plan_validates_without_design_geometry() -> None:
     assert plan.project.scenario == "business-report"
     assert plan.slides[0].blocks[0].kind == "metrics"
     assert plan.slides[0].blocks[0].items[0]["label"] == "Revenue"
+
+
+def test_load_deck_plan_reads_utf8_and_compile_accepts_validated_model(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "deck-plan.json"
+    path.write_text(json.dumps(minimal_plan(), ensure_ascii=False), encoding="utf-8")
+
+    plan = load_deck_plan(path)
+    compiled = compile_deck_plan(plan)
+
+    assert plan.project.title == "Q3 经营复盘"
+    assert compiled["archetype_id"] == "business-report"
+
+
+def test_load_deck_plan_wraps_invalid_json_as_validation_error(tmp_path: Path) -> None:
+    path = tmp_path / "broken.json"
+    path.write_text("{broken", encoding="utf-8")
+
+    with pytest.raises(DeckPlanValidationError, match="cannot load"):
+        load_deck_plan(path)
 
 
 @pytest.mark.parametrize(
@@ -139,7 +197,7 @@ def test_unregistered_data_item_field_is_rejected() -> None:
 def test_empty_content_block_is_rejected_instead_of_padding_a_slide() -> None:
     payload = minimal_plan(kind="generic", items=[])
 
-    with pytest.raises(DeckPlanValidationError, match="content"):
+    with pytest.raises(DeckPlanValidationError, match="items.*non-empty"):
         validate_deck_plan(payload)
 
 
@@ -147,6 +205,57 @@ def test_non_finite_numbers_are_rejected_for_stable_json() -> None:
     payload = minimal_plan(items=[{"label": "bad", "value": math.nan}])
 
     with pytest.raises(DeckPlanValidationError, match="finite"):
+        validate_deck_plan(payload)
+
+
+def test_oversized_atomic_item_is_rejected_by_both_validation_paths() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    schema = json.loads(
+        (SKILL_ROOT / "schemas" / "deck-plan.v1.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload = minimal_plan(kind="bullets", items=["x" * 10_000])
+
+    assert list(jsonschema.Draft202012Validator(schema).iter_errors(payload))
+    with pytest.raises(DeckPlanValidationError, match="600"):
+        validate_deck_plan(payload)
+
+
+def test_publicly_constructed_deck_plan_is_revalidated_before_compile() -> None:
+    plan = DeckPlan(
+        schema_version="1.0",
+        project=ProjectIntent(title="Bad", scenario="business-report"),
+        slides=(
+            SlideIntent(
+                id="slide",
+                role="insights",
+                title="Bad",
+                importance="normal",
+                blocks=(ContentBlock(id="block", kind="not-registered", items=(1,)),),
+            ),
+        ),
+    )
+
+    with pytest.raises(DeckPlanValidationError, match="not-registered"):
+        compile_deck_plan(plan)
+
+
+def test_duplicate_block_ids_across_slides_are_rejected() -> None:
+    payload = minimal_plan()
+    duplicate = json.loads(json.dumps(payload["slides"][0]))
+    duplicate["id"] = "detail"
+    payload["slides"].append(duplicate)
+
+    with pytest.raises(DeckPlanValidationError, match="duplicate block"):
+        validate_deck_plan(payload)
+
+
+def test_invalid_preference_type_raises_controlled_validation_error() -> None:
+    payload = minimal_plan()
+    payload["preferences"] = {"density": ["dense"]}
+
+    with pytest.raises(DeckPlanValidationError, match="preferences.density"):
         validate_deck_plan(payload)
 
 
@@ -211,6 +320,18 @@ def test_low_confidence_uses_safe_default_with_reason() -> None:
     assert decision.selected == "structured-content"
     assert decision.fallback_reason == "LOW_CONFIDENCE_SAFE_DEFAULT"
     assert decision.confidence < decision.confidence_threshold
+    assert decision.top_candidates[0].candidate_id == decision.selected
+    assert "LOW_CONFIDENCE_SAFE_DEFAULT" in decision.top_candidates[0].rule_ids
+    assert decision.selected not in {
+        candidate.candidate_id for candidate in decision.rejected_candidates
+    }
+
+
+def test_single_parallel_point_uses_quiet_sparse_form() -> None:
+    decision = rank_page_families("bullets", item_count=1)
+
+    assert decision.selected == "text-media"
+    assert decision.top_candidates[0].candidate_id == "text-media"
 
 
 @pytest.mark.parametrize(
@@ -296,6 +417,7 @@ def test_density_preference_changes_capacity_with_safe_registered_limits() -> No
 def test_long_narrative_text_splits_without_dropping_characters() -> None:
     text = "第一段说明业务背景。" * 90
     payload = minimal_plan(kind="statement", items=[])
+    del payload["slides"][0]["blocks"][0]["items"]
     payload["slides"][0]["blocks"][0]["text"] = text
     slide = validate_deck_plan(payload).slides[0]
 
@@ -304,6 +426,30 @@ def test_long_narrative_text_splits_without_dropping_characters() -> None:
     assert len(split) > 1
     assert "".join(part.blocks[0].text or "" for part in split) == text
     assert all(len(part.blocks[0].text or "") <= 720 for part in split)
+
+
+def test_every_block_obeys_density_unit_limit_even_if_kind_limit_is_higher() -> None:
+    payload = minimal_plan(kind="trend", items=list(range(9)))
+    slide = validate_deck_plan(payload).slides[0]
+
+    split = split_slide(slide, density="balanced")
+
+    assert [len(part.blocks[0].items) for part in split] == [8, 1]
+
+
+def test_mixed_text_and_items_split_once_without_duplication() -> None:
+    text = "业务背景说明。" * 120
+    items = [f"point-{number}" for number in range(1, 7)]
+    payload = minimal_plan(kind="bullets", items=items)
+    payload["slides"][0]["blocks"][0]["text"] = text
+    slide = validate_deck_plan(payload).slides[0]
+
+    split = split_slide(slide, density="balanced")
+
+    assert "".join(part.blocks[0].text or "" for part in split) == text
+    assert [item for part in split for item in part.blocks[0].items] == items
+    assert sum(1 for part in split if part.blocks[0].text) >= 2
+    assert sum(1 for part in split if part.blocks[0].items) == 2
 
 
 def test_content_only_plan_is_ordered_by_archetype_not_model_input_order() -> None:
@@ -354,6 +500,23 @@ def test_compile_preserves_archetype_outline_and_capacity_trace() -> None:
     assert compiled["slides"][1]["continuation_of"] == "summary"
     assert compiled["slides"][0]["decision_trace"]["top_candidates"]
     assert json.loads(json.dumps(compiled, ensure_ascii=False)) == compiled
+
+
+def test_multi_block_slide_uses_dominant_data_semantics_not_first_block() -> None:
+    payload = minimal_plan(kind="generic", items=["context"])
+    payload["slides"][0]["blocks"].append(
+        {
+            "id": "trend-data",
+            "kind": "trend",
+            "items": [1, 2, 3, 4],
+        }
+    )
+
+    compiled = compile_deck_plan(payload)
+
+    assert compiled["slides"][0]["page_family"] == "line-chart"
+    assert compiled["slides"][0]["semantic_basis"]["block_id"] == "trend-data"
+    assert compiled["slides"][0]["semantic_basis"]["semantic_type"] == "trend"
 
 
 def test_compilation_is_byte_for_byte_stable_for_same_input() -> None:
