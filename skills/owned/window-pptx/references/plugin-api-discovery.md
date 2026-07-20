@@ -24,54 +24,41 @@ python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
   --json
 ```
 
-This writes:
+The command is terminal and emits one result to stdout; it does not write an inventory file. The probe is registry-only:
 
-```text
-ppt-project/.window-pptx/plugin_api_probe.json
-```
+- reads 32-bit and 64-bit Office add-in registry views
+- reads ProgID / CLSID registration in both views
+- reports load behavior and VSTO manifest metadata when present
+- explicitly skips direct COM dispatch, `Application.COMAddIns.Item(progID).Object`, and `ITypeInfo`
 
-The probe is read-only:
-
-- reads Office add-in registry keys
-- reads ProgID / CLSID registration
-- checks direct COM dispatch
-- checks `Application.COMAddIns.Item(progID).Object`
-- enumerates dispatch members through `ITypeInfo`
-
-It does not call discovered business methods.
+It does not start PowerPoint, load third-party add-in code, open a presentation, call business methods, or write files.
 
 ## How To Interpret Results
 
-### Good Sign
+### Registered Automation Class
 
-The probe shows methods/properties that are clearly feature-level and documented, for example:
+The registry result contains a ProgID and CLSID in the Office-compatible view. This proves registration only. It does not prove that feature-level methods are public or safe.
+
+If vendor documentation separately shows methods such as:
 
 - `ExportTheme`
 - `ApplyLayout`
 - `ReplaceImages`
 - `BatchAlign`
 
-Then read the vendor/user docs and call only the required method with explicit logging.
+then a separate, explicitly approved investigation may call only the required documented method with logging. Do not infer those methods from registration.
 
-### Weak Sign
+### VSTO Manifest Only
 
-The probe only shows Office lifecycle methods:
-
-- `OnConnection`
-- `OnDisconnection`
-- `OnAddInsUpdate`
-- `OnStartupComplete`
-- `OnBeginShutdown`
-
-This means the add-in is visible to Office, but does not expose the feature API you need.
+The Office add-in key contains a manifest or load behavior but no usable ProgID/CLSID in the compatible view. Treat it as installed but without a proven callable feature API.
 
 ### No Automation Object
 
-If `COMAddIn.Object` is `None`, direct `Dispatch(progID)` fails, or only a VSTO manifest is present, treat the plugin as UI-only for automation purposes.
+If registration is absent, incomplete, or undocumented, treat the plugin as UI-only for automation purposes.
 
 ## Observed Local Findings
 
-On one tested Windows PowerPoint machine:
+On an earlier interactive test machine (historical evidence, not produced by the current safe command):
 
 - iSlide appeared as `iSlideTools.Public`, direct dispatch succeeded, and `COMAddIn.Object` existed. Its visible type info exposed `_IDTExtensibility2` lifecycle methods only.
 - OKPlus appeared as connected `Slibe.OKPlus`, but direct dispatch failed and `COMAddIn.Object` was `None`. Registry showed a VSTO manifest path.
@@ -81,6 +68,7 @@ Practical result: native PowerPoint COM remained the correct execution path for 
 ## Safety Rules
 
 - Do not invoke lifecycle methods manually.
+- Do not start PowerPoint or dispatch add-in classes for routine inventory.
 - Do not press Ribbon buttons through UI automation unless explicitly requested as a last resort.
 - Do not enable/disable add-ins unless the user asks and the run plan records it.
 - Do not depend on plugin behavior for the core output when native COM can produce the result.

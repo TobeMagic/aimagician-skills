@@ -262,11 +262,12 @@ iSlide, OKPlus, and similar PowerPoint add-ins may be installed but are optional
 
 Safe workflow:
 
-1. list installed add-ins
-2. probe ProgIDs and `Application.COMAddIns.Item(progID).Object`
-3. inspect public type information without invoking unknown business methods
-4. call only documented, safe plugin APIs
-5. otherwise reproduce the output with native PowerPoint COM
+1. list registered add-ins through the 32/64-bit registry-only route
+2. inspect ProgID, CLSID, load behavior, and manifest metadata without starting PowerPoint
+3. consult vendor documentation for any public automation contract
+4. investigate live objects only in a separately approved interactive run
+5. call only documented, safe plugin APIs
+6. otherwise reproduce the output with native PowerPoint COM
 
 Do not depend on plugin-only UI behavior for the core deliverable unless the user provides a documented callable API.
 

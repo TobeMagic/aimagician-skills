@@ -307,6 +307,54 @@ def test_existing_non_com_json_branch_emits_one_document(
 
 
 @pytest.mark.parametrize(
+    ("flags", "helper_name", "result_key"),
+    [
+        (["--search-images", "window"], "pixabay_search", "pixabay_search"),
+        (["--search-icons", "window"], "iconify_search", "iconify_search"),
+    ],
+)
+def test_no_output_asset_routes_ignore_unrelated_decks_and_output_extension(
+    flags: list[str],
+    helper_name: str,
+    result_key: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    (tmp_path / "one.pptx").write_bytes(b"one")
+    (tmp_path / "two.pptx").write_bytes(b"two")
+    calls: list[str] = []
+
+    def fake_asset_helper(*_args: object, **_kwargs: object) -> dict[str, bool]:
+        calls.append(helper_name)
+        return {"ok": True}
+
+    monkeypatch.setattr(automation, helper_name, fake_asset_helper)
+    monkeypatch.setattr(
+        automation,
+        "dispatch_powerpoint",
+        lambda *_args: (_ for _ in ()).throw(
+            AssertionError("asset-only route started PowerPoint")
+        ),
+    )
+
+    assert automation.main(
+        [
+            "--project-dir",
+            str(tmp_path),
+            *flags,
+            "--no-output-deck",
+            "--output",
+            "irrelevant.txt",
+            "--json",
+        ]
+    ) == 0
+
+    assert calls == [helper_name]
+    assert json.loads(capsys.readouterr().out)[result_key] == {"ok": True}
+
+
+@pytest.mark.parametrize(
     ("inspection_flag", "detail", "final_key"),
     [
         ("--list-addins", "LIST-ADDIN-DETAIL", "addins"),
@@ -846,3 +894,121 @@ def test_terminal_inspection_uses_registry_only_and_never_starts_powerpoint(
     assert payload["addins"]["com_addins"][0]["prog_id"] == "Example.Safe"
     assert payload["plugin_api_probe"]["mode"] == "registry_only"
     assert payload["plugin_api_probe"]["app_is_none"] is True
+
+
+class FakeRegistryKey:
+    def __init__(self, registry: "FakeWinReg", token: tuple[str, str, int]) -> None:
+        self.registry = registry
+        self.token = token
+
+    def __enter__(self) -> "FakeRegistryKey":
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        return None
+
+
+class FakeWinReg:
+    HKEY_CURRENT_USER = "HKCU"
+    HKEY_LOCAL_MACHINE = "HKLM"
+    HKEY_CLASSES_ROOT = "HKCR"
+    KEY_READ = 0x20019
+    KEY_WOW64_64KEY = 0x0100
+    KEY_WOW64_32KEY = 0x0200
+
+    def __init__(self) -> None:
+        self.open_accesses: list[int] = []
+        base = r"Software\Microsoft\Office\PowerPoint\Addins"
+        self.data: dict[tuple[str, str, int], dict[str, object]] = {
+            ("HKLM", base, self.KEY_WOW64_64KEY): {"subkeys": ["Example.Addin64"]},
+            ("HKLM", base, self.KEY_WOW64_32KEY): {"subkeys": ["Example.Addin32"]},
+            ("HKLM", base + r"\Example.Addin64", self.KEY_WOW64_64KEY): {
+                "values": {"Description": "Example 64", "LoadBehavior": 3}
+            },
+            ("HKLM", base + r"\Example.Addin32", self.KEY_WOW64_32KEY): {
+                "values": {"Description": "Example 32", "LoadBehavior": 2}
+            },
+            ("HKCR", r"Example.Addin64\CLSID", self.KEY_WOW64_64KEY): {
+                "values": {"": "{EXAMPLE-64}"}
+            },
+            ("HKCR", r"Example.Addin32\CLSID", self.KEY_WOW64_32KEY): {
+                "values": {"": "{EXAMPLE-32}"}
+            },
+            ("HKCR", r"CLSID\{EXAMPLE-64}", self.KEY_WOW64_64KEY): {
+                "values": {"": "Example 64 class"}
+            },
+            ("HKCR", r"CLSID\{EXAMPLE-32}", self.KEY_WOW64_32KEY): {
+                "values": {"": "Example 32 class"}
+            },
+        }
+
+    def OpenKey(
+        self,
+        root: str,
+        path: str,
+        _reserved: int = 0,
+        access: int = 0,
+    ) -> FakeRegistryKey:
+        view = access & (self.KEY_WOW64_64KEY | self.KEY_WOW64_32KEY)
+        self.open_accesses.append(access)
+        token = (root, path, view)
+        if token not in self.data:
+            raise FileNotFoundError(path)
+        return FakeRegistryKey(self, token)
+
+    def EnumKey(self, key: FakeRegistryKey, index: int) -> str:
+        subkeys = list(self.data[key.token].get("subkeys", []))
+        if index >= len(subkeys):
+            raise OSError(index)
+        return str(subkeys[index])
+
+    def EnumValue(self, key: FakeRegistryKey, index: int) -> tuple[str, object, int]:
+        values = list(dict(self.data[key.token].get("values", {})).items())
+        if index >= len(values):
+            raise OSError(index)
+        name, value = values[index]
+        return str(name), value, 1
+
+    def QueryValueEx(self, key: FakeRegistryKey, value_name: str) -> tuple[object, int]:
+        values = dict(self.data[key.token].get("values", {}))
+        if value_name not in values:
+            raise FileNotFoundError(value_name)
+        return values[value_name], 1
+
+
+def test_registry_inventory_reads_and_labels_both_wow64_views(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = FakeWinReg()
+    monkeypatch.setattr(automation, "import_registry_module", lambda: fake)
+
+    rows = automation.list_registered_com_addins()
+
+    assert {(row["prog_id"], row["registry_view"], row["guid"]) for row in rows} == {
+        ("Example.Addin64", "64", "{EXAMPLE-64}"),
+        ("Example.Addin32", "32", "{EXAMPLE-32}"),
+    }
+    assert any(access & fake.KEY_WOW64_64KEY for access in fake.open_accesses)
+    assert any(access & fake.KEY_WOW64_32KEY for access in fake.open_accesses)
+
+
+def test_registry_only_probe_covers_both_views_and_never_calls_live_helpers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = FakeWinReg()
+    monkeypatch.setattr(automation, "import_registry_module", lambda: fake)
+
+    def forbidden(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("registry-only probe reached live COM introspection")
+
+    monkeypatch.setattr(automation, "import_probe_modules", forbidden)
+    monkeypatch.setattr(automation, "probe_direct_dispatch", forbidden)
+    monkeypatch.setattr(automation, "probe_addin_object", forbidden)
+
+    result = automation.probe_plugin_apis(None, ["Example.Addin64"])
+
+    assert result["mode"] == "registry_only"
+    assert set(result["registry"]["Example.Addin64"]["views"]) == {"64", "32"}
+    assert result["registry"]["Example.Addin64"]["views"]["64"]["clsid"] == "{EXAMPLE-64}"
+    assert result["direct_dispatch"]["Example.Addin64"]["skipped"] is True
+    assert result["addin_object"]["Example.Addin64"]["skipped"] is True

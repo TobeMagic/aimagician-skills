@@ -222,7 +222,7 @@ This creates:
 - `.window-pptx/temp/`
 - `.window-pptx/logs/`
 
-Probe iSlide / OKPlus or other add-in automation surfaces without invoking their business methods:
+Inspect iSlide / OKPlus registration safely without starting PowerPoint or loading add-in code:
 
 ```powershell
 python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
@@ -344,15 +344,15 @@ Read [template-library-recommendation-workflow.md](./references/template-library
 6. Confirm missing discuss-gate items.
 7. Run add-in discovery if the request mentions plugins or if the user asks whether iSlide/OKPlus can be used.
 8. If plugin use is desired, run `--probe-plugin-apis` and inspect:
-   - Office add-in registry values
-   - direct `Dispatch(progID)` result
-   - `Application.COMAddIns.Item(progID).Object`
-   - exposed type library / dispatch members
-9. Choose native COM implementation first unless a documented plugin method is actually discoverable.
-9. Search/download required local assets first, including Iconify icons when the design calls for semantic labels, process nodes, flow arrows, UI symbols, or pictograms.
-10. Generate a concrete Windows Python script in `.window-pptx/scripts/`.
-11. Execute the script from Windows PowerShell or CMD.
-12. Save outputs under `output/`.
+   - 32-bit and 64-bit Office add-in registry values
+   - ProgID / CLSID registration
+   - load behavior and VSTO manifest metadata when registered
+9. Treat live dispatch, `COMAddIn.Object`, and type-library inspection as unavailable in the default safe route. Use a plugin only from vendor documentation or a separately approved interactive investigation.
+10. Choose native COM implementation first unless a documented plugin method is known.
+11. Search/download required local assets first, including Iconify icons when the design calls for semantic labels, process nodes, flow arrows, UI symbols, or pictograms.
+12. Generate a concrete Windows Python script in `.window-pptx/scripts/`.
+13. Execute the script from Windows PowerShell or CMD.
+14. Save outputs under `output/`.
 13. Export PNG previews for target slides when visual work is involved.
 14. Write audits under `.window-pptx/audits/`.
 15. Verify acceptance criteria with COM object checks and rendered previews.
@@ -437,29 +437,29 @@ Treat add-ins as optional accelerators.
 
 Allowed:
 
-- list installed COM add-ins
-- list PowerPoint-specific `.ppa` / `.ppam` add-ins
-- read description, ProgID, GUID, and connected/loaded status
-- probe COM registration and type information
-- inspect `COMAddIns.Item(progID).Object` without calling unknown methods
+- list registered PowerPoint COM add-ins from both Windows registry views
+- read description, ProgID, CLSID, load behavior, and manifest metadata
+- report that live connection, `.ppa` / `.ppam`, dispatch, object, and type information is unavailable in registry-only mode
 - enable/disable only when explicitly requested and safe
-- call a plugin only when a documented COM/VBA/API entrypoint is known
+- call a plugin only when a documented COM/VBA/API entrypoint is known and a separate run is explicitly approved
 
 Not allowed by default:
 
 - assume Ribbon buttons are callable
 - call lifecycle methods such as `OnConnection` / `OnDisconnection` manually
 - depend on iSlide/OKPlus for core deck generation
+- start PowerPoint merely to enumerate or probe add-ins
+- call direct `Dispatch(progID)` or inspect `COMAddIn.Object` in the default safe probe
 - use UI automation as the first approach
 - manage Office JavaScript web add-in internals through COM
 
 If a user asks "can I use iSlide/OKPlus?", answer:
 
-- yes for discovery and possibly public automation interfaces
+- yes for safe registration discovery; automation requires separate vendor documentation or explicit investigation
 - no guarantee for UI-only features
 - native PowerPoint COM remains the default fallback
 
-Observed local probe pattern:
+Historical interactive probe pattern (not reproduced by the default safe command):
 
 - iSlide may expose `iSlideTools.Public` as a COM class and a `COMAddIn.Object`, but the visible type info can be only Office's standard `_IDTExtensibility2` lifecycle interface: `OnConnection`, `OnDisconnection`, `OnAddInsUpdate`, `OnStartupComplete`, `OnBeginShutdown`.
 - OKPlus / OneKeyTools Plus may appear as a connected VSTO add-in with manifest registration while `COMAddIn.Object` is `None` and direct `Dispatch("Slibe.OKPlus")` fails.

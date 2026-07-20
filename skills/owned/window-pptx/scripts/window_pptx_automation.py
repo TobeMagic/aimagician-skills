@@ -1526,18 +1526,44 @@ def import_probe_modules() -> tuple[Any, Any, Any]:
     return pythoncom, win32com.client.dynamic, winreg
 
 
-def registry_get(winreg: Any, root: Any, path: str, value_name: str = "") -> Any:
+def registry_access(winreg: Any, view_flag: int = 0) -> int:
+    return int(getattr(winreg, "KEY_READ", 0)) | int(view_flag)
+
+
+def registry_view_specs(winreg: Any) -> list[tuple[str, int]]:
+    specs = [
+        ("64", int(getattr(winreg, "KEY_WOW64_64KEY", 0))),
+        ("32", int(getattr(winreg, "KEY_WOW64_32KEY", 0))),
+    ]
+    available = [(name, flag) for name, flag in specs if flag]
+    return available or [("default", 0)]
+
+
+def registry_get(
+    winreg: Any,
+    root: Any,
+    path: str,
+    value_name: str = "",
+    *,
+    view_flag: int = 0,
+) -> Any:
     try:
-        with winreg.OpenKey(root, path) as key:
+        with winreg.OpenKey(root, path, 0, registry_access(winreg, view_flag)) as key:
             value, _ = winreg.QueryValueEx(key, value_name)
             return value
     except Exception:
         return None
 
 
-def registry_key_values(winreg: Any, root: Any, path: str) -> dict[str, Any] | None:
+def registry_key_values(
+    winreg: Any,
+    root: Any,
+    path: str,
+    *,
+    view_flag: int = 0,
+) -> dict[str, Any] | None:
     try:
-        with winreg.OpenKey(root, path) as key:
+        with winreg.OpenKey(root, path, 0, registry_access(winreg, view_flag)) as key:
             values: dict[str, Any] = {}
             index = 0
             while True:
@@ -1552,27 +1578,73 @@ def registry_key_values(winreg: Any, root: Any, path: str) -> dict[str, Any] | N
         return None
 
 
-def clsid_registry_snapshot(winreg: Any, progid: str) -> dict[str, Any]:
-    clsid = registry_get(winreg, winreg.HKEY_CLASSES_ROOT, rf"{progid}\CLSID")
-    result: dict[str, Any] = {"progid": progid, "clsid": clsid}
+def clsid_registry_view_snapshot(
+    winreg: Any,
+    progid: str,
+    view_name: str,
+    view_flag: int,
+) -> dict[str, Any]:
+    clsid = registry_get(
+        winreg,
+        winreg.HKEY_CLASSES_ROOT,
+        rf"{progid}\CLSID",
+        view_flag=view_flag,
+    )
+    result: dict[str, Any] = {
+        "progid": progid,
+        "registry_view": view_name,
+        "clsid": clsid,
+    }
     if not clsid:
         return result
 
     clsid_key = rf"CLSID\{clsid}"
     result.update(
         {
-            "friendly_name": registry_get(winreg, winreg.HKEY_CLASSES_ROOT, clsid_key),
-            "typelib": registry_get(winreg, winreg.HKEY_CLASSES_ROOT, rf"{clsid_key}\TypeLib"),
-            "version": registry_get(winreg, winreg.HKEY_CLASSES_ROOT, rf"{clsid_key}\Version"),
+            "friendly_name": registry_get(
+                winreg, winreg.HKEY_CLASSES_ROOT, clsid_key, view_flag=view_flag
+            ),
+            "typelib": registry_get(
+                winreg,
+                winreg.HKEY_CLASSES_ROOT,
+                rf"{clsid_key}\TypeLib",
+                view_flag=view_flag,
+            ),
+            "version": registry_get(
+                winreg,
+                winreg.HKEY_CLASSES_ROOT,
+                rf"{clsid_key}\Version",
+                view_flag=view_flag,
+            ),
             "local_server32": registry_get(
-                winreg, winreg.HKEY_CLASSES_ROOT, rf"{clsid_key}\LocalServer32"
+                winreg,
+                winreg.HKEY_CLASSES_ROOT,
+                rf"{clsid_key}\LocalServer32",
+                view_flag=view_flag,
             ),
             "inproc_server32": registry_get(
-                winreg, winreg.HKEY_CLASSES_ROOT, rf"{clsid_key}\InprocServer32"
+                winreg,
+                winreg.HKEY_CLASSES_ROOT,
+                rf"{clsid_key}\InprocServer32",
+                view_flag=view_flag,
             ),
         }
     )
     return result
+
+
+def clsid_registry_snapshot(winreg: Any, progid: str) -> dict[str, Any]:
+    views = {
+        view_name: clsid_registry_view_snapshot(
+            winreg, progid, view_name, view_flag
+        )
+        for view_name, view_flag in registry_view_specs(winreg)
+    }
+    preferred = next(
+        (snapshot for snapshot in views.values() if snapshot.get("clsid")),
+        next(iter(views.values())),
+    )
+    return {**preferred, "views": views}
 
 
 def office_addin_registry_snapshot(winreg: Any, progid: str) -> list[dict[str, Any]]:
@@ -1581,15 +1653,21 @@ def office_addin_registry_snapshot(winreg: Any, progid: str) -> list[dict[str, A
         ("HKCU", winreg.HKEY_CURRENT_USER),
         ("HKLM", winreg.HKEY_LOCAL_MACHINE),
     ]
-    paths = [
-        rf"Software\Microsoft\Office\PowerPoint\Addins\{progid}",
-        rf"Software\WOW6432Node\Microsoft\Office\PowerPoint\Addins\{progid}",
-    ]
+    path = rf"Software\Microsoft\Office\PowerPoint\Addins\{progid}"
     for root_name, root in roots:
-        for path in paths:
-            values = registry_key_values(winreg, root, path)
+        for view_name, view_flag in registry_view_specs(winreg):
+            values = registry_key_values(
+                winreg, root, path, view_flag=view_flag
+            )
             if values is not None:
-                rows.append({"root": root_name, "path": path, "values": values})
+                rows.append(
+                    {
+                        "root": root_name,
+                        "registry_view": view_name,
+                        "path": path,
+                        "values": values,
+                    }
+                )
     return rows
 
 
@@ -1610,16 +1688,15 @@ def list_registered_com_addins() -> list[dict[str, Any]]:
         ("HKCU", winreg.HKEY_CURRENT_USER),
         ("HKLM", winreg.HKEY_LOCAL_MACHINE),
     ]
-    base_paths = [
-        r"Software\Microsoft\Office\PowerPoint\Addins",
-        r"Software\WOW6432Node\Microsoft\Office\PowerPoint\Addins",
-    ]
+    base_path = r"Software\Microsoft\Office\PowerPoint\Addins"
     rows: list[dict[str, Any]] = []
     seen: set[tuple[str, str, str]] = set()
     for root_name, root in roots:
-        for base_path in base_paths:
+        for view_name, view_flag in registry_view_specs(winreg):
             try:
-                with winreg.OpenKey(root, base_path) as key:
+                with winreg.OpenKey(
+                    root, base_path, 0, registry_access(winreg, view_flag)
+                ) as key:
                     index = 0
                     progids: list[str] = []
                     while True:
@@ -1631,13 +1708,17 @@ def list_registered_com_addins() -> list[dict[str, Any]]:
             except OSError:
                 continue
             for progid in progids:
-                identity = (root_name, base_path, progid.lower())
+                identity = (root_name, view_name, progid.lower())
                 if identity in seen:
                     continue
                 seen.add(identity)
                 path = rf"{base_path}\{progid}"
-                values = registry_key_values(winreg, root, path) or {}
-                clsid = clsid_registry_snapshot(winreg, progid).get("clsid")
+                values = registry_key_values(
+                    winreg, root, path, view_flag=view_flag
+                ) or {}
+                clsid = clsid_registry_view_snapshot(
+                    winreg, progid, view_name, view_flag
+                ).get("clsid")
                 load_behavior = values.get("LoadBehavior")
                 rows.append(
                     {
@@ -1653,6 +1734,7 @@ def list_registered_com_addins() -> list[dict[str, Any]]:
                         "manifest": values.get("Manifest"),
                         "source": "registry",
                         "root": root_name,
+                        "registry_view": view_name,
                         "path": path,
                     }
                 )
@@ -2020,30 +2102,41 @@ def main(
                 )
         return 0
 
-    # Resolve and reject unsafe deck-output requests before any network write,
-    # staging copy, or PowerPoint process can be started.  The checks inside
-    # the COM block remain as defense in depth after paths are materialized.
+    # Resolve deck inputs only for routes that consume a presentation.  Pure
+    # asset/report routes with --no-output-deck must not be coupled to unrelated
+    # PPT files or an otherwise unused --output value.
+    deck_output_requested = not args.no_output_deck
+    deck_input_requested = deck_output_requested or any(
+        [
+            args.extract_media,
+            args.export_slides,
+            args.add_master_watermark,
+            args.export_qa,
+            args.audit_deck,
+            args.make_ascii_temp_copy,
+        ]
+    )
     template: Path | None = None
-    if not args.intake_template_library:
+    if not args.intake_template_library and deck_input_requested:
         template = choose_template(project_dir, args.template)
-        validate_output_policy(
-            OutputPolicy(
-                source_path=template,
-                output_path=output_path,
-                dry_run=False,
-                no_output_deck=args.no_output_deck,
-                allow_overwrite=args.allow_overwrite,
+        if deck_output_requested:
+            validate_output_policy(
+                OutputPolicy(
+                    source_path=template,
+                    output_path=output_path,
+                    dry_run=False,
+                    no_output_deck=False,
+                    allow_overwrite=args.allow_overwrite,
+                )
             )
-        )
-        if (
-            not args.no_output_deck
-            and template is not None
-            and template.resolve(strict=False) == output_path.resolve(strict=False)
-        ):
-            raise OutputPolicyError(
-                "A same-path overwrite is unsafe while the source presentation is open; "
-                "use a distinct output path."
-            )
+            if (
+                template is not None
+                and template.resolve(strict=False) == output_path.resolve(strict=False)
+            ):
+                raise OutputPolicyError(
+                    "A same-path overwrite is unsafe while the source presentation is open; "
+                    "use a distinct output path."
+                )
         if args.make_ascii_temp_copy:
             if template is None:
                 die(
@@ -2051,10 +2144,10 @@ def main(
                     "Pass --template explicitly."
                 )
             staging_target = ascii_temp_copy_path(project_dir, template)
-            if staging_target.resolve(strict=False) in {
-                template.resolve(strict=False),
-                output_path.resolve(strict=False),
-            }:
+            conflicts = {template.resolve(strict=False)}
+            if deck_output_requested:
+                conflicts.add(output_path.resolve(strict=False))
+            if staging_target.resolve(strict=False) in conflicts:
                 raise OutputPolicyError(
                     "ASCII staging path conflicts with the source or output path."
                 )
@@ -2102,7 +2195,6 @@ def main(
     ) or not args.no_output_deck
 
     if args.extract_media and args.no_output_deck and not args.export_slides:
-        template = choose_template(project_dir, args.template)
         if template is None:
             die("No template/source deck available for --extract-media. Pass --template explicitly.")
         media_dir = resolve_path(project_dir, args.media_dir) or (project_dir / ".window-pptx" / "media")

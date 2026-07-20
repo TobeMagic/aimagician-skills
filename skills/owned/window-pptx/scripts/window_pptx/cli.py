@@ -61,7 +61,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--probe-plugin-apis",
         action="store_true",
-        help="Read COM registration/type information for add-in ProgIDs without invoking business methods.",
+        help="Read 32/64-bit registry metadata for add-in ProgIDs without starting PowerPoint or dispatching add-in code.",
     )
     parser.add_argument(
         "--plugin-progid",
