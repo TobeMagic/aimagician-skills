@@ -8,8 +8,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from . import assets as assets_module
+from . import themes as themes_module
 from .assets import load_asset_policy
-from .themes import THEMES_PATH, contrast_ratio, load_themes
+from .themes import contrast_ratio, load_themes
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[2]
@@ -1036,7 +1038,13 @@ def _runtime_gate_key() -> tuple[object, ...]:
         id(Path.read_text),
         *(
             _registry_file_fingerprint(path)
-            for path in (LAYOUTS_PATH, COMPONENTS_PATH, THEMES_PATH, LEGACY_PATH)
+            for path in (
+                LAYOUTS_PATH,
+                COMPONENTS_PATH,
+                themes_module.THEMES_PATH,
+                LEGACY_PATH,
+                assets_module.COMPONENTS_PATH,
+            )
         ),
     )
 

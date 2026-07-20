@@ -14,7 +14,9 @@ SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 import window_pptx
+import window_pptx.assets as assets_module
 import window_pptx.layouts as layouts_module
+import window_pptx.themes as themes_module
 from window_pptx.assets import (
     AssetIntent,
     AssetRecord,
@@ -952,6 +954,26 @@ def test_runtime_registry_gate_invalidates_for_registry_file_changes(
 ) -> None:
     resolve_layout("cards", SlideSize(13.333, 7.5))
     monkeypatch.setattr(layouts_module, "LAYOUTS_PATH", tmp_path / "missing.json")
+
+    with pytest.raises(ValueError, match="REGISTRY_LOAD"):
+        resolve_layout("cards", SlideSize(13.333, 7.5))
+
+
+@pytest.mark.parametrize(
+    ("module", "attribute"),
+    [
+        (themes_module, "THEMES_PATH"),
+        (assets_module, "COMPONENTS_PATH"),
+    ],
+)
+def test_runtime_registry_gate_tracks_owning_module_registry_paths(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    module: object,
+    attribute: str,
+) -> None:
+    resolve_layout("cards", SlideSize(13.333, 7.5))
+    monkeypatch.setattr(module, attribute, tmp_path / "missing.json")
 
     with pytest.raises(ValueError, match="REGISTRY_LOAD"):
         resolve_layout("cards", SlideSize(13.333, 7.5))
