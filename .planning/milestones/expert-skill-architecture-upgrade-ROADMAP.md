@@ -2,7 +2,7 @@
 
 **Created:** 2026-07-21
 **Branch:** `feat/expert-skill-architecture-upgrade`
-**Status:** In progress
+**Status:** Complete
 
 ## Goal
 
@@ -27,7 +27,7 @@ Upgrade the owned engineering and HTML design skills so a weaker model can follo
 | 2. Engineering capability integration | P0 | Four modules, templates, route helper, evals, upgraded entry | Complete | `skills/owned/aimagician-superpower/` |
 | 3. HTML universal design integration | P0 | Eight modules, pattern libraries, templates, route helper, evals, PPT boundary | Complete | `skills/owned/interface-design/` |
 | 4. Documentation and automated acceptance | P0 | Merge audits, README, architecture and scenario tests | Complete | `docs/`, 101 passing tests |
-| 5. Independent review and integration | P0 | Full checks, OpenCode review, Codex/OpenCode sync, commit and safe cherry-pick | In progress | OpenCode ACCEPT; sync and git integration pending |
+| 5. Independent review and integration | P0 | Full checks, OpenCode review, Codex/OpenCode sync, commit and safe cherry-pick | Complete | Root commit `17ea2c5`; Skillbird and OpenCode acceptance healthy |
 
 ## Validation Evidence
 
@@ -38,6 +38,14 @@ Upgrade the owned engineering and HTML design skills so a weaker model can follo
 - Runtime source-neutral scan: passed.
 - `git diff --check`: passed.
 - Independent OpenCode review: engineering ACCEPT, frontend ACCEPT, PPT boundary ACCEPT; four low/suggestion findings fixed and follow-up review reported no unresolved finding.
+- Root integration: isolated commit `e5cffcf` was cherry-picked without path overlap as `17ea2c5`; unrelated Window-PPTX working-tree changes remained intact.
+- Skillbird global reset: Codex and OpenCode each contain exactly 23 managed owned skills; `list` and `doctor` both report `healthy` with zero issues.
+- Installed runtime comparison: upgraded Codex/OpenCode skill trees match repository source after excluding ignored audit mirrors; no `_external_repos`, `_analysis`, or `source-routing` directory was installed.
+- Fresh OpenCode acceptance: `opencode/deepseek-v4-flash-free`, session `ses_07cb9c685fferbOJlS5z2isko1`, reported PASS for owner-ID parity, engineering modules, design modules/assets/templates, HTML/PPT routing, and forbidden-directory absence.
+
+## Completion Result
+
+All requirements and completion gates for this milestone are satisfied. Engineering and HTML design runtime capabilities are source-neutral, executable routing and acceptance scenarios are present, native PowerPoint ownership is explicit, repository checks pass, and both requested CLI targets are synchronized to the complete owned set.
 
 ## Completion Gate
 
