@@ -4,16 +4,19 @@ Use this module to turn an accepted design into reversible, testable slices. Sta
 
 ## Common Delivery Loop
 
-1. Pin the behavior with a failing check or preserved baseline.
-2. Implement the smallest end-to-end tracer slice through the real integration path.
-3. Run the narrow check and inspect the diff.
-4. Refactor only while behavior remains green.
-5. Add boundary and failure cases in risk order.
-6. Run broader regression checks according to blast radius.
-7. Perform specification review, then engineering quality review.
-8. Record evidence, residual risk, and the next reversible checkpoint.
+1. Agree the highest observable practical seam: public API, CLI, route, component behavior, boundary adapter, or integration contract.
+2. Pin the behavior with a failing check or preserved baseline, and prove it fails for the intended behavioral reason rather than setup noise.
+3. Implement the smallest end-to-end tracer slice through the real integration path.
+4. Run the narrow check and inspect the diff.
+5. Refactor only while behavior remains green.
+6. Add boundary and failure cases in risk order.
+7. Run broader regression checks according to blast radius.
+8. Perform specification review, then engineering quality review.
+9. Record evidence, residual risk, and the next reversible checkpoint.
 
 Do not build all storage, then all services, then all UI without an integrated slice. Horizontal groundwork is justified only when no observable slice can exist without it; keep it bounded and immediately consumed.
+
+Reject tests that only assert a mock returns what it was configured to return, duplicate implementation logic in the assertion, target private structure without behavioral leverage, or keep layers green while the integrated path is absent. One complete red-green-refactor slice is stronger evidence than many disconnected green units.
 
 ## Feature Development
 
@@ -63,6 +66,8 @@ Read `debugging-and-forensics.md` for intermittent, stateful, polluted, or produ
 - Make it runnable with one documented command and avoid production persistence or hidden coupling.
 - Treat the result as disposable unless it passes normal design, test, review, and migration gates.
 - Capture verdict, evidence, limitations, and recommended next step before deleting or promoting it.
+
+Use `assets/templates/engineering-prototype-brief.md`. A promoted prototype must be re-entered through the normal behavior-contract, design, test, review, migration, and verification gates; prototype success is evidence, not production acceptance.
 
 ## Merge Conflict Resolution
 

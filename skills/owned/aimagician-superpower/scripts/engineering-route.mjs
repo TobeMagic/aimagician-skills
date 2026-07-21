@@ -7,6 +7,12 @@ const KINDS = {
     artifacts: ["engineering-context-map"],
     checks: ["facts-have-evidence", "data-and-control-flow-explained", "critical-claims-spot-checked"]
   },
+  discovery: {
+    focus: "Advance a large uncertain objective one evidence-producing frontier at a time.",
+    stages: ["destination-and-non-goals", "known-decisions-and-vocabulary", "map-frontier-and-fog", "smallest-distinguishing-probe", "update-discovery-map", "next-bounded-slice"],
+    artifacts: ["progressive-discovery-map", "engineering-context-map"],
+    checks: ["unknowns-are-explicit", "next-probe-is-bounded", "critical-claims-spot-checked", "no-plan-through-fog"]
+  },
   feature: {
     focus: "Deliver observable behavior through a narrow end-to-end slice.",
     stages: ["behavior-contract", "context-map", "design-options", "tracer-slice", "boundary-cases", "integration-verification"],
@@ -36,6 +42,12 @@ const KINDS = {
     stages: ["domain-model", "current-constraint", "design-twice", "migration-plan", "tracer-migration", "rollout-and-old-path-removal"],
     artifacts: ["engineering-context-map", "engineering-design-record", "engineering-change-brief"],
     checks: ["no-change-option-compared", "data-compatibility-defined", "rollback-and-observability-defined"]
+  },
+  prototype: {
+    focus: "Resolve one material uncertainty with a disposable, runnable experiment.",
+    stages: ["falsifiable-uncertainty", "choose-prototype-type", "define-evidence-stop", "build-runnable-probe", "exercise-representative-and-failure-cases", "promote-revise-discard"],
+    artifacts: ["engineering-prototype-brief"],
+    checks: ["single-uncertainty", "one-command-runnable", "no-hidden-production-coupling", "verdict-has-evidence"]
   }
 };
 
@@ -44,7 +56,7 @@ const FORMATS = new Set(["text", "json"]);
 
 function usage() {
   return [
-    "Usage: engineering-route.mjs --kind <analysis|feature|bug|refactor|performance|architecture> [--risk low|medium|high] [--format text|json]",
+    "Usage: engineering-route.mjs --kind <analysis|discovery|feature|bug|refactor|performance|architecture|prototype> [--risk low|medium|high] [--format text|json]",
     "",
     "Returns a read-only engineering route. It never edits the project."
   ].join("\n");
@@ -87,6 +99,7 @@ function buildRoute(options) {
     checks: route.checks,
     review_axes: [
       "specification-compliance",
+      "engineering-standards-compliance",
       "correctness-and-edge-cases",
       "tests-and-determinism",
       "security-and-data",
@@ -94,6 +107,7 @@ function buildRoute(options) {
       "performance-and-operability",
       "diff-hygiene"
     ],
+    review_passes: ["specification-compliance", "engineering-standards"],
     independent_review: independentReview,
     completion: "Every accepted requirement has fresh passing evidence; failures, skipped checks, and residual risk are explicit."
   };

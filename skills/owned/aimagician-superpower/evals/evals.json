@@ -87,6 +87,20 @@
       "forbidden": ["flag-day replacement", "mix unrelated semantic changes", "permanent compatibility shim without owner"]
     },
     {
+      "id": "progressive-discovery-frontier",
+      "prompt": "The destination is clear, but this multi-quarter codebase change crosses systems we have not mapped yet.",
+      "should_trigger": true,
+      "expected": ["destination and non-goals", "known decisions", "durable vocabulary", "frontier and fog", "smallest distinguishing probe", "bounded next slice", "durable discovery map"],
+      "forbidden": ["invent a detailed plan through unknown systems", "read the whole repository without a question", "hide blockers in sequencing"]
+    },
+    {
+      "id": "bounded-engineering-prototype",
+      "prompt": "Before committing to the production architecture, test whether the external integration can meet our failure and latency contract.",
+      "should_trigger": true,
+      "expected": ["one falsifiable uncertainty", "integration prototype", "representative and failure case", "one runnable command", "evidence stop condition", "promote revise discard verdict", "production gaps"],
+      "forbidden": ["treat prototype success as production acceptance", "add hidden production persistence", "prototype several unrelated questions"]
+    },
+    {
       "id": "user-facing-ai-ui",
       "prompt": "Build a model-backed UI workflow with responsive states and quality thresholds.",
       "should_trigger": true,

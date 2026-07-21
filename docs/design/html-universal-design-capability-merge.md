@@ -82,15 +82,15 @@ The most valuable transferable idea is to make design a gated system of content,
 |---|---|
 | Intake | Added explicit final-artifact, user, workflow, content, truth, platform, and acceptance gates. |
 | Brand routing | Existing references remain authoritative; verified asset extraction becomes the fallback for unlisted brands. |
-| Layout | Added content-signal decision rules and 13 curated macrostructures covering marketing, editorial, operations, data, prototypes, diagrams, and presentations. |
-| Components | Added 18 archetypes with anatomy/use guidance and required state sets. |
+| Layout | Added content-signal decision rules and 17 curated macrostructures covering marketing, editorial, operations, data, prototypes, diagrams, presentations, repository branding, posters, motion sequences, and creative-coding stages. |
+| Components | Added 23 archetypes with anatomy/use guidance and required state sets, including repository wordmarks, terminal proof, capability ribbons, motion scenes, and media fallbacks. |
 | Visual quality | Added semantic token contract, CJK typography, perceptual color, imagery rules, anti-template checks, and evidence-backed critique. |
 | Responsive work | Made 320/375/414/768/desktop inspection explicit for general web work and required intentional transformation. |
 | Verification | Added functional path, console/network, font/asset readiness, keyboard, state, motion, screenshot, and score-based closure gates. |
 
 ### Added
 
-Eight progressive capability modules:
+Eleven progressive capability modules:
 
 1. `delivery-routing.md`
 2. `context-and-direction.md`
@@ -101,6 +101,12 @@ Eight progressive capability modules:
 7. `motion-and-html-presentations.md`
 8. `implementation-and-verification.md`
 
+Additional product-asset modules:
+
+9. `brand-and-product-assets.md`
+10. `repository-branding-and-marketing.md`
+11. `creative-coding-and-motion-media.md`
+
 Four executable data libraries:
 
 - `assets/patterns/layout-patterns.json`
@@ -108,31 +114,41 @@ Four executable data libraries:
 - `assets/patterns/decision-rules.json`
 - `assets/patterns/quality-checks.json`
 
-Five durable templates:
+Eight durable templates:
 
 - design brief;
 - visual system;
 - prototype plan;
 - visual QA report;
 - HTML-to-native-PowerPoint handoff.
+- brand specification;
+- repository visual brief;
+- deterministic motion storyboard.
+
+Reusable source and rendering assets:
+
+- fixed-format repository hero scaffold;
+- deterministic browser-time scaffold;
+- Playwright frame capture and ffmpeg poster/MP4 renderer.
 
 One dependency-free route advisor:
 
 - `scripts/design-router.mjs`
 
-It routes landing, dashboard, app prototype, component, audit, redesign, and HTML presentation work; combines content signals with layout/component patterns; returns relevant quality gates; and enforces HTML, native PPTX, or hybrid ownership.
+It routes landing, dashboard, app prototype, component, audit, redesign, HTML presentation, README cover, poster, product demo, and creative-coding work; combines content signals with layout/component patterns; returns relevant quality gates; and enforces HTML, image, video, native PPTX, or hybrid ownership.
 
 ### Rejected Or Adapted
 
 | Source Content | Decision | Reason |
 |---|---|---|
 | Full fixed theme catalog | Adapt to semantic visual-system rules | A universal owned skill should derive brand and domain fit, not force source themes. |
-| All source macrostructures and component files | Curate into 13 layouts and 18 components | Keeps progressive loading practical while preserving decision coverage. |
+| All source macrostructures and component files | Curate into 17 layouts and 23 components | Keeps progressive loading practical while preserving decision coverage. |
 | Hidden project memory or source-specific log | Replace with explicit brief/system/QA artifacts | Durable project-owned evidence is easier to inspect and resume. |
 | Mandatory three drafts for every task | Apply only to open, high-visual briefs | Locked systems, small fixes, and explicit one-pass work should not incur needless friction. |
 | HTML-to-PPTX as default PowerPoint delivery | Reject | Native PowerPoint has different editability, master, chart, note, and Office QA requirements. |
-| Copied device frames, stage engines, media, and demo binaries | Reject | Patterns are retained without adding runtime maintenance or licensing burden. |
-| Voice, SFX, TTS, video export, launch-film, and external media pipelines | Reject from universal core | These are specialized media-production capabilities, not baseline HTML interface design. |
+| Copied device frames, stage engines, media, and demo binaries | Reject | Original, source-neutral scaffolds retain the useful method without runtime licensing burden. |
+| Voice, SFX, TTS, and vendor media pipelines | Reject from universal core | Audio and vendor-specific production remain specialized and must be explicitly licensed. |
+| Deterministic browser-rendered product loops | Add in bounded form | README heroes and product showcases require a repeatable HTML/Canvas-to-poster/MP4 path with frame validation and no external service dependency. |
 | Source-specific hooks, gate scripts, watermarks, installers, and promotion | Reject | They do not improve the professional design method and mutate or brand the runtime. |
 | Framework-specific setup as a global rule | Adapt to local-framework-first | The owned skill must work across HTML, CSS, JavaScript, and existing frontend stacks. |
 
@@ -160,6 +176,8 @@ The main `SKILL.md` is a router and non-negotiable contract. Capability modules 
 - product, web, mobile, app, and SaaS prototypes implemented with HTML/CSS/JS;
 - UI/UX, dashboards, design systems, component and interaction demos;
 - landing, campaign, launch, brand-experience, and product pages;
+- README covers, repository branding, posters, product showcases, and supplemental demo loops;
+- SVG, Canvas, deterministic motion, and creative-coding visuals;
 - interactive reports, charts, data visualization, and process diagrams;
 - HTML slides, browser presentations, visual exploration, and presentation prototypes;
 - study, audit, redesign, browser QA, accessibility, responsive and motion quality.
@@ -200,5 +218,7 @@ This does not guarantee taste from prose alone. It makes the design process obse
 | HTML presentation | Browser-native owner, narrative arc, varied frames, keyboard/full-screen behavior, per-frame QA. |
 | Native PowerPoint | Immediate route to `pptx` or `window-pptx`; no HTML final artifact. |
 | Hybrid presentation | HTML direction plus structured handoff, followed by separate native reconstruction and QA. |
+| README cover | Repository truth pass, claim ledger, selected visual direction, editable source, static hero, downscaled QA, and README integration. |
+| Product demo video | Storyboard, deterministic clock, poster fallback, encoded media, frame inspection, and codec/duration/size evidence. |
 
 Automated architecture and route tests live in `tests/skills/expert-skill-architecture.test.ts`.

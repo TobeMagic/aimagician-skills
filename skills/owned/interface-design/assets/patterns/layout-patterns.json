@@ -78,6 +78,30 @@
       "use_when": ["A component system or interaction family is the deliverable", "States and variants need side-by-side review"],
       "structure": ["token controls", "component variants", "state matrix", "responsive preview", "usage guidance"],
       "responsive": "Keep controls accessible and let previews resize without changing the component state."
+    },
+    {
+      "id": "repository-product-hero",
+      "use_when": ["A repository needs an immediate product and audience signal", "Real product output must support a concise positioning claim"],
+      "structure": ["wordmark or literal product name", "category and positioning", "current product proof", "capability or trust signals", "quick-start path"],
+      "responsive": "Preserve identity and one proof at thumbnail width; remove secondary labels before shrinking the primary proof."
+    },
+    {
+      "id": "campaign-poster",
+      "use_when": ["One message must carry a launch, campaign, event, or product statement", "The final artifact is a fixed-format still"],
+      "structure": ["identity", "dominant message", "hero evidence or subject", "supporting details", "attribution or action"],
+      "responsive": "Redesign hierarchy for each aspect ratio and keep critical text inside the declared safe area."
+    },
+    {
+      "id": "demo-story-sequence",
+      "use_when": ["A product workflow must be understood through time", "A short motion asset needs a complete action-to-result arc"],
+      "structure": ["identity and context", "user action", "system mechanism", "verified result", "stable closing frame"],
+      "responsive": "Keep each scene independently legible and define a static poster that carries the core claim without motion."
+    },
+    {
+      "id": "creative-coding-stage",
+      "use_when": ["Procedural SVG, Canvas, WebGL, or motion is the primary visual material", "A fixed stage needs deterministic rendering"],
+      "structure": ["stable stage geometry", "semantic visual layers", "controlled parameter state", "fallback or caption", "capture surface"],
+      "responsive": "Use explicit stage ratios and recompose controls or explanatory text outside the fixed visual field."
     }
   ]
 }

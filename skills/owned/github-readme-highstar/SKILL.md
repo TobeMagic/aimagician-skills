@@ -2,11 +2,14 @@
 name: github-readme-highstar
 description: |
   生成或重构“高星仓库风格”的 GitHub README，重点是层级分明、视觉元素统一、信息入口明确。
-  当用户提到“README 规范化”“高质量项目首页”“万级 star 风格 README”“模板化仓库说明”时触发。
-  适用于开源项目 README、合集型 README、个人项目主页 README 的结构升级。
+  当用户提到“README 规范化”“高质量项目首页”“万级 star 风格 README”“模板化仓库说明”、
+  “README 封面 / Banner / Hero”“Github 项目品牌视觉”“产品展示”“README Demo 视频”时触发。
+  适用于开源项目 README、合集型 README、个人项目主页，以及仓库首屏视觉与产品媒体集成。
 compatibility:
   tools:
     - bash
+    - browser
+    - playwright
   requires: 仓库至少有可提取的信息源（代码目录、安装命令、示例或文档）
 category: documents
 subcategory: readme
@@ -14,13 +17,14 @@ tags:
   - readme
   - docs
   - github
+  - cover
+  - project-branding
+metadata:
+  preferred_companions:
+    - interface-design
 ---
 
 # GitHub README Highstar
-
-Reference:
-
-- `https://github.com/shaojintian/Best_README_template`
 
 ## Core Objective
 
@@ -37,6 +41,20 @@ Reference:
 - 用户要求“中英文 README 统一样式”
 - 用户要求“补充徽章、截图、贡献流程、许可证”
 - 用户要求“README 封面图 / hero cover / 首屏视觉图”
+- 用户要求“Github 项目品牌视觉 / 产品展示 / Launcher Screens”
+- 用户要求“README 产品 Demo / 动态封面 / 宣传视频”
+
+用户不需要显式指定 `interface-design`。只要请求包含封面、Banner、Hero、海报、产品展示、Launcher Screens、Demo 视频或仓库品牌视觉，就先路由视觉工作给 `interface-design`，再由本 Skill 完成 README 信息结构与集成。
+
+## Capability Boundary
+
+| Work | Owner |
+|---|---|
+| 项目定位、README 结构、标题层级、徽章、TOC、文案、链接、Markdown 集成 | `github-readme-highstar` |
+| 封面、Banner、海报、产品展示、Launcher 图、视觉方向、HTML/Canvas 源、Poster、MP4 与视觉 QA | `interface-design` |
+| 真实主题图片或质感素材 | 可由已启用的图像 Skill 提供素材，但不能替代产品理解、排版、产品证明和 README 集成 |
+
+两个 Skill 共用同一份产品事实与视觉 brief，不能分别编造产品故事。
 
 ## Workflow
 
@@ -44,26 +62,32 @@ Reference:
    - 明确项目定位（一句话）
    - 明确目标读者（使用者 / 贡献者 / 面试官）
    - 收集最关键命令（安装、运行、验证）
+   - 从代码、测试和当前文档核对产品名、版本、能力、Launcher、链接与已交付边界
 2. 结构设计
    - 先定目录结构和锚点，再填内容
    - 长文档必须有 TOC（Table of Contents）
 3. 视觉统一
-   - 顶部优先放封面图（hero cover）
+   - 顶部优先放经过产品理解和视觉验证的封面图
    - 仅保留少量高价值徽章（版本、许可证、CI）
-   - 用截图、卡片、对照表替代冗长段落
+   - 用真实截图、流程、表格或对照替代冗长段落
 4. 入口优化
    - 顶部给出快速开始路径
    - 中部给出功能与架构入口
    - 尾部给出贡献、许可证、联系方式
 
-## Cover Generation Guidance (Must Include)
+## Repository Visual Workflow
 
-当用户明确要“高星风格 README”时，默认包含封面图流程：
+当请求涉及封面、Banner、Hero、Poster、Launcher 或 Demo 时，执行完整视觉链路，而不是把需求降级为“生成一张图”：
 
-1. 使用 active owned 生图 skill 生成封面（默认 `modelscope_imagegen`；`cloudflare-image-gen` 已归档，仅作历史参考）。
-2. 推荐尺寸：`1600x896`（16:9），避免在图内写密集小字。
-3. 输出路径建议：`./docs/assets/readme-cover.webp`。
-4. 在 README 顶部通过 Markdown 或 HTML `<img>` 引入封面。
+1. **项目理解**：读取代码入口、当前 README、项目文档、真实 Launcher、版本与产品资产，区分已交付、计划中和过时内容。
+2. **定位与受众**：明确产品类别、用户、首屏要支持的决策，以及一个主信息和一个真实产品证明。
+3. **视觉方向**：由 `interface-design` 产出 2-3 个构图、字体、颜色、产品证明和动效均有实质差异的方向；锁定方向后再完整制作。
+4. **素材与源文件**：优先使用真实产品 UI、终端、工作流、对象或数据。保留可编辑 HTML/CSS/JS、SVG 或 Canvas 源，不把整套设计交给一次性图片 Prompt。
+5. **资产渲染**：建议 README Hero 为 `1600x900` 或项目确认的宽屏尺寸；Launcher 图使用稳定统一的比例；动态媒体必须有静态 Poster。
+6. **README 集成**：GitHub 首屏默认展示 WebP/PNG 静态 Hero；MP4 作为链接或补充 Demo，README 不依赖自动播放才能成立。
+7. **验收**：检查全尺寸与 README 缩放尺寸、浅色/深色背景、alt 文本、相对路径、文件大小、事实一致性、浏览器错误和媒体参数。
+
+详细协作与验收协议见 `references/readme-visual-integration.md`。
 
 ## Recommended Section Order
 
@@ -85,22 +109,27 @@ Reference:
 - 不要堆过多徽章，避免“视觉噪音”。
 - 不要让“安装”和“第一条可运行命令”超过首屏太远。
 - 避免无信息增量的营销词。
+- 不要使用过时版本、旧品牌名、伪造终端输出、虚构指标或未交付功能填充视觉。
+- 不要把通用 AI 插画当作产品证明；开发者工具优先展示真实终端、编辑器、Diff、构建、测试或数据流。
+- 不要让动态媒体成为唯一入口；必须有完整静态回退。
 - 若内容很长，必须有目录与分段锚点。
 
 ## Output Contract
 
 交付 README 时，至少满足：
 
-- 有封面图（如用户未禁用视觉元素）
+- 有经过产品事实核对和最终尺寸验证的封面图（如用户未禁用视觉元素）
 - 有一句话定位
 - 有 TOC
 - 有快速开始
 - 有示例
 - 有贡献与许可证
 - 链接可点击、命令可复制
+- 动态媒体有 Poster、相对链接和独立可理解的静态 README
 
 ## Reusable Guidance
 
 具体模板和结构检查清单见：
 
 - `./references/readme-blueprint.md`
+- `./references/readme-visual-integration.md`

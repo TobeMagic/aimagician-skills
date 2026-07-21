@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "skill": "github-readme-highstar",
+  "scenarios": [
+    {
+      "id": "repository-cover",
+      "prompt": "给这个 Github 项目设计一个高级 README 封面并集成到项目首页。",
+      "should_trigger": true,
+      "expected": ["read repository truth", "identify audience and product positioning", "route visual production to interface-design", "compare visual directions", "render current product proof", "integrate static hero with alt text", "verify README scale"],
+      "forbidden": ["reduce request to one image prompt", "invent terminal output", "use stale version", "skip README integration"]
+    },
+    {
+      "id": "repository-demo-video",
+      "prompt": "给 README 做一个产品 Demo 视频和 Launcher Screens。",
+      "should_trigger": true,
+      "expected": ["shared product brief", "current launcher evidence", "motion storyboard", "deterministic source", "poster fallback", "supplemental MP4 link", "static README remains complete"],
+      "forbidden": ["depend on autoplay", "omit poster", "show unshipped behavior", "use unrelated marketing footage"]
+    },
+    {
+      "id": "readme-structure-only",
+      "prompt": "规范化 README 目录、快速开始、贡献说明和许可证，不增加视觉素材。",
+      "should_trigger": true,
+      "expected": ["information inventory", "clear hierarchy", "toc and anchors", "copy-paste runnable quick start", "contribution and license"],
+      "forbidden": ["force a cover despite explicit boundary", "rewrite product facts without evidence"]
+    }
+  ]
+}

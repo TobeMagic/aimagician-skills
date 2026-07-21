@@ -13,11 +13,13 @@ describe("expert engineering capability architecture", () => {
   it("routes every engineering task type through task-specific methods and risk-scaled review", () => {
     const expectedStages: Record<string, string> = {
       analysis: "trace-representative-flow",
+      discovery: "smallest-distinguishing-probe",
       feature: "tracer-slice",
       bug: "ranked-hypotheses",
       refactor: "expand-contract",
       performance: "bottleneck-proof",
-      architecture: "design-twice"
+      architecture: "design-twice",
+      prototype: "build-runnable-probe"
     };
 
     for (const [kind, expectedStage] of Object.entries(expectedStages)) {
@@ -26,6 +28,7 @@ describe("expert engineering capability architecture", () => {
       expect(route.stages).toContain(expectedStage);
       expect(route.review_axes).toEqual(expect.arrayContaining([
         "specification-compliance",
+        "engineering-standards-compliance",
         "correctness-and-edge-cases",
         "tests-and-determinism",
         "security-and-data",
@@ -33,6 +36,7 @@ describe("expert engineering capability architecture", () => {
         "performance-and-operability"
       ]));
       expect(route.independent_review).toContain("specialist-risk-review");
+      expect(route.review_passes).toEqual(["specification-compliance", "engineering-standards"]);
     }
   });
 
@@ -40,6 +44,7 @@ describe("expert engineering capability architecture", () => {
     const skill = await readFile(join(engineeringRoot, "SKILL.md"), "utf8");
     const modulePaths = [
       "references/capabilities/engineering-exploration.md",
+      "references/capabilities/prototyping-and-progressive-discovery.md",
       "references/capabilities/engineering-design.md",
       "references/capabilities/engineering-delivery.md",
       "references/capabilities/engineering-review.md"
@@ -48,7 +53,9 @@ describe("expert engineering capability architecture", () => {
       "assets/templates/engineering-context-map.md",
       "assets/templates/engineering-design-record.md",
       "assets/templates/engineering-change-brief.md",
-      "assets/templates/engineering-review.md"
+      "assets/templates/engineering-review.md",
+      "assets/templates/engineering-prototype-brief.md",
+      "assets/templates/progressive-discovery-map.md"
     ];
 
     for (const path of [...modulePaths, ...templatePaths]) {
@@ -62,13 +69,17 @@ describe("expert engineering capability architecture", () => {
     expect(modules).toContain("tracer slice");
     expect(modules).toContain("expand-contract");
     expect(modules).toContain("Specification Compliance");
+    expect(modules).toContain("Progressive Discovery Map");
+    expect(modules).toContain("highest observable practical seam");
 
     const evals = JSON.parse(await readFile(join(engineeringRoot, "evals", "evals.json"), "utf8")) as EvalFile;
     expect(evals.scenarios.map((scenario) => scenario.id)).toEqual(expect.arrayContaining([
       "engineering-codebase-analysis",
       "engineering-feature-development",
       "engineering-root-cause-fix",
-      "engineering-wide-refactor"
+      "engineering-wide-refactor",
+      "progressive-discovery-frontier",
+      "bounded-engineering-prototype"
     ]));
   });
 });
@@ -96,7 +107,7 @@ describe("HTML universal design capability architecture", () => {
     for (const check of checks) {
       expect(check.deliverables).toBeDefined();
       expect(check.deliverables?.length).toBeGreaterThan(0);
-      for (const deliverable of check.deliverables ?? []) expect(["html", "hybrid", "pptx"]).toContain(deliverable);
+      for (const deliverable of check.deliverables ?? []) expect(["html", "image", "video", "hybrid", "pptx"]).toContain(deliverable);
     }
   });
 
@@ -138,6 +149,31 @@ describe("HTML universal design capability architecture", () => {
     expect(hybrid.boundary).toContain("ppt-handoff.md");
   });
 
+  it("routes repository covers, posters, product video, and creative coding through visual asset gates", () => {
+    const cover = runDesign(["--task", "readme-cover", "--deliverable", "image", "--signals", "developer-tool,terminal"]);
+    expect(cover).toMatchObject({ owners: ["interface-design"], final_owner: "interface-design", mode: "asset" });
+    expect(cover.suggested_layouts).toContain("repository-product-hero");
+    expect(cover.suggested_components).toEqual(expect.arrayContaining(["project-wordmark", "terminal-product-proof", "media-fallback"]));
+    expect(cover.required_quality_checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "repository-product-proof", severity: "blocker" }),
+      expect.objectContaining({ id: "distribution-readability", severity: "high" })
+    ]));
+
+    const poster = runDesign(["--task", "poster", "--deliverable", "image"]);
+    expect(poster.suggested_layouts).toContain("campaign-poster");
+
+    const video = runDesign(["--task", "product-demo", "--deliverable", "video", "--signals", "workflow,motion"]);
+    expect(video.suggested_layouts).toEqual(expect.arrayContaining(["demo-story-sequence", "creative-coding-stage"]));
+    expect(video.required_quality_checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "deterministic-time", severity: "blocker" }),
+      expect.objectContaining({ id: "static-fallback", severity: "blocker" }),
+      expect.objectContaining({ id: "frame-integrity", severity: "high" })
+    ]));
+
+    const creative = runDesign(["--task", "creative-coding", "--deliverable", "html"]);
+    expect(creative.suggested_layouts).toContain("creative-coding-stage");
+  });
+
   it("routes the main prompt through all design modules and keeps runtime source-neutral", async () => {
     const skill = await readFile(join(designRoot, "SKILL.md"), "utf8");
     const modules = [
@@ -148,6 +184,9 @@ describe("HTML universal design capability architecture", () => {
       "components-and-interaction.md",
       "prototypes-and-data.md",
       "motion-and-html-presentations.md",
+      "brand-and-product-assets.md",
+      "repository-branding-and-marketing.md",
+      "creative-coding-and-motion-media.md",
       "implementation-and-verification.md"
     ];
     for (const module of modules) {
@@ -180,8 +219,72 @@ describe("HTML universal design capability architecture", () => {
       "interactive-app-prototype",
       "browser-presentation",
       "native-powerpoint-boundary",
-      "hybrid-presentation-handoff"
+      "hybrid-presentation-handoff",
+      "github-readme-cover",
+      "marketing-poster",
+      "product-demo-video",
+      "creative-coding-visual"
     ]));
+  });
+
+  it("ships reusable repository and deterministic motion assets", async () => {
+    const paths = [
+      "assets/templates/brand-spec.md",
+      "assets/templates/repository-visual-brief.md",
+      "assets/templates/motion-storyboard.md",
+      "assets/starter/repository-hero.html",
+      "assets/starter/motion-stage.js",
+      "scripts/render-motion-media.mjs"
+    ];
+    for (const path of paths) {
+      expect((await readFile(join(designRoot, path), "utf8")).trim().length).toBeGreaterThan(200);
+    }
+    const help = execFileSync(process.execPath, [join(designRoot, "scripts", "render-motion-media.mjs"), "--help"], { encoding: "utf8" });
+    expect(help).toContain("window.__setDesignTime(seconds)");
+  });
+});
+
+describe("README visual capability collaboration", () => {
+  const readmeRoot = join(ownedRoot, "github-readme-highstar");
+
+  it("triggers for repository branding and routes visual production without one-shot image generation", async () => {
+    const skill = await readFile(join(readmeRoot, "SKILL.md"), "utf8");
+    expect(skill).toContain("README 封面 / Banner / Hero");
+    expect(skill).toContain("interface-design");
+    expect(skill).toContain("项目理解");
+    expect(skill).toContain("静态 Poster");
+    expect(skill).not.toContain("modelscope_imagegen");
+    expect(skill).not.toContain("cloudflare-image-gen");
+
+    const integration = await readFile(join(readmeRoot, "references", "readme-visual-integration.md"), "utf8");
+    expect(integration).toContain("Launcher ready-state image");
+    expect(integration).toContain("deterministic source");
+    const evals = JSON.parse(await readFile(join(readmeRoot, "evals", "evals.json"), "utf8")) as EvalFile;
+    expect(evals.scenarios.map((scenario) => scenario.id)).toEqual(expect.arrayContaining([
+      "repository-cover",
+      "repository-demo-video",
+      "readme-structure-only"
+    ]));
+  });
+});
+
+describe("owned skill trigger contracts", () => {
+  it("routes common user wording without requiring explicit skill names", async () => {
+    const interfaceFrontmatter = frontmatter(await readFile(join(designRoot, "SKILL.md"), "utf8"));
+    const engineeringFrontmatter = frontmatter(await readFile(join(engineeringRoot, "SKILL.md"), "utf8"));
+    const readmeFrontmatter = frontmatter(await readFile(join(ownedRoot, "github-readme-highstar", "SKILL.md"), "utf8"));
+    const pptxFrontmatter = frontmatter(await readFile(join(ownedRoot, "pptx", "SKILL.md"), "utf8"));
+
+    expect(interfaceFrontmatter).toContain("README covers");
+    expect(interfaceFrontmatter).toContain("demo videos");
+    expect(interfaceFrontmatter).toContain("app prototypes");
+    expect(interfaceFrontmatter).toContain("Route native PowerPoint delivery to the PPT skill instead");
+    expect(readmeFrontmatter).toContain("README 封面");
+    expect(engineeringFrontmatter).toContain("implementing changes");
+    expect(engineeringFrontmatter).toContain("debugging");
+    expect(engineeringFrontmatter).toContain("refactoring");
+    expect(pptxFrontmatter).toContain(".pptx");
+    expect(pptxFrontmatter).toContain("deck");
   });
 });
 
@@ -191,6 +294,12 @@ function runDesign(args: string[]): Record<string, any> {
 
 function runJson(script: string, args: string[]): Record<string, any> {
   return JSON.parse(execFileSync(process.execPath, [script, ...args], { encoding: "utf8" })) as Record<string, any>;
+}
+
+function frontmatter(content: string): string {
+  const closingDelimiter = content.indexOf("\n---", 4);
+  if (closingDelimiter < 0) throw new Error("SKILL.md frontmatter is not closed");
+  return content.slice(0, closingDelimiter + 4);
 }
 
 async function readPatternFile(file: string, key: string): Promise<Pattern[]> {

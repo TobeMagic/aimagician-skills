@@ -4,7 +4,7 @@ Use this module for plans, implementation diffs, refactors, bug fixes, and pre-c
 
 ## Fix The Review Point
 
-Record the exact commit, diff, file set, generated artifact, or working-tree state under review. Identify:
+Record the exact base and current commit, merge base and target when relevant, diff or file set, generated artifact, or working-tree state under review. Do not let the review point move while findings are being produced. Identify:
 
 - the accepted specification, issue, or user objective;
 - repository standards, architecture records, and local patterns;
@@ -19,7 +19,7 @@ Do not review an agent summary instead of the code and evidence.
 
 Check requirement coverage, observable behavior, boundaries, non-goals, integration wiring, compatibility, migration, and acceptance evidence. Report missing behavior, extra behavior, or divergence before style concerns.
 
-### Pass 2: Engineering Quality
+### Pass 2: Engineering Standards
 
 Review:
 
@@ -32,7 +32,7 @@ Review:
 - operability, logging, metrics, rollout, rollback, and diagnosis;
 - diff hygiene, dead code, temporary diagnostics, generated churn, and documentation accuracy.
 
-For substantial work, use fresh reviewer contexts for the two passes. Parallel independent quality reviews are useful when security, data, concurrency, or architecture risk is high, but the main agent must reconcile duplicate or contradictory findings.
+Treat the two passes as independent axes: a specification-complete implementation can still fail engineering standards, and an elegant implementation can still be the wrong behavior. For substantial work, use fresh reviewer contexts for the two passes. Parallel independent quality reviews are useful when security, data, concurrency, or architecture risk is high, but the main agent must reconcile duplicate or contradictory findings.
 
 ## Smell Tests
 

@@ -18,6 +18,11 @@
     {"id": "product-proof", "category": "marketing", "use_when": "A real product view, mechanism, or evidence must support a claim.", "required_states": ["loaded", "loading", "fallback"]},
     {"id": "cta-cluster", "category": "marketing", "use_when": "One primary decision and at most one secondary path end a section.", "required_states": ["default", "hover", "focus-visible", "pending"]},
     {"id": "slide-frame", "category": "presentation", "use_when": "A browser presentation needs stable frame geometry and navigation.", "required_states": ["active", "previous", "next", "overview", "print"]},
-    {"id": "prototype-shell", "category": "prototype", "use_when": "Several interactive screens need shared navigation and simulated state.", "required_states": ["ready", "loading", "offline", "error", "reset"]}
+    {"id": "prototype-shell", "category": "prototype", "use_when": "Several interactive screens need shared navigation and simulated state.", "required_states": ["ready", "loading", "offline", "error", "reset"]},
+    {"id": "project-wordmark", "category": "brand", "use_when": "A repository or product must remain identifiable at thumbnail size.", "required_states": ["full", "compact", "light-background", "dark-background"]},
+    {"id": "terminal-product-proof", "category": "marketing", "use_when": "A developer tool is best explained by current terminal commands, state, and output.", "required_states": ["ready", "active", "result", "fallback"]},
+    {"id": "capability-ribbon", "category": "marketing", "use_when": "Three to five concise, verified capabilities support a primary proof without becoming a card wall.", "required_states": ["full", "compact", "wrapped"]},
+    {"id": "motion-scene", "category": "motion", "use_when": "A deterministic time range carries one dominant product or narrative idea.", "required_states": ["enter", "hold", "exit", "reduced-motion"]},
+    {"id": "media-fallback", "category": "media", "use_when": "Motion, Canvas, WebGL, or remote media needs a complete static alternative.", "required_states": ["poster", "loading", "failed", "reduced-motion"]}
   ]
 }

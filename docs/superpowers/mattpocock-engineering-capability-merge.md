@@ -40,6 +40,8 @@ The control plane named engineering stages but left too much expert judgment imp
 | Review was procedural but not technically exhaustive | Correctness, concurrency, security, operability, compatibility, and diff hygiene were not one explicit reusable axis set. |
 | Debugging used one hypothesis too early | Complex failures benefited from ranked alternatives and deliberate distinguishing instrumentation. |
 | Plans did not require tracer slices or expand-contract | A weak model could plan by layers or hide a flag-day migration inside one task. |
+| No progressive-discovery frontier | Very large work could be over-planned through unknown systems instead of advancing through evidence-producing probes. |
+| Prototype and context-budget rules were implicit | Experiments could leak into production or lose causal evidence during long contexts. |
 
 The baseline therefore had low dependence on model memory for workflow order, but medium-to-high dependence on model experience for codebase design, test placement, migration shape, and technical review depth.
 
@@ -86,30 +88,35 @@ Deprecated, in-progress, personal, article-writing, setup, migration, hook, and 
 | Execution | Added task-specific playbooks and end-to-end slice discipline. |
 | Review | Added fixed review point, specification-first and quality-second passes, technical axis checklist, severity and remediation contract. |
 | Handoff | Added suggested companion skills and durable engineering artifacts. |
+| Large uncertain work | Added destination/known/frontier/fog maps, durable vocabulary, bounded next probes, and context-budget discipline. |
+| Prototypes | Added logic/integration/UI/operations routing, one-question contracts, evidence stop conditions, and promote/revise/discard verdicts. |
 
 ### Added
 
-Four progressive capability modules:
+Five progressive capability modules:
 
 - `references/capabilities/engineering-exploration.md`
 - `references/capabilities/engineering-design.md`
 - `references/capabilities/engineering-delivery.md`
 - `references/capabilities/engineering-review.md`
+- `references/capabilities/prototyping-and-progressive-discovery.md`
 
-Four reusable artifacts:
+Six reusable artifacts:
 
 - `assets/templates/engineering-context-map.md`
 - `assets/templates/engineering-design-record.md`
 - `assets/templates/engineering-change-brief.md`
 - `assets/templates/engineering-review.md`
+- `assets/templates/engineering-prototype-brief.md`
+- `assets/templates/progressive-discovery-map.md`
 
 One deterministic advisor:
 
 - `scripts/engineering-route.mjs`
 
-It routes `analysis`, `feature`, `bug`, `refactor`, `performance`, and `architecture` work to the minimum stages, artifacts, checks, and independent review depth without editing a project.
+It routes `analysis`, `discovery`, `feature`, `bug`, `refactor`, `performance`, `architecture`, and `prototype` work to the minimum stages, artifacts, checks, and independent review depth without editing a project.
 
-Four acceptance scenarios were added for codebase analysis, cross-layer feature delivery, root-cause bug repair, and wide compatible refactoring.
+Acceptance scenarios cover codebase analysis, progressive discovery, bounded prototypes, cross-layer feature delivery, root-cause bug repair, and wide compatible refactoring.
 
 ### Rejected Or Replaced
 
@@ -160,5 +167,7 @@ The combination is additive:
 | Refactor | Characterization baseline, caller map, target design, expand-contract batches, old-path removal proof. |
 | Performance | Equivalent baseline and benchmark, proven bottleneck, correctness under load, regression signal. |
 | Architecture | Domain model, no-change plus two designs, reversible migration, compatibility, observability, rollback. |
+| Progressive discovery | Destination, durable vocabulary, known decisions, frontier/fog map, bounded probe, and updated next slice. |
+| Prototype | One falsifiable uncertainty, runnable representative and failure cases, stop condition, evidence-backed verdict, and production-gap list. |
 
 Automated checks live in `tests/skills/expert-skill-architecture.test.ts`; complete command evidence is recorded in the implementation summary and commit history.

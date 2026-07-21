@@ -19,6 +19,7 @@ metadata:
     - references/capabilities/spec-driven-development.md
     - references/capabilities/research-and-discovery.md
     - references/capabilities/engineering-exploration.md
+    - references/capabilities/prototyping-and-progressive-discovery.md
     - references/capabilities/ideation-and-scope.md
     - references/capabilities/engineering-design.md
     - references/capabilities/planning-modes.md
@@ -74,6 +75,7 @@ Load the smallest set of modules needed for the current stage.
 | Formal specification, ambiguity scoring, locked requirements | `references/capabilities/spec-driven-development.md` |
 | Local discovery, architecture mapping, dependency and web research | `references/capabilities/research-and-discovery.md` |
 | Repository map, entry points, dependencies, data/control flow, blast radius | `references/capabilities/engineering-exploration.md` |
+| Progressive discovery, durable vocabulary, uncertainty maps, prototypes, and context-budget discipline | `references/capabilities/prototyping-and-progressive-discovery.md` |
 | Brainstorming, alternatives, decomposition, assumption review | `references/capabilities/ideation-and-scope.md` |
 | Domain model, interfaces, invariants, test seams, alternatives, migration design | `references/capabilities/engineering-design.md` |
 | Quick, phase, MVP, TDD, repair, and reviewed plans | `references/capabilities/planning-modes.md` |
@@ -100,7 +102,7 @@ For any change beyond a known one-file edit, do not move from request directly t
 
 Scale the detail to risk; do not skip the reasoning category. Facts need file, command, runtime, or primary-source evidence. Mark inference and unknowns explicitly. Prefer a deep module with a small stable interface over knowledge spread across many callers, but do not introduce abstraction without demonstrated leverage.
 
-Durable engineering artifacts use `assets/templates/engineering-context-map.md`, `assets/templates/engineering-design-record.md`, `assets/templates/engineering-change-brief.md`, and `assets/templates/engineering-review.md`.
+Durable engineering artifacts use `assets/templates/engineering-context-map.md`, `assets/templates/engineering-design-record.md`, `assets/templates/engineering-change-brief.md`, and `assets/templates/engineering-review.md`. When the destination is clear but the route is still foggy, use `assets/templates/progressive-discovery-map.md`. When one uncertainty must be tested cheaply, use `assets/templates/engineering-prototype-brief.md`.
 
 ## Workload And Specification Gate
 
@@ -132,7 +134,7 @@ Ask only questions that change behavior, scope, acceptance, risk, data handling,
 
 ### 4. Research And Brainstorm
 
-Inspect local code, tests, docs, configs, schemas, history, and prior artifacts before external research. Build the objective-sized context map: entry points, module boundaries, data/control flow, side effects, dependency direction, patterns, and blast radius. Use `assets/templates/engineering-context-map.md` when the map must survive the current context. Compare multiple viable approaches. Delegate broad exploration through `cli-agent-orchestrator` when it would consume substantial main-agent context. Record facts, inference, unknowns, compatibility, risks, and recommendation.
+Inspect local code, tests, docs, configs, schemas, history, and prior artifacts before external research. Build the objective-sized context map: entry points, module boundaries, data/control flow, side effects, dependency direction, patterns, and blast radius. Use `assets/templates/engineering-context-map.md` when the map must survive the current context. For very large or uncertainty-heavy work, also map the destination, known decisions, current frontier, fog, blockers, and smallest next probe; do not fabricate a full plan through unknown territory. Compare multiple viable approaches. Delegate broad exploration through `cli-agent-orchestrator` when it would consume substantial main-agent context. Record facts, inference, unknowns, compatibility, risks, and recommendation.
 
 ### 5. Re-Discuss And Lock
 
@@ -140,11 +142,11 @@ Bring back findings that affect scope, dependencies, risk, UX, data, schedule, o
 
 ### 6. Plan And Review
 
-Define the behavior contract, domain vocabulary, invariants, interfaces, failure semantics, and test seams. For meaningful design choices, compare at least two structurally different options before committing. Map every requirement ID to vertical slices and exact verification. Order dependency waves, define file scopes, checkpoints, migration, rollback, and integration. Run an independent plan review for substantial work; revise until requirement coverage and execution clarity pass.
+Define the behavior contract, durable domain vocabulary, invariants, interfaces, failure semantics, and highest observable test seams. For meaningful design choices, compare at least two structurally different options before committing. Map every requirement ID to vertical slices and exact verification. Order dependency waves, define file scopes, checkpoints, migration, rollback, and integration. If one material uncertainty remains, route it to a disposable logic, integration, UI, or operations prototype with an evidence stop condition before production planning. Run an independent plan review for substantial work; revise until requirement coverage and execution clarity pass.
 
 ### 7. Execute And Checkpoint
 
-Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Deliver one end-to-end tracer slice before broadening. Put tests at observable seams and make them fail for the intended reason before implementation. Use expand-contract for wide refactors and reversible prototypes for uncertain architecture. For delegated implementation, use a fresh implementer context followed by independent specification review and then quality review. Fix and re-review before advancing.
+Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Deliver one end-to-end tracer slice before broadening. Agree the most public practical test seam, make the first check fail for the intended behavioral reason, then complete one red-green-refactor slice before the next. Reject tautological tests, tests that only replay mocked returns, and horizontal tests disconnected from observable behavior. Use expand-contract for wide refactors and reversible prototypes for uncertain architecture. Give each bounded implementation slice a clean context and finish it with fresh evidence plus a durable handoff; do not rely on lossy mid-slice compaction. For delegated implementation, use a fresh implementer context followed by independent specification review and then quality review. Fix and re-review before advancing.
 
 ### 8. Verify And UAT
 
@@ -170,6 +172,8 @@ node scripts/workflow.mjs validate --project <path> --phase <phase> --gate execu
 node scripts/workflow.mjs trace --project <path> --phase <phase> --format json
 node scripts/engineering-route.mjs --kind feature --risk medium --format json
 node scripts/engineering-route.mjs --kind refactor --risk high
+node scripts/engineering-route.mjs --kind discovery --risk high --format json
+node scripts/engineering-route.mjs --kind prototype --risk medium
 ```
 
 `spec` checks locked requirements and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires completed research, discussion, context, and accepted plans. `complete` requires passing evidence, audit, summary, and UAT when user-facing. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the minimum engineering stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.

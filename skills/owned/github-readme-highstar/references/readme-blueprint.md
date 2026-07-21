@@ -28,11 +28,13 @@ Cover embed example:
 </p>
 ```
 
-Cover generation guidance:
+Cover design guidance:
 
-- Prefer the active owned image-generation skill `modelscope_imagegen`; `cloudflare-image-gen` is archived reference material.
-- Recommended size: `1600x896`.
-- Keep cover mostly visual; avoid dense text inside the image.
+- Route product understanding, visual direction, source composition, rendering, and visual QA to `interface-design`.
+- Recommended wide geometry: `1600x900`, unless the repository defines another contract.
+- Show current product proof and keep embedded copy readable after README downscaling.
+- Preserve an editable visual source and use a static WebP/PNG as the default README surface.
+- Link motion media as supplemental proof and provide a matching poster fallback.
 
 ## B. Table of contents (required for long docs)
 
@@ -69,4 +71,7 @@ Cover generation guidance:
 - All links/anchors resolve.
 - README has explicit target audience and use case.
 - README cover exists and is referenced by a relative path.
+- README cover facts, version, commands, and visible UI match current source-of-truth evidence.
+- Cover remains readable at realistic GitHub column width and against light/dark page backgrounds.
+- Any linked video has a static poster and the README remains complete without playback.
 - README ends with contribution + license + contact entry.

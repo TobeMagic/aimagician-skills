@@ -43,6 +43,34 @@
       "should_trigger": true,
       "expected": ["HTML visual exploration", "approved direction", "ppt handoff contract", "native PPT owner", "separate acceptance evidence"],
       "forbidden": ["one owner claims both artifacts without routing", "lossy conversion presented as native reconstruction"]
+    },
+    {
+      "id": "github-readme-cover",
+      "prompt": "Design a premium GitHub README cover for this developer tool and integrate current product proof.",
+      "should_trigger": true,
+      "expected": ["repository truth pass", "audience and positioning", "claim-to-evidence ledger", "materially different directions", "repository-product-hero", "editable source", "static README asset", "full and downscaled QA"],
+      "forbidden": ["one-shot image prompt", "generic neon terminal", "invented output", "stale version"]
+    },
+    {
+      "id": "marketing-poster",
+      "prompt": "Create a product launch poster from the real product UI and verified brand assets.",
+      "should_trigger": true,
+      "expected": ["fixed-format visual contract", "campaign-poster", "identity value proof hierarchy", "safe area", "source and rendered still", "thumbnail inspection"],
+      "forbidden": ["unverified claim", "dense unreadable copy", "resize one composition blindly across ratios"]
+    },
+    {
+      "id": "product-demo-video",
+      "prompt": "Make an eight-second product demo loop for the README with a poster fallback.",
+      "should_trigger": true,
+      "expected": ["motion storyboard", "demo-story-sequence", "deterministic time setter", "asset readiness", "silent encoded video", "poster fallback", "first middle last frame inspection", "media contract validation"],
+      "forbidden": ["wall-clock capture", "autoplay sound", "no static fallback", "claim quality from source inspection"]
+    },
+    {
+      "id": "creative-coding-visual",
+      "prompt": "Create an interactive Canvas and SVG visual experiment with deterministic capture.",
+      "should_trigger": true,
+      "expected": ["primitive selection", "fixed stage geometry", "seeded randomness", "deterministic time", "nonblank pixel check", "reduced motion fallback"],
+      "forbidden": ["unseeded capture", "Canvas text that should remain semantic", "blank or unverified output"]
     }
   ]
 }

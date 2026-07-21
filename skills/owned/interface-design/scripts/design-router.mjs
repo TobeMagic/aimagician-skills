@@ -6,14 +6,17 @@ import { dirname, join } from "node:path";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const PATTERN_DIR = join(SCRIPT_DIR, "..", "assets", "patterns");
-const TASKS = new Set(["landing", "dashboard", "app-prototype", "html-presentation", "component", "audit", "redesign"]);
-const DELIVERABLES = new Set(["html", "pptx", "hybrid"]);
+const TASKS = new Set([
+  "landing", "dashboard", "app-prototype", "html-presentation", "component", "audit", "redesign",
+  "readme-cover", "poster", "product-demo", "creative-coding"
+]);
+const DELIVERABLES = new Set(["html", "image", "video", "pptx", "hybrid"]);
 const PLATFORMS = new Set(["cross-platform", "windows"]);
 const FORMATS = new Set(["text", "json"]);
 
 function usage() {
   return [
-    "Usage: design-router.mjs --task <landing|dashboard|app-prototype|html-presentation|component|audit|redesign> --deliverable <html|pptx|hybrid>",
+    "Usage: design-router.mjs --task <landing|dashboard|app-prototype|html-presentation|component|audit|redesign|readme-cover|poster|product-demo|creative-coding> --deliverable <html|image|video|pptx|hybrid>",
     "       [--signals trends,comparison] [--platform cross-platform|windows] [--format text|json]",
     "",
     "Returns a read-only design route. It never edits the project."
@@ -64,6 +67,7 @@ function unique(values) {
 function modeFor(task, deliverable) {
   if (deliverable === "pptx") return "route";
   if (deliverable === "hybrid") return "prototype";
+  if (deliverable === "image" || deliverable === "video") return "asset";
   if (task === "app-prototype") return "prototype";
   if (task === "audit") return "audit";
   if (task === "redesign") return "redesign";
@@ -72,7 +76,7 @@ function modeFor(task, deliverable) {
 
 function ownerFor(options) {
   const nativeOwner = options.platform === "windows" ? "window-pptx" : "pptx";
-  if (options.deliverable === "html") {
+  if (["html", "image", "video"].includes(options.deliverable)) {
     return { owners: ["interface-design"], final_owner: "interface-design", handoff: false };
   }
   if (options.deliverable === "pptx") {
@@ -120,7 +124,11 @@ async function buildRoute(options) {
       ? "Native PowerPoint production and QA belong to the PPT owner."
       : options.deliverable === "hybrid"
         ? "HTML establishes the accepted visual direction; the PPT owner rebuilds and verifies the native deck from ppt-handoff.md."
-        : "The final artifact is browser-native HTML/CSS/JS."
+        : options.deliverable === "image"
+          ? "The final still is rendered from an editable, evidence-backed visual source and verified at full and distribution size."
+          : options.deliverable === "video"
+            ? "The final motion asset uses deterministic browser time, a static poster fallback, and encoded-frame validation."
+            : "The final artifact is browser-native HTML/CSS/JS."
   };
 }
 

@@ -83,7 +83,7 @@ node scripts/workflow.mjs next --project <path> --phase <phase>
 
 The `execute` gate requires completed research, renewed discussion, implementation context, requirement-mapped plans, and explicit plan acceptance. `init` previews project and phase artifacts and writes only with `--write`; it never overwrites existing files or follows a planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
 
-Engineering work also has a deterministic advisor for codebase analysis, feature delivery, root-cause repair, refactoring, performance, and architecture changes:
+Engineering work also has a deterministic advisor for codebase analysis, progressive discovery, bounded prototypes, feature delivery, root-cause repair, refactoring, performance, and architecture changes:
 
 ```bash
 node skills/owned/aimagician-superpower/scripts/engineering-route.mjs --kind feature --risk medium --format json
@@ -91,12 +91,15 @@ node skills/owned/aimagician-superpower/scripts/engineering-route.mjs --kind fea
 
 The route selects the required context map, design record, vertical slices, test seams, migration strategy, review axes, and completion evidence. Detailed integration decisions are recorded in [`docs/superpowers/mattpocock-engineering-capability-merge.md`](docs/superpowers/mattpocock-engineering-capability-merge.md).
 
+The combined trigger, capability, boundary, and real-project validation is recorded in [`docs/audits/skill-capability-audit-2026-07-21.md`](docs/audits/skill-capability-audit-2026-07-21.md).
+
 The central owned skill is:
 
 | Skill | Role |
 |---|---|
-| `aimagician-superpower` | Risk-scaled SDD plus codebase exploration, engineering design, vertical delivery, root-cause debugging, technical review, traceable verification, audit, and handoff |
-| `interface-design` | HTML/CSS/JS design, prototypes, UI, dashboards, data visualization, marketing experiences, HTML presentations, responsive browser QA, and brand routing |
+| `aimagician-superpower` | Risk-scaled SDD plus codebase exploration, progressive discovery, prototypes, engineering design, vertical delivery, root-cause debugging, technical review, traceable verification, audit, and handoff |
+| `interface-design` | HTML/CSS/JS design, prototypes, UI, dashboards, repository branding, covers, posters, product demo video, creative coding, data visualization, HTML presentations, responsive browser QA, and brand routing |
+| `github-readme-highstar` | README information architecture, quick-start clarity, repository visual collaboration, static hero and supplemental demo integration |
 | `skill-creator` | Skill authoring, merging, taxonomy, formatter rules |
 
 ## Skill Consolidation
@@ -134,12 +137,14 @@ skillbird format-skills --write
 
 ### HTML And PowerPoint Boundary
 
-`interface-design` owns browser-native visual work: apps, prototypes, landing pages, dashboards, interactive reports, data visualization, and HTML slides. Native editable `.pptx`, slide masters, Office compatibility, and PowerPoint QA remain owned by `pptx` or `window-pptx`. A hybrid workflow uses HTML for an approved visual direction, then hands a structured reconstruction contract to the native PPT owner.
+`interface-design` owns browser-native visual work and rendered visual assets: apps, prototypes, landing pages, dashboards, interactive reports, repository covers, posters, product showcases, deterministic demo video, creative coding, data visualization, and HTML slides. `github-readme-highstar` owns the surrounding README structure and integration. Native editable `.pptx`, slide masters, Office compatibility, and PowerPoint QA remain owned by `pptx` or `window-pptx`. A hybrid workflow uses HTML for an approved visual direction, then hands a structured reconstruction contract to the native PPT owner.
 
-The HTML design skill includes 13 layout patterns, 18 component archetypes, content-to-pattern decision rules, quality gates, five templates, and a read-only router:
+The HTML design skill includes 17 layout patterns, 23 component archetypes, content-to-pattern decision rules, still and motion quality gates, eight templates, reusable source scaffolds, a deterministic Playwright/ffmpeg media renderer, and a read-only router:
 
 ```bash
 node skills/owned/interface-design/scripts/design-router.mjs --task dashboard --deliverable html --signals trends,comparison --format json
+node skills/owned/interface-design/scripts/design-router.mjs --task readme-cover --deliverable image --signals developer-tool,terminal --format json
+node skills/owned/interface-design/scripts/design-router.mjs --task product-demo --deliverable video --signals workflow,motion --format json
 ```
 
 See [`docs/design/html-universal-design-capability-merge.md`](docs/design/html-universal-design-capability-merge.md) for the capability analysis and boundary decisions.

@@ -131,9 +131,9 @@ skills:
   interface-design:
     group: design
     subgroup: interface
-    tags: [ui, frontend, brand, design-md, accessibility, polish]
+    tags: [ui, frontend, brand, design-md, accessibility, polish, repository-branding, poster, motion-media, creative-coding]
     recommendedScopes: [project]
-    description: Universal HTML/CSS/JS design workflow for prototypes, UI/UX, dashboards, data visualization, marketing, browser presentations, brand routing, accessibility, motion, and visual QA.
+    description: Universal HTML/CSS/JS design workflow for prototypes, UI/UX, dashboards, repository branding, posters, deterministic product video, creative coding, browser presentations, accessibility, and visual QA.
   frontend-design:
     group: design
     subgroup: interface
@@ -203,8 +203,9 @@ skills:
   github-readme-highstar:
     group: documents
     subgroup: readme
-    tags: [readme, docs, github]
+    tags: [readme, docs, github, cover, project-branding]
     recommendedScopes: [project]
+    description: High-quality README structure, repository visual collaboration, product showcase integration, and accessible GitHub project branding.
   docx:
     group: documents
     subgroup: word
