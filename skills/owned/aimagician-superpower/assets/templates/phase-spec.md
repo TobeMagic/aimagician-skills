@@ -36,6 +36,20 @@ TBD - describe current behavior with concrete repository or runtime evidence.
 
 - TBD
 
+## Engineering Contract
+
+- **Domain terms and owners:** TBD
+- **Invariants:** TBD
+- **Interfaces and compatibility:** TBD
+- **Failure semantics:** TBD
+- **Migration and rollback:** TBD
+
+## Test Seams And Critical Cases
+
+| Behavior | Observable Seam | Failing Case | Evidence |
+|---|---|---|---|
+| REQ-001 | TBD | TBD | TBD |
+
 ## Acceptance Criteria
 
 - [ ] REQ-001 has concrete passing evidence.

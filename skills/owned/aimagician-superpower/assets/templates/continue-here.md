@@ -26,3 +26,7 @@ TBD
 ## Commands And Evidence
 
 - TBD
+
+## Suggested Companion Skills
+
+- TBD - name only skills that materially reduce the next agent's discovery or execution work.

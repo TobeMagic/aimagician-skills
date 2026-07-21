@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "components": [
+    {"id": "primary-nav", "category": "navigation", "use_when": "Users need stable location and top-level movement.", "required_states": ["current", "focus-visible", "collapsed"]},
+    {"id": "context-sidebar", "category": "navigation", "use_when": "A dense workflow needs persistent scope or object context.", "required_states": ["current", "collapsed", "drawer", "focus-visible"]},
+    {"id": "filter-bar", "category": "control", "use_when": "A result set has several visible query dimensions.", "required_states": ["default", "active", "loading", "clear"]},
+    {"id": "segmented-mode", "category": "control", "use_when": "Two to five mutually exclusive modes share one surface.", "required_states": ["default", "selected", "focus-visible", "disabled"]},
+    {"id": "action-toolbar", "category": "control", "use_when": "Repeated object-level actions need compact access.", "required_states": ["default", "hover", "focus-visible", "disabled", "pending"]},
+    {"id": "form-flow", "category": "form", "use_when": "Structured input has validation and recovery behavior.", "required_states": ["default", "focus", "filled", "invalid", "disabled", "submitting", "success"]},
+    {"id": "data-table", "category": "data", "use_when": "Records need precise comparison, sorting, or repeated actions.", "required_states": ["loading", "empty", "partial", "error", "selected", "sorted"]},
+    {"id": "time-series-chart", "category": "data", "use_when": "Values change over an ordered time interval.", "required_states": ["loading", "empty", "hover-detail", "selected-range", "error"]},
+    {"id": "comparison-matrix", "category": "data", "use_when": "Options share explicit criteria and tradeoffs.", "required_states": ["default", "highlighted", "responsive"]},
+    {"id": "timeline", "category": "data", "use_when": "Sequence, milestones, or event causality are primary.", "required_states": ["past", "current", "future", "exception"]},
+    {"id": "status-summary", "category": "feedback", "use_when": "Users must scan health, freshness, and exceptions.", "required_states": ["healthy", "warning", "critical", "unknown", "stale"]},
+    {"id": "empty-state", "category": "feedback", "use_when": "No data or no matching result needs explanation and a next action.", "required_states": ["first-use", "filtered-empty", "permission-empty", "error-empty"]},
+    {"id": "modal-dialog", "category": "overlay", "use_when": "A focused interrupt must be completed or dismissed before return.", "required_states": ["opening", "open", "submitting", "error", "closing", "focus-restored"]},
+    {"id": "detail-drawer", "category": "overlay", "use_when": "Users need object detail without losing list context.", "required_states": ["open", "loading", "error", "closing", "focus-restored"]},
+    {"id": "product-proof", "category": "marketing", "use_when": "A real product view, mechanism, or evidence must support a claim.", "required_states": ["loaded", "loading", "fallback"]},
+    {"id": "cta-cluster", "category": "marketing", "use_when": "One primary decision and at most one secondary path end a section.", "required_states": ["default", "hover", "focus-visible", "pending"]},
+    {"id": "slide-frame", "category": "presentation", "use_when": "A browser presentation needs stable frame geometry and navigation.", "required_states": ["active", "previous", "next", "overview", "print"]},
+    {"id": "prototype-shell", "category": "prototype", "use_when": "Several interactive screens need shared navigation and simulated state.", "required_states": ["ready", "loading", "offline", "error", "reset"]}
+  ]
+}

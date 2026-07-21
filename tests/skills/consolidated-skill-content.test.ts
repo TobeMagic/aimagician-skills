@@ -14,11 +14,15 @@ describe("consolidated owned skill content", () => {
       "references/capabilities/state-and-continuity.md",
       "references/capabilities/spec-driven-development.md",
       "references/capabilities/research-and-discovery.md",
+      "references/capabilities/engineering-exploration.md",
       "references/capabilities/ideation-and-scope.md",
+      "references/capabilities/engineering-design.md",
       "references/capabilities/planning-modes.md",
       "references/capabilities/agent-orchestration.md",
       "references/capabilities/execution-modes.md",
+      "references/capabilities/engineering-delivery.md",
       "references/capabilities/debugging-and-forensics.md",
+      "references/capabilities/engineering-review.md",
       "references/capabilities/verification-and-uat.md",
       "references/capabilities/audit-and-closure.md",
       "references/capabilities/domain-gates.md"
@@ -60,11 +64,16 @@ describe("consolidated owned skill content", () => {
 
     expect(runtimeFiles.map((file) => file.path)).toEqual(expect.arrayContaining([
       "assets/templates/phase-spec.md",
+      "assets/templates/engineering-context-map.md",
+      "assets/templates/engineering-design-record.md",
+      "assets/templates/engineering-change-brief.md",
+      "assets/templates/engineering-review.md",
       "evals/evals.json",
       "references/roles/implementer.md",
       "references/roles/spec-reviewer.md",
       "references/roles/quality-reviewer.md",
       "scripts/workflow.mjs",
+      "scripts/engineering-route.mjs",
       "scripts/wait-for.mjs",
       "scripts/find-polluter.mjs"
     ]));
@@ -82,6 +91,10 @@ describe("consolidated owned skill content", () => {
     expect(skill).toContain("Brand DESIGN.md Routing");
     expect(skill).toContain("references/brand-design-md/brands.json");
     expect(skill).toContain("references/brand-design-md/design-md/*.DESIGN.md");
+    expect(skill).toContain("HTML Based Universal Design");
+    expect(skill).toContain("assets/patterns/decision-rules.json");
+    expect(skill).toContain("scripts/design-router.mjs");
+    expect(skill).toContain("Route native PowerPoint delivery to the PPT skill instead");
     expect(skill).not.toContain("design-md-brand-router");
     expect(brands).toContain("apple");
     expect(appleDesign).toContain("Apple");

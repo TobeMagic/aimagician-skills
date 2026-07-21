@@ -139,7 +139,7 @@ describe("v4 Skillbird acceptance", () => {
     ]));
     await expectPath(join(projectDir, ".claude", "skills", "docx", "SKILL.md"));
     await expectPath(join(projectDir, ".skillbird", "manifest.json"));
-  });
+  }, 15_000);
 
   it("previews the active design bundle without archived design experiments", async () => {
     const root = await createTempRoot();

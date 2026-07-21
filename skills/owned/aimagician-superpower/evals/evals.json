@@ -59,6 +59,34 @@
       "forbidden": ["increase sleep without evidence", "patch symptom before tracing"]
     },
     {
+      "id": "engineering-codebase-analysis",
+      "prompt": "Analyze an unfamiliar multi-package repository and identify where a cross-module feature should be implemented.",
+      "should_trigger": true,
+      "expected": ["representative end-to-end flow", "ownership boundaries", "dependency direction", "data and control flow", "blast radius", "facts separated from inference"],
+      "forbidden": ["directory listing without relevance", "choose files from names alone", "trust delegated claims without spot checks"]
+    },
+    {
+      "id": "engineering-feature-development",
+      "prompt": "Add a user-visible feature that crosses routing, domain logic, persistence, and presentation.",
+      "should_trigger": true,
+      "expected": ["behavior contract", "design options", "test seams", "vertical tracer slice", "failure and recovery cases", "specification review before quality review"],
+      "forbidden": ["implement every layer horizontally", "invent architecture during coding", "skip integration wiring"]
+    },
+    {
+      "id": "engineering-root-cause-fix",
+      "prompt": "Repair an intermittent production-like bug whose current logs do not reveal the cause.",
+      "should_trigger": true,
+      "expected": ["feedback loop", "minimal reproduction", "ranked hypotheses", "distinguishing instrumentation", "root-cause fix", "regression and cleanup"],
+      "forbidden": ["patch the visible symptom", "leave temporary diagnostics", "change multiple variables at once"]
+    },
+    {
+      "id": "engineering-wide-refactor",
+      "prompt": "Refactor a shared contract used by many consumers without changing behavior or breaking compatibility.",
+      "should_trigger": true,
+      "expected": ["characterization baseline", "caller and dependency map", "target design", "expand-contract migration", "bounded consumer batches", "old-path removal condition"],
+      "forbidden": ["flag-day replacement", "mix unrelated semantic changes", "permanent compatibility shim without owner"]
+    },
+    {
       "id": "user-facing-ai-ui",
       "prompt": "Build a model-backed UI workflow with responsive states and quality thresholds.",
       "should_trigger": true,

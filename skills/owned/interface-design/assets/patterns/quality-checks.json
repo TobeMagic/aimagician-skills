@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "checks": [
+    {"id": "artifact-owner", "severity": "blocker", "deliverables": ["html", "hybrid", "pptx"], "applies_to": ["all"], "question": "Does the implementation match the accepted final artifact and owner?"},
+    {"id": "real-content", "severity": "blocker", "deliverables": ["html", "hybrid", "pptx"], "applies_to": ["all"], "question": "Are product facts, metrics, assets, and proof real or honestly labeled placeholders?"},
+    {"id": "primary-flow", "severity": "blocker", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Can the primary user complete the intended workflow end to end?"},
+    {"id": "browser-opens", "severity": "blocker", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Does the target artifact open without blocking console, network, or render errors?"},
+    {"id": "hierarchy", "severity": "high", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Is the first scan order clear through structure, scale, grouping, and contrast?"},
+    {"id": "domain-fit", "severity": "high", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Does density, composition, and interaction fit the actual product domain?"},
+    {"id": "responsive-floor", "severity": "high", "deliverables": ["html", "hybrid"], "applies_to": ["landing", "dashboard", "app-prototype", "html-presentation", "component", "audit", "redesign"], "question": "Do 320, 375, 414, 768, and desktop widths avoid overlap, clipping, and incoherent collapse or fallback?"},
+    {"id": "text-fit", "severity": "high", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Do long labels, values, headings, mixed scripts, and localized text fit their containers?"},
+    {"id": "keyboard-focus", "severity": "high", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Is keyboard order logical and focus visible, contained, and restored?"},
+    {"id": "contrast-state", "severity": "high", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Do text, controls, focus, and status pass contrast and avoid color-only meaning?"},
+    {"id": "state-matrix", "severity": "high", "deliverables": ["html", "hybrid"], "applies_to": ["dashboard", "app-prototype", "component", "audit", "redesign"], "question": "Are loading, empty, error, success, disabled, and selected states implemented where applicable?"},
+    {"id": "data-integrity", "severity": "high", "deliverables": ["html", "hybrid"], "applies_to": ["dashboard"], "question": "Are metric definitions, units, periods, sources, freshness, and axes honest?"},
+    {"id": "slide-sequence", "severity": "high", "deliverables": ["html", "hybrid"], "applies_to": ["html-presentation"], "question": "Does every frame have one dominant idea and does the sequence form a coherent argument?"},
+    {"id": "native-ppt-boundary", "severity": "blocker", "deliverables": ["hybrid", "pptx"], "applies_to": ["all"], "question": "Is native PowerPoint work routed rather than represented as equivalent HTML conversion?"},
+    {"id": "token-discipline", "severity": "medium", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Are repeated color, type, spacing, radius, shadow, and motion values semantic and consistent?"},
+    {"id": "visual-specificity", "severity": "medium", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Does the result have a content-specific visual idea instead of default template composition?"},
+    {"id": "card-necessity", "severity": "medium", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Is every card an independent item rather than a default wrapper or nested surface?"},
+    {"id": "motion-purpose", "severity": "medium", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Does motion explain state or narrative, remain interruptible, and respect reduced motion?"},
+    {"id": "asset-loading", "severity": "medium", "deliverables": ["html", "hybrid"], "applies_to": ["all"], "question": "Do critical fonts, images, charts, and canvases render before acceptance capture?"},
+    {"id": "evidence-captured", "severity": "high", "deliverables": ["html", "hybrid", "pptx"], "applies_to": ["all"], "question": "Are target viewport or frame renders, exercised interactions, and test results recorded?"}
+  ]
+}

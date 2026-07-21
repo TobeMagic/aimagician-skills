@@ -161,7 +161,12 @@ async function runDashboardInPtyOnce(
     output += chunk.toString();
   });
 
-  await delay(8_000);
+  const ready = await waitForOutputOrExit(child, () => output, "Skillbird", 30_000);
+  if (!ready) {
+    child.kill("SIGTERM");
+    await waitForExitOrKill(child, 2_000);
+    return output;
+  }
   for (const action of actions) {
     child.stdin.write(action.input);
     if (action.delayAfter > 0) {
@@ -177,6 +182,37 @@ async function runDashboardInPtyOnce(
 
   expect([0, 130, null], output).toContain(exitCode);
   return output;
+}
+
+function waitForOutputOrExit(
+  child: ReturnType<typeof spawn>,
+  readOutput: () => string,
+  expected: string,
+  timeoutMs: number
+): Promise<boolean> {
+  if (readOutput().includes(expected)) return Promise.resolve(true);
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      child.stdout.off("data", onData);
+      child.stderr.off("data", onData);
+      child.off("exit", onExit);
+      resolve(result);
+    };
+    const onData = () => {
+      if (readOutput().includes(expected)) finish(true);
+    };
+    const onExit = () => finish(false);
+    const timer = setTimeout(() => finish(false), timeoutMs);
+
+    child.stdout.on("data", onData);
+    child.stderr.on("data", onData);
+    child.on("exit", onExit);
+  });
 }
 
 function waitForExitOrKill(child: ReturnType<typeof spawn>, timeoutMs: number): Promise<number | null> {

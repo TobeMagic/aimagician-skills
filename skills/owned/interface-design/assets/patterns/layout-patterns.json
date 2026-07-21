@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "patterns": [
+    {
+      "id": "product-first-story",
+      "use_when": ["A product, offer, or place must be understood in the first viewport", "A marketing story needs mechanism and proof"],
+      "structure": ["product or offer signal", "primary action", "mechanism", "evidence", "decision support", "close"],
+      "responsive": "Keep the product signal first; stack proof after the primary action and leave the next section visible."
+    },
+    {
+      "id": "evidence-led-editorial",
+      "use_when": ["The content is research, a case study, or a long argument", "Source trust and reading rhythm matter"],
+      "structure": ["thesis", "context rail", "evidence sections", "counterpoint", "implication", "sources"],
+      "responsive": "Collapse rails into inline evidence blocks and preserve readable measure."
+    },
+    {
+      "id": "split-comparison",
+      "use_when": ["Two approaches, states, or products need direct comparison", "Tradeoffs matter more than a single recommendation"],
+      "structure": ["comparison criterion", "side A", "side B", "shared evidence", "decision"],
+      "responsive": "Stack by criterion rather than placing two long columns sequentially."
+    },
+    {
+      "id": "operational-workbench",
+      "use_when": ["Users repeat actions against selected objects", "Context and tools must remain visible"],
+      "structure": ["navigation", "scope and filters", "work list or canvas", "context inspector", "action feedback"],
+      "responsive": "Turn secondary panes into drawers or routes while preserving the active object and primary action."
+    },
+    {
+      "id": "command-center-dashboard",
+      "use_when": ["Users monitor several related signals", "Attention and action need prioritization"],
+      "structure": ["status and freshness", "critical signals", "trend and comparison", "exceptions", "drill-down actions"],
+      "responsive": "Order by decision priority; convert wide comparisons to scroll-bounded tables or focused views."
+    },
+    {
+      "id": "metric-to-detail",
+      "use_when": ["A small number of measures lead to detailed records", "Overview must explain what to inspect next"],
+      "structure": ["metric definitions", "trend or variance", "segmentation", "record detail", "action"],
+      "responsive": "Keep definitions and units with each metric; collapse detail into progressive disclosure."
+    },
+    {
+      "id": "timeline-narrative",
+      "use_when": ["Events, phases, or changes over time are central", "Sequence and causality matter"],
+      "structure": ["time scale", "milestones", "supporting evidence", "current state", "next step"],
+      "responsive": "Use one vertical sequence and keep labels adjacent to events."
+    },
+    {
+      "id": "catalogue-and-filter",
+      "use_when": ["Users browse many comparable items", "Filtering and return context are important"],
+      "structure": ["scope", "filters and sort", "results summary", "list grid or table", "detail path"],
+      "responsive": "Move filters into a persistent drawer trigger and preserve result count and active filters."
+    },
+    {
+      "id": "process-map",
+      "use_when": ["A system, workflow, or dependency path must be explained", "Branches and ownership matter"],
+      "structure": ["legend", "stages or nodes", "connections", "exceptions", "selected-node detail"],
+      "responsive": "Offer a readable linear fallback or bounded pan/zoom with keyboard controls."
+    },
+    {
+      "id": "app-shell-prototype",
+      "use_when": ["A product workflow spans several screens or modes", "Navigation and state continuity must be tested"],
+      "structure": ["app navigation", "current context", "primary task surface", "feedback", "secondary route"],
+      "responsive": "Adapt navigation to the target platform and keep the primary task reachable in one transition."
+    },
+    {
+      "id": "immersive-case-study",
+      "use_when": ["Visual evidence carries the story", "A portfolio, launch, or transformation needs paced reveals"],
+      "structure": ["full-bleed evidence", "brief thesis", "before and after", "process", "result", "credits"],
+      "responsive": "Preserve subject visibility and replace fragile overlays with ordered content when space is limited."
+    },
+    {
+      "id": "html-slide-sequence",
+      "use_when": ["The browser is the presentation runtime", "A narrative must advance frame by frame"],
+      "structure": ["opening", "context", "argument", "evidence", "comparison or process", "recommendation", "close"],
+      "responsive": "Maintain the accepted frame ratio; provide overview and readable fallback outside full-screen mode."
+    },
+    {
+      "id": "component-playground",
+      "use_when": ["A component system or interaction family is the deliverable", "States and variants need side-by-side review"],
+      "structure": ["token controls", "component variants", "state matrix", "responsive preview", "usage guidance"],
+      "responsive": "Keep controls accessible and let previews resize without changing the component state."
+    }
+  ]
+}

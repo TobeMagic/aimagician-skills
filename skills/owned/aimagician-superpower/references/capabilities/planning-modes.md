@@ -8,7 +8,7 @@ A substantial plan names:
 
 - objective, locked requirement IDs, and non-goals;
 - exact files or ownership areas allowed and forbidden;
-- atomic tasks and dependency waves;
+- vertical slices, atomic tasks, blocking edges, and dependency waves;
 - state, schema, API, migration, or compatibility effects;
 - test-first steps where behavior can be pinned down;
 - exact verification commands and expected outcomes;
@@ -16,6 +16,8 @@ A substantial plan names:
 - rollback, recovery, checkpoints, and handoff expectations.
 
 Every accepted requirement must map to at least one task. Every task must map to a requirement, explicit enabling work, or accepted maintenance need.
+
+Prefer a tracer slice that crosses the real entry, domain, and output boundaries before broadening. For a wide refactor, plan expand-contract explicitly: introduce the new contract, migrate bounded consumer groups, verify compatibility, remove the old path, and prove cleanup. Do not hide a flag-day migration inside one task.
 
 ## Plan Modes
 
@@ -37,7 +39,7 @@ Each task states:
 2. inputs and prerequisite decisions;
 3. allowed and forbidden files;
 4. exact implementation behavior;
-5. test or probe to write or run;
+5. observable seam and test or probe to write or run;
 6. acceptance and expected evidence;
 7. checkpoint and next dependency.
 

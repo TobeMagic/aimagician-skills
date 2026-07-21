@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {"id": "landing-base", "priority": 100, "when": {"tasks": ["landing"]}, "suggest": {"layouts": ["product-first-story"], "components": ["primary-nav", "product-proof", "cta-cluster"]}},
+    {"id": "dashboard-base", "priority": 100, "when": {"tasks": ["dashboard"]}, "suggest": {"layouts": ["command-center-dashboard", "metric-to-detail"], "components": ["filter-bar", "status-summary", "data-table"]}},
+    {"id": "app-prototype-base", "priority": 100, "when": {"tasks": ["app-prototype"]}, "suggest": {"layouts": ["app-shell-prototype"], "components": ["prototype-shell", "primary-nav", "form-flow"]}},
+    {"id": "html-presentation-base", "priority": 100, "when": {"tasks": ["html-presentation"]}, "suggest": {"layouts": ["html-slide-sequence"], "components": ["slide-frame"]}},
+    {"id": "component-base", "priority": 100, "when": {"tasks": ["component"]}, "suggest": {"layouts": ["component-playground"], "components": ["segmented-mode", "action-toolbar"]}},
+    {"id": "audit-base", "priority": 100, "when": {"tasks": ["audit", "redesign"]}, "suggest": {"layouts": [], "components": []}},
+    {"id": "trend-signal", "priority": 90, "when": {"signals_any": ["trends", "time", "change-over-time"]}, "suggest": {"layouts": ["metric-to-detail", "timeline-narrative"], "components": ["time-series-chart", "timeline"]}},
+    {"id": "comparison-signal", "priority": 90, "when": {"signals_any": ["comparison", "tradeoffs", "alternatives"]}, "suggest": {"layouts": ["split-comparison"], "components": ["comparison-matrix"]}},
+    {"id": "many-records-signal", "priority": 80, "when": {"signals_any": ["many-records", "browse", "filter"]}, "suggest": {"layouts": ["catalogue-and-filter", "operational-workbench"], "components": ["filter-bar", "data-table", "detail-drawer"]}},
+    {"id": "repeated-actions-signal", "priority": 80, "when": {"signals_any": ["repeated-actions", "operations", "editing"]}, "suggest": {"layouts": ["operational-workbench"], "components": ["context-sidebar", "action-toolbar", "detail-drawer"]}},
+    {"id": "narrative-signal", "priority": 70, "when": {"signals_any": ["narrative", "research", "case-study"]}, "suggest": {"layouts": ["evidence-led-editorial", "immersive-case-study"], "components": ["product-proof"]}},
+    {"id": "workflow-signal", "priority": 70, "when": {"signals_any": ["workflow", "process", "dependencies"]}, "suggest": {"layouts": ["process-map", "timeline-narrative"], "components": ["timeline", "status-summary"]}},
+    {"id": "dense-data-signal", "priority": 70, "when": {"signals_any": ["dense-data", "monitoring", "exceptions"]}, "suggest": {"layouts": ["command-center-dashboard", "operational-workbench"], "components": ["status-summary", "data-table", "filter-bar"]}}
+  ]
+}

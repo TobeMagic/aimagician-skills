@@ -1,7 +1,7 @@
 <h1 align="center">Skillbird</h1>
 
 <p align="center">
-  <em>AImagician Superpower: owned-skill-first workflow management for AI coding CLIs</em>
+  <em>Owned skills that turn AI coding CLIs into evidence-driven engineering and design agents</em>
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
 
 ## What It Is
 
-`aimagician_superpower` is the consolidated home for my AI-agent workflow skills.
+`aimagician_superpower` is the consolidated home for my AI-agent workflow skills. It encodes senior engineering and design procedures as progressive modules, templates, executable decision rules, and verification gates so quality depends less on a model's unstated experience.
 
 The daily command is `skillbird`. It manages skills across Codex, Claude, OpenCode, Gemini, Hermes, Cursor, and Copilot with global or project-local installs.
 
@@ -83,11 +83,20 @@ node scripts/workflow.mjs next --project <path> --phase <phase>
 
 The `execute` gate requires completed research, renewed discussion, implementation context, requirement-mapped plans, and explicit plan acceptance. `init` previews project and phase artifacts and writes only with `--write`; it never overwrites existing files or follows a planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
 
+Engineering work also has a deterministic advisor for codebase analysis, feature delivery, root-cause repair, refactoring, performance, and architecture changes:
+
+```bash
+node skills/owned/aimagician-superpower/scripts/engineering-route.mjs --kind feature --risk medium --format json
+```
+
+The route selects the required context map, design record, vertical slices, test seams, migration strategy, review axes, and completion evidence. Detailed integration decisions are recorded in [`docs/superpowers/mattpocock-engineering-capability-merge.md`](docs/superpowers/mattpocock-engineering-capability-merge.md).
+
 The central owned skill is:
 
 | Skill | Role |
 |---|---|
-| `aimagician-superpower` | Risk-scaled SDD, research, planning, multi-Agent execution, systematic debugging, traceable verification, audit, and handoff |
+| `aimagician-superpower` | Risk-scaled SDD plus codebase exploration, engineering design, vertical delivery, root-cause debugging, technical review, traceable verification, audit, and handoff |
+| `interface-design` | HTML/CSS/JS design, prototypes, UI, dashboards, data visualization, marketing experiences, HTML presentations, responsive browser QA, and brand routing |
 | `skill-creator` | Skill authoring, merging, taxonomy, formatter rules |
 
 ## Skill Consolidation
@@ -101,7 +110,7 @@ External sources are curated into owned skills instead of installed by default.
 | Composio SaaS tool routing and MCP-light discovery | `composio-tool-router` |
 | Claude skill creator + Superpowers skill writing | `skill-creator` |
 | Claude MCP builder + community MCP builder | `mcp-builder` |
-| frontend-design, design-md brand routing, baseline-ui, accessibility, metadata, motion, design-lab, impeccable | `interface-design` |
+| frontend-design, design-md brand routing, UI/UX, prototypes, dashboards, data visualization, HTML presentations, accessibility, motion, design-lab, impeccable | `interface-design` |
 | Claude webapp-testing + Playwright skill | `webapp-testing` |
 | docx / pdf / pptx / xlsx | Owned document skills under `skills/owned` |
 
@@ -111,7 +120,7 @@ Six categories are used everywhere:
 |---|---|
 | `build` | Coding, planning, debugging, tests, reviews, skill authoring, MCP/tools |
 | `research` | Papers, literature, open-source architecture, repo evidence |
-| `design` | UI, brand DESIGN.md routing, accessibility, metadata, motion, image generation |
+| `design` | HTML visual design, prototypes, UI/UX, dashboards, data visualization, HTML presentations, brand routing, accessibility, motion, image generation |
 | `documents` | README, Word, PDF, PowerPoint, spreadsheets |
 | `operate` | GitHub, Linear, cloud, worktrees, releases, CLI agent orchestration, Composio tool routing |
 | `strategy` | Product, business, pricing, customers, growth |
@@ -122,6 +131,18 @@ Every owned skill is formatted with `category`, `subcategory`, and `tags` frontm
 skillbird format-skills --check
 skillbird format-skills --write
 ```
+
+### HTML And PowerPoint Boundary
+
+`interface-design` owns browser-native visual work: apps, prototypes, landing pages, dashboards, interactive reports, data visualization, and HTML slides. Native editable `.pptx`, slide masters, Office compatibility, and PowerPoint QA remain owned by `pptx` or `window-pptx`. A hybrid workflow uses HTML for an approved visual direction, then hands a structured reconstruction contract to the native PPT owner.
+
+The HTML design skill includes 13 layout patterns, 18 component archetypes, content-to-pattern decision rules, quality gates, five templates, and a read-only router:
+
+```bash
+node skills/owned/interface-design/scripts/design-router.mjs --task dashboard --deliverable html --signals trends,comparison --format json
+```
+
+See [`docs/design/html-universal-design-capability-merge.md`](docs/design/html-universal-design-capability-merge.md) for the capability analysis and boundary decisions.
 
 ## CLI
 

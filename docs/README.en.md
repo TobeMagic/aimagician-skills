@@ -1,6 +1,6 @@
 # Skillbird
 
-`aimagician_superpower` is an owned-skill-first workflow manager for AI coding CLIs.
+`aimagician_superpower` is an owned-skill-first expert workflow system for AI coding CLIs. Engineering and design judgment is encoded in progressive modules, structured artifacts, executable decision rules, and evidence gates instead of being left to model intuition.
 
 Daily command:
 
@@ -25,13 +25,29 @@ External catalog sources remain visible reference material and are disabled by d
 
 | Skill | Purpose |
 |---|---|
-| `aimagician-superpower` | Research-aware milestone workflow, planning, execution, verification, audit, handoff, and code discipline |
+| `aimagician-superpower` | Risk-scaled SDD, codebase exploration, engineering design, vertical delivery, debugging, review, verification, audit, and handoff |
 | `cli-agent-orchestrator` | Orchestrate external CLI agents for bounded multi-agent work; prefer OpenCode for broad read-only exploration and context gathering |
 | `composio-tool-router` | Route SaaS tool discovery and execution through Composio CLI with service-scoped lookup and schema-on-demand |
 | `skill-creator` | Create, merge, classify, and verify skills |
-| `interface-design` | Consolidated UI, brand DESIGN.md routing, accessibility, metadata, motion, and polish workflow |
+| `interface-design` | Universal HTML/CSS/JS design for prototypes, UI, dashboards, data visualization, marketing pages, HTML presentations, brand routing, and browser QA |
 | `webapp-testing` | Playwright and browser verification workflow |
 | `mcp-builder` | MCP server and tool-schema design workflow |
+
+## Expert Capability Routes
+
+The engineering advisor covers analysis, feature work, bugs, refactors, performance, and architecture:
+
+```bash
+node skills/owned/aimagician-superpower/scripts/engineering-route.mjs --kind refactor --risk high --format json
+```
+
+The design advisor maps content and artifact requirements to HTML layout/component patterns and quality gates:
+
+```bash
+node skills/owned/interface-design/scripts/design-router.mjs --task dashboard --deliverable html --signals trends,comparison --format json
+```
+
+`interface-design` owns browser-native artifacts and HTML slides. Editable `.pptx`, slide masters, Office compatibility, and native PowerPoint QA remain owned by `pptx` or `window-pptx`; hybrid work uses a structured handoff between them.
 
 ## Categories
 

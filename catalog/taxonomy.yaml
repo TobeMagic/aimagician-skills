@@ -7,7 +7,7 @@ groups:
     description: Literature, open-source, architecture, evidence gathering, and synthesis workflows.
   - id: design
     label: Design
-    description: Interface design, brand systems, accessibility, metadata, motion, polish, and image generation.
+    description: HTML visual design, prototypes, UI/UX, dashboards, data visualization, browser presentations, brand systems, accessibility, motion, and image generation.
   - id: documents
     label: Documents
     description: README, Word, PDF, PowerPoint, spreadsheet, and document automation workflows.
@@ -23,7 +23,7 @@ skills:
     subgroup: workflow
     tags: [workflow, sdd, planning, research, multi-agent, execution, verification, audit]
     recommendedScopes: [global]
-    description: "Risk-scaled operating workflow for specification, research, planning, multi-agent execution, verification, audit, and handoff."
+    description: "Risk-scaled engineering workflow for specification, codebase exploration, design, vertical delivery, debugging, review, verification, audit, and handoff."
   code-guidelines:
     group: build
     subgroup: quality
@@ -133,7 +133,7 @@ skills:
     subgroup: interface
     tags: [ui, frontend, brand, design-md, accessibility, polish]
     recommendedScopes: [project]
-    description: Consolidated interface workflow from frontend-design, brand DESIGN.md routing, baseline-ui, accessibility, metadata, motion, design-lab, impeccable, and interaction polish skills.
+    description: Universal HTML/CSS/JS design workflow for prototypes, UI/UX, dashboards, data visualization, marketing, browser presentations, brand routing, accessibility, motion, and visual QA.
   frontend-design:
     group: design
     subgroup: interface

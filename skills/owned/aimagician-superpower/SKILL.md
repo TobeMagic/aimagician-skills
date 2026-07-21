@@ -1,6 +1,6 @@
 ---
 name: aimagician-superpower
-description: Use when starting or resuming substantial work, clarifying ambiguous requirements, applying spec-driven development, planning or executing a milestone, coordinating agents, debugging systematically, or closing work with verified evidence and a durable handoff.
+description: Use when starting or resuming substantial engineering work, understanding requirements, exploring a codebase, designing or implementing changes, debugging, refactoring, reviewing code, applying spec-driven development, coordinating agents, or closing work with verified evidence and a durable handoff.
 category: build
 subcategory: workflow
 tags:
@@ -18,11 +18,15 @@ metadata:
     - references/capabilities/state-and-continuity.md
     - references/capabilities/spec-driven-development.md
     - references/capabilities/research-and-discovery.md
+    - references/capabilities/engineering-exploration.md
     - references/capabilities/ideation-and-scope.md
+    - references/capabilities/engineering-design.md
     - references/capabilities/planning-modes.md
     - references/capabilities/agent-orchestration.md
     - references/capabilities/execution-modes.md
+    - references/capabilities/engineering-delivery.md
     - references/capabilities/debugging-and-forensics.md
+    - references/capabilities/engineering-review.md
     - references/capabilities/verification-and-uat.md
     - references/capabilities/audit-and-closure.md
     - references/capabilities/domain-gates.md
@@ -69,16 +73,34 @@ Load the smallest set of modules needed for the current stage.
 | State, milestone, resume, pause, progress, checkpoint | `references/capabilities/state-and-continuity.md` |
 | Formal specification, ambiguity scoring, locked requirements | `references/capabilities/spec-driven-development.md` |
 | Local discovery, architecture mapping, dependency and web research | `references/capabilities/research-and-discovery.md` |
+| Repository map, entry points, dependencies, data/control flow, blast radius | `references/capabilities/engineering-exploration.md` |
 | Brainstorming, alternatives, decomposition, assumption review | `references/capabilities/ideation-and-scope.md` |
+| Domain model, interfaces, invariants, test seams, alternatives, migration design | `references/capabilities/engineering-design.md` |
 | Quick, phase, MVP, TDD, repair, and reviewed plans | `references/capabilities/planning-modes.md` |
 | Provider-neutral agent roles, prompts, status, independent reviews | `references/capabilities/agent-orchestration.md` |
 | Sequential, autonomous, parallel, and worktree execution | `references/capabilities/execution-modes.md` |
+| Feature, bug, refactor, performance, architecture, prototype, merge playbooks | `references/capabilities/engineering-delivery.md` |
 | Reproduction, root-cause tracing, waiting, pollution, defense in depth | `references/capabilities/debugging-and-forensics.md` |
+| Specification review, engineering quality review, severity, remediation | `references/capabilities/engineering-review.md` |
 | Tests, validation, UAT, evidence, requirement traceability | `references/capabilities/verification-and-uat.md` |
 | Gap audit, cleanup, learning, milestone closure, handoff | `references/capabilities/audit-and-closure.md` |
 | UI, AI, security, data, documents, operations, Git and PR gates | `references/capabilities/domain-gates.md` |
 
 Role prompt templates live under `references/roles/`. Planning templates live under `assets/templates/`. Executable checks live under `scripts/`.
+
+## Senior Engineering Operating Standard
+
+For any change beyond a known one-file edit, do not move from request directly to code. Establish five engineering artifacts, inline for small work or from `assets/templates/` for substantial work:
+
+1. **Behavior contract:** observable current and target behavior, acceptance examples, invariants, and failure behavior.
+2. **Context map:** entry points, ownership boundaries, dependency direction, data/control flow, persisted state, and likely blast radius.
+3. **Design record:** at least two materially viable designs when tradeoffs exist, chosen interfaces and test seams, compatibility, migration, rollback, security, performance, and operability.
+4. **Change brief:** ordered vertical slices, exact file scope, integration points, and evidence expected after each slice.
+5. **Review record:** specification findings first, then correctness, tests, security, maintainability, extensibility, performance, operability, and diff hygiene.
+
+Scale the detail to risk; do not skip the reasoning category. Facts need file, command, runtime, or primary-source evidence. Mark inference and unknowns explicitly. Prefer a deep module with a small stable interface over knowledge spread across many callers, but do not introduce abstraction without demonstrated leverage.
+
+Durable engineering artifacts use `assets/templates/engineering-context-map.md`, `assets/templates/engineering-design-record.md`, `assets/templates/engineering-change-brief.md`, and `assets/templates/engineering-review.md`.
 
 ## Workload And Specification Gate
 
@@ -110,7 +132,7 @@ Ask only questions that change behavior, scope, acceptance, risk, data handling,
 
 ### 4. Research And Brainstorm
 
-Inspect local code, tests, docs, configs, schemas, history, and prior artifacts before external research. Compare multiple viable approaches. Delegate broad exploration through `cli-agent-orchestrator` when it would consume substantial main-agent context. Record facts, inference, unknowns, compatibility, risks, and recommendation.
+Inspect local code, tests, docs, configs, schemas, history, and prior artifacts before external research. Build the objective-sized context map: entry points, module boundaries, data/control flow, side effects, dependency direction, patterns, and blast radius. Use `assets/templates/engineering-context-map.md` when the map must survive the current context. Compare multiple viable approaches. Delegate broad exploration through `cli-agent-orchestrator` when it would consume substantial main-agent context. Record facts, inference, unknowns, compatibility, risks, and recommendation.
 
 ### 5. Re-Discuss And Lock
 
@@ -118,11 +140,11 @@ Bring back findings that affect scope, dependencies, risk, UX, data, schedule, o
 
 ### 6. Plan And Review
 
-Map every requirement ID to one or more atomic tasks and exact verification. Order dependency waves, define file scopes, checkpoints, rollback, and integration. Run an independent plan review for substantial work; revise until requirement coverage and execution clarity pass.
+Define the behavior contract, domain vocabulary, invariants, interfaces, failure semantics, and test seams. For meaningful design choices, compare at least two structurally different options before committing. Map every requirement ID to vertical slices and exact verification. Order dependency waves, define file scopes, checkpoints, migration, rollback, and integration. Run an independent plan review for substantial work; revise until requirement coverage and execution clarity pass.
 
 ### 7. Execute And Checkpoint
 
-Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Use test-first slices when behavior can be pinned down. For delegated implementation, use a fresh implementer context followed by independent specification review and then quality review. Fix and re-review before advancing.
+Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Deliver one end-to-end tracer slice before broadening. Put tests at observable seams and make them fail for the intended reason before implementation. Use expand-contract for wide refactors and reversible prototypes for uncertain architecture. For delegated implementation, use a fresh implementer context followed by independent specification review and then quality review. Fix and re-review before advancing.
 
 ### 8. Verify And UAT
 
@@ -146,9 +168,11 @@ node scripts/workflow.mjs next --project <path> --phase <phase>
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate spec
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate execute
 node scripts/workflow.mjs trace --project <path> --phase <phase> --format json
+node scripts/engineering-route.mjs --kind feature --risk medium --format json
+node scripts/engineering-route.mjs --kind refactor --risk high
 ```
 
-`spec` checks locked requirements and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires completed research, discussion, context, and accepted plans. `complete` requires passing evidence, audit, summary, and UAT when user-facing. `init` previews missing artifacts by default and writes only with `--write`. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
+`spec` checks locked requirements and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires completed research, discussion, context, and accepted plans. `complete` requires passing evidence, audit, summary, and UAT when user-facing. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the minimum engineering stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
 
 ## Companion Routing
 

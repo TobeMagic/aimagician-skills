@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "skill": "interface-design",
+  "scenarios": [
+    {
+      "id": "premium-product-landing",
+      "prompt": "Design and implement a premium product launch page in HTML with real product evidence and responsive behavior.",
+      "should_trigger": true,
+      "expected": ["delivery route", "content and audience brief", "product-first macrostructure", "visual direction", "semantic tokens", "320-to-desktop screenshots", "anti-template critique"],
+      "forbidden": ["generic centered hero", "invented metrics", "three identical feature cards", "native pptx workflow"]
+    },
+    {
+      "id": "operational-dashboard",
+      "prompt": "Build a dense operations dashboard with trends, filters, exceptions, and repeated record actions.",
+      "should_trigger": true,
+      "expected": ["decision-first metrics", "command-center or workbench layout", "table and chart semantics", "loading empty error stale states", "keyboard and responsive verification"],
+      "forbidden": ["marketing page", "decorative card wall", "unlabeled chart axes", "mobile shrink-only layout"]
+    },
+    {
+      "id": "interactive-app-prototype",
+      "prompt": "Create an interactive mobile app prototype to validate onboarding, a primary task, and failure recovery.",
+      "should_trigger": true,
+      "expected": ["fidelity contract", "screen and transition map", "real simulated placeholder labels", "critical flow", "failure recovery", "target-device verification"],
+      "forbidden": ["disconnected screenshots", "undocumented fake production behavior", "decorative device chrome as the main design"]
+    },
+    {
+      "id": "browser-presentation",
+      "prompt": "Create an HTML presentation for a product strategy review with interactive evidence and browser full-screen delivery.",
+      "should_trigger": true,
+      "expected": ["browser-native route", "narrative arc", "varied frame grammar", "stable slide geometry", "keyboard navigation", "per-frame visual QA"],
+      "forbidden": ["claim native PowerPoint", "repeat one card layout on every frame", "skip sequence review"]
+    },
+    {
+      "id": "native-powerpoint-boundary",
+      "prompt": "Deliver an editable PowerPoint .pptx with a slide master and Office compatibility.",
+      "should_trigger": false,
+      "expected": ["route to pptx or window-pptx", "native owner controls production and QA"],
+      "forbidden": ["generate HTML as final artifact", "claim HTML conversion is equivalent to native PowerPoint"]
+    },
+    {
+      "id": "hybrid-presentation-handoff",
+      "prompt": "Explore a presentation visual direction in HTML, then deliver a native editable PowerPoint deck.",
+      "should_trigger": true,
+      "expected": ["HTML visual exploration", "approved direction", "ppt handoff contract", "native PPT owner", "separate acceptance evidence"],
+      "forbidden": ["one owner claims both artifacts without routing", "lossy conversion presented as native reconstruction"]
+    }
+  ]
+}
