@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "contracts": [
+    {"id":"social-cover","tasks":["readme-cover","poster"],"deliverables":["image","gif","video"],"default_geometry":"platform-defined landscape or square","must_include":["identity","one message","safe crop","source"],"preferred_patterns":["campaign-poster","evidence-infographic"]},
+    {"id":"article-illustration","tasks":["poster","infographic"],"deliverables":["html","image","pdf"],"signals_any":["editorial","article","publication"],"default_geometry":"responsive editorial figure","must_include":["caption","alt text","source","text fallback"],"preferred_patterns":["evidence-led-editorial","process-map"]},
+    {"id":"vertical-infographic","tasks":["infographic"],"deliverables":["html","image","pdf"],"default_geometry":"1080x1920","must_include":["thesis","sourced statistics","annotations","legend","sources"],"preferred_patterns":["evidence-infographic"]},
+    {"id":"html-slide","tasks":["html-presentation"],"deliverables":["html","pdf","pptx","hybrid"],"default_geometry":"16:9 fixed stage","must_include":["one argument","visual anchor","notes","navigation","print behavior"],"preferred_patterns":["html-slide-sequence","multi-file-deck"]},
+    {"id":"pdf-whitepaper","tasks":["html-presentation","infographic"],"deliverables":["pdf"],"signals_any":["whitepaper","report"],"default_geometry":"print page","must_include":["reading order","searchable text","figures","sources","page numbers"],"preferred_patterns":["evidence-led-editorial"]},
+    {"id":"landing-page","tasks":["landing"],"deliverables":["html","hybrid"],"default_geometry":"responsive browser","must_include":["literal offer or product","primary action","mechanism","proof","next-section cue"],"preferred_patterns":["product-first-story"]},
+    {"id":"app-prototype","tasks":["app-prototype"],"deliverables":["html","hybrid"],"default_geometry":"target device plus responsive fallback","must_include":["critical flow","state transitions","failure recovery","honest simulation"],"preferred_patterns":["app-shell-prototype","device-prototype-gallery"]},
+    {"id":"mobile-story-series","tasks":["poster","product-demo"],"deliverables":["image","gif","video"],"signals_any":["mobile-series","social-series"],"default_geometry":"platform-defined portrait sequence","must_include":["sequence marker","one idea per frame","safe area","series consistency"],"preferred_patterns":["timeline-narrative","campaign-poster"]}
+  ]
+}

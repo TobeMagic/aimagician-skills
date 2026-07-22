@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "primary-product-proof",
+      "path": "assets/replace-me.png",
+      "source": "project-local-or-authoritative-url",
+      "owner": "project-or-source-owner",
+      "license": "verify-before-use",
+      "retrieved_at": "YYYY-MM-DD",
+      "width": 0,
+      "height": 0,
+      "sha256": "",
+      "crop": "none",
+      "fallback": "honest-labeled-placeholder"
+    }
+  ]
+}

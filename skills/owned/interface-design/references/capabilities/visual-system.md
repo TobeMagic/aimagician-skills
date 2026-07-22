@@ -31,7 +31,12 @@ Use variables rather than improvising values inside components. Keep a small coh
 - Match display size to copy length and container; never scale type directly with viewport width.
 - Keep body measure readable and line height proportional to line length.
 - Use `font-variant-numeric: tabular-nums` where values compare vertically.
-- For CJK content, choose fonts with complete glyph coverage, avoid synthetic italics, use appropriate punctuation and line breaking, and test mixed-script alignment.
+- For CJK content, choose an open or project-approved family with complete target-language glyph coverage. Order fallbacks by intended CJK language before generic `sans-serif`; a Latin-first fallback can produce mismatched punctuation and numerals.
+- Test CJK and Latin x-height, cap height, baseline, weight, and perceived size together. When they differ, use separate semantic spans or a compatible pair rather than arbitrary vertical offsets.
+- Avoid synthetic italics for scripts without an approved italic face. Use weight, color, rules, quotation marks, or emphasis dots according to language conventions.
+- Chinese body text normally needs more line height than Latin text. Test full-width punctuation, brackets, consecutive punctuation compression, hanging punctuation, forbidden line starts and ends, mixed numerals, acronyms, and tabular values in the actual renderer.
+- Keep ordinary CJK letter spacing at `0`; apply tracking only to tested display text. Do not add spaces between CJK characters to imitate tracking.
+- For large web font files, subset only from known shipped content and declare `unicode-range` slices with a complete fallback. Dynamic or user-entered text requires the full approved font path.
 - Letter spacing is `0` unless the accepted brand system has an explicit, tested reason.
 
 ## Color
@@ -48,3 +53,9 @@ Use variables rather than improvising values inside components. Keep a small coh
 Use actual product states, objects, places, people, diagrams, charts, or generated bitmap assets when the user needs to inspect something real. Define aspect ratio, crop behavior, focal point, loading, alt text, and fallback. Use one consistent icon family and familiar symbols for actions; do not use generic emoji as interface icons.
 
 Record the final token system and rationale in `assets/templates/design-system.md`.
+
+## Direction Vocabulary
+
+When brand context does not determine a direction, load `assets/patterns/visual-direction-patterns.json`. It provides twenty browser-oriented and twenty presentation-oriented direction families across bold, balanced, and quiet intensity, with implementation difficulty and font-profile guidance. Treat these as decision vocabulary, not templates or identities to copy. Select from content, audience, density, media, accessibility, and implementation constraints, then adapt the system to the actual product.
+
+Before accepting a system, query `assets/patterns/anti-template-rules.json`. A detected trap requires the named structural recovery or an explicit evidence-backed reason to retain it.

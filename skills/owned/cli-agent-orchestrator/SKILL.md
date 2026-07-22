@@ -103,6 +103,7 @@ If the user asks for external-agent writes, stop and re-discuss the task as an e
    - Verify CLI exists.
    - Verify project/source path when relevant.
    - Verify model availability and provider config.
+   - Prefer `agnes/agnes-2.0-flash` for free long-running OpenCode work when available.
 6. Execute the external CLI agent.
    - Prefer non-interactive mode.
    - Use the provider-specific command shape from `references/providers/opencode.md` (or equivalent provider instructions).

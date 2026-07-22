@@ -82,39 +82,48 @@ The most valuable transferable idea is to make design a gated system of content,
 |---|---|
 | Intake | Added explicit final-artifact, user, workflow, content, truth, platform, and acceptance gates. |
 | Brand routing | Existing references remain authoritative; verified asset extraction becomes the fallback for unlisted brands. |
-| Layout | Added content-signal decision rules and 17 curated macrostructures covering marketing, editorial, operations, data, prototypes, diagrams, presentations, repository branding, posters, motion sequences, and creative-coding stages. |
-| Components | Added 23 archetypes with anatomy/use guidance and required state sets, including repository wordmarks, terminal proof, capability ribbons, motion scenes, and media fallbacks. |
+| Layout | Added content-signal decision rules and 22 curated macrostructures covering marketing, editorial, operations, data, prototypes, diagrams, presentations, repository branding, posters, infographics, motion sequences, direction comparison, devices, narrated work, and creative-coding stages. |
+| Components | Added 32 archetypes with anatomy/use guidance and required state sets, including repository wordmarks, terminal proof, evidence blocks, annotated diagrams, device frames, comparison/tweak controls, notes/placeholders, narration/audio cues, motion scenes, and media fallbacks; 43 quality checks cover their delivery contracts. |
 | Visual quality | Added semantic token contract, CJK typography, perceptual color, imagery rules, anti-template checks, and evidence-backed critique. |
 | Responsive work | Made 320/375/414/768/desktop inspection explicit for general web work and required intentional transformation. |
 | Verification | Added functional path, console/network, font/asset readiness, keyboard, state, motion, screenshot, and score-based closure gates. |
 
 ### Added
 
-Eleven progressive capability modules:
+Fifteen progressive capability modules:
 
 1. `delivery-routing.md`
 2. `context-and-direction.md`
 3. `information-architecture.md`
 4. `visual-system.md`
 5. `components-and-interaction.md`
-6. `prototypes-and-data.md`
-7. `motion-and-html-presentations.md`
-8. `implementation-and-verification.md`
+6. `react-browser-setup.md`
+7. `prototypes-and-data.md`
+8. `motion-and-html-presentations.md`
+9. `html-first-presentations.md`
 
 Additional product-asset modules:
 
-9. `brand-and-product-assets.md`
-10. `repository-branding-and-marketing.md`
-11. `creative-coding-and-motion-media.md`
+10. `brand-and-product-assets.md`
+11. `repository-branding-and-marketing.md`
+12. `creative-coding-and-motion-media.md`
+13. `motion-rendering-safety.md`
+14. `audio-and-narration.md`
+15. `implementation-and-verification.md`
 
-Four executable data libraries:
+Nine executable decision libraries:
 
 - `assets/patterns/layout-patterns.json`
 - `assets/patterns/component-patterns.json`
 - `assets/patterns/decision-rules.json`
 - `assets/patterns/quality-checks.json`
+- `assets/patterns/visual-direction-patterns.json`
+- `assets/patterns/anti-template-rules.json`
+- `assets/patterns/motion-scene-recipes.json`
+- `assets/patterns/output-contract-patterns.json`
+- `assets/patterns/taste-anchor-patterns.json`
 
-Eight durable templates:
+Fifteen durable templates:
 
 - design brief;
 - visual system;
@@ -124,39 +133,51 @@ Eight durable templates:
 - brand specification;
 - repository visual brief;
 - deterministic motion storyboard.
+- direction decision and comparison evidence;
+- asset provenance manifest;
+- director notes;
+- narration manifest;
+- narration script with scene and cue markers;
+- audio cue and ducking manifest.
+- project render-adapter manifest.
 
 Reusable source and rendering assets:
 
-- fixed-format repository hero scaffold;
-- deterministic browser-time scaffold;
-- Playwright frame capture and ffmpeg poster/MP4 renderer.
+- fixed-format repository hero, device/browser frame, direction comparison, deck, publication grammar, narration, persisted tweak panel, gallery geometry, React motion, and optional GSAP scaffolds;
+- deterministic browser-time Stage/Sprite scaffold;
+- Playwright frame capture and ffmpeg poster/MP4/two-pass GIF renderer;
+- vector PDF exporters for multi-file and single-stage HTML decks;
+- explicit editable/fidelity HTML-first PPTX exporters;
+- provider-neutral narration adapter and voice/music/effect mixer with ducking.
+- licensed Commons asset retrieval with provenance manifests, deck thumbnail rendering, and narration-script compilation into measured timelines.
 
 One dependency-free route advisor:
 
 - `scripts/design-router.mjs`
 
-It routes landing, dashboard, app prototype, component, audit, redesign, HTML presentation, README cover, poster, product demo, and creative-coding work; combines content signals with layout/component patterns; returns relevant quality gates; and enforces HTML, image, video, native PPTX, or hybrid ownership.
+It routes landing, dashboard, app prototype, component, audit, redesign, HTML presentation, README cover, poster, infographic, product demo, and creative-coding work; combines content signals with layout/component patterns, output contracts, taste anchors, motion recipes, and anti-template rules; returns relevant quality gates; and enforces HTML, image, video, GIF, PDF, ordinary native PPTX, explicit HTML-first PPTX, or hybrid ownership.
 
 ### Rejected Or Adapted
 
 | Source Content | Decision | Reason |
 |---|---|---|
 | Full fixed theme catalog | Adapt to semantic visual-system rules | A universal owned skill should derive brand and domain fit, not force source themes. |
-| All source macrostructures and component files | Curate into 17 layouts and 23 components | Keeps progressive loading practical while preserving decision coverage. |
+| All source macrostructures and component files | Curate into 22 layouts, 32 components and 40 direction families | Keeps progressive loading practical while preserving decision coverage. |
 | Hidden project memory or source-specific log | Replace with explicit brief/system/QA artifacts | Durable project-owned evidence is easier to inspect and resume. |
-| Mandatory three drafts for every task | Apply only to open, high-visual briefs | Locked systems, small fixes, and explicit one-pass work should not incur needless friction. |
-| HTML-to-PPTX as default PowerPoint delivery | Reject | Native PowerPoint has different editability, master, chart, note, and Office QA requirements. |
-| Copied device frames, stage engines, media, and demo binaries | Reject | Original, source-neutral scaffolds retain the useful method without runtime licensing burden. |
-| Voice, SFX, TTS, and vendor media pipelines | Reject from universal core | Audio and vendor-specific production remain specialized and must be explicitly licensed. |
-| Deterministic browser-rendered product loops | Add in bounded form | README heroes and product showcases require a repeatable HTML/Canvas-to-poster/MP4 path with frame validation and no external service dependency. |
+| Exactly three direction previews | Require before open visual commitment; allow only recorded narrow bypasses | An accepted direction, a small fix, or mechanical export may reuse the current system; the gate is explicit and not enforced by an environment hook. |
+| HTML-to-PPTX as the default for ordinary PowerPoint | Reject; add only for explicit HTML-first requests | Ordinary native PowerPoint retains its Office owner. Explicit HTML-first work now requires an `editable` DOM-to-native or `fidelity` image-slide choice. |
+| Device frames, comparison canvas, Stage/Sprite, deck and narration scaffolds | Adapt and include | Source-neutral starters preserve the executable method without author identity or personal media. |
+| Voice, SFX, TTS and mixing | Adapt and include | Provider-neutral manifests/adapters, measured timing, licensed project media, sidechain ducking and loudness checks preserve capability without credentials or vendor lock-in. |
+| Deterministic browser-rendered product loops | Add and expand | README heroes and product showcases use a repeatable HTML/Canvas-to-poster/MP4/GIF path with frame, loop, black-frame, duration and size validation. |
 | Source-specific hooks, gate scripts, watermarks, installers, and promotion | Reject | They do not improve the professional design method and mutate or brand the runtime. |
 | Framework-specific setup as a global rule | Adapt to local-framework-first | The owned skill must work across HTML, CSS, JavaScript, and existing frontend stacks. |
+| Stale pinned CDN URLs or vendor render/model selectors | Adapt to project-owned, currently verified adapters | Preserve the setup and review capability without freezing obsolete versions, hashes, providers, or credentials into a universal skill. |
 
 ## Final Architecture
 
 ```text
 user requirement
-  -> final artifact owner: HTML | native PPTX | hybrid
+  -> final artifact owner: HTML/media/PDF | ordinary native PPTX | explicit HTML-first PPTX | hybrid
   -> existing context and truthful content
   -> user flow, information architecture and state inventory
   -> macrostructure selected from content signals
@@ -180,9 +201,11 @@ The main `SKILL.md` is a router and non-negotiable contract. Capability modules 
 - SVG, Canvas, deterministic motion, and creative-coding visuals;
 - interactive reports, charts, data visualization, and process diagrams;
 - HTML slides, browser presentations, visual exploration, and presentation prototypes;
+- HTML-first PDF and, when explicitly requested, editable or fidelity-mode PPTX conversion;
+- narrated motion, licensed music/effects, provider-neutral TTS adapters, cue mixing and ducking;
 - study, audit, redesign, browser QA, accessibility, responsive and motion quality.
 
-### PPT Skills Own
+### PPT Skills Own By Default
 
 - final editable `.pptx` files;
 - slide masters, native text/shapes/charts/tables/media, notes, and templates;
@@ -192,6 +215,10 @@ The main `SKILL.md` is a router and non-negotiable contract. Capability modules 
 ### Hybrid Rule
 
 HTML may establish and validate a visual direction. `ppt-handoff.md` transfers narrative, tokens, assets, frame inventory, screenshots, and reconstruction constraints. The PPT owner then rebuilds and verifies the native deck. Ownership is sequential and explicit.
+
+### Explicit HTML-First Rule
+
+When the user explicitly requires HTML as the presentation source, `interface-design` retains ownership through export. `editable` mode constrains HTML from the first slide and produces native PowerPoint objects; `fidelity` mode permits unrestricted HTML but produces image-backed slides. The router blocks unspecified editability instead of silently choosing.
 
 ## Weak-Model Enhancement Strategy
 
@@ -215,10 +242,14 @@ This does not guarantee taste from prose alone. It makes the design process obse
 | Landing page | Product-first signal, truthful proof, coherent visual system, responsive browser screenshots, anti-template critique. |
 | Dashboard | Decision-first metrics, workbench or command center, table/chart semantics, full data state matrix, keyboard/mobile evidence. |
 | App prototype | Fidelity contract, connected critical flow, state transitions, honest simulation, target-platform verification. |
-| HTML presentation | Browser-native owner, narrative arc, varied frames, keyboard/full-screen behavior, per-frame QA. |
+| HTML presentation | Browser-native owner, narrative arc, varied frames, keyboard/full-screen/print behavior, notes, per-frame QA, and optional vector PDF. |
+| Explicit HTML-first PPTX | Require editable/fidelity choice, package integrity, notes, and truthful editability disclosure. |
 | Native PowerPoint | Immediate route to `pptx` or `window-pptx`; no HTML final artifact. |
 | Hybrid presentation | HTML direction plus structured handoff, followed by separate native reconstruction and QA. |
 | README cover | Repository truth pass, claim ledger, selected visual direction, editable source, static hero, downscaled QA, and README integration. |
 | Product demo video | Storyboard, deterministic clock, poster fallback, encoded media, frame inspection, and codec/duration/size evidence. |
+| README autoplay hero | Tracked relative GIF, deterministic source, infinite-loop check, downscaled readability, and file-size budget. |
+| Narrated launch film | Approved script, measured segments, continuous visual timeline, licensed cues, ducking, loudness and A/V verification. |
 
 Automated architecture and route tests live in `tests/skills/expert-skill-architecture.test.ts`.
+The full source capability mapping and runtime-noise decisions are recorded in `docs/audits/huashu-interface-design-capability-audit-2026-07-22.md`.

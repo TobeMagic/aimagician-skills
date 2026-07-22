@@ -23,6 +23,15 @@
     {"id": "terminal-product-proof", "category": "marketing", "use_when": "A developer tool is best explained by current terminal commands, state, and output.", "required_states": ["ready", "active", "result", "fallback"]},
     {"id": "capability-ribbon", "category": "marketing", "use_when": "Three to five concise, verified capabilities support a primary proof without becoming a card wall.", "required_states": ["full", "compact", "wrapped"]},
     {"id": "motion-scene", "category": "motion", "use_when": "A deterministic time range carries one dominant product or narrative idea.", "required_states": ["enter", "hold", "exit", "reduced-motion"]},
-    {"id": "media-fallback", "category": "media", "use_when": "Motion, Canvas, WebGL, or remote media needs a complete static alternative.", "required_states": ["poster", "loading", "failed", "reduced-motion"]}
+    {"id": "media-fallback", "category": "media", "use_when": "Motion, Canvas, WebGL, or remote media needs a complete static alternative.", "required_states": ["poster", "loading", "failed", "reduced-motion"]},
+    {"id": "design-comparison", "category": "design-direction", "use_when": "Two or three visual directions must be judged against the same brief and geometry.", "required_states": ["overview", "focused", "selected", "rejected"]},
+    {"id": "tweak-panel", "category": "design-direction", "use_when": "A small set of meaningful visual or interaction parameters must be compared live.", "required_states": ["default", "changed", "persisted", "reset"]},
+    {"id": "device-frame", "category": "prototype", "use_when": "A mobile, desktop, or browser prototype needs target-platform geometry without decorative dominance.", "required_states": ["ios", "android", "macos", "browser", "content-focus"]},
+    {"id": "speaker-notes", "category": "presentation", "use_when": "A browser or exported presentation needs presenter-only narrative context.", "required_states": ["hidden", "presenter-view", "exported"]},
+    {"id": "pptx-placeholder", "category": "presentation", "use_when": "An editable HTML-first PPTX needs a reserved native chart, table, or diagram insertion point.", "required_states": ["declared", "resolved", "missing"]},
+    {"id": "narration-track", "category": "audio", "use_when": "Measured voice segments drive visual scene timing.", "required_states": ["script", "synthesized", "measured", "aligned"]},
+    {"id": "audio-cue-track", "category": "audio", "use_when": "Licensed voice, music, and effects need explicit timing, gain, fade, and provenance.", "required_states": ["declared", "resolved", "mixed", "verified"]},
+    {"id": "stat-block", "category": "information-graphic", "use_when": "One measured value must anchor a claim with unit, scope, and source.", "required_states": ["sourced", "qualified", "compact", "fallback"]},
+    {"id": "annotated-diagram", "category": "information-graphic", "use_when": "Labels and callouts must explain structure, causality, or a process directly on the visual.", "required_states": ["complete", "focused", "legend", "text-fallback"]}
   ]
 }

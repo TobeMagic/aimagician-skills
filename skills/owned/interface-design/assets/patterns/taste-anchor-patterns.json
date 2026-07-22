@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "anchors": [
+    {"id":"developer-tool","tasks":["readme-cover","product-demo","dashboard","landing"],"signals_any":["developer-tool","terminal","cli","repository","code"],"type_roles":"neutral sans plus functional mono","color_strategy":"quiet neutral field with one command or status accent","density":"medium-high","signature":"real terminal, editor, trace, diff, or architecture proof"},
+    {"id":"operational-saas","tasks":["dashboard","app-prototype","landing"],"signals_any":["saas","operations","enterprise","many-records"],"type_roles":"high-legibility sans with tabular numerics","color_strategy":"neutral work surface with semantic status colors","density":"high","signature":"decision-first metrics, exceptions, filters, and repeated actions"},
+    {"id":"consumer-app","tasks":["app-prototype","landing"],"signals_any":["consumer","mobile","commerce","social"],"type_roles":"humanist sans with compact labels","color_strategy":"brand-led but interaction states remain distinct","density":"medium","signature":"connected task flow shown in target device context"},
+    {"id":"education","tasks":["app-prototype","html-presentation"],"signals_any":["education","learning","course","teaching"],"type_roles":"approachable display plus highly readable body","color_strategy":"semantic categories with restrained playfulness","density":"medium-low","signature":"progress, examples, feedback, and recovery remain visible"},
+    {"id":"editorial-research","tasks":["infographic","html-presentation","poster"],"signals_any":["editorial","research","report","publication","evidence"],"type_roles":"serif-sans reading pair with precise captions","color_strategy":"paper or neutral field with evidence accent","density":"variable","signature":"thesis, source rail, figures, counterpoint, and implication"},
+    {"id":"premium-object","tasks":["landing","poster","product-demo"],"signals_any":["premium","luxury","object","hardware"],"type_roles":"restrained display face plus neutral body","color_strategy":"object-led neutral palette with controlled contrast","density":"low","signature":"large truthful object view, material detail, and minimal annotation"}
+  ]
+}

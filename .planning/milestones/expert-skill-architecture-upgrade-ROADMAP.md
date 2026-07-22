@@ -2,7 +2,7 @@
 
 **Created:** 2026-07-21
 **Branch:** `feat/expert-skill-architecture-upgrade`
-**Status:** Complete
+**Status:** In progress (Phase 6 extension)
 
 ## Goal
 
@@ -28,10 +28,20 @@ Upgrade the owned engineering and HTML design skills so a weaker model can follo
 | 3. HTML universal design integration | P0 | Eight modules, pattern libraries, templates, route helper, evals, PPT boundary | Complete | `skills/owned/interface-design/` |
 | 4. Documentation and automated acceptance | P0 | Merge audits, README, architecture and scenario tests | Complete | `docs/`, 101 passing tests |
 | 5. Independent review and integration | P0 | Full checks, OpenCode review, Codex/OpenCode sync, commit and safe cherry-pick | Complete | Root commit `17ea2c5`; Skillbird and OpenCode acceptance healthy |
+| 6. HTML-native production parity | P0 | Complete source audit, GIF, devices/tweaks, deck/PDF, explicit HTML-first PPTX, narration/audio, runtime neutrality | In progress | `docs/audits/huashu-interface-design-capability-audit-2026-07-22.md`, runtime smoke evidence |
+
+## 2026-07-22 Extension Requirements
+
+- **REQ-DES-04:** Preserve the complete reusable HTML-native production method from the audited design source through progressive owned modules, templates, starters, scripts, routes and tests.
+- **REQ-DES-05:** Support deterministic poster, MP4 and tracked autoplay GIF delivery with loop, frame, codec, duration and size evidence.
+- **REQ-DES-06:** Support variants/tweaks, comparison canvases, device/browser frames, Stage/Sprite motion, narration, provider-neutral TTS, licensed audio cues, ducking and loudness validation.
+- **REQ-PPT-02:** Keep ordinary PowerPoint under the native PPT owners while supporting explicit HTML-first PDF and PPTX delivery through mandatory editable/fidelity contracts.
+- **REQ-SRC-02:** Keep the complete source snapshot ignored and uninstallable; document capability parity outside the Skill runtime and prove no source identity or operational noise is installed.
+- **REQ-OPS-02:** Use `agnes/agnes-2.0-flash` for the independent OpenCode audit, sync Codex/OpenCode/Claude, and validate a tracked GIF README hero in YapCLI.
 
 ## Validation Evidence
 
-- `npm test`: 21 files, 101 tests passed.
+- `npm test`: 21 files, 108 tests passed.
 - `npm run typecheck`: passed.
 - `npm run build`: passed.
 - `node dist/cli/index.js format-skills --check --json`: all 23 owned skills `ok`.
@@ -42,8 +52,9 @@ Upgrade the owned engineering and HTML design skills so a weaker model can follo
 - Skillbird global reset: Codex and OpenCode each contain exactly 23 managed owned skills; `list` and `doctor` both report `healthy` with zero issues.
 - Installed runtime comparison: upgraded Codex/OpenCode skill trees match repository source after excluding ignored audit mirrors; no `_external_repos`, `_analysis`, or `source-routing` directory was installed.
 - Fresh OpenCode acceptance: `opencode/deepseek-v4-flash-free`, session `ses_07cb9c685fferbOJlS5z2isko1`, reported PASS for owner-ID parity, engineering modules, design modules/assets/templates, HTML/PPT routing, and forbidden-directory absence.
+- Final HTML-native capability audit: `agnes/agnes-2.0-flash`, session `ses_075ab8bb1ffeA6lh3tCV6i4G5H`, reported PASS with no blocker or high finding; direct spot checks corrected its three count/search errors.
 
-## Completion Result
+## Phase 1-5 Completion Result
 
 All requirements and completion gates for this milestone are satisfied. Engineering and HTML design runtime capabilities are source-neutral, executable routing and acceptance scenarios are present, native PowerPoint ownership is explicit, repository checks pass, and both requested CLI targets are synchronized to the complete owned set.
 

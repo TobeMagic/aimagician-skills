@@ -115,11 +115,14 @@ Minimal exploration config:
 
 Prefer the first available model in this order:
 
-1. `opencode/deepseek-v4-flash-free`
-2. `opencode/nemotron-3-ultra-free`
-3. `opencode/north-mini-code-free`
-4. `opencode/mimo-v2.5-free`
-5. `opencode/big-pickle`
+1. `agnes/agnes-2.0-flash`
+2. `opencode/deepseek-v4-flash-free`
+3. `opencode/nemotron-3-ultra-free`
+4. `opencode/north-mini-code-free`
+5. `opencode/mimo-v2.5-free`
+6. `opencode/big-pickle`
+
+`agnes/agnes-2.0-flash` is the default free model for long-running OpenCode work when it is available. Prefer it over a model that is returning usage-limit errors; a provider limit is a model failure event, not an inactivity timeout.
 
 If none are available:
 

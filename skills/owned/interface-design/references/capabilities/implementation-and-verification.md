@@ -38,19 +38,17 @@ Use `webapp-testing` for browser automation. For canvas, WebGL, or animation-hea
 
 ## Quality Critique
 
-Score each dimension from 1 to 5 with evidence:
+Score each expert dimension from 1 to 10 with evidence, then run the implementation and accessibility gates separately:
 
-- concept and domain fit;
-- information and visual hierarchy;
-- typography, color, spacing, and alignment craft;
-- workflow completeness and interaction states;
-- specificity and truthful content;
-- restraint and absence of generic template tells;
-- responsive transformation and accessibility;
-- implementation stability and performance.
+- concept and strength of the central idea;
+- consistency between the selected philosophy and every design decision;
+- visual hierarchy and message priority;
+- craft quality across typography, color, spacing, imagery, alignment, and motion;
+- functionality, interaction completeness, responsive behavior, and accessibility;
+- originality and absence of generic template or AI-generated visual habits.
 
-Any score below 4 requires a fix or an explicit accepted tradeoff. Run the applicable gates in `assets/patterns/quality-checks.json` and record results in `assets/templates/visual-qa.md`.
+Any score below 8 requires a fix or an explicit accepted tradeoff. Review stills directly and motion through representative playback plus the package from `scripts/prepare-motion-review.mjs`. A vision-model review may add findings but never replaces deterministic geometry, browser, frame, codec, size, audio, or accessibility checks. Run the applicable gates in `assets/patterns/quality-checks.json` and record results in `assets/templates/visual-qa.md`.
 
 ## Completion Gate
 
-Completion requires the accepted artifact to open in its target environment, primary interactions to work, target viewports to pass, no blocking console or network errors, critical content and assets to render, accessibility checks to pass, and screenshots to show no overlap, overflow, blank canvas, or unintended layout shift.
+Completion requires the accepted artifact to open in its target environment, primary interactions to work, target viewports to pass, no blocking console or network errors, critical content and assets to render, accessibility checks to pass, and screenshots to show no overlap, overflow, blank canvas, or unintended layout shift. Fixed media must also pass representative-frame, duration, loop, codec, loudness when applicable, and file-budget checks. HTML-first derivatives must match the selected editable or fidelity contract.

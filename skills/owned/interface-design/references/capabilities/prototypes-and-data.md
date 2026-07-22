@@ -15,11 +15,21 @@ State what is real, simulated, placeholder, and out of scope. A prototype must n
 
 ## App Prototypes
 
-- Match the target platform's navigation, safe areas, input conventions, and density without redrawing decorative device chrome unless the frame is necessary for evaluation.
+- Match the target platform's navigation, safe areas, input conventions, and density. When platform context matters, use the source-neutral iOS, Android, macOS, or browser starter frame rather than inventing device chrome.
 - Prefer a responsive app canvas over fixed screenshots when interaction matters.
 - Build the critical path and recovery path, not a collection of disconnected screens.
-- Use real images or representative structured content when they affect layout decisions.
+- Use real, licensed images or representative structured content when they affect layout decisions. Record provenance and do not leave a generic placeholder when a truthful public-domain or project asset is available.
+- Keep application state outside the decorative frame so every screen uses one deterministic navigation and data model.
+- Run a real Playwright click path through the primary flow, one back path, and one failure or reset path before delivery.
 - Record transitions and state ownership in `assets/templates/prototype-plan.md`.
+
+## Variants And Live Tweaks
+
+Use `assets/starter/design-comparison.jsx` for two or three static directions. Use a live tweak panel when changes are continuous or combinatorial. Expose no more than six meaningful decisions, such as density, type role, palette mode, navigation model, motion intensity, or content emphasis. The default state must already be a finished design. Persist selections locally, provide reset, and make the selected configuration exportable or visible in the review record.
+
+Use `assets/starter/tweak-panel.jsx` for the persisted React hook and accessible control surface. Select a domain baseline from `assets/patterns/taste-anchor-patterns.json`, then expose only decisions that remain genuinely open; never turn implementation tokens into an unbounded style editor.
+
+Do not expose arbitrary CSS values or hundreds of controls. Variants support a decision; they are not an excuse to avoid one.
 
 ## Dashboards And Reports
 
@@ -43,3 +53,9 @@ Use a quiet work-focused composition for repeated operational use. Prioritize sc
 - Sequence: timeline, flow, funnel, or staged diagram.
 
 Do not use 3D charts, decorative chart junk, misleading axes, unexplained dual scales, or color-only distinctions. Show source, units, period, and uncertainty when relevant. Provide tooltips or detail views without hiding the essential comparison.
+
+## Infographics
+
+Use an infographic when a bounded data story, process, system, or comparison must work as one fixed visual rather than an operational dashboard. Start with one sourced thesis, then select only the statistics, diagram, chart, annotations, legend, and source notes needed to prove it. Use `evidence-infographic`, `stat-block`, and `annotated-diagram`; preserve units, denominators, dates, uncertainty, and attribution beside the marks they qualify.
+
+Design each required aspect ratio deliberately. Do not shrink a desktop composition into a vertical poster, encode magnitude with decorative area, or turn unrelated facts into a card grid. Verify reading order, label collisions, color-independent meaning, source legibility, and a text fallback at the final distribution size.

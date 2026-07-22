@@ -71,6 +71,55 @@
       "should_trigger": true,
       "expected": ["primitive selection", "fixed stage geometry", "seeded randomness", "deterministic time", "nonblank pixel check", "reduced motion fallback"],
       "forbidden": ["unseeded capture", "Canvas text that should remain semantic", "blank or unverified output"]
+    },
+    {
+      "id": "readme-autoplay-gif",
+      "prompt": "Create a short autoplaying GIF hero for this GitHub README from the existing HTML product demo.",
+      "should_trigger": true,
+      "expected": ["repository truth", "accepted or three-direction decision", "deterministic HTML source", "gif route", "palette optimization", "infinite loop", "file budget", "relative README path", "representative-frame validation"],
+      "forbidden": ["ephemeral attachment URL", "wall-clock recording", "unbounded GIF", "replace product proof with generic image generation"]
+    },
+    {
+      "id": "html-first-editable-pptx",
+      "prompt": "Use HTML to create this presentation and export an editable PPTX so my team can edit the text.",
+      "should_trigger": true,
+      "expected": ["html-first pipeline", "editable mode", "two-slide showcase for five-plus slides", "multi-file HTML deck", "DOM conversion constraints", "native text and shapes", "fail-closed deck export", "PPTX editability verification"],
+      "forbidden": ["route directly to ordinary native PPT owner", "image-only slides", "write unrestricted HTML before selecting editability", "partial PPTX delivery"]
+    },
+    {
+      "id": "html-first-fidelity-pptx",
+      "prompt": "Build the presentation in HTML with complex SVG and gradients, then package it as a visually identical PPTX; editability is not required.",
+      "should_trigger": true,
+      "expected": ["html-first pipeline", "fidelity mode", "browser deck source", "verified full-slide images", "non-editability disclosure", "slide-count and geometry validation"],
+      "forbidden": ["claim object editability", "remove browser-native effects", "route to native PPT generation"]
+    },
+    {
+      "id": "html-first-pptx-decision",
+      "prompt": "Use HTML to make a presentation and convert it to PPTX.",
+      "should_trigger": true,
+      "expected": ["decision required", "ask editable versus fidelity before implementation", "HTML remains source of truth"],
+      "forbidden": ["silently choose a mode", "start producing all slides", "ordinary native PPT routing"]
+    },
+    {
+      "id": "device-prototype-variants",
+      "prompt": "Make three directions for this mobile app and let me compare meaningful design tweaks in an interactive device prototype.",
+      "should_trigger": true,
+      "expected": ["three real direction previews", "comparison canvas", "target device frame", "no more than six meaningful tweaks", "persisted selection", "connected Playwright click path"],
+      "forbidden": ["three color-only variants", "decorative device frame dominates", "disconnected screenshots", "hundreds of CSS controls"]
+    },
+    {
+      "id": "narrated-launch-film",
+      "prompt": "Create a narrated five-minute HTML animation with TTS, music, sound effects, and an MP4 delivery.",
+      "should_trigger": true,
+      "expected": ["approved script segments", "provider-neutral TTS adapter", "measured clip timing", "continuous narration stage", "licensed audio cues", "ducked mix", "transcript", "loudness and sync verification"],
+      "forbidden": ["hardcoded token", "bundled personal media", "autoplay browser sound", "PowerPoint-like scene cuts", "unlicensed audio"]
+    },
+    {
+      "id": "evidence-infographic",
+      "prompt": "Turn these sourced adoption figures and this four-step process into a vertical infographic for a product report.",
+      "should_trigger": true,
+      "expected": ["infographic route", "evidence-infographic", "source-qualified stat blocks", "annotated diagram", "target-ratio composition", "distribution-size inspection", "text fallback"],
+      "forbidden": ["dashboard shell", "unsourced statistics", "decorative area encoding", "blind desktop resize", "card wall"]
     }
   ]
 }
