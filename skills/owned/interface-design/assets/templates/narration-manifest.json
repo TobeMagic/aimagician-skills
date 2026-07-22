@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "defaults": {
+    "locale": "en-US",
+    "voice": "project-approved-voice"
+  },
+  "segments": [
+    {
+      "id": "opening",
+      "text": "Replace with the approved opening narration.",
+      "format": "wav"
+    }
+  ]
+}

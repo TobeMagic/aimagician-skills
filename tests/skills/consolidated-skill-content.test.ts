@@ -94,7 +94,8 @@ describe("consolidated owned skill content", () => {
     expect(skill).toContain("HTML Based Universal Design");
     expect(skill).toContain("assets/patterns/decision-rules.json");
     expect(skill).toContain("scripts/design-router.mjs");
-    expect(skill).toContain("Route native PowerPoint delivery to the PPT skill instead");
+    expect(skill).toContain("Route ordinary native PowerPoint delivery to the PPT skill");
+    expect(skill).toContain("HTML-first PDF or PPTX conversion");
     expect(skill).not.toContain("design-md-brand-router");
     expect(brands).toContain("apple");
     expect(appleDesign).toContain("Apple");

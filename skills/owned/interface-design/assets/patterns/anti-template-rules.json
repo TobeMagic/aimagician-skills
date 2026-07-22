@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "purpose": "Detect generic visual defaults before they become a repeated system.",
+  "rules": [
+    {"id":"visual-soup","category":"composition","detect":["several unrelated decoration systems","every section competes for attention","effects without content role"],"recover":"Choose one dominant visual idea and remove every effect that does not support hierarchy, state, or narrative."},
+    {"id":"card-wall","category":"layout","detect":["every section is a rounded container","cards nested inside cards","different information types share one tile anatomy"],"recover":"Use tables, lists, timelines, diagrams, comparisons, or unframed sections according to information semantics."},
+    {"id":"generic-hero","category":"layout","detect":["centered full-height text-only hero","three feature cards immediately below","no real product signal"],"recover":"Lead with the actual product, object, place, state, or literal offer and leave the next section visible."},
+    {"id":"default-type-stack","category":"typography","detect":["one generic sans for every role","display size unrelated to copy length","mono used as decoration"],"recover":"Assign explicit display, body, label, numeric, and code roles with tested fallback and measure."},
+    {"id":"single-hue-ui","category":"color","detect":["surfaces differ only by one hue","accent covers most of the page","state meaning depends on color alone"],"recover":"Build neutral separation, reserve accent for decisions, and pair status color with text or icon meaning."},
+    {"id":"purple-gradient-default","category":"color","detect":["purple-blue gradient without brand reason","glow replaces hierarchy","gradient text harms readability"],"recover":"Derive palette from product evidence, brand, environment, and accessibility instead of a fashionable default."},
+    {"id":"fake-proof","category":"content","detect":["invented metrics","generic terminal text","placeholder logos presented as customers","future behavior shown as shipped"],"recover":"Bind every visible claim to current code, documentation, supplied evidence, or an explicit concept label."},
+    {"id":"uniform-rhythm","category":"layout","detect":["identical section padding","same alignment in every band","every frame repeats one template"],"recover":"Vary rhythm according to argument, density, interaction, and evidence while keeping alignment anchors stable."},
+    {"id":"motion-filler","category":"motion","detect":["universal fade-up","bounce by default","cursor follower","unpausable carousel","animation hides task completion"],"recover":"Animate only causality, continuity, hierarchy, progress, or spatial relationship and preserve reduced-motion meaning."}
+  ]
+}

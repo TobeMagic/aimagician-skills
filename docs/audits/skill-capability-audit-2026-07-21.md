@@ -67,14 +67,17 @@ Automated trigger-contract checks live in `tests/skills/expert-skill-architectur
 ### Huashu-Derived Capabilities Now Integrated
 
 - Design-context intake with explicit user, artifact, platform, truth, and acceptance questions.
-- Two or three materially different visual directions before commitment.
+- Exactly three materially different, real visual previews before open-direction commitment, with only recorded narrow bypasses.
 - Information architecture, message priority, storytelling sequence, and state inventory before styling.
 - Product, web, app, interaction, visual, and integrated-demo prototype modes.
 - UI component anatomy, interaction states, user flow, accessibility, and responsive evidence.
 - CJK and mixed-script typography rules.
 - HTML slides, web presentations, keyboard navigation, and per-frame browser QA.
-- SVG, Canvas, WebGL, Three.js, timed DOM composition, and creative-coding selection rules.
-- Storyboards, deterministic time, poster fallback, MP4 encoding, frame checks, and media contracts.
+- Variants, live tweak controls, comparison canvases, and reusable iOS, Android, macOS, and browser frames.
+- SVG, Canvas, WebGL, Three.js, Stage/Sprite, timed DOM composition, and creative-coding selection rules.
+- Single- and multi-file HTML decks, speaker notes, fullscreen/print, vector PDF, and explicit HTML-first PPTX conversion.
+- Storyboards, deterministic time, poster fallback, MP4 and two-pass GIF encoding, frame/loop/black checks, and media contracts.
+- Narration-led continuous motion, provider-neutral TTS adapters, captions, music/effect cues, sidechain ducking, loudness, and A/V verification.
 - Honest placeholders, claim-to-evidence ledgers, asset provenance, and deterministic degradation.
 - Visual critique against hierarchy, density, alignment, typography, color, specificity, and template repetition.
 
@@ -89,15 +92,15 @@ Automated trigger-contract checks live in `tests/skills/expert-skill-architectur
 - Exact-size and downscaled media QA, static fallback, frame integrity, codec, duration, and file-size gates.
 - Explicit README/PPT artifact ownership and handoff boundaries.
 
-### Deliberately Not Integrated
+### Runtime Noise Not Copied
 
-- Vendor-specific TTS, music, sound-effect, stock-media, or upload APIs.
+- Vendor-specific TTS endpoints, credentials, personal media indexes, or upload APIs. Their reusable adapter and production methods are integrated without provider lock-in.
 - Unlicensed media, remote font dependencies, tracking, watermarks, and fabricated product footage.
-- Native PowerPoint generation inside the HTML Skill.
+- HTML-to-PPTX as the default for ordinary PowerPoint requests. Explicit HTML-first requests are supported through a mandatory editable/fidelity decision.
 - Third-party setup scripts, installers, hooks, binaries, and update behavior.
 - Source-specific branding or unchanged copies of external templates.
 
-These are boundary decisions, not accidental omissions. Audio or narration can be added when a brief requires licensed sources and an explicit sound contract.
+These exclusions are non-capability boundaries. Licensed audio, provider-neutral narration, device/deck/motion scaffolds, GIF export, and HTML-first PPTX are now callable owned capabilities.
 
 ### Frontend Skill Capability Matrix
 
@@ -105,12 +108,12 @@ These are boundary decisions, not accidental omissions. Audio or narration can b
 |---|---|---|---|
 | README Cover | Yes | `repository-branding-and-marketing.md`, `brand-and-product-assets.md`, README collaboration workflow | No blocking gap; continue real-repository regressions |
 | Poster Design | Yes | `campaign-poster`, brand brief, still-rendering QA | No blocking gap |
-| Video Hero | Yes | `creative-coding-and-motion-media.md`, motion storyboard, deterministic renderer | Optional licensed audio/narration route only |
+| Video Hero | Yes | deterministic renderer/verifier, motion storyboard, director notes, narration/audio route | No blocking gap |
 | Prototype | Yes | `prototypes-and-data.md`, prototype plan, app-shell route | Expand scenario corpus over time |
 | UI Design | Yes | information architecture, visual system, components/interactions, quality rules | Expand framework-specific examples only when useful |
-| HTML Presentation | Yes | motion/presentation module and delivery router | No blocking gap; native PPT remains separate |
-| Motion Design | Yes | deterministic clock, demo sequence, frame/media gates | Optional richer transition starter library |
-| Creative Coding | Yes | SVG/Canvas/WebGL/Three.js rules and stage route | Add domain-specific starters only after repeated demand |
+| HTML Presentation | Yes | deck starters, notes, fullscreen/print, PDF and explicit editable/fidelity PPTX | Ordinary native PPT remains separate |
+| Motion Design | Yes | deterministic clock, Stage/Sprite, scene recipes, MP4/GIF, audio/narration and media gates | No blocking gap |
+| Creative Coding | Yes | SVG/Canvas/WebGL/Three.js rules, Stage/Sprite and React motion starters | Add domain-specific starters only after repeated demand |
 
 ### Frontend Workflow After Integration
 
@@ -223,16 +226,18 @@ Three directions were considered: Terminal Signal, Compiler Blueprint, and Agent
 
 - Added brand specification, repository visual brief, and motion storyboard templates.
 - Added engineering prototype brief and progressive discovery map.
-- Added repository hero and motion-stage source scaffolds.
-- Added repository wordmark, terminal proof, capability ribbon, motion scene, and media fallback component patterns.
-- Expanded the layout library to 17 patterns and the component library to 23 patterns.
+- Added repository hero, device/browser frame, comparison, deck, Stage/Sprite, React motion and narration scaffolds.
+- Added direction, asset provenance, director notes, narration and audio-cue templates.
+- Added repository wordmark, terminal proof, capability ribbon, tweak/device/narration components, motion scene, and media fallback patterns.
+- Expanded the library to 22 layouts, 32 components, 23 decision rules, 36 quality checks and 40 visual direction families.
 
 ### Executable Workflow
 
-- Added image and video delivery routes to `design-router.mjs`.
+- Added HTML, image, video, GIF, PDF, ordinary native PPTX, explicit HTML-first PPTX and hybrid routes to `design-router.mjs`.
 - Added discovery and prototype routes to `engineering-route.mjs`.
-- Added a deterministic Playwright/ffmpeg media renderer with readiness/time contracts, batched capture, poster fallback, H.264 encoding, and seek-friendly keyframes.
-- Added behavior scenarios for repository covers, posters, product video, creative coding, progressive discovery, and prototypes.
+- Added deterministic Playwright/ffmpeg poster, H.264 MP4 and two-pass GIF rendering plus frame/loop/black/media verification.
+- Added multi-file and stage vector PDF exporters, dual-mode HTML-first PPTX, provider-neutral narration, and voice/music/effect mixing with ducking.
+- Added behavior scenarios for repository covers, GIF heroes, posters, product video, editable/fidelity HTML-first PPTX, devices/variants, narration, creative coding, progressive discovery, and prototypes.
 - Expanded architecture and trigger tests.
 
 ## 8. Verification Record

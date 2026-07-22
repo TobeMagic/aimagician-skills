@@ -1,0 +1,546 @@
+{
+  "schema_version": 1,
+  "selection_rule": "Use these as decision vocabulary, never as identity to copy. Select from product truth, audience, content density, media constraints, and accepted brand context.",
+  "patterns": [
+    {
+      "id": "editorial-brutalism",
+      "surfaces": [
+        "web",
+        "poster"
+      ],
+      "intensity": "bold",
+      "signature": "oversized neutral type against compact evidence",
+      "use_when": "One assertion must dominate a media-like composition",
+      "avoid_when": "Dense repeated operations require quiet scanning",
+      "html_implementation_score": 3,
+      "font_profile": "editorial-pair"
+    },
+    {
+      "id": "neo-brutal-color",
+      "surfaces": [
+        "web",
+        "prototype"
+      ],
+      "intensity": "bold",
+      "signature": "heavy outlines and high-contrast color blocks",
+      "use_when": "Playful utility and obvious interaction are intentional",
+      "avoid_when": "Luxury, accessibility-sensitive, or high-density enterprise work",
+      "html_implementation_score": 3,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "memphis-collage",
+      "surfaces": [
+        "campaign",
+        "poster"
+      ],
+      "intensity": "bold",
+      "signature": "offset collage, geometric fragments, retro type",
+      "use_when": "A cultural or youth campaign needs expressive energy",
+      "avoid_when": "Product inspection or precise data comparison is primary",
+      "html_implementation_score": 3,
+      "font_profile": "display-expressive"
+    },
+    {
+      "id": "friendly-geometric",
+      "surfaces": [
+        "app",
+        "education"
+      ],
+      "intensity": "bold",
+      "signature": "clear geometry, raised controls, optimistic color",
+      "use_when": "Learning, onboarding, or game-like progression benefits from warmth",
+      "avoid_when": "Serious financial, legal, or incident workflows",
+      "html_implementation_score": 3,
+      "font_profile": "humanist-sans"
+    },
+    {
+      "id": "css-geometric-art",
+      "surfaces": [
+        "web",
+        "creative-coding"
+      ],
+      "intensity": "bold",
+      "signature": "code-native geometric illustration that responds to layout",
+      "use_when": "The construction itself reinforces a technical or conceptual idea",
+      "avoid_when": "A real product image or factual visual is available",
+      "html_implementation_score": 3,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "big-type-editorial",
+      "surfaces": [
+        "web",
+        "poster"
+      ],
+      "intensity": "bold",
+      "signature": "black-white field with typography as the main image",
+      "use_when": "A short statement and strong identity carry the page",
+      "avoid_when": "Long labels, localization, or many parallel facts must fit",
+      "html_implementation_score": 3,
+      "font_profile": "editorial-pair"
+    },
+    {
+      "id": "cosmic-retro",
+      "surfaces": [
+        "campaign",
+        "creative-coding"
+      ],
+      "intensity": "bold",
+      "signature": "archival space-catalog structure with restrained retro cues",
+      "use_when": "Science, culture, or speculative storytelling benefits from wonder",
+      "avoid_when": "The product requires literal operational proof",
+      "html_implementation_score": 3,
+      "font_profile": "display-expressive"
+    },
+    {
+      "id": "sound-visualization",
+      "surfaces": [
+        "motion",
+        "music"
+      ],
+      "intensity": "bold",
+      "signature": "dark cinematic field with waveform or spectrum focus",
+      "use_when": "Audio is a truthful primary signal",
+      "avoid_when": "Sound is absent or decorative only",
+      "html_implementation_score": 3,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "pixel-story",
+      "surfaces": [
+        "game",
+        "motion"
+      ],
+      "intensity": "bold",
+      "signature": "pixel-grid scenes and side-scrolling progression",
+      "use_when": "Game culture or stepwise narrative is central",
+      "avoid_when": "Professional realism or small-text density is required",
+      "html_implementation_score": 3,
+      "font_profile": "display-expressive"
+    },
+    {
+      "id": "bauhaus-geometric",
+      "surfaces": [
+        "web",
+        "poster",
+        "presentation"
+      ],
+      "intensity": "balanced",
+      "signature": "primary geometry, disciplined asymmetry, functional type",
+      "use_when": "A system needs recognisable structure with controlled expression",
+      "avoid_when": "Existing brand assets conflict with primary geometry",
+      "html_implementation_score": 4,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "dark-editorial",
+      "surfaces": [
+        "developer-tool",
+        "portfolio"
+      ],
+      "intensity": "balanced",
+      "signature": "dark field, one accent, mono evidence, editorial hierarchy",
+      "use_when": "Code or terminal proof is primary",
+      "avoid_when": "Long-form daylight reading is the main task",
+      "html_implementation_score": 4,
+      "font_profile": "functional-mono"
+    },
+    {
+      "id": "warm-editorial",
+      "surfaces": [
+        "publication",
+        "brand"
+      ],
+      "intensity": "balanced",
+      "signature": "warm paper field and serif-sans contrast",
+      "use_when": "Human, cultural, or considered storytelling needs reading rhythm",
+      "avoid_when": "Fast operational scanning or strict brand color is required",
+      "html_implementation_score": 4,
+      "font_profile": "editorial-pair"
+    },
+    {
+      "id": "glass-bento",
+      "surfaces": [
+        "saas",
+        "showcase"
+      ],
+      "intensity": "balanced",
+      "signature": "modular grid with restrained depth and glow",
+      "use_when": "Several distinct product capabilities need a coherent overview",
+      "avoid_when": "It would become a decorative card wall or hide dense relationships",
+      "html_implementation_score": 4,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "angled-fluid",
+      "surfaces": [
+        "campaign",
+        "launch"
+      ],
+      "intensity": "balanced",
+      "signature": "one directional color band creates movement through sections",
+      "use_when": "A launch story needs continuity without many decorative objects",
+      "avoid_when": "Gradient reproduction, print, or editable PPTX constraints apply",
+      "html_implementation_score": 4,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "colorful-docs",
+      "surfaces": [
+        "documentation",
+        "learning"
+      ],
+      "intensity": "balanced",
+      "signature": "semantic color categories inside a utilitarian information system",
+      "use_when": "Readers browse many topic types and need orientation",
+      "avoid_when": "Color categories are not stable or accessible",
+      "html_implementation_score": 4,
+      "font_profile": "humanist-sans"
+    },
+    {
+      "id": "terminal-futurism",
+      "surfaces": [
+        "developer-tool",
+        "repository"
+      ],
+      "intensity": "balanced",
+      "signature": "mono evidence with restrained spatial or isometric structure",
+      "use_when": "A CLI or agent system needs technical identity and real output",
+      "avoid_when": "Generic neon styling would replace product proof",
+      "html_implementation_score": 4,
+      "font_profile": "functional-mono"
+    },
+    {
+      "id": "functional-grid",
+      "surfaces": [
+        "community",
+        "documentation",
+        "operations"
+      ],
+      "intensity": "quiet",
+      "signature": "system typography, visible grid lines, direct links",
+      "use_when": "Information architecture and navigation are the product",
+      "avoid_when": "A premium object or emotional campaign must lead",
+      "html_implementation_score": 5,
+      "font_profile": "functional-mono"
+    },
+    {
+      "id": "dark-gallery",
+      "surfaces": [
+        "gallery",
+        "portfolio"
+      ],
+      "intensity": "quiet",
+      "signature": "large factual images in deep negative space with metadata",
+      "use_when": "Users must inspect real visual work",
+      "avoid_when": "Images are weak, generic, or unavailable",
+      "html_implementation_score": 3,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "swiss-monochrome",
+      "surfaces": [
+        "web",
+        "brand",
+        "presentation"
+      ],
+      "intensity": "quiet",
+      "signature": "strict black-white hierarchy, grid, and sharp edges",
+      "use_when": "Precision and content confidence need no decorative support",
+      "avoid_when": "Status semantics require several colors",
+      "html_implementation_score": 5,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "white-gallery",
+      "surfaces": [
+        "gallery",
+        "object"
+      ],
+      "intensity": "quiet",
+      "signature": "large white field, careful object placement, minimal annotation",
+      "use_when": "One object or craft detail deserves contemplation",
+      "avoid_when": "Many actions or comparison criteria must remain visible",
+      "html_implementation_score": 3,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "neo-swiss-billboard",
+      "surfaces": [
+        "presentation"
+      ],
+      "intensity": "bold",
+      "signature": "asymmetric giant type and sharp institutional grid",
+      "use_when": "A stage presentation needs one memorable assertion per frame",
+      "avoid_when": "The deck is primarily a detailed reference document",
+      "html_implementation_score": 3,
+      "font_profile": "display-expressive"
+    },
+    {
+      "id": "black-number-stage",
+      "surfaces": [
+        "presentation",
+        "motion"
+      ],
+      "intensity": "bold",
+      "signature": "black field with one oversized number and concise interpretation",
+      "use_when": "A verified metric is the dramatic center",
+      "avoid_when": "Numbers lack context, units, period, or source",
+      "html_implementation_score": 3,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "mono-brand-type",
+      "surfaces": [
+        "presentation",
+        "campaign"
+      ],
+      "intensity": "bold",
+      "signature": "single brand color with typography as hero",
+      "use_when": "A launch has strong identity and short statements",
+      "avoid_when": "Brand color cannot carry accessible contrast",
+      "html_implementation_score": 3,
+      "font_profile": "display-expressive"
+    },
+    {
+      "id": "gradient-manifesto",
+      "surfaces": [
+        "presentation",
+        "motion"
+      ],
+      "intensity": "bold",
+      "signature": "full-bleed color transition behind a concise declaration",
+      "use_when": "Visual atmosphere matters more than editability",
+      "avoid_when": "Editable HTML-to-PPTX mode is required",
+      "html_implementation_score": 3,
+      "font_profile": "display-expressive"
+    },
+    {
+      "id": "candy-lecture",
+      "surfaces": [
+        "presentation",
+        "education"
+      ],
+      "intensity": "bold",
+      "signature": "one concept per bright geometric stage",
+      "use_when": "Teaching benefits from approachable separation of ideas",
+      "avoid_when": "The audience expects formal corporate restraint",
+      "html_implementation_score": 3,
+      "font_profile": "humanist-sans"
+    },
+    {
+      "id": "playful-editorial",
+      "surfaces": [
+        "presentation",
+        "campaign"
+      ],
+      "intensity": "bold",
+      "signature": "hand-made accents with disciplined editorial anchors",
+      "use_when": "A creative brand needs warmth without losing hierarchy",
+      "avoid_when": "Decoration cannot be sourced or controlled",
+      "html_implementation_score": 3,
+      "font_profile": "display-expressive"
+    },
+    {
+      "id": "irreverent-pop",
+      "surfaces": [
+        "presentation",
+        "community"
+      ],
+      "intensity": "bold",
+      "signature": "direct humor, surprising crops, and colloquial emphasis",
+      "use_when": "Audience culture explicitly supports informality",
+      "avoid_when": "Executive, regulated, or reputationally sensitive settings",
+      "html_implementation_score": 3,
+      "font_profile": "display-expressive"
+    },
+    {
+      "id": "y2k-3d-type",
+      "surfaces": [
+        "presentation",
+        "campaign",
+        "motion"
+      ],
+      "intensity": "bold",
+      "signature": "inflated type and early-digital spatial cues",
+      "use_when": "A fashion, music, or youth launch needs period expression",
+      "avoid_when": "Editable PPTX or high information density is required",
+      "html_implementation_score": 3,
+      "font_profile": "display-expressive"
+    },
+    {
+      "id": "bento-grid",
+      "surfaces": [
+        "presentation",
+        "product"
+      ],
+      "intensity": "balanced",
+      "signature": "modular evidence blocks with deliberate size hierarchy",
+      "use_when": "Several product proofs need one coherent frame",
+      "avoid_when": "Every page would repeat the same grid",
+      "html_implementation_score": 4,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "dark-terminal-deck",
+      "surfaces": [
+        "presentation",
+        "developer-tool"
+      ],
+      "intensity": "balanced",
+      "signature": "hairline dark grid, mono labels, one restrained accent",
+      "use_when": "Architecture, code, or terminal evidence drives the deck",
+      "avoid_when": "Audience readability or projector contrast is uncertain",
+      "html_implementation_score": 4,
+      "font_profile": "functional-mono"
+    },
+    {
+      "id": "two-font-consulting",
+      "surfaces": [
+        "presentation",
+        "report"
+      ],
+      "intensity": "balanced",
+      "signature": "assertion-led pages using a disciplined serif-sans pair",
+      "use_when": "A business argument needs authority and readable explanation",
+      "avoid_when": "Existing corporate templates prohibit type changes",
+      "html_implementation_score": 4,
+      "font_profile": "editorial-pair"
+    },
+    {
+      "id": "diagram-isotype",
+      "surfaces": [
+        "presentation",
+        "report"
+      ],
+      "intensity": "balanced",
+      "signature": "arrows, icons, and repeated units explain a system",
+      "use_when": "Relationships and flow matter more than decoration",
+      "avoid_when": "The diagram would imply unsupported precision",
+      "html_implementation_score": 4,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "diagram-minimalism",
+      "surfaces": [
+        "presentation",
+        "education"
+      ],
+      "intensity": "balanced",
+      "signature": "one visual model with short explanatory labels",
+      "use_when": "A complex concept can be reduced to one accurate mechanism",
+      "avoid_when": "The reduction would hide critical exceptions",
+      "html_implementation_score": 4,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "narrative-sparkline",
+      "surfaces": [
+        "presentation",
+        "data"
+      ],
+      "intensity": "balanced",
+      "signature": "small trend traces embedded in a verbal argument",
+      "use_when": "Change over time supports a sequence of claims",
+      "avoid_when": "Axes, uncertainty, or comparison require a full chart",
+      "html_implementation_score": 4,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "assertion-evidence",
+      "surfaces": [
+        "presentation",
+        "data",
+        "report"
+      ],
+      "intensity": "quiet",
+      "signature": "one sentence claim paired with only the evidence needed to test it",
+      "use_when": "Decision quality and analytical honesty are primary",
+      "avoid_when": "The deck is intended as pure visual atmosphere",
+      "html_implementation_score": 5,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "institutional-swiss",
+      "surfaces": [
+        "presentation",
+        "institutional"
+      ],
+      "intensity": "quiet",
+      "signature": "stable grid, restrained color, precise labels",
+      "use_when": "Public, research, or institutional credibility matters",
+      "avoid_when": "A consumer launch needs emotional differentiation",
+      "html_implementation_score": 5,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "editorial-longform",
+      "surfaces": [
+        "presentation",
+        "report"
+      ],
+      "intensity": "quiet",
+      "signature": "chapter rhythm, pull quotes, captions, and varied evidence pages",
+      "use_when": "The deck is also a durable reading document",
+      "avoid_when": "A short live pitch needs fast visual beats",
+      "html_implementation_score": 5,
+      "font_profile": "editorial-pair"
+    },
+    {
+      "id": "humanist-rounded",
+      "surfaces": [
+        "presentation",
+        "education",
+        "health"
+      ],
+      "intensity": "quiet",
+      "signature": "soft geometry, human type, and generous guidance",
+      "use_when": "Trust, learning, or support should feel approachable",
+      "avoid_when": "Rounded cards would flatten every information type",
+      "html_implementation_score": 5,
+      "font_profile": "humanist-sans"
+    },
+    {
+      "id": "dense-research",
+      "surfaces": [
+        "presentation",
+        "report",
+        "data"
+      ],
+      "intensity": "quiet",
+      "signature": "high information density governed by a strict analytical grid",
+      "use_when": "Expert audiences need many sourced comparisons",
+      "avoid_when": "Live audiences cannot inspect small details",
+      "html_implementation_score": 5,
+      "font_profile": "neutral-sans"
+    },
+    {
+      "id": "all-text-manifesto",
+      "surfaces": [
+        "presentation",
+        "memo"
+      ],
+      "intensity": "quiet",
+      "signature": "plain text with decisive hierarchy and no decorative dependence",
+      "use_when": "The argument itself is strong and must travel across formats",
+      "avoid_when": "Product inspection or data visualization is required",
+      "html_implementation_score": 5,
+      "font_profile": "functional-mono"
+    }
+  ],
+  "score_definition": {
+    "1": "poor fit without custom graphics or render infrastructure",
+    "2": "possible but implementation-heavy or fragile",
+    "3": "practical with deliberate custom work",
+    "4": "strong HTML-native fit",
+    "5": "direct and robust HTML-native fit"
+  },
+  "font_stack_profiles": {
+    "neutral-sans": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "editorial-pair": "Source Serif 4, Georgia, serif / Inter, ui-sans-serif, sans-serif",
+    "functional-mono": "IBM Plex Mono, ui-monospace, SFMono-Regular, monospace / Inter, ui-sans-serif, sans-serif",
+    "humanist-sans": "Atkinson Hyperlegible, Segoe UI, ui-sans-serif, sans-serif",
+    "display-expressive": "project-owned display face / Inter, ui-sans-serif, sans-serif"
+  }
+}

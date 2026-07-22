@@ -25,11 +25,11 @@ Resolve only decisions that materially change design:
 4. Which devices, environments, and accessibility level matter?
 5. What is fixed: brand, framework, content, deadline, fidelity, or output format?
 
-Record answers in `assets/templates/design-brief.md`. When the user cannot answer, infer from repository and product evidence, label assumptions, and choose conservative defaults.
+Record answers in `assets/templates/design-brief.md`. Begin with a junior pass: write assumptions, reasoning, and honest placeholders, show them early, and correct misunderstandings before detailed production. When the user cannot answer, infer from repository and product evidence, label assumptions, and choose conservative defaults.
 
 ## Direction Exploration
 
-For an open visual brief, create two or three materially distinct directions before full implementation. Each preview must differ in at least four dimensions:
+For a high-impact or open visual brief, create exactly three materially distinct, real previews at the accepted geometry before full implementation. Each preview must differ in at least four dimensions:
 
 - macrostructure and information rhythm;
 - typography role and scale;
@@ -39,7 +39,13 @@ For an open visual brief, create two or three materially distinct directions bef
 
 Do not produce superficial color variants of one layout. Present a recommendation with reasons tied to audience, task, content, and implementation constraints.
 
-Skip this gate when iterating an accepted direction, preserving an established system, fixing a bounded defect, or following an explicit one-pass instruction. Record the exemption so later agents do not reopen settled design.
+Do not substitute three text descriptions for previews. Use `assets/starter/design-comparison.jsx` or equivalent source. Skip this gate only when iterating an accepted direction, preserving an established system, fixing a bounded defect, performing a mechanical export, or following an explicit one-pass instruction. Record the exemption so later agents do not reopen settled design.
+
+## Parallel Perspective Exploration
+
+For a broad, high-stakes brief, delegate three to six bounded perspectives through `cli-agent-orchestrator` or another authorized CLI agent. Give every perspective the same verified brief, geometry, constraints, and evaluation rubric, but assign a distinct design thesis, audience emphasis, information rhythm, or motion language. Delegates may inspect and propose; they do not change the product unless write scope is explicitly approved.
+
+The main agent removes duplicates, rejects factually weak or infeasible work, and synthesizes exactly three real previews for user selection. Preserve the strongest mechanism from rejected perspectives in the decision record when useful. Parallel work expands the search space; it does not bypass product truth, accessibility, implementation feasibility, or the three-preview decision gate.
 
 ## Study Mode
 

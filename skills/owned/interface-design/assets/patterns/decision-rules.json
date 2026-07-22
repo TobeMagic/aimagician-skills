@@ -3,16 +3,17 @@
   "rules": [
     {"id": "landing-base", "priority": 100, "when": {"tasks": ["landing"]}, "suggest": {"layouts": ["product-first-story"], "components": ["primary-nav", "product-proof", "cta-cluster"]}},
     {"id": "dashboard-base", "priority": 100, "when": {"tasks": ["dashboard"]}, "suggest": {"layouts": ["command-center-dashboard", "metric-to-detail"], "components": ["filter-bar", "status-summary", "data-table"]}},
-    {"id": "app-prototype-base", "priority": 100, "when": {"tasks": ["app-prototype"]}, "suggest": {"layouts": ["app-shell-prototype"], "components": ["prototype-shell", "primary-nav", "form-flow"]}},
-    {"id": "html-presentation-base", "priority": 100, "when": {"tasks": ["html-presentation"]}, "suggest": {"layouts": ["html-slide-sequence"], "components": ["slide-frame"]}},
+    {"id": "app-prototype-base", "priority": 100, "when": {"tasks": ["app-prototype"]}, "suggest": {"layouts": ["app-shell-prototype", "device-prototype-gallery"], "components": ["prototype-shell", "device-frame", "tweak-panel", "primary-nav", "form-flow"]}},
+    {"id": "html-presentation-base", "priority": 100, "when": {"tasks": ["html-presentation"]}, "suggest": {"layouts": ["html-slide-sequence", "multi-file-deck"], "components": ["slide-frame", "speaker-notes"]}},
     {"id": "component-base", "priority": 100, "when": {"tasks": ["component"]}, "suggest": {"layouts": ["component-playground"], "components": ["segmented-mode", "action-toolbar"]}},
     {"id": "readme-cover-base", "priority": 110, "when": {"tasks": ["readme-cover"]}, "suggest": {"layouts": ["repository-product-hero"], "components": ["project-wordmark", "product-proof", "media-fallback"]}},
     {"id": "poster-base", "priority": 110, "when": {"tasks": ["poster"]}, "suggest": {"layouts": ["campaign-poster"], "components": ["project-wordmark", "product-proof"]}},
+    {"id": "infographic-base", "priority": 110, "when": {"tasks": ["infographic"]}, "suggest": {"layouts": ["evidence-infographic"], "components": ["stat-block", "annotated-diagram", "product-proof"]}},
     {"id": "product-demo-base", "priority": 110, "when": {"tasks": ["product-demo"]}, "suggest": {"layouts": ["demo-story-sequence"], "components": ["motion-scene", "product-proof", "media-fallback"]}},
     {"id": "creative-coding-base", "priority": 110, "when": {"tasks": ["creative-coding"]}, "suggest": {"layouts": ["creative-coding-stage"], "components": ["motion-scene", "media-fallback"]}},
     {"id": "audit-base", "priority": 100, "when": {"tasks": ["audit", "redesign"]}, "suggest": {"layouts": [], "components": []}},
     {"id": "trend-signal", "priority": 90, "when": {"signals_any": ["trends", "time", "change-over-time"]}, "suggest": {"layouts": ["metric-to-detail", "timeline-narrative"], "components": ["time-series-chart", "timeline"]}},
-    {"id": "comparison-signal", "priority": 90, "when": {"signals_any": ["comparison", "tradeoffs", "alternatives"]}, "suggest": {"layouts": ["split-comparison"], "components": ["comparison-matrix"]}},
+    {"id": "comparison-signal", "priority": 90, "when": {"signals_any": ["comparison", "tradeoffs", "alternatives", "directions", "variants"]}, "suggest": {"layouts": ["split-comparison", "direction-comparison-canvas"], "components": ["comparison-matrix", "design-comparison", "tweak-panel"]}},
     {"id": "many-records-signal", "priority": 80, "when": {"signals_any": ["many-records", "browse", "filter"]}, "suggest": {"layouts": ["catalogue-and-filter", "operational-workbench"], "components": ["filter-bar", "data-table", "detail-drawer"]}},
     {"id": "repeated-actions-signal", "priority": 80, "when": {"signals_any": ["repeated-actions", "operations", "editing"]}, "suggest": {"layouts": ["operational-workbench"], "components": ["context-sidebar", "action-toolbar", "detail-drawer"]}},
     {"id": "narrative-signal", "priority": 70, "when": {"signals_any": ["narrative", "research", "case-study"]}, "suggest": {"layouts": ["evidence-led-editorial", "immersive-case-study"], "components": ["product-proof"]}},
@@ -20,6 +21,8 @@
     {"id": "dense-data-signal", "priority": 70, "when": {"signals_any": ["dense-data", "monitoring", "exceptions"]}, "suggest": {"layouts": ["command-center-dashboard", "operational-workbench"], "components": ["status-summary", "data-table", "filter-bar"]}},
     {"id": "developer-tool-signal", "priority": 95, "when": {"signals_any": ["developer-tool", "terminal", "cli", "code"]}, "suggest": {"layouts": ["repository-product-hero"], "components": ["terminal-product-proof", "capability-ribbon"]}},
     {"id": "product-proof-signal", "priority": 90, "when": {"signals_any": ["product-proof", "showcase", "real-ui"]}, "suggest": {"layouts": ["repository-product-hero", "immersive-case-study"], "components": ["product-proof"]}},
-    {"id": "motion-signal", "priority": 90, "when": {"signals_any": ["motion", "animation", "video", "sequence"]}, "suggest": {"layouts": ["demo-story-sequence", "creative-coding-stage"], "components": ["motion-scene", "media-fallback"]}}
+    {"id": "motion-signal", "priority": 90, "when": {"signals_any": ["motion", "animation", "video", "sequence"]}, "suggest": {"layouts": ["demo-story-sequence", "creative-coding-stage"], "components": ["motion-scene", "media-fallback"]}},
+    {"id": "narration-signal", "priority": 95, "when": {"signals_any": ["voiceover", "narration", "tts", "audio", "bgm", "sfx"]}, "suggest": {"layouts": ["narrated-motion-stage"], "components": ["motion-scene", "narration-track", "audio-cue-track", "media-fallback"]}},
+    {"id": "html-pptx-signal", "priority": 95, "when": {"signals_any": ["html-first", "editable-pptx", "html-to-pptx"]}, "suggest": {"layouts": ["multi-file-deck"], "components": ["slide-frame", "speaker-notes", "pptx-placeholder"]}}
   ]
 }

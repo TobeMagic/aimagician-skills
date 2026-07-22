@@ -1,6 +1,15 @@
 ---
 name: interface-design
-description: Use for any HTML/CSS/JS-driven visual design or rendered product asset, including README covers and GitHub project branding, posters, banners, product showcases, demo videos, creative coding, SVG or canvas visuals, product and app prototypes, web UI, dashboards, design systems, landing or campaign pages, interactive reports, data visualization, HTML presentations, motion, visual audits, redesigns, accessibility, responsive behavior, and brand DESIGN.md routing. Route native PowerPoint delivery to the PPT skill instead.
+description: Use for any HTML/CSS/JS-driven visual design or rendered product
+  asset, including README covers and autoplay GIF heroes, GitHub project
+  branding, posters, banners, infographics, product showcases, narrated demo
+  videos, creative coding, SVG or canvas visuals, product and app prototypes,
+  live variants and device frames, web UI, dashboards, design systems, landing
+  or campaign pages, interactive reports, data visualization, HTML
+  presentations, HTML-first PDF or PPTX conversion, motion, audio, visual
+  audits, redesigns, accessibility, responsive behavior, and brand DESIGN.md
+  routing. Route ordinary native PowerPoint delivery to the PPT skill unless the
+  user explicitly requests an HTML-first presentation pipeline.
 category: design
 subcategory: interface
 tags:
@@ -21,19 +30,31 @@ metadata:
     - references/capabilities/information-architecture.md
     - references/capabilities/visual-system.md
     - references/capabilities/components-and-interaction.md
+    - references/capabilities/react-browser-setup.md
     - references/capabilities/prototypes-and-data.md
     - references/capabilities/motion-and-html-presentations.md
+    - references/capabilities/html-first-presentations.md
     - references/capabilities/brand-and-product-assets.md
     - references/capabilities/repository-branding-and-marketing.md
     - references/capabilities/creative-coding-and-motion-media.md
+    - references/capabilities/motion-rendering-safety.md
+    - references/capabilities/audio-and-narration.md
     - references/capabilities/implementation-and-verification.md
   decision_assets:
     - assets/patterns/layout-patterns.json
     - assets/patterns/component-patterns.json
     - assets/patterns/decision-rules.json
     - assets/patterns/quality-checks.json
+    - assets/patterns/visual-direction-patterns.json
+    - assets/patterns/anti-template-rules.json
+    - assets/patterns/motion-scene-recipes.json
+    - assets/patterns/taste-anchor-patterns.json
+    - assets/patterns/output-contract-patterns.json
 compatibility:
-  tools: [bash, browser, playwright]
+  tools:
+    - bash
+    - browser
+    - playwright
   requires: Existing app, visual source material, or a concrete design brief
 ---
 
@@ -49,11 +70,12 @@ Route by the required final artifact before designing:
 |---|---|---|
 | HTML/CSS/JS page, app, prototype, dashboard, report, visualization, or browser presentation | `interface-design` | This skill owns design and implementation. |
 | README cover, repository banner, poster, product showcase, social image, or other rendered still | `interface-design` | This skill owns product understanding, art direction, source composition, rendering, and visual QA. Image generation may supply a truthful ingredient, but it does not replace the design workflow. |
-| Product demo, motion hero, launch loop, or other browser-rendered video | `interface-design` | This skill owns storyboard, deterministic HTML/canvas source, poster fallback, rendering, encoding, and frame QA. |
+| Product demo, motion hero, GIF loop, narrated launch film, or other browser-rendered media | `interface-design` | This skill owns storyboard, deterministic HTML/canvas source, poster fallback, rendering, audio cues, encoding, and frame QA. |
+| HTML-first presentation exported to PDF or PPTX | `interface-design` | Use only when the user explicitly requires HTML as the presentation source. Choose editable or fidelity PPTX before implementation. |
 | Native editable `.pptx`, PowerPoint template, slide master, or Office-compatible deck | `pptx` or `window-pptx` | The PPT skill owns generation, editing, rendering, and Office QA. |
 | HTML visual exploration followed by native PowerPoint | `interface-design`, then PPT owner | Produce a design brief and handoff contract; rebuild natively. Do not present an HTML conversion as equivalent to native PowerPoint. |
 
-When “presentation” is ambiguous and the final format changes the architecture, confirm HTML presentation versus native `.pptx`. Read `references/capabilities/delivery-routing.md` for the full contract.
+When “presentation” is ambiguous and the final format changes the architecture, confirm browser HTML, explicit HTML-first PDF/PPTX, or native `.pptx`. Explicit HTML-first PPTX requires a second decision between editable objects and full visual fidelity. Read `references/capabilities/delivery-routing.md` for the full contract.
 
 ## Operating Modes
 
@@ -75,20 +97,24 @@ Load only the modules needed for the current stage.
 | User flow, content model, hierarchy, page plan, copy and states | `references/capabilities/information-architecture.md` |
 | Art direction, typography, color, spacing, grids, imagery, design tokens | `references/capabilities/visual-system.md` |
 | Controls, navigation, forms, tables, cards, state matrix, accessibility | `references/capabilities/components-and-interaction.md` |
+| Standalone React setup, pinning, offline fallback, JSX and failure diagnosis | `references/capabilities/react-browser-setup.md` |
 | App prototypes, dashboards, reports, charts, data and fidelity decisions | `references/capabilities/prototypes-and-data.md` |
 | Motion grammar and browser-native slide narratives | `references/capabilities/motion-and-html-presentations.md` |
-| Covers, banners, posters, product showcases, brand assets, and still rendering | `references/capabilities/brand-and-product-assets.md` |
+| HTML Deck source, PDF export, editable DOM-to-PPTX, and fidelity image-slide PPTX | `references/capabilities/html-first-presentations.md` |
+| Covers, banners, posters, infographics, product showcases, brand assets, licensed asset acquisition, and still rendering | `references/capabilities/brand-and-product-assets.md` |
 | README and repository branding, developer-product proof, and marketing integration | `references/capabilities/repository-branding-and-marketing.md` |
-| SVG, canvas, deterministic animation, storyboards, poster fallbacks, and encoded media | `references/capabilities/creative-coding-and-motion-media.md` |
+| SVG, canvas, deterministic animation, poster/GIF/video/alpha outputs, semantic review packages, and render adapters | `references/capabilities/creative-coding-and-motion-media.md` |
+| Seek safety, capture-state defects, GSAP adaptation, file delivery, media follow-ups | `references/capabilities/motion-rendering-safety.md` |
+| Voiceover, provider-neutral TTS, measured timing, music, effects, ducking, and mixing | `references/capabilities/audio-and-narration.md` |
 | Framework fit, responsive implementation, browser testing and critique | `references/capabilities/implementation-and-verification.md` |
 
-Decision rules and reusable patterns live under `assets/patterns/`. Durable brief, system, prototype, repository-visual, motion-storyboard, QA, and presentation-handoff templates live under `assets/templates/`. Reusable source scaffolds live under `assets/starter/`.
+Decision rules, output contracts, taste anchors, motion recipes, anti-template checks, and reusable patterns live under `assets/patterns/`. Durable brief, system, prototype, repository-visual, motion-storyboard, QA, and presentation-handoff templates live under `assets/templates/`. Reusable source scaffolds live under `assets/starter/`.
 
 ## Canonical Design Loop
 
 ### 1. Route The Deliverable
 
-Name the final artifact, runtime, editability requirement, target devices or frame geometry, distribution surface, static fallback, and acceptance method. Do not start HTML when the accepted deliverable is native PowerPoint.
+Name the final artifact, runtime, editability requirement, target devices or frame geometry, distribution surface, static fallback, and acceptance method. Do not start HTML when the accepted deliverable is ordinary native PowerPoint. When the user explicitly requires HTML-first PPTX, keep HTML as source of truth and select `editable` or `fidelity` before the first slide is built.
 
 ### 2. Recover Design Context
 
@@ -100,11 +126,11 @@ Define the primary user, job, environment, critical action, content priority, tr
 
 ### 4. Choose Structure Before Decoration
 
-Use `assets/patterns/decision-rules.json` to map content signals to a macrostructure. Select the page, screen, still-frame, or timed-sequence shape and component roles before choosing visual effects. An operational tool should optimize scanning and repeated action; a marketing or repository asset should reveal the actual product and audience immediately; a presentation or demo sequence should carry one argument per frame or scene.
+Use `assets/patterns/decision-rules.json` and the relevant output/taste contract to map content signals to a macrostructure. Select the page, screen, still-frame, or timed-sequence shape and component roles before choosing visual effects. An operational tool should optimize scanning and repeated action; a marketing or repository asset should reveal the actual product and audience immediately; a presentation or demo sequence should carry one argument per frame or scene.
 
 ### 5. Establish Direction And System
 
-For a visually open greenfield brief, produce two or three materially different direction previews that vary composition, type, color behavior, imagery, and motion, then obtain a decision before full build. Record what each direction emphasizes and why the selected direction fits the audience. Skip divergence for a small correction, a locked brand system, a specified direction, or an explicit one-pass request.
+For a high-impact or visually open task, produce exactly three materially different, real direction previews at the target geometry. Vary composition, type, color behavior, imagery, interaction, or motion and obtain a user decision before full build. Record the selection and rationale. A previously accepted direction, a small correction, or a mechanical export may bypass this gate only when the reason is written into the direction decision record.
 
 Lock semantic tokens for surfaces, text, borders, accents, state, spacing, type, radius, shadow, and motion. Use `oklch()` when the project supports it, with fallbacks when compatibility requires them. Color and typography must support hierarchy, not replace it.
 
@@ -114,11 +140,11 @@ Implement the primary workflow or product story end to end with real or structur
 
 ### 7. Expand Deliberately
 
-Add secondary paths, responsive transformations, data states, and motion only after the primary slice works. Keep content density appropriate to the task. Use visual assets that reveal the real product, object, place, data, or state when inspection matters.
+Add secondary paths, responsive transformations, data states, and motion only after the primary slice works. For design exploration, provide side-by-side variants or no more than six meaningful live tweaks with persisted state. For app prototypes, use the target device frame and run the connected click path. Keep content density appropriate to the task. Use visual assets that reveal the real product, object, place, data, or state when inspection matters.
 
 ### 8. Verify In A Browser
 
-Run functional checks and inspect screenshots at the actual target sizes. For responsive web work, include 320, 375, 414, 768, and a representative desktop width unless the product contract specifies different devices. For fixed media, inspect the exact output geometry plus a downscaled GitHub or distribution preview. Check console and network errors, keyboard flow, focus, contrast, overflow, text fit, touch targets, reduced motion, loading stability, image/font completion, nonblank canvas pixels, poster fallback, frame continuity, duration, codec, and file size as applicable.
+Run functional checks and inspect screenshots at the actual target sizes. For responsive web work, include 320, 375, 414, 768, and a representative desktop width unless the product contract specifies different devices. For fixed media, inspect the exact output geometry plus a downscaled distribution preview. Check console and network errors, keyboard flow, focus, contrast, overflow, text fit, touch targets, reduced motion, loading stability, image/font completion, nonblank canvas pixels, poster fallback, GIF loop, frame continuity, duration, codec, audio loudness, and file size as applicable. For PPTX, verify page count, geometry, openability, notes, and the promised editability mode.
 
 ### 9. Critique And Refine
 
@@ -143,6 +169,18 @@ When judgment is limited, follow these rules in order:
 
 If context is constrained, load in this order: delivery route, context and content, chosen pattern, visual system, relevant component module, verification. Never drop artifact routing, content truth, accessibility, responsive behavior, or final verification.
 
+## Runtime Degradation Ladder
+
+Degrade tooling, never truth or acceptance:
+
+1. **Full production runtime:** browser automation, screenshots, ffmpeg, package exporters, and deterministic verification are available. Produce and verify the complete artifact.
+2. **Browser without media/export tools:** finish and verify the HTML source plus static captures; report the exact missing derivative command instead of fabricating GIF, video, PDF, or PPTX evidence.
+3. **Static HTML runtime:** preserve semantic layout, target geometry, content, tokens, and reduced-motion fallback; defer interaction or encoding with an explicit handoff.
+4. **No browser runtime:** produce the brief, information architecture, three real source previews when rendering is still possible, pattern selection, and acceptance plan. Do not claim visual QA from code reading.
+5. **Context-constrained model:** load only the route, accepted facts, chosen output contract, one relevant pattern, and verification checklist. Reuse starters and templates; do not invent a design system from memory.
+
+At every level, retain source truth, artifact ownership, accessibility, factual claims, and honest disclosure of unverified output.
+
 ## Brand DESIGN.md Routing
 
 Built-in brand references live at:
@@ -163,7 +201,9 @@ When blending directions, name which decision comes from which direction and pre
 - Do not invent product evidence or hide missing content behind polish.
 - Do not treat “make a cover” as an image-generation prompt. Understand the product, audience, proof, distribution surface, and fallback before creating media.
 - Do not use hover-only affordances, `transition: all`, autoplay sound, unpausable motion, or animation that shifts layout.
-- Do not render an MP4 from wall-clock animation, omit its poster fallback, or accept black, duplicated, clipped, or unreadable frames.
+- Do not render MP4 or GIF from wall-clock animation, omit required fallback, or accept black, duplicated, clipped, stalled, or unreadable frames.
+- Do not claim an image-backed PPTX is editable. Do not start editable HTML-first PPTX from visually unrestricted HTML and attempt lossy repair after the deck is complete.
+- Do not autoplay sound in browser artifacts. Narrated deliveries require explicit cues, licensed sources, transcript or captions, and a verified mixed output.
 - Do not allow clickable labels, controls, metrics, or headings to overflow or collide at any target width.
 - Do not create an SVG illustration when a real or generated bitmap, actual product view, chart, or code-native visual better communicates the subject.
 - Do not add a new component library or visual framework unless the accepted design and repository justify it.
@@ -175,9 +215,18 @@ From the installed skill directory:
 ```bash
 node scripts/design-router.mjs --task dashboard --deliverable html --signals trends,comparison --format json
 node scripts/design-router.mjs --task html-presentation --deliverable hybrid --platform windows
+node scripts/design-router.mjs --task html-presentation --deliverable pptx --pipeline html-first --pptx-mode editable --format json
 node scripts/design-router.mjs --task readme-cover --deliverable image --signals developer-tool,terminal --format json
-node scripts/design-router.mjs --task product-demo --deliverable video --signals workflow,product-proof
-NODE_PATH=<playwright-node-modules> node scripts/render-motion-media.mjs --input <source.html> --output-dir <assets-dir> --name product-loop
+node scripts/design-router.mjs --task infographic --deliverable image --signals comparison,process --format json
+node scripts/design-router.mjs --task product-demo --deliverable gif --signals workflow,product-proof
+NODE_PATH=<playwright-node-modules> node scripts/render-motion-media.mjs --input <source.html> --output-dir <assets-dir> --name product-loop --formats poster,mp4,gif
+WIKIMEDIA_USER_AGENT=<descriptive-id> node scripts/fetch-wikimedia-assets.mjs --query <subject> --output-dir <assets-dir>
+NODE_PATH=<playwright-node-modules> node scripts/render-deck-thumbnails.mjs --slides <slides-dir> --output-dir <thumbs-dir>
+node scripts/compile-narration-timeline.mjs --script <script.md> --manifest <narration.json>
+node scripts/export-html-deck-pptx.mjs --slides <slides-dir> --out <deck.pptx> --mode editable
+node scripts/verify-motion-media.mjs --input <loop.gif> --require-loop --max-mb 2 --json
+node scripts/prepare-motion-review.mjs --input <video.mp4> --output-dir <review-dir> --context <director-notes.md>
+node scripts/render-with-adapter.mjs --manifest <render.json> --adapter <project-adapter.mjs> --output-dir <assets-dir>
 ```
 
 The router returns artifact ownership, operating mode, suggested macrostructures, components, and required quality gates. It is advisory and read-only; repository evidence and accepted user decisions remain authoritative.

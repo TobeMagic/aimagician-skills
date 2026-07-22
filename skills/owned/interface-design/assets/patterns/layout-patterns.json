@@ -102,6 +102,36 @@
       "use_when": ["Procedural SVG, Canvas, WebGL, or motion is the primary visual material", "A fixed stage needs deterministic rendering"],
       "structure": ["stable stage geometry", "semantic visual layers", "controlled parameter state", "fallback or caption", "capture surface"],
       "responsive": "Use explicit stage ratios and recompose controls or explanatory text outside the fixed visual field."
+    },
+    {
+      "id": "direction-comparison-canvas",
+      "use_when": ["A high-impact visual task needs three materially different directions", "A manager must compare structure, type, color, interaction, or motion before implementation"],
+      "structure": ["shared brief", "direction labels and rationale", "three equal-geometry previews", "tradeoffs", "selection record"],
+      "responsive": "Keep previews comparable at one geometry; stack complete directions rather than shrinking them below readable size."
+    },
+    {
+      "id": "device-prototype-gallery",
+      "use_when": ["An app flow must be reviewed in its target device context", "Several screens or platform variants need direct comparison"],
+      "structure": ["device and platform contract", "connected screens", "shared state", "interaction controls", "failure and recovery state"],
+      "responsive": "Preserve device aspect ratio and move secondary screens into a scrollable strip or route."
+    },
+    {
+      "id": "multi-file-deck",
+      "use_when": ["A presentation has more than ten slides", "Slides need isolated CSS, parallel production, or editable HTML-to-PPTX conversion"],
+      "structure": ["manifest and shared tokens", "independent slide files", "browser index runtime", "speaker notes", "export contract"],
+      "responsive": "Keep slide geometry fixed and scale the stage; provide an overview rather than reflowing individual slides."
+    },
+    {
+      "id": "narrated-motion-stage",
+      "use_when": ["Voice timing drives a long-form visual explanation", "Music, effects, and motion must form one continuous narrative"],
+      "structure": ["narration segments", "measured audio timing", "continuous scene timeline", "music and effect cues", "mixed and verified delivery"],
+      "responsive": "Use one deterministic master timeline and preserve a readable poster or transcript fallback."
+    },
+    {
+      "id": "evidence-infographic",
+      "use_when": ["Data, a process, or a comparison must be understood as one fixed visual", "A sourced claim needs an annotated explanation rather than a dashboard"],
+      "structure": ["title and thesis", "sourced key statistic", "annotated diagram or chart", "process or comparison", "legend and sources"],
+      "responsive": "Recompose hierarchy for each target ratio; never shrink a desktop canvas until labels become unreadable."
     }
   ]
 }

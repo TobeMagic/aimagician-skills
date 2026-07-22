@@ -5,3 +5,4 @@ coverage/
 __pycache__/
 *.py[cod]
 .superpowers/
+skills/owned/*/references/_external_repos/

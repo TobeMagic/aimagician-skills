@@ -1,5 +1,12 @@
 # README Visual Integration
 
+## Motion Format Decision
+
+- Use a tracked GIF for a short, silent, automatically looping repository hero. Keep it readable at the rendered README column width and enforce a repository-specific file budget.
+- Use MP4 for longer, high-detail, or audio-bearing demonstrations. Provide a Poster and do not assume inline autoplay.
+- Keep the deterministic HTML/CSS/JS source in the repository when feasible so both GIF and MP4 can be regenerated.
+- Prefer repository-relative media paths over ephemeral attachment URLs. Verify the path from the final README location.
+
 ## Shared Brief
 
 Before producing media, establish one shared brief with:

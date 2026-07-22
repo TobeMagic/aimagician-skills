@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "video": "visual-only.mp4",
+  "target_lufs": -16,
+  "mix_guidance": {
+    "voice_reference_db": 0,
+    "music_relative_db_range": [-8, -6],
+    "effect_reference_db": 0,
+    "rule": "Measure loudness and intelligibility; ratios are starting points, not substitutes for listening and validation."
+  },
+  "density_presets": {
+    "focused": { "effects_per_10_seconds": 0 },
+    "balanced": { "effects_per_10_seconds": 4 },
+    "information_dense": { "effects_per_10_seconds": 9 }
+  },
+  "ducking": {
+    "threshold": 0.03,
+    "ratio": 8,
+    "attack_ms": 20,
+    "release_ms": 350
+  },
+  "clips": [
+    {
+      "id": "voice-opening",
+      "type": "voice",
+      "path": "audio/opening.wav",
+      "start": 0,
+      "gain_db": 0,
+      "fade_in": 0.05,
+      "fade_out": 0.1,
+      "duration": 4,
+      "source": "project-approved",
+      "license": "recorded-in-project"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "source": "motion-source.html",
+  "format": "webm",
+  "width": 1920,
+  "height": 1080,
+  "duration": 8,
+  "fps": 60,
+  "alpha": true,
+  "deterministic": true,
+  "reason_for_adapter": "Replace with the requirement the local renderer cannot satisfy."
+}
