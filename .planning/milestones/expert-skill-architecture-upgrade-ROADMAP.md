@@ -1,8 +1,8 @@
 # Expert Skill Architecture Upgrade
 
 **Created:** 2026-07-21
-**Branch:** `feat/expert-skill-architecture-upgrade`
-**Status:** In progress (Phase 6 extension)
+**Branch:** `feat/skill-capability-audit`
+**Status:** Complete
 
 ## Goal
 
@@ -26,9 +26,9 @@ Upgrade the owned engineering and HTML design skills so a weaker model can follo
 | 1. Baseline and source audit | P0 | Owned skills, three external repositories, PPT boundary, current tests | Complete | Local mirrors, OpenCode reports, direct source inspection |
 | 2. Engineering capability integration | P0 | Four modules, templates, route helper, evals, upgraded entry | Complete | `skills/owned/aimagician-superpower/` |
 | 3. HTML universal design integration | P0 | Eight modules, pattern libraries, templates, route helper, evals, PPT boundary | Complete | `skills/owned/interface-design/` |
-| 4. Documentation and automated acceptance | P0 | Merge audits, README, architecture and scenario tests | Complete | `docs/`, 101 passing tests |
+| 4. Documentation and automated acceptance | P0 | Merge audits, README, architecture and scenario tests | Complete | `docs/`, 108 passing tests |
 | 5. Independent review and integration | P0 | Full checks, OpenCode review, Codex/OpenCode sync, commit and safe cherry-pick | Complete | Root commit `17ea2c5`; Skillbird and OpenCode acceptance healthy |
-| 6. HTML-native production parity | P0 | Complete source audit, GIF, devices/tweaks, deck/PDF, explicit HTML-first PPTX, narration/audio, runtime neutrality | In progress | `docs/audits/huashu-interface-design-capability-audit-2026-07-22.md`, runtime smoke evidence |
+| 6. HTML-native production parity | P0 | Complete source audit, GIF, devices/tweaks, deck/PDF, explicit HTML-first PPTX, narration/audio, runtime neutrality | Complete | Capability/parity audits, 108 tests, Agnes review, three-target bootstrap, YapCLI GIF acceptance |
 
 ## 2026-07-22 Extension Requirements
 
@@ -53,10 +53,14 @@ Upgrade the owned engineering and HTML design skills so a weaker model can follo
 - Installed runtime comparison: upgraded Codex/OpenCode skill trees match repository source after excluding ignored audit mirrors; no `_external_repos`, `_analysis`, or `source-routing` directory was installed.
 - Fresh OpenCode acceptance: `opencode/deepseek-v4-flash-free`, session `ses_07cb9c685fferbOJlS5z2isko1`, reported PASS for owner-ID parity, engineering modules, design modules/assets/templates, HTML/PPT routing, and forbidden-directory absence.
 - Final HTML-native capability audit: `agnes/agnes-2.0-flash`, session `ses_075ab8bb1ffeA6lh3tCV6i4G5H`, reported PASS with no blocker or high finding; direct spot checks corrected its three count/search errors.
+- Phase 6 implementation: commit `ef95cbc` on `feat/skill-capability-audit`, pushed to `origin/feat/skill-capability-audit`.
+- Three-target bootstrap: Codex, OpenCode, and Claude each report 23 managed owned skills, healthy `list`/`doctor` results, and zero issues; Codex's separate `.system` directory remains intact as a built-in runtime owner.
+- YapCLI media acceptance: OpenCode session `ses_0758576f2ffe28Keo3o3Ecizew` used `agnes/agnes-2.0-flash`, committed and pushed `547860f` to `main`, and left a clean worktree with local HEAD equal to `origin/main`.
+- Tracked YapCLI README hero: 800x450 GIF, 8 seconds, 12 fps, 96 frames, 261,335 bytes, silent, optimized palette, infinite loop, and three distinct nonblank representative frames.
 
-## Phase 1-5 Completion Result
+## Completion Result
 
-All requirements and completion gates for this milestone are satisfied. Engineering and HTML design runtime capabilities are source-neutral, executable routing and acceptance scenarios are present, native PowerPoint ownership is explicit, repository checks pass, and both requested CLI targets are synchronized to the complete owned set.
+All requirements and completion gates for this milestone are satisfied. Engineering and HTML design runtime capabilities are source-neutral, executable routing and acceptance scenarios are present, native PowerPoint ownership is explicit, repository checks pass, all three CLI targets are synchronized to the complete owned set, and the tracked YapCLI GIF workflow is verified end to end.
 
 ## Completion Gate
 
