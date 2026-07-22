@@ -171,7 +171,7 @@ describe("v4 Skillbird acceptance", () => {
     expect(installedIds(previewJson)).not.toContain("multilingual-diversity-loop");
   });
 
-  it("previews the operate bundle with the CLI agent orchestrator", async () => {
+  it("previews the operate bundle with the CLI agent delegator", async () => {
     const root = await createTempRoot();
     const homeDir = join(root, "home");
     await mkdir(homeDir, { recursive: true });
@@ -193,7 +193,7 @@ describe("v4 Skillbird acceptance", () => {
     expect(preview.exitCode).toBe(0);
     const previewJson = JSON.parse(preview.stdout) as InstallJson;
     expect(installedIds(previewJson)).toEqual(expect.arrayContaining([
-      "cli-agent-orchestrator",
+      "cli-agent-delegator",
       "composio-tool-router",
       "gcloud-ops-workflow",
       "github-pr-workflow",

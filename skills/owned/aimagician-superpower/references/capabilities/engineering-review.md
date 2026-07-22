@@ -42,13 +42,13 @@ Investigate when a change has a broad interface hiding little behavior, knowledg
 
 Each finding includes:
 
-- severity: blocker, high, medium, or low;
+- severity: `Blocker`, `Important`, or `Nitpick`;
 - concrete path and line or symbol;
 - violated requirement, invariant, or engineering principle;
 - user or system impact;
 - evidence or reproduction;
 - smallest credible remediation and required verification.
 
-Do not inflate severity, report preferences as defects, or bury a blocker under general praise. When no finding remains, say so and name residual test gaps or uncertainty.
+`Blocker` prevents progression or completion. `Important` is material and must be fixed and re-reviewed or deferred by an explicit user decision. `Nitpick` is non-blocking. Do not inflate severity, report preferences as defects, or bury a Blocker under general praise. When no finding remains, say so and name residual test gaps or uncertainty.
 
-Use `assets/templates/engineering-review.md` for durable review evidence. A review is closed only after accepted findings are fixed and re-reviewed, explicitly deferred, or rejected with evidence.
+Use `assets/templates/engineering-review.md` for durable review evidence. For substantial work, run the specification and quality passes as fresh OpenCode roles through `cli-agent-delegator`, then have the main Agent reproduce material findings and inspect the decisive evidence. A review is closed only after accepted findings are fixed and re-reviewed, explicitly deferred, or rejected with evidence.

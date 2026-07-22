@@ -1,0 +1,130 @@
+import { access, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+const ownedRoot = join(process.cwd(), "skills", "owned");
+const delegatorRoot = join(ownedRoot, "cli-agent-delegator");
+const superpowerRoot = join(ownedRoot, "aimagician-superpower");
+
+describe("cli-agent-delegator capability contract", () => {
+  it("renames the owned skill without leaving an alias or tombstone", async () => {
+    await expect(access(join(delegatorRoot, "SKILL.md"))).resolves.toBeUndefined();
+    await expect(access(join(ownedRoot, "cli-agent-orchestrator", "SKILL.md"))).rejects.toThrow();
+
+    const skill = await readFile(join(delegatorRoot, "SKILL.md"), "utf8");
+    expect(skill).toMatch(/^---\nname: cli-agent-delegator\n/);
+    expect(skill).toContain("category: operate");
+    expect(skill).toContain("subcategory: agent-orchestration");
+  });
+
+  it("puts broad exploration, checks, research, vision, and reviews on the trigger surface", async () => {
+    const skill = await readFile(join(delegatorRoot, "SKILL.md"), "utf8");
+    const description = frontmatterDescription(skill);
+
+    for (const trigger of [
+      "broad or multi-source exploration",
+      "deep web research",
+      "image or visual inspection",
+      "git inspection",
+      "test execution",
+      "isolated low-risk implementation",
+      "independent plan/code/spec/verification/audit review"
+    ]) {
+      expect(description).toContain(trigger);
+    }
+
+    expect(description).toContain("Keep one- or two-file lookups");
+    expect(skill).toContain("Before the main Agent starts a broad scan or mechanical verification");
+    expect(skill).toContain("This gate applies even when the user says only");
+  });
+
+  it("requires complete context, owned skill loading, bounded permissions, and inherited child scope", async () => {
+    const prompt = await readFile(join(delegatorRoot, "references", "prompt-contract.md"), "utf8");
+
+    for (const field of [
+      "SOURCE_OF_TRUTH",
+      "ACCEPTED_DECISIONS",
+      "KNOWN_CONTEXT",
+      "REQUIRED_SKILLS",
+      "ALLOWED_SCOPE",
+      "FORBIDDEN_SCOPE",
+      "PERMISSION_MODE",
+      "WRITE_SCOPE",
+      "GIT_POLICY",
+      "CHILD_AGENT_POLICY",
+      "STOP_AND_ESCALATE_WHEN"
+    ]) {
+      expect(prompt).toContain(field);
+    }
+
+    expect(prompt).toContain("load every skill named in REQUIRED_SKILLS");
+    expect(prompt).toContain("return NEEDS_CONTEXT");
+    expect(prompt).toContain("Child-Agent Inheritance");
+    expect(prompt).toContain("full-repository diffs");
+  });
+
+  it("routes ordinary work to DeepSeek and vision or provider fallback to Agnes", async () => {
+    const provider = await readFile(join(delegatorRoot, "references", "providers", "opencode.md"), "utf8");
+
+    expect(provider).toMatch(/1\. `opencode\/deepseek-v4-flash-free`[\s\S]*2\. `agnes\/agnes-2\.0-flash`/);
+    expect(provider).toContain("when the task requires image understanding");
+    expect(provider).toContain("when DeepSeek is unavailable, rate-limited, rejects the request, or otherwise fails");
+    expect(provider).toContain("A provider rate limit is a model failure event");
+    expect(provider).not.toMatch(/opencode run[^\n]*--prompt/);
+    expect(provider).toContain("prompt as the trailing positional message");
+  });
+
+  it("waits on activity events instead of elapsed-time limits", async () => {
+    const provider = await readFile(join(delegatorRoot, "references", "providers", "opencode.md"), "utf8");
+
+    expect(provider).toContain("Event-Based Waiting");
+    expect(provider).toContain("never a fixed five-second poll count or fixed maximum elapsed duration");
+    expect(provider).toContain("While the process is alive and events continue, keep waiting");
+    expect(provider).toContain("Never start the fallback model while the original process is still alive");
+    expect(provider).toContain("an interval is only an observation cadence, not a deadline");
+  });
+
+  it("supports bounded writes but keeps commits, pushes, and dirty worktrees gated", async () => {
+    const operations = await readFile(join(delegatorRoot, "references", "task-types", "bounded-operations-and-execution.md"), "utf8");
+
+    expect(operations).toContain("clean isolated worktree");
+    expect(operations).toContain("exact write scope");
+    expect(operations).toContain("Default is `no-commit`");
+    expect(operations).toContain("Push is never implied by commit permission");
+    expect(operations).toContain("before/after git status");
+  });
+
+  it("enforces risk-scaled OpenCode review gates and one severity taxonomy", async () => {
+    const review = await readFile(join(delegatorRoot, "references", "task-types", "independent-review-and-audit.md"), "utf8");
+    const orchestration = await readFile(join(superpowerRoot, "references", "capabilities", "agent-orchestration.md"), "utf8");
+    const qualityReviewer = await readFile(join(superpowerRoot, "references", "roles", "quality-reviewer.md"), "utf8");
+
+    expect(review).toContain("One- or two-file read-only lookup");
+    expect(review).toContain("One combined pre-commit specification and quality review");
+    expect(review).toContain("Plan review before execution; specification review; quality review; verifier");
+    expect(review).toContain("Fresh whole-result auditor");
+    expect(review).toContain("Use exactly");
+    expect(orchestration).toContain("cli-agent-delegator");
+    expect(orchestration).toContain("phase audit, and milestone or completion audit");
+    expect(qualityReviewer).toContain("`Blocker`, `Important`, and `Nitpick`");
+    expect(qualityReviewer).not.toContain("Critical, Important, and Minor");
+  });
+
+  it("captures the trigger regression where the main agent scans skill, docs, and tests itself", async () => {
+    const evals = JSON.parse(await readFile(join(delegatorRoot, "evals", "evals.json"), "utf8")) as {
+      scenarios: Array<{ id: string; should_trigger: boolean; expected: string[]; forbidden: string[] }>;
+    };
+    const scenario = evals.scenarios.find((candidate) => candidate.id === "trigger-regression-main-agent-multifile-scan");
+
+    expect(scenario).toBeDefined();
+    expect(scenario).toMatchObject({ should_trigger: true });
+    expect(scenario?.expected).toContain("delegate the multi-file audit first");
+    expect(scenario?.forbidden).toContain("main agent performs the whole multi-file scan itself");
+  });
+});
+
+function frontmatterDescription(skill: string): string {
+  const match = skill.match(/^---\n[\s\S]*?^description: (.+)$/m);
+  if (!match) throw new Error("Skill description is missing");
+  return match[1];
+}

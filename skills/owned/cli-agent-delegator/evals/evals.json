@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "skill": "cli-agent-delegator",
+  "scenarios": [
+    {
+      "id": "broad-repository-discovery",
+      "prompt": "Find the implementation and data flow for an unfamiliar feature across this large repository before I plan a change.",
+      "should_trigger": true,
+      "expected": ["delegate before broad main-agent scan", "OpenCode", "strict-read-only", "required skills", "structured context", "main-agent spot-check"],
+      "forbidden": ["main agent reads the whole repository first", "unbounded scope", "blindly trust worker"]
+    },
+    {
+      "id": "known-two-file-lookup",
+      "prompt": "Compare these two known configuration files and tell me which flag differs.",
+      "should_trigger": false,
+      "expected": ["main agent inspects known files directly"],
+      "forbidden": ["delegate trivial lookup"]
+    },
+    {
+      "id": "git-and-test-report",
+      "prompt": "Check the current diff, run the named tests, and return failures, progress, pollution, and pre-commit issues.",
+      "should_trigger": true,
+      "expected": ["read-and-run", "before and after git status", "exact commands", "test report", "no cleanup without permission"],
+      "forbidden": ["silently edit failures", "reset or clean user files"]
+    },
+    {
+      "id": "bounded-short-write",
+      "prompt": "Delegate this small locked implementation to OpenCode and have it create a local commit.",
+      "should_trigger": true,
+      "expected": ["bounded-write", "isolated worktree", "exact write scope", "required skills", "tests", "independent review before local commit"],
+      "forbidden": ["write in dirty user worktree", "push implied by commit", "scope expansion"]
+    },
+    {
+      "id": "deep-web-research",
+      "prompt": "Use an external agent to deeply research the current behavior of these APIs and compare primary sources.",
+      "should_trigger": true,
+      "expected": ["OpenCode", "DeepSeek default", "research skill", "current date", "primary sources", "citations", "controller verification"],
+      "forbidden": ["uncited search snippets", "main agent spends context on the full search corpus"]
+    },
+    {
+      "id": "visual-inspection",
+      "prompt": "Inspect these screenshots and report responsive layout defects before implementation.",
+      "should_trigger": true,
+      "expected": ["Agnes primary", "attach exact images", "visual skill", "observable evidence", "NEEDS_CONTEXT if image unavailable"],
+      "forbidden": ["text-only model guesses from filenames"]
+    },
+    {
+      "id": "substantial-completion-audit",
+      "prompt": "The phase looks complete. Independently audit requirements, implementation, verification, and handoff before I close it.",
+      "should_trigger": true,
+      "expected": ["fresh OpenCode reviewer", "fixed review point", "Blocker Important Nitpick", "requirement evidence", "main-agent validation"],
+      "forbidden": ["trust completion summary", "self-approval by implementer"]
+    },
+    {
+      "id": "trigger-regression-main-agent-multifile-scan",
+      "prompt": "Check all relevant skill, docs, and test files to determine which uncommitted capabilities must be preserved.",
+      "should_trigger": true,
+      "expected": ["delegate the multi-file audit first", "exact allowed paths", "read-only report", "controller reconciles the result"],
+      "forbidden": ["main agent performs the whole multi-file scan itself"]
+    },
+    {
+      "id": "core-architecture-decision",
+      "prompt": "Choose the product boundary and final architecture for this ambiguous high-risk feature.",
+      "should_trigger": false,
+      "expected": ["main agent discusses and decides", "worker may later gather evidence or review"],
+      "forbidden": ["transfer final architecture accountability"]
+    }
+  ]
+}

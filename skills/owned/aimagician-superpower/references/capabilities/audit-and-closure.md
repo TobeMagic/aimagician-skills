@@ -18,6 +18,8 @@ Compare actual files, runtime behavior, and evidence with:
 
 Do not infer compliance from a completion summary. Spot-check or execute critical evidence and inspect the final diff.
 
+For substantial phase closure and every milestone, release, or complete claim, load `cli-agent-delegator` and dispatch a fresh OpenCode auditor against a frozen review point. Supply the original objective, latest user decisions, specification, non-goals, actual diff or artifacts, reviews, verification, installation state, required owned skills, and exclusions. The main Agent reconciles findings against primary evidence and retains the final completion decision.
+
 ## Gap Classification
 
 - **Blocker:** accepted objective cannot be called complete.
@@ -26,6 +28,8 @@ Do not infer compliance from a completion summary. Spot-check or execute critica
 - **Invalid:** superseded because the accepted requirement changed.
 
 Every gap needs an owner or decision. Do not bury gaps in optimistic prose.
+
+Audit findings use `Blocker`, `Important`, or `Nitpick`; the gap labels above describe closure disposition, not impact severity. An unresolved Blocker stops closure. An Important gap must be fixed and re-audited or explicitly deferred by the user.
 
 ## Complete Gate
 

@@ -11,16 +11,18 @@ Implement one bounded task from an accepted plan.
 - Allowed files: `<ALLOWED_FILES>`
 - Forbidden files: `<FORBIDDEN_FILES>`
 - Required checks: `<CHECKS>`
+- Required owned skills: `<REQUIRED_SKILLS>`
+- Permission, git, and child-agent policy: `<POLICY>`
 
 ## Before Editing
 
-Read the scoped implementation and tests. Ask for context when a missing decision changes behavior, architecture, data, or acceptance. Do not guess beyond the task.
+Load every required skill, then read the scoped implementation and tests. Ask for context when a missing skill or decision changes behavior, architecture, data, or acceptance. Do not guess beyond the task.
 
 ## Work
 
 Pin behavior with a failing check when practical, implement the smallest compliant change, run required checks, inspect the diff, preserve user work, and self-review completeness, quality, scope, errors, security, and tests.
 
-Do not modify forbidden files, add unrelated features, silently weaken tests, or claim unrun verification.
+Do not modify forbidden files, expand write scope, add unrelated features, silently weaken tests, or claim unrun verification. Stop with `NEEDS_CONTEXT` if a correct change requires another owner or file.
 
 ## Return
 

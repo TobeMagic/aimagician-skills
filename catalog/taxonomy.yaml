@@ -100,12 +100,12 @@ skills:
     subgroup: academic
     tags: [papers, literature, experiments]
     recommendedScopes: [project]
-  cli-agent-orchestrator:
+  cli-agent-delegator:
     group: operate
     subgroup: agent-orchestration
-    tags: [cli-agent, multi-agent, orchestration, opencode, exploration]
-    recommendedScopes: [project]
-    description: Orchestrate external CLI agents for bounded multi-agent tasks; prefer OpenCode for broad read-only exploration, codebase scanning, and context gathering.
+    tags: [cli-agent, multi-agent, delegation, orchestration, opencode, exploration, research, review, verification]
+    recommendedScopes: [global]
+    description: Delegate broad discovery, deep research, visual inspection, bounded git/test/write tasks, and independent review to OpenCode while retaining main-Agent judgment.
   composio-tool-router:
     group: operate
     subgroup: tool-routing

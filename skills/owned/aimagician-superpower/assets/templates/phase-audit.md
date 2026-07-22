@@ -13,6 +13,11 @@
 - Specification compliance: NOT_RUN
 - Quality review: NOT_RUN
 - Integration audit: NOT_RUN
+- Fresh OpenCode phase auditor: NOT_RUN
+
+| Severity | Finding | Evidence | Disposition |
+|---|---|---|---|
+| Blocker / Important / Nitpick | TBD | TBD | fixed / follow-up / deferred / invalid |
 
 ## Gaps
 

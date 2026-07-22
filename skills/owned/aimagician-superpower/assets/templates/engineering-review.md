@@ -8,7 +8,7 @@
 
 | Severity | Path / Symbol | Requirement / Principle | Impact | Evidence | Remediation |
 |---|---|---|---|---|---|
-| TBD | TBD | TBD | TBD | TBD | TBD |
+| Blocker / Important / Nitpick | TBD | TBD | TBD | TBD | TBD |
 
 ## Specification Coverage
 

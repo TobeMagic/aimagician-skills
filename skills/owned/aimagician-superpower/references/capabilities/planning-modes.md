@@ -47,7 +47,7 @@ Avoid instructions such as "handle errors" or "add tests" without naming the req
 
 ## Independent Plan Review
 
-For substantial work, dispatch a fresh plan reviewer with the specification, research conclusion, context, and complete plan. The reviewer checks:
+For substantial work, load `cli-agent-delegator` and dispatch a fresh OpenCode plan reviewer with the specification, research conclusion, accepted decisions, relevant owned skills, context, and complete plan. The reviewer checks:
 
 - missing or extra scope;
 - requirement coverage and falsifiability;
@@ -57,6 +57,6 @@ For substantial work, dispatch a fresh plan reviewer with the specification, res
 - weak verification or rollback;
 - tasks too large for one focused implementation context.
 
-Revise and re-review until no blocking or important finding remains. Do not let the plan author self-approval replace independent review.
+Revise and re-review until no `Blocker` or `Important` finding remains. Do not let the plan author self-approval replace independent review. The main Agent spot-checks requirement mapping, dependency edges, exact file ownership, and the proposed decisive tests before accepting the review.
 
 Run `workflow.mjs validate --gate plan` while reviewing the plan, then mark accepted plans accordingly and run `validate --gate execute` before implementation. Use `trace` as evidence accumulates.

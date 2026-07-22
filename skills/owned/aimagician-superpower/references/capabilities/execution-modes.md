@@ -40,6 +40,8 @@ Do not write tests that merely search source text when behavior can be executed.
 
 Every worker receives objective, requirement and task IDs, context, allowed and forbidden files, mutation permission, dependencies, exact tests, expected output, status protocol, and handoff format. Shared files, migrations, registries, and integration tests have one owner.
 
+Use `cli-agent-delegator` when OpenCode can run a short locked implementation, git inspection, named test set, non-destructive check, or progress report. Supply required owned skills and a complete prompt contract. `read-and-run` work records before/after git status and reports generated pollution. `bounded-write` work runs only in a clean isolated worktree with exact allowed files; it stops rather than expanding scope. Local commit is opt-in after review, and push is separately authorized.
+
 ## Code Discipline
 
 - Follow existing helpers, structured APIs, parsers, types, and naming.

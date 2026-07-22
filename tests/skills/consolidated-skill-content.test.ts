@@ -100,17 +100,30 @@ describe("consolidated owned skill content", () => {
     expect(appleDesign).toContain("Apple");
   });
 
-  it("keeps CLI agent orchestration provider-based and strict by default", async () => {
-    const skill = await readOwnedSkill("cli-agent-orchestrator");
-    const opencodeProvider = await readFile(join(ownedSkillsRoot, "cli-agent-orchestrator", "references", "providers", "opencode.md"), "utf8");
-    const explorationTask = await readFile(join(ownedSkillsRoot, "cli-agent-orchestrator", "references", "task-types", "exploration.md"), "utf8");
-    expect(skill).toContain("Exploration Priority Rule");
-    expect(skill).toContain("use OpenCode first");
-    expect(skill).toContain("strict read-only by default");
-    expect(opencodeProvider).toContain("event-based waiting");
-    expect(opencodeProvider).toContain("Do not impose a hard wall-clock timeout");
-    expect(explorationTask).toContain("not limited to repositories");
-    expect(explorationTask).toContain("Do not modify files");
+  it("keeps CLI agent delegation provider-based, bounded, and independently validated", async () => {
+    const skillRoot = join(ownedSkillsRoot, "cli-agent-delegator");
+    const skill = await readOwnedSkill("cli-agent-delegator");
+    const opencodeProvider = await readFile(join(skillRoot, "references", "providers", "opencode.md"), "utf8");
+    const promptContract = await readFile(join(skillRoot, "references", "prompt-contract.md"), "utf8");
+    const discoveryTask = await readFile(join(skillRoot, "references", "task-types", "discovery-and-research.md"), "utf8");
+    const operationsTask = await readFile(join(skillRoot, "references", "task-types", "bounded-operations-and-execution.md"), "utf8");
+    const reviewTask = await readFile(join(skillRoot, "references", "task-types", "independent-review-and-audit.md"), "utf8");
+
+    expect(skill).toContain("Delegation-First Trigger Gate");
+    expect(skill).toContain("Do not let the main Agent silently perform a multi-file or multi-source scan");
+    expect(skill).toContain("strict-read-only");
+    expect(skill).toContain("read-and-run");
+    expect(skill).toContain("bounded-write");
+    expect(opencodeProvider).toContain("Event-Based Waiting");
+    expect(opencodeProvider).toContain("never a fixed five-second poll count or fixed maximum elapsed duration");
+    expect(promptContract).toContain("REQUIRED_SKILLS");
+    expect(promptContract).toContain("Child-Agent Inheritance");
+    expect(discoveryTask).toContain("Deep web research");
+    expect(discoveryTask).toContain("Visual or image inspection");
+    expect(operationsTask).toContain("isolated worktree");
+    expect(reviewTask).toContain("Blocker");
+    expect(reviewTask).toContain("Important");
+    expect(reviewTask).toContain("Nitpick");
   });
 
   it("adds Composio as a service-scoped SaaS tool router without turning it into MCP builder", async () => {

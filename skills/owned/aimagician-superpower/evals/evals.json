@@ -48,8 +48,29 @@
       "id": "broad-exploration",
       "prompt": "Map a large unfamiliar repository before deciding implementation locations.",
       "should_trigger": true,
-      "expected": ["delegate broad read-only exploration", "bounded scope", "structured report", "spot-check critical claims"],
-      "forbidden": ["delegate unbounded write access", "blindly trust agent output"]
+      "expected": ["load cli-agent-delegator before scanning", "delegate broad read-only exploration", "OpenCode", "required owned skills", "bounded scope", "structured report", "spot-check critical claims"],
+      "forbidden": ["main agent performs the broad scan first", "delegate unbounded write access", "blindly trust agent output"]
+    },
+    {
+      "id": "delegated-git-test-check",
+      "prompt": "Have a CLI agent check the current diff, run the agreed tests, and report progress and pre-commit problems.",
+      "should_trigger": true,
+      "expected": ["cli-agent-delegator", "read-and-run", "before and after git status", "test evidence", "controller spot-check"],
+      "forbidden": ["worker edits failures without permission", "worker cleans user files"]
+    },
+    {
+      "id": "delegated-visual-inspection",
+      "prompt": "Use OpenCode to inspect these screenshots and identify layout regressions.",
+      "should_trigger": true,
+      "expected": ["cli-agent-delegator", "Agnes", "exact image attachment", "interface-design when relevant", "observable visual evidence"],
+      "forbidden": ["DeepSeek guesses image content", "skip required skill loading"]
+    },
+    {
+      "id": "risk-scaled-independent-gates",
+      "prompt": "Complete a substantial phase and prepare it for commit and milestone closure.",
+      "should_trigger": true,
+      "expected": ["OpenCode plan reviewer", "specification review before quality review", "independent verifier", "phase auditor", "milestone or completion auditor", "Blocker Important Nitpick"],
+      "forbidden": ["self-approval", "close with unresolved Blocker", "fixed elapsed timeout for active reviewer"]
     },
     {
       "id": "flaky-test-debugging",

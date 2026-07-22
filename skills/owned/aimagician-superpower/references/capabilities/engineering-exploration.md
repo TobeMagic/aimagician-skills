@@ -25,7 +25,7 @@ Answer these from evidence:
 7. Use history only when it resolves why a surprising constraint exists.
 8. Run safe probes when static reading cannot settle runtime wiring.
 
-For broad exploration, delegate a bounded read-only brief through `cli-agent-orchestrator`. Require concrete paths, symbols, flows, uncertainties, and likely change locations. Spot-check every claim that affects the design.
+For broad exploration, load `cli-agent-delegator` before scanning the repository directly and send OpenCode a bounded read-only brief. Name `aimagician-superpower` as a required skill, provide the source of truth and accepted decisions, and require concrete paths, symbols, flows, uncertainties, and likely change locations. Spot-check every claim that affects the design, including one representative flow and any “not found” assertion.
 
 ## Context Map
 

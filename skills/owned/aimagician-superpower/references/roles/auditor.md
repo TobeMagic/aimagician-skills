@@ -7,12 +7,14 @@ Perform the final independent audit of a task, phase, or milestone.
 - Original objective and latest user decisions: `<OBJECTIVE>`
 - Specification, plans, and non-goals: `<CONTRACT>`
 - Diff, artifacts, reviews, and evidence: `<RESULT>`
+- Required owned skills: `<REQUIRED_SKILLS>`
+- Frozen review point and exclusions: `<REVIEW_POINT>`
 
 ## Audit
 
-Trace every accepted requirement to implementation and passing evidence. Check integration, regression, capability preservation, security, compatibility, migration, cleanup, docs, state, and handoff. Verify critical claims directly.
+Load the required skills. Trace every accepted requirement to implementation and passing evidence. Check integration, regression, capability preservation, security, compatibility, migration, cleanup, docs, state, and handoff. Verify critical claims directly.
 
-Classify each gap as blocker, follow-up, deferred by explicit decision, or invalidated by an accepted change.
+Classify finding impact as `Blocker`, `Important`, or `Nitpick`. Separately classify closure disposition as fixed, follow-up, deferred by explicit decision, or invalidated by an accepted change.
 
 ## Return
 

@@ -65,9 +65,10 @@ Skillbird keeps one risk-scaled workflow model:
 5. Re-discuss changed boundaries and assumptions; lock falsifiable requirements only after ambiguity passes.
 6. Plan atomic requirement-backed tasks and independently review substantial plans.
 7. Execute with test-first slices, checkpoints, and bounded Agent roles.
-8. Review specification compliance before code quality.
-9. Verify requirement-to-plan-to-evidence traceability and run user-facing UAT.
-10. Audit, hand off, and close only when accepted requirements have passing evidence.
+8. Delegate broad discovery, deep research, bounded checks, and fresh independent reviews to OpenCode while the main Agent keeps macro decisions.
+9. Review specification compliance before code quality.
+10. Verify requirement-to-plan-to-evidence traceability and run user-facing UAT.
+11. Audit, hand off, and close only when accepted requirements have passing evidence.
 
 The workflow stays light for a reversible one- or two-file edit. Public APIs, schema/data changes, security, integrations, UI/AI contracts, production state, cross-module work, and multi-Agent execution use a formal `SPEC.md` with an ambiguity gate.
 
@@ -93,11 +94,14 @@ The route selects the required context map, design record, vertical slices, test
 
 The combined trigger, capability, boundary, and real-project validation is recorded in [`docs/audits/skill-capability-audit-2026-07-21.md`](docs/audits/skill-capability-audit-2026-07-21.md).
 
+OpenCode delegation triggers, bounded permissions, model routing, independent reviewer gates, and migration evidence are recorded in [`docs/audits/cli-agent-delegator-upgrade-2026-07-22.md`](docs/audits/cli-agent-delegator-upgrade-2026-07-22.md).
+
 The central owned skill is:
 
 | Skill | Role |
 |---|---|
 | `aimagician-superpower` | Risk-scaled SDD plus codebase exploration, progressive discovery, prototypes, engineering design, vertical delivery, root-cause debugging, technical review, traceable verification, audit, and handoff |
+| `cli-agent-delegator` | OpenCode delegation for broad discovery, deep research, image inspection, bounded git/test/write tasks, and independent plan/spec/quality/verification/closure review |
 | `interface-design` | HTML/CSS/JS design, prototypes, UI, dashboards, repository branding, covers, posters, product demo video, creative coding, data visualization, HTML presentations, responsive browser QA, and brand routing |
 | `github-readme-highstar` | README information architecture, quick-start clarity, repository visual collaboration, static hero and supplemental demo integration |
 | `skill-creator` | Skill authoring, merging, taxonomy, formatter rules |
@@ -109,7 +113,7 @@ External sources are curated into owned skills instead of installed by default.
 | Source area | New owned path |
 |---|---|
 | GSD + Superpowers planning/execution | `aimagician-superpower` |
-| CLI agent orchestration, preferring OpenCode for broad read-only exploration | `cli-agent-orchestrator` |
+| CLI agent delegation for discovery, research, visual inspection, bounded operations, and independent review | `cli-agent-delegator` |
 | Composio SaaS tool routing and MCP-light discovery | `composio-tool-router` |
 | Claude skill creator + Superpowers skill writing | `skill-creator` |
 | Claude MCP builder + community MCP builder | `mcp-builder` |
@@ -125,7 +129,7 @@ Six categories are used everywhere:
 | `research` | Papers, literature, open-source architecture, repo evidence |
 | `design` | HTML visual design, prototypes, UI/UX, dashboards, data visualization, HTML presentations, brand routing, accessibility, motion, image generation |
 | `documents` | README, Word, PDF, PowerPoint, spreadsheets |
-| `operate` | GitHub, Linear, cloud, worktrees, releases, CLI agent orchestration, Composio tool routing |
+| `operate` | GitHub, Linear, cloud, worktrees, releases, CLI agent delegation, Composio tool routing |
 | `strategy` | Product, business, pricing, customers, growth |
 
 Every owned skill is formatted with `category`, `subcategory`, and `tags` frontmatter:

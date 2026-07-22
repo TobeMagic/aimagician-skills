@@ -4,9 +4,9 @@ Use this module when an external CLI agent or fresh subagent can reduce context 
 
 ## Controller Responsibilities
 
-The coordinating agent owns objective, boundaries, source-of-truth context, task decomposition, provider choice, permissions, prompt quality, progress monitoring, result validation, integration, and final completion. Delegation never transfers accountability.
+The coordinating agent owns objective, boundaries, source-of-truth context, task decomposition, provider choice, permissions, prompt quality, progress monitoring, result validation, integration, and final completion. Delegation never transfers accountability. Keep unresolved product and architecture decisions, risk acceptance, and final completion judgment with the controller.
 
-Use prompt templates under `references/roles/`. Each dispatch includes the exact task, relevant requirements, accepted decisions, allowed and forbidden scope, mutation permission, tests, output format, and escalation rule. Do not tell an agent to rediscover context the controller already has.
+Use prompt templates under `references/roles/` together with the full envelope in `cli-agent-delegator/references/prompt-contract.md`. Each dispatch includes the exact task, source of truth, relevant requirements, accepted decisions, known context, required owned skills, allowed and forbidden scope, permission mode, write scope, commands, tests, git policy, output format, status and severity protocol, and escalation rule. The worker loads every named skill before substantive work or returns `NEEDS_CONTEXT`. Do not tell an agent to rediscover context the controller already has.
 
 ## Role Routing
 
@@ -46,12 +46,23 @@ For each substantial implementation task:
 8. Mark the task complete only after both review gates pass.
 9. After all tasks, run a whole-change verifier or auditor.
 
+## Risk-Scaled Review Gates
+
+- A one- or two-file read-only lookup needs no forced delegation.
+- A bounded quick write gets one combined pre-commit specification and quality review.
+- Substantial work gets independent plan review, specification review, quality review, verification, phase audit, and milestone or completion audit.
+- Security, data, concurrency, migration, and architecture risk may add focused independent reviewers.
+
+Findings use `Blocker`, `Important`, or `Nitpick`. A Blocker stops progression. An Important finding is fixed and re-reviewed or deferred only by explicit user decision. A Nitpick is non-blocking.
+
 ## Provider And Model Selection
 
-Use `cli-agent-orchestrator` for provider preflight and execution. Prefer a strong available free model for broad exploration, a capable reasoning model for architecture and review, and a fast model for mechanical work with a complete specification. Escalate model capability when a role reports reasoning limits; do not retry the same insufficient context unchanged.
+Use `cli-agent-delegator` for provider preflight and execution. Use DeepSeek V4 Flash Free for ordinary non-visual work and Agnes for visual input or when DeepSeek is unavailable, rate-limited, or fails. Escalate model capability when a role reports reasoning limits; do not retry the same insufficient context unchanged.
 
 For long-running CLI agents, monitor activity events and wait while progress continues. Do not impose a fixed wall-clock stop on an active run. Classify stale, permission, model, command, and provider failures explicitly.
 
+The controller validates decision-changing claims without repeating the whole scan: check cited paths and symbols, one representative dependency or data path, every material “not found” claim, Blocker and Important findings, and the decisive verification command.
+
 ## Parallel Safety
 
-Parallelize only independent tasks with disjoint write scopes and defined integration order. Use `parallel-worktree-pr-flow` for write-capable lanes. Keep shared-file edits sequential. One coordinator integrates and verifies the combined result.
+Parallelize only independent tasks with disjoint write scopes and defined integration order. Use `parallel-worktree-pr-flow` for write-capable lanes. Keep shared-file edits sequential. One coordinator integrates and verifies the combined result. Child agents are forbidden by default; when allowed, they inherit the exact source of truth, skills, scope, permissions, command policy, evidence, and stop rules.

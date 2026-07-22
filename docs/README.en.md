@@ -26,7 +26,7 @@ External catalog sources remain visible reference material and are disabled by d
 | Skill | Purpose |
 |---|---|
 | `aimagician-superpower` | Risk-scaled SDD, codebase exploration, progressive discovery, prototypes, engineering design, vertical delivery, debugging, review, verification, audit, and handoff |
-| `cli-agent-orchestrator` | Orchestrate external CLI agents for bounded multi-agent work; prefer OpenCode for broad read-only exploration and context gathering |
+| `cli-agent-delegator` | Delegate broad discovery, deep research, visual inspection, bounded git/test/write work, and independent review to OpenCode while the main Agent retains final judgment |
 | `composio-tool-router` | Route SaaS tool discovery and execution through Composio CLI with service-scoped lookup and schema-on-demand |
 | `skill-creator` | Create, merge, classify, and verify skills |
 | `interface-design` | Universal HTML/CSS/JS design for prototypes, UI, dashboards, repository covers, posters, product video, creative coding, data visualization, marketing pages, HTML presentations, brand routing, and browser/media QA |

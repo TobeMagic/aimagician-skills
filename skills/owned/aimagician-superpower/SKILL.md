@@ -32,7 +32,7 @@ metadata:
     - references/capabilities/audit-and-closure.md
     - references/capabilities/domain-gates.md
   preferred_companions:
-    - cli-agent-orchestrator
+    - cli-agent-delegator
     - parallel-worktree-pr-flow
     - llm-know-how-wiki
     - interface-design
@@ -134,7 +134,7 @@ Ask only questions that change behavior, scope, acceptance, risk, data handling,
 
 ### 4. Research And Brainstorm
 
-Inspect local code, tests, docs, configs, schemas, history, and prior artifacts before external research. Build the objective-sized context map: entry points, module boundaries, data/control flow, side effects, dependency direction, patterns, and blast radius. Use `assets/templates/engineering-context-map.md` when the map must survive the current context. For very large or uncertainty-heavy work, also map the destination, known decisions, current frontier, fog, blockers, and smallest next probe; do not fabricate a full plan through unknown territory. Compare multiple viable approaches. Delegate broad exploration through `cli-agent-orchestrator` when it would consume substantial main-agent context. Record facts, inference, unknowns, compatibility, risks, and recommendation.
+Inspect known local sources directly, but do not spend the main context window on a broad multi-file or multi-source scan. Build the objective-sized context map: entry points, module boundaries, data/control flow, side effects, dependency direction, patterns, and blast radius. Use `assets/templates/engineering-context-map.md` when the map must survive the current context. For very large or uncertainty-heavy work, also map the destination, known decisions, current frontier, fog, blockers, and smallest next probe; do not fabricate a full plan through unknown territory. Compare multiple viable approaches. Before broad repository exploration, deep web research, large evidence collection, or visual inspection, load `cli-agent-delegator` and delegate the bounded evidence task to OpenCode. Supply the relevant owned skills and source of truth, then spot-check claims that affect design. Record facts, inference, unknowns, compatibility, risks, and recommendation.
 
 ### 5. Re-Discuss And Lock
 
@@ -142,19 +142,19 @@ Bring back findings that affect scope, dependencies, risk, UX, data, schedule, o
 
 ### 6. Plan And Review
 
-Define the behavior contract, durable domain vocabulary, invariants, interfaces, failure semantics, and highest observable test seams. For meaningful design choices, compare at least two structurally different options before committing. Map every requirement ID to vertical slices and exact verification. Order dependency waves, define file scopes, checkpoints, migration, rollback, and integration. If one material uncertainty remains, route it to a disposable logic, integration, UI, or operations prototype with an evidence stop condition before production planning. Run an independent plan review for substantial work; revise until requirement coverage and execution clarity pass.
+Define the behavior contract, durable domain vocabulary, invariants, interfaces, failure semantics, and highest observable test seams. For meaningful design choices, compare at least two structurally different options before committing. Map every requirement ID to vertical slices and exact verification. Order dependency waves, define file scopes, checkpoints, migration, rollback, and integration. If one material uncertainty remains, route it to a disposable logic, integration, UI, or operations prototype with an evidence stop condition before production planning. For substantial work, use `cli-agent-delegator` to run a fresh independent plan reviewer; revise until no Blocker or Important finding remains.
 
 ### 7. Execute And Checkpoint
 
-Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Deliver one end-to-end tracer slice before broadening. Agree the most public practical test seam, make the first check fail for the intended behavioral reason, then complete one red-green-refactor slice before the next. Reject tautological tests, tests that only replay mocked returns, and horizontal tests disconnected from observable behavior. Use expand-contract for wide refactors and reversible prototypes for uncertain architecture. Give each bounded implementation slice a clean context and finish it with fresh evidence plus a durable handoff; do not rely on lossy mid-slice compaction. For delegated implementation, use a fresh implementer context followed by independent specification review and then quality review. Fix and re-review before advancing.
+Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Deliver one end-to-end tracer slice before broadening. Agree the most public practical test seam, make the first check fail for the intended behavioral reason, then complete one red-green-refactor slice before the next. Reject tautological tests, tests that only replay mocked returns, and horizontal tests disconnected from observable behavior. Use expand-contract for wide refactors and reversible prototypes for uncertain architecture. Give each bounded implementation slice a clean context and finish it with fresh evidence plus a durable handoff; do not rely on lossy mid-slice compaction. OpenCode may handle a short locked task, test run, git check, or report through `cli-agent-delegator`; write work must use an exact scope in an isolated worktree. A bounded quick write gets one combined pre-commit review. Substantial delegated implementation gets a fresh implementer context, independent specification review, then quality review. Fix and re-review before advancing.
 
 ### 8. Verify And UAT
 
-Run narrow checks first, then the broader suite justified by blast radius. Trace requirement to task to evidence. Exercise observable UAT for user-facing behavior. Record commands, outputs, inspected artifacts, failures, skipped checks, and residual risk.
+Run narrow checks first, then the broader suite justified by blast radius. Trace requirement to task to evidence. Exercise observable UAT for user-facing behavior. Record commands, outputs, inspected artifacts, failures, skipped checks, and residual risk. For substantial work, delegate an independent verifier through `cli-agent-delegator`, then rerun or inspect the decisive evidence yourself.
 
 ### 9. Audit
 
-Compare the result with the locked specification, original request, non-goals, plan, and evidence. Check integration wiring, regression risk, capability preservation, stale placeholders, security, cleanup, documentation, and installation state. Classify every gap.
+Compare the result with the locked specification, original request, non-goals, plan, and evidence. Check integration wiring, regression risk, capability preservation, stale placeholders, security, cleanup, documentation, and installation state. Use a fresh OpenCode reviewer through `cli-agent-delegator` for phase audit and for milestone or complete closure. Reconcile its findings against primary evidence and classify every gap.
 
 ### 10. Handoff And Complete
 
@@ -180,7 +180,7 @@ node scripts/engineering-route.mjs --kind prototype --risk medium
 
 ## Companion Routing
 
-- Broad external-agent exploration and bounded delegated roles: `cli-agent-orchestrator`.
+- Broad exploration, deep research, visual inspection, bounded CLI work, tests, git checks, and independent reviewer roles: `cli-agent-delegator`.
 - Parallel write lanes and worktree integration: `parallel-worktree-pr-flow`.
 - Wiki, durable engineering context, secret inventory, and sensitive scans: `llm-know-how-wiki`.
 - UI contracts, visual decisions, accessibility, and screenshots: `interface-design` and `webapp-testing`.
