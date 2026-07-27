@@ -82,7 +82,26 @@ class SafeFallback:
 
 
 @dataclass(frozen=True)
+class ArtDirectionSystem:
+    id: str
+    palette_roles: Mapping[str, str]
+    grid_columns: int
+    safe_margin_in: float
+    spacing_scale_pt: tuple[int, ...]
+    typography_scale_pt: Mapping[str, int]
+    motif_variants: tuple[str, ...]
+    image_crop: str
+    icon_style: str
+    corner_radius_pt: int
+    stroke_pt: float
+    shadow_mode: str
+    energy_pattern: tuple[str, ...]
+    quality_thresholds: Mapping[str, int]
+
+
+@dataclass(frozen=True)
 class DesignPack:
+    schema_version: str
     id: str
     name: str
     runtime_theme_id: str
@@ -94,6 +113,7 @@ class DesignPack:
     asset_strategy: AssetStrategy
     safe_fallback: SafeFallback
     template_pack: str | None = None
+    art_direction: ArtDirectionSystem | None = None
 
 
 def canonical_scenario_id(scenario_id: str) -> str:
@@ -143,6 +163,153 @@ def _string_tuple(
     return result
 
 
+def _integer_tuple(
+    value: Any,
+    path: str,
+    *,
+    minimum: int = 1,
+) -> tuple[int, ...]:
+    if not isinstance(value, list) or len(value) < minimum:
+        raise DesignPackError(f"{path} must contain at least {minimum} integers")
+    result: list[int] = []
+    for index, item in enumerate(value):
+        if type(item) is not int or item <= 0:
+            raise DesignPackError(f"{path}[{index}] must be a positive integer")
+        result.append(item)
+    if tuple(sorted(set(result))) != tuple(result):
+        raise DesignPackError(f"{path} must be unique and strictly ascending")
+    return tuple(result)
+
+
+def _art_direction_system(value: Any, path: str) -> ArtDirectionSystem:
+    raw = _strict_object(
+        value,
+        path,
+        required={
+            "id",
+            "palette_roles",
+            "grid",
+            "typography_scale_pt",
+            "motif",
+            "image_crop",
+            "icon_style",
+            "surface",
+            "energy_pattern",
+            "quality_thresholds",
+        },
+    )
+    palette = _strict_object(
+        raw["palette_roles"],
+        f"{path}.palette_roles",
+        required={"canvas", "ink", "teal", "gold", "surface", "muted"},
+    )
+    palette_roles: dict[str, str] = {}
+    for key, value in palette.items():
+        color = _strict_string(value, f"{path}.palette_roles.{key}")
+        if _HEX_COLOR.fullmatch(color) is None:
+            raise DesignPackError(
+                f"{path}.palette_roles.{key} must be a six-digit hex color"
+            )
+        palette_roles[key] = color.upper()
+    grid = _strict_object(
+        raw["grid"],
+        f"{path}.grid",
+        required={"columns", "safe_margin_in", "spacing_scale_pt"},
+    )
+    columns = grid["columns"]
+    margin = grid["safe_margin_in"]
+    if type(columns) is not int or not 8 <= columns <= 16:
+        raise DesignPackError(f"{path}.grid.columns must be 8..16")
+    if (
+        isinstance(margin, bool)
+        or not isinstance(margin, (int, float))
+        or not 0.35 <= float(margin) <= 1.25
+    ):
+        raise DesignPackError(
+            f"{path}.grid.safe_margin_in must be between 0.35 and 1.25"
+        )
+    typography = _strict_object(
+        raw["typography_scale_pt"],
+        f"{path}.typography_scale_pt",
+        required={"display", "title", "subtitle", "body", "caption"},
+    )
+    typography_scale: dict[str, int] = {}
+    for key, size in typography.items():
+        if type(size) is not int or not 11 <= size <= 72:
+            raise DesignPackError(
+                f"{path}.typography_scale_pt.{key} must be 11..72"
+            )
+        typography_scale[key] = size
+    if not (
+        typography_scale["display"]
+        > typography_scale["title"]
+        > typography_scale["subtitle"]
+        > typography_scale["body"]
+        > typography_scale["caption"]
+    ):
+        raise DesignPackError(f"{path}.typography_scale_pt must descend")
+    motif = _strict_object(
+        raw["motif"],
+        f"{path}.motif",
+        required={"variants"},
+    )
+    surface = _strict_object(
+        raw["surface"],
+        f"{path}.surface",
+        required={"corner_radius_pt", "stroke_pt", "shadow_mode"},
+    )
+    corner = surface["corner_radius_pt"]
+    stroke = surface["stroke_pt"]
+    if type(corner) is not int or not 0 <= corner <= 24:
+        raise DesignPackError(f"{path}.surface.corner_radius_pt must be 0..24")
+    if (
+        isinstance(stroke, bool)
+        or not isinstance(stroke, (int, float))
+        or not 0 <= float(stroke) <= 4
+    ):
+        raise DesignPackError(f"{path}.surface.stroke_pt must be 0..4")
+    thresholds = _strict_object(
+        raw["quality_thresholds"],
+        f"{path}.quality_thresholds",
+        required={"engineering", "visual", "art", "release", "axis_floor"},
+    )
+    quality_thresholds: dict[str, int] = {}
+    for key, score in thresholds.items():
+        if type(score) is not int or not 0 <= score <= 100:
+            raise DesignPackError(
+                f"{path}.quality_thresholds.{key} must be 0..100"
+            )
+        quality_thresholds[key] = score
+    return ArtDirectionSystem(
+        id=_strict_string(raw["id"], f"{path}.id"),
+        palette_roles=palette_roles,
+        grid_columns=columns,
+        safe_margin_in=float(margin),
+        spacing_scale_pt=_integer_tuple(
+            grid["spacing_scale_pt"], f"{path}.grid.spacing_scale_pt", minimum=5
+        ),
+        typography_scale_pt=typography_scale,
+        motif_variants=_string_tuple(
+            motif["variants"], f"{path}.motif.variants", minimum=3
+        ),
+        image_crop=_strict_string(raw["image_crop"], f"{path}.image_crop"),
+        icon_style=_strict_string(raw["icon_style"], f"{path}.icon_style"),
+        corner_radius_pt=corner,
+        stroke_pt=float(stroke),
+        shadow_mode=_strict_string(
+            surface["shadow_mode"], f"{path}.surface.shadow_mode"
+        ),
+        energy_pattern=_string_tuple(
+            raw["energy_pattern"],
+            f"{path}.energy_pattern",
+            minimum=3,
+            allowed={"pause", "flow", "peak"},
+            unique=False,
+        ),
+        quality_thresholds=quality_thresholds,
+    )
+
+
 def load_design_pack(path: Path | str) -> DesignPack:
     manifest_path = Path(path).resolve()
     try:
@@ -164,10 +331,15 @@ def load_design_pack(path: Path | str) -> DesignPack:
             "asset_strategy",
             "safe_fallback",
         },
-        optional={"template_pack"},
+        optional={"template_pack", "art_direction"},
     )
-    if root["schema_version"] != "1.0":
-        raise DesignPackError("$.schema_version must equal 1.0")
+    schema_version = root["schema_version"]
+    if schema_version not in {"1.0", "2.0"}:
+        raise DesignPackError("$.schema_version must equal 1.0 or 2.0")
+    if schema_version == "2.0" and "art_direction" not in root:
+        raise DesignPackError("$.art_direction is required for schema 2.0")
+    if schema_version == "1.0" and "art_direction" in root:
+        raise DesignPackError("$.art_direction requires schema 2.0")
     pack_id = _strict_string(root["id"], "$.id")
     if _IDENTIFIER.fullmatch(pack_id) is None:
         raise DesignPackError("$.id must be a lowercase semantic identifier")
@@ -223,6 +395,7 @@ def load_design_pack(path: Path | str) -> DesignPack:
     if template_pack is not None:
         template_pack = _strict_string(template_pack, "$.template_pack")
     return DesignPack(
+        schema_version=schema_version,
         id=pack_id,
         name=_strict_string(root["name"], "$.name"),
         runtime_theme_id=_strict_string(
@@ -272,6 +445,11 @@ def load_design_pack(path: Path | str) -> DesignPack:
             max_items=max_items,
         ),
         template_pack=template_pack,
+        art_direction=(
+            _art_direction_system(root["art_direction"], "$.art_direction")
+            if "art_direction" in root
+            else None
+        ),
     )
 
 
@@ -342,6 +520,7 @@ def select_design_pack(
 
 __all__ = [
     "AssetStrategy",
+    "ArtDirectionSystem",
     "DesignPack",
     "DesignPackError",
     "DesignTheme",

@@ -5,9 +5,9 @@ milestone_name: Window-PPTX Reference-Grade Visual Engine
 current_phase: 32
 current_phase_name: Composition Grammar and Generated Reference Floor
 status: in_progress
-stopped_at: Phase 31 engineering proof complete; Phase 32 consulting tracer r2 passes engineering gates but remains below reference-grade visual acceptance
-last_updated: "2026-07-27T23:00:00+08:00"
-last_activity: 2026-07-27
+stopped_at: Phase 32 implementation, full regression, independent review, and R6 proof complete; visual release remains NO_GO
+last_updated: "2026-07-28T18:45:00+08:00"
+last_activity: 2026-07-28
 progress:
   total_phases: 37
   completed_phases: 28
@@ -26,22 +26,20 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v5.1 Phase 31 now has source-derived trusted masks,
-same-renderer non-slot similarity, a one-command golden replay, and two
-byte-identical 15-slide candidates. The minimum page similarity is `0.9968`
-outside masks. Phase 32 has started with a real 12-slide Chinese consulting
-proposal grammar tracer; r2 passes portable gates and improves structured
-editable density, but manual contact-sheet review remains
-`PARTIAL_NOT_REFERENCE_GRADE`. PowerPoint is optional sampled certification,
-not a daily hard dependency.
+**Current focus:** v5.1 Phase 32 now has CompositionPlan v1, consulting
+DesignPack v2, direct Agnes adapters, Quality v3, bounded composition repair,
+and a real 14-slide R6 artifact. R6 passes portable engineering and keeps
+editable fact coverage, but direct Agnes returns `FAIL` and external-capped
+Quality v3 is `68.33`; visual release remains `NO_GO`. PowerPoint is optional
+sampled certification, not a daily hard dependency.
 
 ## Current Position
 
-Milestone: v5.0 Window-PPTX Verified Production Engine
-Current Phase: 28 (v5 phase 9 of 10)
-Current Phase Name: Window-PPTX Weak-Model Benchmark
-Status: In Progress (current milestone 7/10 phases complete)
-Last Activity: 2026-07-21
+Milestone: v5.1 Window-PPTX Reference-Grade Visual Engine
+Current Phase: 32
+Current Phase Name: Composition Grammar and Generated Reference Floor
+Status: Implementation complete / visual acceptance open / NO_GO
+Last Activity: 2026-07-28
 
 Foundation completed:
 
@@ -137,17 +135,23 @@ Active v5 foundation:
 - [Phase 28]: Real-response dirty-worktree diagnostics may validate provider integration, portable generation, and rule fixes, but cannot enter the formal aggregate or change the release verdict.
 - [Phase 28]: Formal mode is an immutable 180-trial contract tied to a clean fingerprint; exact resume is allowed, while partial selection, replay/manifest-only operation, and diagnostic import fail closed.
 - [Phase 28]: Automatic composites are engineering signals, not visual acceptance. Blind human review remains mandatory after the score blind spot observed in the first data-analysis diagnostic.
+- [Phase 32]: CompositionPlan owns registered executable layouts, exact slots,
+  motif, asset fallback, choreography, and repair alternatives; weak-model
+  input cannot supply geometry, style, OOXML, HTML, or arbitrary repairs.
+- [Phase 32]: Quality v2 engineering promotion and Quality v3 reference-grade
+  release are separate. Direct Agnes observations cap automatic visual scores
+  but never own facts, implementation, or release truth.
+- [Phase 32]: R6 engineering PASS is not a visual PASS. Agnes suggestions that
+  require absent quantitative facts are recorded but cannot be auto-applied.
 
 ## Next Actions
 
-1. Obtain an actual independent Phase 31 code/contract verdict after the
-   DeepSeek free route stops rate-limiting or another scoped reviewer works.
-2. Continue Phase 32 from recipe seeds to recipe-owned component compositions,
-   cover anchors, evidence annotations, and empty-diagram rejection.
-3. Regenerate the consulting tracer until manual contact-sheet review reaches
-   the reference-grade bar.
-4. Expand to the remaining three UAT scenarios only after the first lane
-   passes; then refreeze the two-model benchmark.
+1. Materialize licensed/user/Agnes/ModelScope visual anchors into the asset
+   pipeline and add image-led cover/section/data compositions.
+2. Calibrate Agnes against frozen reference/R2/R6 evidence and obtain blind
+   human review before accepting the consulting lane.
+3. Expand to Phase 33 only after the first generated lane reaches the visual
+   bar; then refreeze the two-model benchmark.
 
 ## Blockers / Concerns
 
@@ -159,11 +163,14 @@ Active v5 foundation:
 - Phase 27.2 OpenCode 1.17.6 re-audit session `ses_07c11cc8bffe8HmjcQX73B1We4` confirmed portable engineering PASS, customer visual FAIL, release NO_GO, reconciled planning state, 602/602 regression, and present V5-PORT-07 evidence. It remains Phase 27.2 review evidence; Phase 29 owns the final post-benchmark `V5-UAT-04` audit.
 - Phase 28 repair-focused OpenCode session `ses_07afb9f00ffecq2Y9LQJdzYPWC` on `opencode/deepseek-v4-flash-free` confirmed both targeted defects fixed and no Critical/Important code defect, while retaining `VISUAL=PARTIAL`, `PHASE28=NOT_COMPLETE`, and `V5=NO_GO`; it is diagnostic review, not the Phase 29 final audit.
 - The second frozen benchmark model remains unavailable/unreliable, so the complete 180-trial comparison and human blind review are still `NOT_RUN`.
-- OpenCode 1.17.6 exposes `agnes/agnes-2.0-flash`, but the 2026-07-27
-  attachment probe explicitly rejected image input. Reviewer routing therefore
-  fails closed: Agnes visual UAT remains `NOT_RUN`, DeepSeek cannot substitute
-  for pixel judgment, and only a successfully probed vision model or human
-  reviewer may close the visual gate.
+- Direct `agnes-direct/agnes-2.0-flash` passed a session-bound Data-URI probe
+  and reviewed R3, R4, and the final R6 contact sheet. R6 scored
+  `68/72/75/60/65/70` and returned `FAIL`; two contact-sheet-scale claims were
+  rejected after local pixel/fact verification, so Agnes remains advisory.
+- OpenCode Agnes session `ses_05b3687dcffe9ljse434fHSYOA` completed the final
+  read-only Phase 32 implementation review with 0 Critical, 0 Important, and
+  3 Minor tracer constraints. It authorizes committing the feature branch,
+  not reference-grade release or default-branch merge.
 - The Phase 31 post-implementation DeepSeek review was attempted again on
   2026-07-27 and both title/main streams returned explicit rate-limit errors.
   An earlier Agnes planning review loaded all required skills but looped

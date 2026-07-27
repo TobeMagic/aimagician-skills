@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "quality-report.v3.schema.json",
+  "title": "Window PPTX QualityReport v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scores",
+    "total_score",
+    "thresholds",
+    "findings",
+    "engineering_passed",
+    "visual_passed",
+    "art_review_status",
+    "art_review_passed",
+    "release_passed"
+  ],
+  "properties": {
+    "schema_version": {"const": "3.0"},
+    "scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hierarchy_readability",
+        "composition_space",
+        "art_direction",
+        "business_evidence",
+        "deck_rhythm",
+        "asset_polish"
+      ],
+      "properties": {
+        "hierarchy_readability": {"type": "number", "minimum": 0, "maximum": 100},
+        "composition_space": {"type": "number", "minimum": 0, "maximum": 100},
+        "art_direction": {"type": "number", "minimum": 0, "maximum": 100},
+        "business_evidence": {"type": "number", "minimum": 0, "maximum": 100},
+        "deck_rhythm": {"type": "number", "minimum": 0, "maximum": 100},
+        "asset_polish": {"type": "number", "minimum": 0, "maximum": 100}
+      }
+    },
+    "total_score": {"type": "number", "minimum": 0, "maximum": 100},
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "axis"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 0, "maximum": 100},
+        "axis": {"type": "integer", "minimum": 0, "maximum": 100}
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "severity",
+          "message",
+          "slide_id",
+          "region",
+          "repair_code"
+        ],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "severity": {"enum": ["minor", "important", "blocker"]},
+          "message": {"type": "string", "minLength": 1},
+          "slide_id": {"type": ["string", "null"]},
+          "region": {"type": ["string", "null"]},
+          "repair_code": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "engineering_passed": {"type": "boolean"},
+    "visual_passed": {"type": "boolean"},
+    "art_review_status": {"enum": ["PASS", "FAIL", "NOT_RUN"]},
+    "art_review_passed": {"type": "boolean"},
+    "release_passed": {"type": "boolean"}
+  }
+}

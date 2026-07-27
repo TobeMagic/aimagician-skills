@@ -162,6 +162,8 @@ function validateRequest(request) {
     assertOnlyKeys(slide, new Set([
       "source_id", "index", "role", "title", "family_id", "layout_id", "item_count",
       "requested_density", "resolved_density", "background_color", "objects", "speaker_notes", "motion",
+      "composition_id", "variant_id", "emphasis", "energy", "fact_refs",
+      "component_intents", "asset_intents", "motif_id", "motif_variant", "motif_intensity",
     ]), slideLabel);
     assertString(slide.source_id, `${slideLabel}.source_id`);
     if (slideIds.has(slide.source_id)) fail(`${slideLabel}.source_id is duplicated`);
@@ -172,6 +174,15 @@ function validateRequest(request) {
     assertFiniteNumber(slide.item_count, `${slideLabel}.item_count`, { nonnegative: true });
     assertColor(slide.background_color, `${slideLabel}.background_color`);
     assertString(slide.speaker_notes, `${slideLabel}.speaker_notes`, { nullable: true, nonempty: false });
+    ["composition_id", "variant_id", "motif_id", "motif_variant", "motif_intensity"].forEach(
+      (key) => assertString(slide[key], `${slideLabel}.${key}`, { nullable: true, nonempty: false }),
+    );
+    if (!["quiet", "standard", "hero"].includes(slide.emphasis)) fail(`${slideLabel}.emphasis is invalid`);
+    if (!["pause", "flow", "peak"].includes(slide.energy)) fail(`${slideLabel}.energy is invalid`);
+    ["fact_refs", "component_intents", "asset_intents"].forEach((key) => {
+      assertArray(slide[key], `${slideLabel}.${key}`);
+      slide[key].forEach((value, index) => assertString(value, `${slideLabel}.${key}[${index}]`));
+    });
     if (slide.motion !== "off") fail(`${slideLabel}.motion is unsupported by pptxgenjs`);
     assertArray(slide.objects, `${slideLabel}.objects`);
     slide.objects.forEach((item, objectOffset) => {
@@ -339,6 +350,10 @@ function addShape(slide, pptx, item, planSlide) {
   const shape = ROUND_COMPONENTS.has(item.component) ? pptx.ShapeType.roundRect : pptx.ShapeType.rect;
   const decoration = item.component === "decoration";
   const accent = item.component === "accent";
+  const artName = item.group_id?.endsWith("_art") ? item.name : "";
+  const strongDecoration = decoration
+    && /(?:top_rule|bottom_rule|section_rule|closing_rule|wayfinding_path|content_rail|matrix_axis)/.test(artName);
+  const strongAccent = accent && Boolean(artName);
   const elevated = ROUND_COMPONENTS.has(item.component) && !decoration && !accent;
   const options = {
     ...objectOptions(item),
@@ -358,7 +373,15 @@ function addShape(slide, pptx, item, planSlide) {
       : "left",
     fill: {
       color: color(item.fill_color),
-      transparency: decoration ? 88 : accent ? 82 : 0,
+      transparency: strongDecoration
+        ? 20
+        : strongAccent
+        ? 15
+        : decoration
+        ? 88
+        : accent
+        ? 82
+        : 0,
     },
     line: {
       color: color(item.line_color),
@@ -695,6 +718,15 @@ function diagramGeometry(item, nodeCount, index) {
     return { x: x + index * (cellW + gap), y: y + (index % 2 === 0 ? 0 : h - cellH), w: cellW, h: cellH };
   }
   const cellW = (w - gap * (nodeCount - 1)) / nodeCount;
+  if (type === "process") {
+    const cellH = h * 0.58;
+    return {
+      x: x + index * (cellW + gap),
+      y: y + (h - cellH) / 2,
+      w: cellW,
+      h: cellH,
+    };
+  }
   return { x: x + index * (cellW + gap), y, w: cellW, h };
 }
 

@@ -149,11 +149,23 @@ def inspect_design_quality(generation: Any) -> tuple[QualityFindingV2, ...]:
                 )
             )
         for slide in render_plan.slides:
-            decorations = sum(
-                item.component in {"decoration", "accent"}
+            decorative_objects = [
+                item
                 for item in slide.objects
+                if item.component in {"decoration", "accent"}
+            ]
+            slide_area = render_plan.slide_size.width * render_plan.slide_size.height
+            decorative_area = sum(
+                item.width * item.height for item in decorative_objects
             )
-            if decorations > 3:
+            ungrouped_decorations = sum(
+                item.group_id is None for item in decorative_objects
+            )
+            if (
+                ungrouped_decorations > 3
+                or slide_area
+                and decorative_area / slide_area > 0.28
+            ):
                 findings.append(
                     QualityFindingV2(
                         "render",
@@ -162,8 +174,8 @@ def inspect_design_quality(generation: Any) -> tuple[QualityFindingV2, ...]:
                         slide.source_id,
                         None,
                         "decorative object count exceeds the governed maximum",
-                        metric=decorations,
-                        threshold=3,
+                        metric=round(decorative_area / slide_area, 3),
+                        threshold=0.28,
                         repairable=True,
                         source_stage="design-quality",
                     )

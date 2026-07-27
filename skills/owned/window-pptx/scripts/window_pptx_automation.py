@@ -51,6 +51,7 @@ from window_pptx.quality_v2 import (
     StageRepairPass,
     generation_quality_findings,
 )
+from window_pptx.quality_v3 import inspect_generation_quality_v3
 from window_pptx.reference_quality import (
     assess_reference_grade_quality,
     write_reference_quality_report,
@@ -2132,6 +2133,8 @@ def write_brief_generation_artifacts(
         "narrative_plan": audit_dir / "narrative-plan.json",
         "visual_plan": audit_dir / "visual-plan.json",
         "asset_plan": audit_dir / "asset-plan.json",
+        "composition_plan": audit_dir / "composition-plan.json",
+        "quality_report_v3": audit_dir / "quality-report.v3.json",
         "generation_manifest": audit_dir / "generation-manifest.json",
         "repair_log_v2": audit_dir / "repair-log.v2.json",
     }
@@ -2154,6 +2157,24 @@ def write_brief_generation_artifacts(
     artifacts["asset_plan"].write_text(
         json.dumps(
             generation.asset_plan.to_dict(), ensure_ascii=False, indent=2
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    artifacts["composition_plan"].write_text(
+        json.dumps(
+            generation.composition_plan.to_dict(),
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    artifacts["quality_report_v3"].write_text(
+        json.dumps(
+            inspect_generation_quality_v3(generation).to_dict(),
+            ensure_ascii=False,
+            indent=2,
         )
         + "\n",
         encoding="utf-8",

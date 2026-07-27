@@ -878,12 +878,27 @@ def _assert_object_style(node: ET.Element, item: RenderObject) -> None:
                     f"TEXT_FRAME_VISIBILITY_MISMATCH: {item.id}"
                 )
         elif item.component == "decoration":
-            if fill_alpha != 12_000 or line_alpha != 0:
+            strong_decoration = bool(
+                item.group_id
+                and item.group_id.endswith("_art")
+                and re.search(
+                    r"(?:top_rule|bottom_rule|section_rule|closing_rule|"
+                    r"wayfinding_path|content_rail|matrix_axis)",
+                    item.name,
+                )
+            )
+            expected_alpha = 80_000 if strong_decoration else 12_000
+            if fill_alpha != expected_alpha or line_alpha != 0:
                 raise OoxmlSemanticError(
                     f"DECORATION_ALPHA_MISMATCH: {item.id}"
                 )
         elif item.component == "accent":
-            if fill_alpha != 18_000 or line_alpha != 0:
+            expected_alpha = (
+                85_000
+                if item.group_id and item.group_id.endswith("_art")
+                else 18_000
+            )
+            if fill_alpha != expected_alpha or line_alpha != 0:
                 raise OoxmlSemanticError(
                     f"ACCENT_ALPHA_MISMATCH: {item.id}"
                 )
@@ -1031,6 +1046,14 @@ def _diagram_child_geometry(
         return (
             item.x + index * (width + gap),
             item.y + (0 if index % 2 == 0 else item.height - height),
+            width,
+            height,
+        )
+    if diagram_type == "process":
+        height = item.height * 0.58
+        return (
+            item.x + index * (width + gap),
+            item.y + (item.height - height) / 2,
             width,
             height,
         )

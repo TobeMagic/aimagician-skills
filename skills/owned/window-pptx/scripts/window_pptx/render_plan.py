@@ -312,6 +312,16 @@ class RenderSlide:
     objects: tuple[RenderObject, ...]
     speaker_notes: str | None
     motion: str
+    composition_id: str | None = None
+    variant_id: str | None = None
+    emphasis: str = "standard"
+    energy: str = "flow"
+    fact_refs: tuple[str, ...] = ()
+    component_intents: tuple[str, ...] = ()
+    asset_intents: tuple[str, ...] = ()
+    motif_id: str | None = None
+    motif_variant: str | None = None
+    motif_intensity: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -328,6 +338,16 @@ class RenderSlide:
             "objects": [item.to_dict() for item in self.objects],
             "speaker_notes": self.speaker_notes,
             "motion": self.motion,
+            "composition_id": self.composition_id,
+            "variant_id": self.variant_id,
+            "emphasis": self.emphasis,
+            "energy": self.energy,
+            "fact_refs": list(self.fact_refs),
+            "component_intents": list(self.component_intents),
+            "asset_intents": list(self.asset_intents),
+            "motif_id": self.motif_id,
+            "motif_variant": self.motif_variant,
+            "motif_intensity": self.motif_intensity,
         }
 
 
@@ -444,7 +464,7 @@ def _rich_text_runs(
     if component not in {"kpi", "comparison-panel", "recommendation-panel"} or not text:
         return None
     lines = text.split("\n")
-    if len(lines) < 2 or any(not line.strip() for line in lines[:2]):
+    if len(lines) < 2 or any(not line.strip() for line in lines):
         return None
     runs: list[TextRun] = []
     for index, line in enumerate(lines):
@@ -1132,11 +1152,11 @@ def _supporting_slot_text(
         ),
         str(project.get("scenario") or "").replace("-", " ").title(),
     ]
-    candidates = contextual + [role] if slide.get("role") in {
-        "cover",
-        "section",
-        "closing",
-    } else [role, *contextual]
+    candidates = (
+        contextual + [role]
+        if slide.get("role") in {"cover", "closing"}
+        else [role, *contextual]
+    )
     return next(
         (
             candidate
@@ -1257,7 +1277,15 @@ def _font_size(
         return typography["subtitle"]
     if component == "comparison-panel":
         if text and slot is not None:
-            for level in ("display", "title", "subtitle", "body"):
+            compact_length = len("".join(text.split()))
+            levels = (
+                ("display", "title", "subtitle", "body")
+                if compact_length <= 12
+                else ("title", "subtitle", "body")
+                if compact_length <= 24
+                else ("body",)
+            )
+            for level in levels:
                 candidate = typography[level]
                 if _text_fits_slot_at_font(text, slot, candidate):
                     return candidate
@@ -1276,6 +1304,8 @@ def _font_size(
                 if _text_fits_slot_at_font(text, slot, candidate):
                     return candidate
         return typography["body"]
+    if component == "body-text" and role == "cover":
+        return typography["subtitle"]
     if component == "cta":
         if text and slot is not None:
             for level in ("title", "subtitle", "body"):
@@ -1716,24 +1746,19 @@ def _art_direction_objects(
             0.02,
             None,
         ),
-        (
-            "orbit-field",
-            slide_size.width - 2.15,
-            0.02,
-            1.52,
-            0.64,
-            None,
-        ),
-        (
-            "orbit-cutout",
-            slide_size.width - 1.58,
-            0.18,
-            0.94,
-            0.32,
-            None,
-        ),
     ]
     role = str(slide["role"])
+    motif = slide.get("composition_motif")
+    motif_variant = (
+        motif.get("variant")
+        if isinstance(motif, Mapping)
+        else slide.get("motif_variant")
+    )
+    motif_intensity = (
+        motif.get("intensity")
+        if isinstance(motif, Mapping)
+        else slide.get("motif_intensity")
+    )
     if role == "cover":
         specs.extend(
             [
@@ -1743,7 +1768,7 @@ def _art_direction_objects(
                     0.76,
                     3.52,
                     slide_size.height - 1.52,
-                    None,
+                    "知识流转\n试点蓝图",
                 ),
                 (
                     "hero-eyebrow",
@@ -1751,7 +1776,7 @@ def _art_direction_objects(
                     0.98,
                     2.74,
                     0.30,
-                    "REFERENCE / DELIVERY",
+                    "KNOWLEDGE / PILOT",
                 ),
                 (
                     "hero-stair-1",
@@ -1780,14 +1805,35 @@ def _art_direction_objects(
             ]
         )
     elif role in {"section", "agenda"}:
+        section_kicker = {
+            "section-why-now": "WHY / NOW",
+            "section-what-built": "BUILD / WHAT",
+            "section-how-delivery": "DELIVER / HOW",
+        }.get(str(slide["id"]), "CHAPTER")
         specs.extend(
             [
                 (
+                    "section-kicker",
+                    slide_size.width - 5.72,
+                    1.48,
+                    5.06,
+                    0.72,
+                    section_kicker,
+                ),
+                (
+                    "section-beam",
+                    0.62,
+                    2.46,
+                    slide_size.width - 4.02,
+                    0.16,
+                    None,
+                ),
+                (
                     "section-number",
-                    slide_size.width - 3.02,
-                    slide_size.height - 2.58,
-                    2.36,
-                    1.76,
+                    slide_size.width - 3.44,
+                    slide_size.height - 3.92,
+                    2.78,
+                    3.12,
                     str(slide_index).zfill(2),
                 ),
                 (
@@ -1819,7 +1865,7 @@ def _art_direction_objects(
                 str(slide_index).zfill(2),
             )
         )
-        tick_count = 1 + ((slide_index + family_offset) % 6)
+        tick_count = 1 + ((slide_index + family_offset) % 3)
         for offset in range(tick_count):
             specs.append(
                 (
@@ -1842,14 +1888,178 @@ def _art_direction_objects(
                     None,
                 )
             )
+    if family_id in {"process", "timeline", "roadmap"}:
+        specs.append(
+            (
+                "content-rail",
+                0.92,
+                slide_size.height * 0.53,
+                slide_size.width - 1.84,
+                0.09,
+                None,
+            )
+        )
+    elif family_id in {"matrix", "quadrant"}:
+        specs.extend(
+            [
+                (
+                    "matrix-axis-h",
+                    slide_size.width * 0.47,
+                    1.84,
+                    0.08,
+                    slide_size.height - 2.70,
+                    None,
+                ),
+                (
+                    "matrix-axis-v",
+                    0.96,
+                    slide_size.height * 0.52,
+                    slide_size.width - 1.92,
+                    0.08,
+                    None,
+                ),
+            ]
+        )
+    elif family_id == "comparison":
+        specs.append(
+            (
+                "comparison-arrow",
+                slide_size.width * 0.48,
+                slide_size.height * 0.48,
+                0.54,
+                0.54,
+                "→",
+            )
+        )
+    if motif_variant == "portal" and role not in {"cover", "closing"}:
+        portal_width = 1.48 if motif_intensity == "strong" else 1.08
+        for offset in range(3):
+            specs.append(
+                (
+                    f"wayfinding-portal-{offset + 1}",
+                    slide_size.width - 0.72 - portal_width + offset * 0.18,
+                    1.08 + offset * 0.22,
+                    portal_width - offset * 0.36,
+                    2.68 - offset * 0.44,
+                    None,
+                )
+            )
+    elif motif_variant == "path":
+        for offset in range(4):
+            specs.append(
+                (
+                    f"wayfinding-path-{offset + 1}",
+                    0.72 + offset * 0.62,
+                    slide_size.height - 0.68 - offset * 0.18,
+                    0.48,
+                    0.06,
+                    None,
+                )
+            )
+    elif motif_variant == "node":
+        for offset in range(3):
+            specs.append(
+                (
+                    f"wayfinding-node-{offset + 1}",
+                    slide_size.width - 2.24 + offset * 0.52,
+                    0.86 + (offset % 2) * 0.34,
+                    0.18 + (0.06 if motif_intensity == "strong" else 0),
+                    0.18 + (0.06 if motif_intensity == "strong" else 0),
+                    None,
+                )
+            )
+        specs.append(
+            (
+                "wayfinding-node-rail",
+                slide_size.width - 2.18,
+                1.44,
+                1.42,
+                0.045,
+                None,
+            )
+        )
+    elif motif_variant == "frame":
+        specs.extend(
+            [
+                (
+                    "wayfinding-frame-top",
+                    slide_size.width - 2.56,
+                    0.86,
+                    1.86,
+                    0.05,
+                    None,
+                ),
+                (
+                    "wayfinding-frame-side",
+                    slide_size.width - 0.75,
+                    0.86,
+                    0.05,
+                    1.38,
+                    None,
+                ),
+            ]
+        )
+    fact_refs = slide.get("composition_fact_refs") or slide.get("fact_refs") or ()
+    if fact_refs:
+        specs.append(
+            (
+                "evidence-tag",
+                slide_size.width - 3.00,
+                slide_size.height - 0.64,
+                1.72,
+                0.24,
+                f"证据 • {len(fact_refs):02d}",
+            )
+        )
 
     result: list[RenderObject] = []
     for offset, (token, x, y, width, height, text) in enumerate(specs, start=1):
+        art_component = (
+            "statement"
+            if token
+            in {
+                "hero-panel",
+                "section-number",
+                "section-kicker",
+                "comparison-arrow",
+            }
+            else "footer"
+            if token == "evidence-tag"
+            else "accent"
+            if any(
+                marker in token
+                for marker in (
+                    "node",
+                    "eyebrow",
+                    "marker",
+                    "stair",
+                    "beam",
+                    "rail",
+                    "axis",
+                )
+            )
+            else "decoration"
+        )
+        art_color = (
+            theme.colors["background"]
+            if "cutout" in token
+            else theme.colors["positive"]
+            if any(
+                marker in token
+                for marker in ("path", "rail", "beam", "axis")
+            )
+            else theme.colors["warning"]
+            if any(
+                marker in token
+                for marker in ("node", "eyebrow", "marker", "stair")
+            )
+            else primary
+        )
         result.append(
             RenderObject(
                 id=f"{slide['id']}.art.{token}",
                 name=f"wp_s{slide_index:03d}_art_{offset:02d}_{_safe_identifier(token)}",
-                component="decoration",
+                component=art_component,
                 kind="shape",
                 x=x,
                 y=y,
@@ -1862,10 +2072,24 @@ def _art_direction_objects(
                 source_path=None,
                 asset_record=None,
                 font_name=theme.fonts["heading"],
-                font_size_pt=44 if token == "section-number" else 11,
-                text_color=primary,
-                fill_color=primary,
-                line_color=primary,
+                font_size_pt=(
+                    44
+                    if token == "section-number"
+                    else 26
+                    if token == "hero-panel"
+                    else 28
+                    if token == "section-kicker"
+                    else 30
+                    if token == "comparison-arrow"
+                    else 11
+                ),
+                text_color=(
+                    theme.colors["background"]
+                    if art_component == "statement" or token == "evidence-tag"
+                    else theme.colors["text"]
+                ),
+                fill_color=art_color,
+                line_color=art_color,
                 advanced=None,
                 semantic_source=None,
                 hyperlink=None,
@@ -2134,7 +2358,13 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
         if not isinstance(slide.objects, tuple) or not slide.objects:
             raise RenderPlanError(f"render slide {slide.source_id} has no objects")
         expected_art = _art_direction_objects(
-            slide={"id": slide.source_id, "role": slide.role},
+            slide={
+                "id": slide.source_id,
+                "role": slide.role,
+                "motif_variant": slide.motif_variant,
+                "motif_intensity": slide.motif_intensity,
+                "fact_refs": slide.fact_refs,
+            },
             slide_index=slide.index,
             slide_size=plan.slide_size,
             family_id=slide.family_id,
@@ -2470,12 +2700,17 @@ def _build_render_plan_from_compiled(
     findings: list[RenderFinding] = []
     render_slides: list[RenderSlide] = []
     previous_layouts: tuple[str, ...] = ()
-    density = compiled.get("preferences", {}).get("density", "balanced")
+    deck_density = compiled.get("preferences", {}).get("density", "balanced")
     motion = compiled.get("preferences", {}).get("motion", "off")
     slide_total = len(compiled["slides"])
 
     for slide_index, slide in enumerate(compiled["slides"], start=1):
-        slide_variant_seed = slide.get("layout_variant_seed") or art_direction_id
+        density = slide.get("composition_density", deck_density)
+        slide_variant_seed = (
+            slide.get("composition_variant_id")
+            or slide.get("layout_variant_seed")
+            or art_direction_id
+        )
         basis_id = slide["semantic_basis"]["block_id"]
         basis_block = next(block for block in slide["blocks"] if block["id"] == basis_id)
         linked_secondary_blocks = tuple(
@@ -2504,7 +2739,9 @@ def _build_render_plan_from_compiled(
         # governed semantic or brand asset binding, keep it out of automatic
         # layout selection.  Real image frames remain available only after
         # source/evidence preflight.
-        forbidden = {"decoration"}
+        forbidden = set()
+        if slide.get("composition_motif") is None:
+            forbidden.add("decoration")
         if not valid_image_sources:
             forbidden.add("image-frame")
         if slide["page_family"] == "focal-statement":
@@ -2536,49 +2773,87 @@ def _build_render_plan_from_compiled(
             else None
         )
         layout_selector = (
-            "cards.compact-three"
+            slide.get("composition_layout_id")
+            if slide.get("composition_layout_enforced")
+            else "cards.compact-three"
             if slide["page_family"] == "cards"
             and _uses_compact_three_cards(basis_block)
             else slide["page_family"]
+        )
+        resolved_item_count = (
+            None if slide.get("composition_layout_enforced") else item_count
         )
         try:
             layout = resolve_layout(
                 layout_selector,
                 slide_size,
                 previous_layouts,
-                item_count=item_count,
+                item_count=resolved_item_count,
                 density=density,
                 variant_seed=slide_variant_seed,
                 forbidden_components=forbidden_components,
                 component_limits=component_limits,
             )
         except ValueError as exc:
-            if not forbidden_components or not (
+            if (
+                slide.get("composition_layout_enforced")
+                and slide.get("composition_layout_id") is not None
+                and layout_selector != slide["page_family"]
+            ):
+                try:
+                    layout = resolve_layout(
+                        slide["page_family"],
+                        slide_size,
+                        previous_layouts,
+                        item_count=item_count,
+                        density=density,
+                        variant_seed=slide_variant_seed,
+                        forbidden_components=forbidden_components,
+                        component_limits=component_limits,
+                    )
+                except ValueError:
+                    pass
+                else:
+                    findings.append(
+                        RenderFinding(
+                            "COMPOSITION_LAYOUT_FALLBACK",
+                            f"slides.{slide['id']}",
+                            (
+                                f"{layout_selector} was not serviceable ({exc}); "
+                                f"using registered family fallback {layout.id}"
+                            ),
+                        )
+                    )
+                    exc = None
+            if exc is None:
+                pass
+            elif not forbidden_components or not (
                 "forbidden component" in str(exc)
                 or str(exc).startswith("no ")
             ):
                 raise
-            fallback_selector = "structured-content"
-            layout = resolve_layout(
-                fallback_selector,
-                slide_size,
-                previous_layouts,
-                item_count=item_count,
-                density=density,
-                variant_seed=slide_variant_seed,
-                forbidden_components=forbidden_components,
-                component_limits=component_limits,
-            )
-            findings.append(
-                RenderFinding(
-                    "ASSETLESS_LAYOUT_FALLBACK",
-                    f"slides.{slide['id']}",
-                    (
-                        f"{slide['page_family']} had no serviceable assetless variant; "
-                        f"using {layout.family_id}"
-                    ),
+            else:
+                fallback_selector = "structured-content"
+                layout = resolve_layout(
+                    fallback_selector,
+                    slide_size,
+                    previous_layouts,
+                    item_count=item_count,
+                    density=density,
+                    variant_seed=slide_variant_seed,
+                    forbidden_components=forbidden_components,
+                    component_limits=component_limits,
                 )
-            )
+                findings.append(
+                    RenderFinding(
+                        "ASSETLESS_LAYOUT_FALLBACK",
+                        f"slides.{slide['id']}",
+                        (
+                            f"{slide['page_family']} had no serviceable assetless variant; "
+                            f"using {layout.family_id}"
+                        ),
+                    )
+                )
         slide_title = str(
             slide.get("title") or slide["role"].replace("-", " ").title()
         )
@@ -2986,6 +3261,10 @@ def _build_render_plan_from_compiled(
                 theme=theme,
             )
         )
+        render_item_count = max(
+            layout.capacity.min_items,
+            min(item_count, layout.capacity.max_items),
+        )
         render_slides.append(
             RenderSlide(
                 source_id=slide["id"],
@@ -2994,13 +3273,41 @@ def _build_render_plan_from_compiled(
                 title=slide.get("title"),
                 family_id=layout.family_id,
                 layout_id=layout.id,
-                item_count=item_count,
+                item_count=render_item_count,
                 requested_density=density,
                 resolved_density=layout.resolved_density,
                 background_color=theme.colors["background"],
                 objects=tuple(objects),
                 speaker_notes=slide.get("speaker_notes"),
                 motion=motion,
+                composition_id=slide.get("composition_id"),
+                variant_id=slide.get("composition_variant_id"),
+                emphasis=slide.get("composition_emphasis", "standard"),
+                energy=slide.get("composition_energy", "flow"),
+                fact_refs=tuple(slide.get("composition_fact_refs", ())),
+                component_intents=tuple(
+                    item["component_id"]
+                    for item in slide.get("composition_slot_bindings", ())
+                ),
+                asset_intents=tuple(
+                    item["asset_id"]
+                    for item in slide.get("composition_asset_bindings", ())
+                ),
+                motif_id=(
+                    slide.get("composition_motif", {}).get("motif_id")
+                    if isinstance(slide.get("composition_motif"), dict)
+                    else None
+                ),
+                motif_variant=(
+                    slide.get("composition_motif", {}).get("variant")
+                    if isinstance(slide.get("composition_motif"), dict)
+                    else None
+                ),
+                motif_intensity=(
+                    slide.get("composition_motif", {}).get("intensity")
+                    if isinstance(slide.get("composition_motif"), dict)
+                    else None
+                ),
             )
         )
 
@@ -3032,6 +3339,7 @@ def compile_render_plan(
     preferred_families: tuple[str, ...] = (),
     visual_family_by_slide: Mapping[str, str] | None = None,
     visual_recipe_by_slide: Mapping[str, str] | None = None,
+    composition_by_slide: Mapping[str, Mapping[str, Any]] | None = None,
     art_direction_id: str | None = None,
 ) -> tuple[dict[str, Any], RenderPlan]:
     """Compile semantic input exactly once and build its governed render plan."""
@@ -3041,6 +3349,7 @@ def compile_render_plan(
         preferred_families=preferred_families,
         visual_family_by_slide=visual_family_by_slide,
         visual_recipe_by_slide=visual_recipe_by_slide,
+        composition_by_slide=composition_by_slide,
     )
     plan = _build_render_plan_from_compiled(
         compiled,
@@ -3065,6 +3374,7 @@ def build_render_plan(
     preferred_families: tuple[str, ...] = (),
     visual_family_by_slide: Mapping[str, str] | None = None,
     visual_recipe_by_slide: Mapping[str, str] | None = None,
+    composition_by_slide: Mapping[str, Mapping[str, Any]] | None = None,
     art_direction_id: str | None = None,
 ) -> RenderPlan:
     """Compile semantic input and join it to exact governed render commands."""
@@ -3079,6 +3389,7 @@ def build_render_plan(
         preferred_families=preferred_families,
         visual_family_by_slide=visual_family_by_slide,
         visual_recipe_by_slide=visual_recipe_by_slide,
+        composition_by_slide=composition_by_slide,
         art_direction_id=art_direction_id,
     )[1]
 

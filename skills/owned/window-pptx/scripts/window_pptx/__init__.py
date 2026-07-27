@@ -11,6 +11,19 @@ from .assets import (
     read_raster_dimensions,
     read_svg_aspect_ratio,
 )
+from .agnes_direct import (
+    AGNES_IMAGE_ROUTE,
+    AGNES_VISION_ROUTE,
+    DEESEEK_CODE_ROUTE,
+    AgnesDirectClient,
+    AgnesDirectError,
+    AgnesReviewResult,
+    CapabilityProbe,
+    GeneratedAsset,
+    ProviderRoute,
+    ProviderRouteError,
+    require_direct_route,
+)
 from .com_session import dispatch_powerpoint, macro_security
 from .backends import (
     BackendCapabilities,
@@ -36,6 +49,21 @@ from .composition_grammar import (
     CompositionRecipe,
     load_composition_grammars,
     select_composition_recipe,
+)
+from .composition_plan import (
+    AnchorPlan,
+    AssetIntentBinding,
+    CompositionPlan,
+    CompositionPlanError,
+    CompositionSlide,
+    MotifInstance,
+    SlotBinding,
+    compile_composition_plan,
+)
+from .consulting_choreography import (
+    CHOREOGRAPHY_SOURCE_SLIDES,
+    CONSULTING_TRACER_FACT_IDS,
+    apply_consulting_tracer_choreography,
 )
 from .brand import (
     BrandSpec,
@@ -68,6 +96,7 @@ from .directions import (
 )
 from .design_quality import inspect_design_quality
 from .design_packs import (
+    ArtDirectionSystem,
     AssetStrategy as DesignPackAssetStrategy,
     DesignPack,
     DesignPackError,
@@ -176,6 +205,17 @@ from .quality_v2 import (
     build_quality_report_v2,
     execute_two_stage_repair,
     generation_quality_findings,
+)
+from .quality_v3 import (
+    CompositionRepairPass,
+    CompositionRepairResult,
+    QualityAxisScores,
+    QualityFindingV3,
+    QualityReportV3,
+    assess_evidence_bundle_v3,
+    build_quality_report_v3,
+    execute_composition_repairs,
+    inspect_generation_quality_v3,
 )
 from .preview_quality import inspect_preview_images
 from .renderer import PowerPointRenderer, RenderError, RenderReport

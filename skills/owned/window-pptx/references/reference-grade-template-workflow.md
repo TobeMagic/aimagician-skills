@@ -176,20 +176,27 @@ selected previews when required.
 ## 10. Visual reviewer routing
 
 Pixel-level judgment must come from a reviewer that demonstrably decoded the
-rendered slide images in the current session. Use
-`scripts/window_pptx/reviewer_routing.py`:
+rendered slide images in the current session. Use the direct provider adapter
+in `scripts/window_pptx/agnes_direct.py`:
 
-- prefer `agnes/agnes-2.0-flash` for PNG review;
-- first attach a representative readable PNG and record an explicit
-  image-input capability probe;
+- use route `agnes-direct/agnes-2.0-flash` for PNG review;
+- first send a session-bound challenge Data URI and require its probe token;
+- only then send high-resolution pages in batches of at most four plus one
+  full-deck contact sheet;
+- persist strict `visual-review.v1` JSON, request/response hashes,
+  normalization trace, and deterministic cache/replay evidence;
 - do not infer vision support from the model family or provider name;
 - if Agnes rejects the attachment, reports no image support, or returns an
   ambiguous result, mark visual UAT `NOT_RUN`;
-- permit a fallback only when that exact fallback model has a successful
-  image-input probe;
 - never route pixel judgment to `opencode/deepseek-v4-flash-free`; use
   DeepSeek for code, contract, rule, and schema audits.
 
 A reviewer needs the anonymized PNG evidence and its hash-bound PPTX. JSON
 metrics, structural inspection, or a textual description of the slides cannot
 substitute for seeing the pixels.
+
+Quality v2 may promote an engineering-safe candidate, but reference-grade
+release additionally requires Quality v3: six axes at least `75`, total at
+least `84`, no visual hard gate, and an Agnes/human art-review PASS.
+Provider scores are an upper bound on internal automatic scores, never a
+replacement for OOXML, fact, editability, or package truth.

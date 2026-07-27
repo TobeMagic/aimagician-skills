@@ -688,6 +688,7 @@ def compile_deck_plan(
     preferred_families: tuple[str, ...] = (),
     visual_family_by_slide: Mapping[str, str] | None = None,
     visual_recipe_by_slide: Mapping[str, str] | None = None,
+    composition_by_slide: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Compile validated semantic intent into deterministic, design-neutral slides."""
 
@@ -700,9 +701,17 @@ def compile_deck_plan(
     archetype = resolve_archetype(plan.project.scenario)
     governed_visual_families = dict(visual_family_by_slide or {})
     governed_visual_recipes = dict(visual_recipe_by_slide or {})
+    governed_compositions = {
+        key: dict(value) for key, value in (composition_by_slide or {}).items()
+    }
     slide_ids = {slide.id for slide in plan.slides}
     unknown_visual_slides = sorted(
-        (set(governed_visual_families) | set(governed_visual_recipes)) - slide_ids
+        (
+            set(governed_visual_families)
+            | set(governed_visual_recipes)
+            | set(governed_compositions)
+        )
+        - slide_ids
     )
     if unknown_visual_slides:
         raise DeckPlanValidationError(
@@ -736,10 +745,80 @@ def compile_deck_plan(
             )
             visual_family = governed_visual_families.get(source_slide.id)
             visual_recipe = governed_visual_recipes.get(source_slide.id)
+            composition = governed_compositions.get(source_slide.id)
             compiled = slide.to_dict()
             compiled["page_family"] = decision.selected
             if visual_recipe is not None:
                 compiled["layout_variant_seed"] = visual_recipe
+            if composition is not None:
+                required_composition_fields = {
+                    "composition_id",
+                    "variant_id",
+                    "layout_id",
+                    "background_mode",
+                    "emphasis",
+                    "density",
+                    "energy",
+                    "fact_refs",
+                    "slot_bindings",
+                    "asset_bindings",
+                    "motif",
+                    "repair_variant_ids",
+                    "decision_trace",
+                }
+                missing = sorted(required_composition_fields - set(composition))
+                if missing:
+                    raise DeckPlanValidationError(
+                        "CompositionPlan slide is incomplete: "
+                        + ", ".join(missing)
+                    )
+                raw_geometry = sorted(
+                    {
+                        "x",
+                        "y",
+                        "width",
+                        "height",
+                        "bounds",
+                        "coordinates",
+                    }
+                    & set(composition)
+                )
+                if raw_geometry:
+                    raise DeckPlanValidationError(
+                        "CompositionPlan cannot contain raw geometry: "
+                        + ", ".join(raw_geometry)
+                    )
+                compiled.update(
+                    {
+                        "composition_id": composition["composition_id"],
+                        "composition_variant_id": composition["variant_id"],
+                        "composition_layout_id": composition["layout_id"],
+                        "composition_layout_enforced": (
+                            composition["motif"].get("motif_id")
+                            == "knowledge-wayfinding"
+                        ),
+                        "composition_background_mode": composition[
+                            "background_mode"
+                        ],
+                        "composition_emphasis": composition["emphasis"],
+                        "composition_density": composition["density"],
+                        "composition_energy": composition["energy"],
+                        "composition_fact_refs": copy.deepcopy(
+                            composition["fact_refs"]
+                        ),
+                        "composition_slot_bindings": copy.deepcopy(
+                            composition["slot_bindings"]
+                        ),
+                        "composition_asset_bindings": copy.deepcopy(
+                            composition["asset_bindings"]
+                        ),
+                        "composition_motif": copy.deepcopy(composition["motif"]),
+                        "composition_repair_variant_ids": copy.deepcopy(
+                            composition["repair_variant_ids"]
+                        ),
+                    }
+                )
+                compiled["layout_variant_seed"] = composition["variant_id"]
             compiled["semantic_basis"] = {
                 "block_id": primary.id,
                 "block_index": block_index,
@@ -759,6 +838,15 @@ def compile_deck_plan(
                     "source_slide_id": source_slide.id,
                     "recipe_id": visual_recipe,
                     "rule_id": "COMPOSITION_GRAMMAR_VARIANT_SEED",
+                }
+            if composition is not None:
+                trace["composition_plan"] = {
+                    "source_slide_id": source_slide.id,
+                    "composition_id": composition["composition_id"],
+                    "variant_id": composition["variant_id"],
+                    "layout_id": composition["layout_id"],
+                    "fact_refs": copy.deepcopy(composition["fact_refs"]),
+                    "rule_id": "COMPOSITION_PLAN_MATERIALIZED",
                 }
             compiled["decision_trace"] = trace
             compiled_slides.append(compiled)

@@ -1053,7 +1053,7 @@ def inspect_quality(
             )
 
     editable_coverage = 1.0 if expected_count == 0 else found_count / expected_count
-    if editable_coverage < 0.90:
+    if editable_coverage <= 0.90:
         findings.append(
             _finding(
                 "EDITABLE_COVERAGE_LOW",

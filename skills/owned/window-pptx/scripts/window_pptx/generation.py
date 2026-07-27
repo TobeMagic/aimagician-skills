@@ -28,6 +28,8 @@ from .brand import (
     validate_brand_spec,
 )
 from .deck_plan import compile_deck_plan
+from .composition_plan import CompositionPlan, compile_composition_plan
+from .consulting_choreography import apply_consulting_tracer_choreography
 from .design_packs import DesignPack, select_design_pack
 from .directions import (
     DirectionContext,
@@ -45,7 +47,7 @@ from .quality_v2 import (
     build_quality_report_v2,
     execute_two_stage_repair,
 )
-from .themes import select_theme
+from .themes import BrandOverrides, select_theme
 from .weak_model import (
     BriefAttempt,
     BriefCompilation,
@@ -71,6 +73,7 @@ class BriefGeneration:
     design_pack: DesignPack
     visual_plan: VisualPlan
     asset_plan: AssetPlan
+    composition_plan: CompositionPlan
     effective_deck_plan: dict[str, Any]
     compiled_deck: dict[str, Any]
     render_plan: RenderPlan | None
@@ -99,6 +102,7 @@ class BriefGeneration:
             "design_pack_id": self.design_pack.id,
             "visual_plan": self.visual_plan.to_dict(),
             "asset_plan": self.asset_plan.to_dict(),
+            "composition_plan": self.composition_plan.to_dict(),
             "deck_plan": copy.deepcopy(self.effective_deck_plan),
             "compiled_deck": copy.deepcopy(self.compiled_deck),
             "direction_decision": (
@@ -373,11 +377,19 @@ def prepare_brief_generation(
         compilation = compile_brief_plan(fact_payload, brief_payload)
         brief_attempts = (BriefAttempt(1, True, None, None),)
         brief_fallback_used = False
+    compilation = apply_consulting_tracer_choreography(compilation)
     design_pack = select_design_pack(compilation.brief_plan.scenario_id)
     visual_plan, asset_plan = compile_visual_plan(
         compilation.narrative,
         design_pack=design_pack,
     )
+    composition_plan = compile_composition_plan(
+        compilation.narrative,
+        visual_plan,
+        asset_plan,
+        design_pack,
+    )
+    composition_by_slide = composition_plan.by_slide()
     visual_family_by_slide = {
         slide.slide_id: governed_runtime_family(slide.family)
         for slide in visual_plan.slides
@@ -536,16 +548,29 @@ def prepare_brief_generation(
     if should_build:
         if slide_size is None:
             raise GenerationGateError("slide_size is required to build a RenderPlan")
+        render_brand = (
+            resolved_brand.to_overrides()
+            if resolved_brand is not None
+            else BrandOverrides(
+                primary=f"#{design_pack.art_direction.palette_roles['ink']}",
+                accent=f"#{design_pack.art_direction.palette_roles['gold']}",
+                positive=f"#{design_pack.art_direction.palette_roles['teal']}",
+                background=f"#{design_pack.art_direction.palette_roles['canvas']}",
+            )
+            if design_pack.art_direction is not None
+            else None
+        )
         compiled_deck, render_plan = compile_render_plan(
             safe_deck,
             slide_size=slide_size,
             installed_fonts=font_inventory,
             theme_id=selected_theme,
-            brand=resolved_brand.to_overrides() if resolved_brand else None,
+            brand=render_brand,
             asset_bindings=bindings,
             preferred_families=preferred_families,
             visual_family_by_slide=visual_family_by_slide,
             visual_recipe_by_slide=visual_recipe_by_slide,
+            composition_by_slide=composition_by_slide,
             art_direction_id=selected_profile_id,
         )
     else:
@@ -554,6 +579,7 @@ def prepare_brief_generation(
             preferred_families=preferred_families,
             visual_family_by_slide=visual_family_by_slide,
             visual_recipe_by_slide=visual_recipe_by_slide,
+            composition_by_slide=composition_by_slide,
         )
         render_plan = None
     if resolved_brand is not None and render_plan is not None:
@@ -619,6 +645,7 @@ def prepare_brief_generation(
         design_pack=design_pack,
         visual_plan=visual_plan,
         asset_plan=asset_plan,
+        composition_plan=composition_plan,
         effective_deck_plan=safe_deck,
         compiled_deck=compiled_deck,
         render_plan=render_plan,

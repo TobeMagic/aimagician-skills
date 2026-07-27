@@ -191,16 +191,20 @@ def test_adapter_rejects_unknown_over_capacity_missing_and_source_overwrite(
 
 def test_v51_contract_schemas_accept_owned_pack_manifests() -> None:
     jsonschema = pytest.importorskip("jsonschema")
-    design_schema = json.loads(
-        (SKILL_ROOT / "schemas" / "design-pack.v1.schema.json").read_text()
-    )
     template_schema = json.loads(
         (SKILL_ROOT / "schemas" / "template-pack.v1.schema.json").read_text()
     )
     for manifest in (SKILL_ROOT / "design-packs").glob("*/pack.json"):
-        jsonschema.Draft202012Validator(design_schema).validate(
-            json.loads(manifest.read_text(encoding="utf-8"))
+        payload = json.loads(manifest.read_text(encoding="utf-8"))
+        schema_name = (
+            "design-pack.v2.schema.json"
+            if payload["schema_version"] == "2.0"
+            else "design-pack.v1.schema.json"
         )
+        design_schema = json.loads(
+            (SKILL_ROOT / "schemas" / schema_name).read_text()
+        )
+        jsonschema.Draft202012Validator(design_schema).validate(payload)
     jsonschema.Draft202012Validator(template_schema).validate(
         json.loads(
             (

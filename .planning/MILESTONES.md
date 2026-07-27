@@ -13,13 +13,14 @@
 - Phase 35: Weak-Model Benchmark and Cross-Engine Closure
 
 **Status:** In progress / `NO_GO`. The editable 15-slide TemplatePack target
-now passes source-derived masked non-slot similarity and two-run golden replay
-with reference decoration retained. The generated DesignPack lane has a first
-real consulting composition grammar and r2 artifact, but manual review remains
-`PARTIAL_NOT_REFERENCE_GRADE`; blind review and the formal benchmark remain
-open. Visual UAT prefers Agnes only after a successful image-input probe; the
-current connector has not supplied that proof, while DeepSeek is restricted to
-code/contract review and is currently rate-limited. COM is optional
+passes source-derived golden replay. The generated lane now has CompositionPlan
+v1, consulting DesignPack v2, a source-bound 14-page choreography, Quality v3,
+and direct Agnes Vision/Image adapters. R6 passes OOXML, LibreOffice/
+Ghostscript, editability, fact coverage, and Quality v2, but direct Agnes still
+returns `FAIL` and external-score-capped Quality v3 is `68.33`; therefore it is
+not reference grade. The full 711-test Window-PPTX suite, root 108-test Vitest
+suite, build, formatting, workflow trace, and independent implementation
+review pass. DeepSeek remains code/contract-only. COM is optional
 certification only; portable OOXML/PptxGenJS plus independent LibreOffice
 rendering remain the core paths.
 

@@ -108,11 +108,6 @@ def test_visual_and_asset_plan_are_deterministic_and_schema_valid() -> None:
 
 
 def test_all_design_pack_manifests_validate_against_schema() -> None:
-    schema = json.loads(
-        (SKILL_ROOT / "schemas" / "design-pack.v1.schema.json").read_text(
-            encoding="utf-8"
-        )
-    )
     registry = json.loads(
         (SKILL_ROOT / "registries" / "design-packs.json").read_text(
             encoding="utf-8"
@@ -122,7 +117,41 @@ def test_all_design_pack_manifests_validate_against_schema() -> None:
         payload = json.loads(
             (SKILL_ROOT / entry["manifest"]).read_text(encoding="utf-8")
         )
+        schema_name = (
+            "design-pack.v2.schema.json"
+            if payload["schema_version"] == "2.0"
+            else "design-pack.v1.schema.json"
+        )
+        schema = json.loads(
+            (SKILL_ROOT / "schemas" / schema_name).read_text(encoding="utf-8")
+        )
         jsonschema.validate(payload, schema)
+
+
+def test_consulting_design_pack_v2_locks_knowledge_wayfinding_system() -> None:
+    pack = select_design_pack("project-proposal")
+
+    assert pack.schema_version == "2.0"
+    assert pack.art_direction is not None
+    assert pack.art_direction.id == "knowledge-wayfinding"
+    assert pack.art_direction.palette_roles["canvas"] == "F4F0E7"
+    assert pack.art_direction.palette_roles["ink"] == "12213A"
+    assert pack.art_direction.grid_columns == 12
+    assert pack.art_direction.safe_margin_in >= 0.55
+    assert pack.art_direction.spacing_scale_pt == (4, 8, 12, 16, 24, 32, 48)
+    assert pack.art_direction.motif_variants == (
+        "portal",
+        "path",
+        "node",
+        "frame",
+    )
+    assert pack.art_direction.energy_pattern == (
+        "peak",
+        "flow",
+        "flow",
+        "pause",
+    )
+    assert pack.art_direction.quality_thresholds["release"] == 84
 
 
 def test_brief_generation_consumes_design_visual_and_asset_plans() -> None:
@@ -300,10 +329,25 @@ def test_consulting_tracer_structures_chinese_process_timeline_and_risk_evidence
         slide["id"]: slide for slide in generation.compilation.deck_plan["slides"]
     }
 
+    assert list(deck_slides) == [
+        "cover",
+        "executive-summary",
+        "section-why-now",
+        "current-state",
+        "transformation-bridge",
+        "section-what-built",
+        "solution",
+        "scope",
+        "section-how-delivery",
+        "delivery-rail",
+        "team",
+        "risks",
+        "next-steps",
+        "closing",
+    ]
     assert len(deck_slides["solution"]["blocks"][0]["items"]) == 4
     assert len(deck_slides["scope"]["blocks"][0]["items"]) == 4
-    assert len(deck_slides["approach"]["blocks"][0]["items"]) == 5
-    assert len(deck_slides["timeline"]["blocks"][0]["items"]) == 5
+    assert len(deck_slides["delivery-rail"]["blocks"][0]["items"]) == 5
     assert len(deck_slides["team"]["blocks"][0]["items"]) == 4
     assert deck_slides["risks"]["blocks"][0]["items"] == [
         {"label": "风险", "text": "业务采用不足"},
@@ -315,6 +359,22 @@ def test_consulting_tracer_structures_chinese_process_timeline_and_risk_evidence
     assert deck_slides["scope"]["title"] == "试点范围"
     assert deck_slides["team"]["title"] == "治理机制"
     assert deck_slides["risks"]["title"] == "风险与应对"
+    bridge = deck_slides["transformation-bridge"]["blocks"][-1]["items"]
+    assert bridge[-1] == {"label": "改善幅度", "value": -50, "unit": "%"}
+    composition_bridge = next(
+        slide
+        for slide in generation.composition_plan.slides
+        if slide.slide_id == "transformation-bridge"
+    )
+    assert composition_bridge.derived_fact_refs == (
+        "derived-cycle-reduction-50pct",
+    )
+    assert all(
+        binding.status in {"resolved", "generated", "native-materialized", "fallback"}
+        for slide in generation.composition_plan.slides
+        for binding in slide.asset_bindings
+        if binding.required
+    )
     next_step = next(
         slide
         for slide in generation.render_plan.slides

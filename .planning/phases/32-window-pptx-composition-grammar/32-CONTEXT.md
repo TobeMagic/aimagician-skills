@@ -6,10 +6,20 @@
   quality, 30% continued TemplatePack hardening.
 - First generated lane: consulting project proposal.
 - Weak models own only fact grouping and registered semantic hints.
-- Skill-owned grammar controls family candidates, recipe seed, density,
-  emphasis, components, capacity, pacing, and fallback.
-- Agnes is the preferred visual reviewer only after a successful image-input
-  probe; DeepSeek remains code/contract-only.
+- Skill-owned `CompositionPlan` controls registered composition, variant,
+  layout, slot bindings, density, emphasis, components, anchors, motifs,
+  annotations, assets, capacity, pacing, repair alternatives, and fallback.
+- The first generated art direction is `knowledge-wayfinding`: warm paper,
+  navy ink, teal signal, gold waypoint, and a portal/path/node motif. It uses
+  the reference's design method without copying its lighthouse skin.
+- Direct Agnes API is the preferred visual reviewer only after a successful
+  session-bound image-input probe; OpenCode Agnes is a separate route and
+  DeepSeek remains code/contract-only.
+- Agnes Image 2.1 may create non-text hero/background/illustration assets.
+  Selected bytes are frozen; facts and editable data never live in generated
+  images.
+- Quality v3 owns deterministic visual rejection and bounded composition
+  repair. Agnes and human review remain independent art-direction evidence.
 
 ## R1 observation
 
@@ -33,9 +43,12 @@ tracer, not Phase 32 acceptance.
 
 ## Next optimization chain
 
-1. Recipe-aware component compositions, not only variant seeds.
-2. Stronger cover/section visual anchors with asset-safe fallback.
-3. Evidence annotations, callouts, and business-message hierarchy.
-4. Page-density calibration against the reference contact sheet.
-5. Automatic detection of over-empty advanced diagrams.
-6. Vision/human review after a verified image-input route exists.
+1. Lock the CompositionPlan, DesignPack v2, provider, and Quality v3
+   contracts.
+2. Materialize recipe-owned compositions instead of seed-only influence.
+3. Build the source-bound 14-page consulting choreography and proof set.
+4. Resolve or natively materialize every required visual anchor.
+5. Add evidence annotations, callouts, motif/depth rules, and deck cadence.
+6. Reject R2 through role/profile-aware visual gates.
+7. Run direct Agnes per-slide/deck review, bounded repair, and R3/R4
+   regeneration.

@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimagician.dev/window-pptx/composition-plan.v1.schema.json",
+  "title": "Window PPTX CompositionPlan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "design_pack_id",
+    "theme_id",
+    "fact_store_digest",
+    "slides"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "design_pack_id": {"type": "string", "minLength": 1},
+    "theme_id": {"type": "string", "minLength": 1},
+    "fact_store_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/slide"}
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,159}$"
+    },
+    "slide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_slide_ids",
+        "slide_id",
+        "fact_refs",
+        "derived_fact_refs",
+        "role",
+        "composition_id",
+        "variant_id",
+        "layout_id",
+        "background_mode",
+        "emphasis",
+        "density",
+        "energy",
+        "slot_bindings",
+        "anchor_plan",
+        "motif",
+        "asset_bindings",
+        "repair_variant_ids",
+        "decision_trace"
+      ],
+      "properties": {
+        "source_slide_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/identifier"}
+        },
+        "slide_id": {"$ref": "#/$defs/identifier"},
+        "fact_refs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/identifier"}
+        },
+        "derived_fact_refs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/identifier"}
+        },
+        "role": {"type": "string", "minLength": 1},
+        "composition_id": {"$ref": "#/$defs/identifier"},
+        "variant_id": {"type": "string", "minLength": 1},
+        "layout_id": {"$ref": "#/$defs/identifier"},
+        "background_mode": {
+          "enum": ["warm-ivory", "navy-stage", "light", "dark", "mixed"]
+        },
+        "emphasis": {"enum": ["quiet", "standard", "hero"]},
+        "density": {"enum": ["sparse", "balanced", "dense"]},
+        "energy": {"enum": ["pause", "flow", "peak"]},
+        "slot_bindings": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["semantic_slot", "component_id", "required"],
+            "properties": {
+              "semantic_slot": {"type": "string", "minLength": 1},
+              "component_id": {"$ref": "#/$defs/identifier"},
+              "required": {"type": "boolean"}
+            }
+          }
+        },
+        "anchor_plan": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "target_area_ratio", "fallback"],
+          "properties": {
+            "kind": {
+              "enum": ["asset-or-native", "native-geometry", "asset"]
+            },
+            "target_area_ratio": {
+              "type": "number",
+              "minimum": 0.05,
+              "maximum": 0.75
+            },
+            "fallback": {"type": "string", "minLength": 1}
+          }
+        },
+        "motif": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["motif_id", "variant", "region", "intensity"],
+          "properties": {
+            "motif_id": {"$ref": "#/$defs/identifier"},
+            "variant": {"enum": ["portal", "path", "node", "frame"]},
+            "region": {"enum": ["top", "right", "bottom", "left"]},
+            "intensity": {"enum": ["quiet", "standard", "strong"]}
+          }
+        },
+        "asset_bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["asset_id", "status", "fallback", "required"],
+            "properties": {
+              "asset_id": {"$ref": "#/$defs/identifier"},
+              "status": {
+                "enum": [
+                  "planned",
+                  "resolved",
+                  "generated",
+                  "native-materialized",
+                  "fallback"
+                ]
+              },
+              "fallback": {"type": "string", "minLength": 1},
+              "required": {"type": "boolean"}
+            }
+          }
+        },
+        "repair_variant_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/identifier"}
+        },
+        "decision_trace": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

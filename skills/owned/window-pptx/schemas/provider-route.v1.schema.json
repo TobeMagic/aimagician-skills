@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "provider-route.v1.schema.json",
+  "title": "Window PPTX Provider Route v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "provider", "model", "capability", "transport"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9._/-]+$"},
+    "provider": {"enum": ["agnes-direct", "opencode"]},
+    "model": {"type": "string", "minLength": 1},
+    "capability": {
+      "enum": ["vision", "image-generation", "code-only"]
+    },
+    "transport": {"enum": ["https-json", "opencode-session"]}
+  }
+}

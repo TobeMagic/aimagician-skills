@@ -47,11 +47,13 @@ tags:
 This skill turns governed content plans into professional, native-editable PPTX. Its default delivery path does not require PowerPoint COM:
 
 ```text
-FactStore -> BriefPlan -> NarrativePlan -> DeckPlan -> RenderPlan
--> DesignPack -> VisualPlan + AssetPlan
+FactStore -> BriefPlan -> NarrativePlan
+-> DesignPack -> VisualPlan + AssetPlan -> CompositionPlan
+-> DeckPlan -> RenderPlan
 -> PptxGenJS or authorized TemplatePack candidate
 -> deterministic OOXML -> semantic + reference-complexity hard gates
 -> isolated LibreOffice PDF -> Poppler/Ghostscript PNG -> QualityReport v2
+-> QualityReport v3 + direct Agnes visual review
 -> atomic PPTX promotion
 ```
 
@@ -208,7 +210,7 @@ Portable mode supports native editable text, shapes, images, tables, charts, not
 
 Unsupported capabilities fail before candidate creation. `auto` never changes to COM implicitly.
 
-## DesignPack, VisualPlan, and TemplatePack
+## DesignPack, VisualPlan, CompositionPlan, and TemplatePack
 
 Weak models choose content semantics and a registered business scenario. They
 do not invent style, fonts, coordinates, page composition, or asset policy.
@@ -216,7 +218,7 @@ The deterministic compiler selects:
 
 ```text
 scenario -> DesignPack -> page family candidates -> paced variant
--> components -> AssetPlan -> VisualPlan
+-> components -> AssetPlan -> VisualPlan -> CompositionPlan
 ```
 
 For scenarios with a registered composition grammar, the model also receives
@@ -250,9 +252,17 @@ same-layout repetition limits, hero cadence, asset priority, required visual
 anchors, and a capacity-safe fallback. Use:
 
 - `registries/design-packs.json`
-- `schemas/design-pack.v1.schema.json`
+- `schemas/design-pack.v1.schema.json` for compatibility packs
+- `schemas/design-pack.v2.schema.json` for executable art direction
 - `schemas/visual-plan.v1.schema.json`
 - `schemas/asset-plan.v1.schema.json`
+- `schemas/composition-plan.v1.schema.json`
+
+`CompositionPlan` is the executable seam for weak-model generation. It binds
+each source/fact-traced page to a registered layout, exact component slots,
+density, emphasis, energy, editable motif, materialized asset fallback, and
+bounded repair variants. It never accepts coordinates, fonts, arbitrary
+colors, OOXML, HTML, code, or model-authored repair actions.
 
 When the requested art direction matches an authorized template, select a
 TemplatePack instead of rebuilding the design from raw coordinates. A
@@ -423,7 +433,8 @@ For a new deck, default to the strict authority chain:
 
 ```text
 trusted materials -> FactStore -> BriefPlan -> NarrativePlan -> DeckPlan
--> DirectionDecision -> RenderPlan -> QualityReport v2 -> PPTX candidate
+-> DesignPack -> VisualPlan + AssetPlan -> CompositionPlan
+-> DirectionDecision -> RenderPlan -> QualityReport v2 + v3 -> PPTX candidate
 ```
 
 The weak model writes only BriefPlan fact references and registered semantic hints. It does not restate trusted facts or choose titles, coordinates, fonts, colors, layout IDs, templates, code, macros, or COM calls. Use:
@@ -434,9 +445,12 @@ The weak model writes only BriefPlan fact references and registered semantic hin
 - `schemas/brand-spec.v1.schema.json`
 - `schemas/direction-decision.v1.schema.json`
 - `schemas/quality-report.v2.schema.json`
+- `schemas/quality-report.v3.schema.json`
 - `schemas/design-pack.v1.schema.json`
+- `schemas/design-pack.v2.schema.json`
 - `schemas/visual-plan.v1.schema.json`
 - `schemas/asset-plan.v1.schema.json`
+- `schemas/composition-plan.v1.schema.json`
 
 Compile without PowerPoint:
 
@@ -467,7 +481,7 @@ python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
   --json
 ```
 
-This route writes a candidate only, normalizes ZIP/core timestamps, validates OOXML relationships/content types/page geometry/object identity/text/style/native chart-table-diagram data/notes/links/masters, and renders a copy through isolated LibreOffice plus Poppler. Missing proof, truncated/duplicate/placeholder text, deterministic capacity overflow, near-empty pages, or adjacent near-duplicate pages stops the transaction. Only then are the PPTX, optional PDF, reports, verification manifest, and proof directory promoted as one rollback-capable bundle. `generation-manifest.json` binds the normalized BrandSpec content/source/hash, installed-font inventory/digest, and normalized asset-manifest content/source/hash. `portable-verification.json`, `ooxml-report.json`, PDF/PNGs, QualityReport v2, and SHA-256 evidence remain under `.window-pptx/audits/`. Use `--brand-spec` only with this BriefPlan render route; the direct DeckPlan route rejects it instead of silently ignoring brand requirements.
+This route writes a candidate only, normalizes ZIP/core timestamps, validates OOXML relationships/content types/page geometry/object identity/text/style/native chart-table-diagram data/notes/links/masters, and renders a copy through isolated LibreOffice plus Poppler. Missing proof, truncated/duplicate/placeholder text, deterministic capacity overflow, near-empty pages, or adjacent near-duplicate pages stops the transaction. Only then are the PPTX, optional PDF, reports, verification manifest, and proof directory promoted as one rollback-capable bundle. `generation-manifest.json` binds the normalized BrandSpec content/source/hash, installed-font inventory/digest, and normalized asset-manifest content/source/hash. `composition-plan.json`, `quality-report.v3.json`, `portable-verification.json`, `ooxml-report.json`, PDF/PNGs, QualityReport v2, and SHA-256 evidence remain under `.window-pptx/audits/`. Quality v2 is the engineering promotion gate. Quality v3 is the reference-grade release gate and remains false until its visual thresholds and independent art review both pass. Use `--brand-spec` only with this BriefPlan render route; the direct DeckPlan route rejects it instead of silently ignoring brand requirements.
 
 The portable visual floor is also deterministic: role-aware cover/agenda/content/closing layouts, a capacity-checked 44/32/22/18 pt title ladder, muted footers, capacity-sized KPI typography, exact five/six-card agendas, rebalanced agenda continuations, theme-derived chart/table styling, and automatic rejection of unbound empty decoration frames. Plain focal claims use an editable editorial statement plus a narrow governed rail instead of fake quotation styling or a blank image-like color block; three short authored labels use compact cards; a single dated event uses a compact native milestone band; and a closing action without a real hyperlink uses a high-contrast rectangular action band rather than a fake button. Exact numeric extraction keeps each value bound to its authored unit, preserves thousands separators for large integers and source-present relative labels such as `Above Q1`, routes conservative explicit parallel lists to cards, and may route categorical same-unit measures to a native editable bar chart. Shared percentage charts preserve source order and enforce a native 0-100 axis, 20-point major ticks, and literal percent labels. Unstructured trend prose without an explicit series remains a statement instead of becoming an invented chart. When a seeded composition cannot fit the governed text, the compiler first searches the same semantic family for a capacity-safe higher-type-scale variant and only then permits a generic fallback. Installed-font selection uses the governed Arial/Liberation Sans/Carlito/DejaVu Sans fallback chain, and inline emphasis is emitted as native editable rich-text runs. The OOXML gate verifies role-layout geometry/style plus object alpha, weight, shadow, chart axis/label format, data, and editability; it is not merely an open-file check.
 
@@ -622,7 +636,7 @@ Read [template-library-recommendation-workflow.md](./references/template-library
 5. For template recommendation requests, consult `templates/template-library/template-library-review.xlsx` before designing from scratch.
 6. Use BriefPlan mode for ordinary models; use direct DeckPlan only for an expert/replay compatibility route.
 7. Select DesignPack and art direction, compile VisualPlan + AssetPlan, and
-   validate BrandSpec/assets before layout resolution.
+   compile CompositionPlan; validate BrandSpec/assets before layout resolution.
 8. Search/download required local assets first, including Iconify icons when the design calls for semantic labels, process nodes, flow arrows, UI symbols, or pictograms.
 9. Compile and inspect narrative coverage, direction decision, semantic forms, splits, findings, and required backend capabilities.
 10. Select registered TemplatePack for authorized reference-grade adaptation;
@@ -640,14 +654,19 @@ Read [template-library-recommendation-workflow.md](./references/template-library
 16. Render a candidate copy through an isolated LibreOffice profile, convert
     the PDF through Poppler or the explicit Ghostscript fallback, and run
     QualityReport v2 on those real PNGs.
-17. Apply bounded deterministic pre-render/post-render repair where registered; roll back non-monotonic or content-changing repair.
+17. Apply bounded deterministic pre-render/post-render repair where registered;
+    reference profiles may add at most two monotonic CompositionPlan
+    recompilations and must roll back repeated, non-improving, or
+    content-changing candidates.
 18. Promote the PPTX/PDF/reports/proofs as one rollback-capable bundle only after all portable hard gates pass. Write reports, proofs, and hashes under `.window-pptx/audits/`.
 19. Run optional PowerPoint certification only after portable PASS and only when `Application.HWND` binds to the one newly created process. Certify an exact-hash temporary copy, never save the deck, and never terminate a pre-existing process.
 20. For benchmark blind review, stage hash-verified OOXML PPTX plus readable PNGs under anonymized `B-*` paths; never accept a score sheet from JSON-only evidence.
-21. Route pixel-level visual UAT through `reviewer_routing.py`. Prefer
-    `agnes/agnes-2.0-flash`, but select it only after an attachment probe proves
-    image input works in the current provider session. If the probe is missing,
-    unknown, or rejected, keep the visual verdict `NOT_RUN`. Never use
+21. Route pixel-level visual UAT through the direct
+    `agnes-direct/agnes-2.0-flash` adapter. Enable Data URI only after its
+    session-bound challenge probe; review high-resolution pages in batches of
+    at most four plus one deck contact sheet, and persist strict JSON/cache
+    hashes. If the probe is missing, unknown, or rejected, keep the visual
+    verdict `NOT_RUN`. Never use
     `opencode/deepseek-v4-flash-free` as a pixel-review fallback; reserve it for
     code, rule, schema, and contract audits.
 22. Report generated files, evidence gaps, unresolved ambiguities, unsupported capabilities, and certification status (`PASS`, `FAIL`, or `NOT_RUN`).
@@ -781,6 +800,8 @@ Use checks that match the request:
 - required runtime and font fingerprints are recorded; optional PowerPoint certification is accepted only when it binds the same candidate hash
 - reference-grade outputs pass the structural visual floor; sparse text-only
   pages cannot pass merely because they contain no overlap
+- `quality-report.v3.json` has all six axes at least 75, total at least 84,
+  no visual hard gate, `art_review_status=PASS`, and `release_passed=true`
 
 For animation homework or animation-sensitive decks, do not validate by animation count alone. Export a structured effect table for each required slide:
 
