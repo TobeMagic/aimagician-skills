@@ -1,6 +1,6 @@
-# Phase 31 Discussion Draft: From Reference-Grade Tracer to Repeatable Quality
+# Phase 31 Discussion Log: From Reference-Grade Tracer to Repeatable Quality
 
-**Status:** Draft for discussion
+**Status:** Accepted
 **Milestone:** v5.1 Window-PPTX Reference-Grade Visual Engine
 **Date:** 2026-07-27
 
@@ -127,18 +127,18 @@ Use a staged benchmark:
 **Exit:** average blind score is at least 4.2/5, no dimension is below 4,
 cross-engine evidence is fresh, and every accepted requirement is traceable.
 
-## Decisions to discuss before locking Phase 31
+## Accepted decisions
 
-1. **Priority split:** accept the recommended 70% composition-grammar / 30%
-   TemplatePack-hardening investment, or prioritize building more TemplatePacks?
-2. **Similarity definition:** accept masked non-slot rendered similarity plus
-   exact OOXML preservation, rather than an undifferentiated whole-slide 0.98?
-3. **Visual reviewer:** provide/configure a verified vision-capable provider,
-   use a human blind reviewer, or support both?
-4. **Evidence storage:** keep large PPTX/PDF/PNG runs local or in release/object
-   storage while committing only manifests and selected golden previews?
-5. **First generated-lane acceptance scenario:** institutional work summary,
-   consulting proposal, product launch, or data-analysis report?
+1. Invest approximately 70% in composition grammar and 30% in TemplatePack
+   hardening across the next two phases.
+2. Define similarity as exact preservation of undeclared OOXML parts plus
+   masked non-slot rendered similarity, not whole-slide pixel identity.
+3. Support both verified vision-model review and human review; every model
+   route remains capability-probed and fail-closed.
+4. Keep large run artifacts local or in release/object storage. Commit compact
+   manifests, schemas, tests, and selected golden previews only.
+5. Use a consulting project proposal as the first generated-lane acceptance
+   scenario after the Phase 31 TemplatePack contract closes.
 
-This draft is intentionally not a locked execution plan. The answers above
-change sequencing, acceptance evidence, and cost.
+The user accepted these defaults on 2026-07-27. Phase 31 owns the TemplatePack
+hardening slice; Phase 32 owns the first composition-grammar consulting tracer.

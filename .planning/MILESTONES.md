@@ -12,14 +12,14 @@
 - Phase 34: Visual Regression, Auto-Repair, and Four-Scenario UAT
 - Phase 35: Weak-Model Benchmark and Cross-Engine Closure
 
-**Status:** In progress / `NO_GO`. The editable 15-slide r10 work-summary
-TemplatePack target now passes portable structural and rendered proof with
-reference decoration retained. The generated DesignPack-only route still
-fails the supplied reference's human visual bar, and quantitative similarity,
-blind review, and the formal benchmark remain open. Visual UAT now prefers
-Agnes only after a successful image-input probe; the current OpenCode Agnes
-connector failed that probe, so its verdict is `NOT_RUN`, while DeepSeek is
-restricted to code/contract review. COM is optional
+**Status:** In progress / `NO_GO`. The editable 15-slide TemplatePack target
+now passes source-derived masked non-slot similarity and two-run golden replay
+with reference decoration retained. The generated DesignPack lane has a first
+real consulting composition grammar and r2 artifact, but manual review remains
+`PARTIAL_NOT_REFERENCE_GRADE`; blind review and the formal benchmark remain
+open. Visual UAT prefers Agnes only after a successful image-input probe; the
+current connector has not supplied that proof, while DeepSeek is restricted to
+code/contract review and is currently rate-limited. COM is optional
 certification only; portable OOXML/PptxGenJS plus independent LibreOffice
 rendering remain the core paths.
 

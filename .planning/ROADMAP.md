@@ -562,14 +562,14 @@ v5.1 supersedes the unshipped v5.0 visual architecture while retaining its porta
 **Goal:** Produce the first reference-grade 15-slide editable work-summary deck without COM.
 **Depends on:** Phase 30
 **Requirements:** [V51-TPL-01, V51-TPL-02, V51-TPL-03, V51-DESIGN-04]
-**Status:** Planned
+**Status:** Engineering complete; independent review gate open
 
 ### Phase 32: VisualPlan, DesignPack v2, and Renderer v2
 
 **Goal:** Compile narrative intent into real component compositions and editable native rendering.
 **Depends on:** Phase 31
 **Requirements:** [V51-DESIGN-01, V51-DESIGN-02, V51-DESIGN-03, V51-DESIGN-04]
-**Status:** Planned
+**Status:** In Progress — consulting proposal grammar tracer r2
 
 ### Phase 33: Multi-Scenario DesignPacks and Asset System
 

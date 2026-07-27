@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: Window-PPTX Reference-Grade Visual Engine
-current_phase: 30
-current_phase_name: Reference Visual Baseline and Contracts
+current_phase: 32
+current_phase_name: Composition Grammar and Generated Reference Floor
 status: in_progress
-stopped_at: reference-grade r10 accepted; Agnes image probe unavailable, so visual blind review remains NOT_RUN
-last_updated: "2026-07-27T18:20:00+08:00"
+stopped_at: Phase 31 engineering proof complete; Phase 32 consulting tracer r2 passes engineering gates but remains below reference-grade visual acceptance
+last_updated: "2026-07-27T23:00:00+08:00"
 last_activity: 2026-07-27
 progress:
   total_phases: 37
@@ -26,15 +26,14 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v5.1 Phase 30 now has a reference-grade 15-slide r10
-TemplatePack deliverable with portable font repair, editable charts/workbooks,
-structural visual gates, LibreOffice/Ghostscript proof, and zero source-domain
-residuals. The generated DesignPack route has a deterministic editable
-art-direction layer and sparse-deck hard gates, but its four DeepSeek
-diagnostics still fail the supplied reference's human visual bar. Quantitative
-non-slot similarity, richer non-template packs, blind review, and the formal
-benchmark remain open. PowerPoint is optional sampled certification, not a
-daily hard dependency.
+**Current focus:** v5.1 Phase 31 now has source-derived trusted masks,
+same-renderer non-slot similarity, a one-command golden replay, and two
+byte-identical 15-slide candidates. The minimum page similarity is `0.9968`
+outside masks. Phase 32 has started with a real 12-slide Chinese consulting
+proposal grammar tracer; r2 passes portable gates and improves structured
+editable density, but manual contact-sheet review remains
+`PARTIAL_NOT_REFERENCE_GRADE`. PowerPoint is optional sampled certification,
+not a daily hard dependency.
 
 ## Current Position
 
@@ -141,16 +140,14 @@ Active v5 foundation:
 
 ## Next Actions
 
-1. Discuss and lock the Phase 31 optimization choices in
-   `31-DISCUSSION-DRAFT.md`: lane priority, masked non-slot similarity,
-   reviewer provider, evidence storage, and the first generated-lane scenario.
-2. Close the TemplatePack contract with reproducible golden-r10 generation,
-   masked non-slot metrics, authoring support, and optional read-only
-   PowerPoint sampling.
-3. Extract the reference's composition grammar into DesignPack recipes before
-   expanding scenario packs or running the formal benchmark.
-4. Run four-scenario generated-lane UAT with a verified pixel reviewer, then
-   refreeze and execute the two-model formal benchmark.
+1. Obtain an actual independent Phase 31 code/contract verdict after the
+   DeepSeek free route stops rate-limiting or another scoped reviewer works.
+2. Continue Phase 32 from recipe seeds to recipe-owned component compositions,
+   cover anchors, evidence annotations, and empty-diagram rejection.
+3. Regenerate the consulting tracer until manual contact-sheet review reaches
+   the reference-grade bar.
+4. Expand to the remaining three UAT scenarios only after the first lane
+   passes; then refreeze the two-model benchmark.
 
 ## Blockers / Concerns
 
@@ -167,5 +164,9 @@ Active v5 foundation:
   fails closed: Agnes visual UAT remains `NOT_RUN`, DeepSeek cannot substitute
   for pixel judgment, and only a successfully probed vision model or human
   reviewer may close the visual gate.
+- The Phase 31 post-implementation DeepSeek review was attempted again on
+  2026-07-27 and both title/main streams returned explicit rate-limit errors.
+  An earlier Agnes planning review loaded all required skills but looped
+  without a verdict. No independent approval is claimed.
 - Phase 28's three latest DeepSeek visual-floor diagnostics (business r12, product r8, data r9) are deliberately noncanonical: no clean component fingerprint exists, only one model and one full-v5 trial per scenario are represented, and automatic composites do not satisfy customer visual review.
 - Phase 29 sampled PowerPoint certification is `NOT_RUN`; the stale WPS TypeLib that breaks early-bound COM does not block portable daily delivery but remains relevant to that sample.
