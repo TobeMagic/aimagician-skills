@@ -52,7 +52,7 @@ Load only the references needed for the delegated role.
 | Broad repository or source exploration, web research, comparison, visual or image understanding | `references/task-types/discovery-and-research.md` |
 | Git inspection, tests, progress reports, non-destructive checks, bounded isolated writes | `references/task-types/bounded-operations-and-execution.md` |
 | Plan, specification, quality, verification, phase, milestone, or completion review | `references/task-types/independent-review-and-audit.md` |
-| OpenCode preflight, models, command syntax, event-based waiting, fallback, session handling | `references/providers/opencode.md` |
+| OpenCode ready-to-run commands, command syntax, diagnostic preflight, models, event-based waiting, fallback, session handling | `references/providers/opencode.md` |
 | General handoff report | `references/report-templates/delegation-report.md` |
 | Reviewer and auditor report | `references/report-templates/review-report.md` |
 
@@ -103,8 +103,8 @@ The prompt must require the worker to load every named skill before doing substa
 2. **Protect macro reasoning.** Keep unresolved requirements, architecture tradeoffs, risk acceptance, and final decisions with the main Agent.
 3. **Lock the contract.** Define sources, skills, scope, permission mode, commands, evidence, git policy, and escalation.
 4. **Select provider and model.** Read `references/providers/opencode.md`. Use DeepSeek V4 Flash Free for ordinary non-visual tasks. Use Agnes for visual input and as the normal fallback when DeepSeek is unavailable, rate-limited, or fails.
-5. **Preflight.** Verify the CLI, version, installed syntax, model availability, target path, required skills, and worktree state.
-6. **Run non-interactively.** Use the installed CLI syntax and detailed positional prompt. Keep logs attached.
+5. **Use the known-good fast path.** Run the provider's ready-to-use DeepSeek command directly. Do not repeat binary, version, model-list, or help probes unless first-time setup, an environment change, or a concrete command/provider failure requires diagnosis.
+6. **Run non-interactively.** Use the detailed positional prompt and keep logs attached. On an explicit DeepSeek model/provider failure, wait for process exit and retry the exact same prompt once with the ready-to-use Agnes command; do not probe again between attempts.
 7. **Wait by events.** Continue while logs, tool calls, stage transitions, file references, session changes, or provider activity show progress. Do not stop an active worker because a fixed number of seconds elapsed.
 8. **Classify failure.** Stop only on process exit, clear command/provider/permission error, user cancellation, or confirmed stale state. Never start a fallback while the first process is alive.
 9. **Validate.** Check scope compliance and spot-check claims that affect design or completion, including paths, symbols, imports, “no tests” claims, Blocker/Important findings, and the decisive verification command.

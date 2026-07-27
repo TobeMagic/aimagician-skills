@@ -71,12 +71,30 @@ describe("cli-agent-delegator capability contract", () => {
   it("routes ordinary work to DeepSeek and vision or provider fallback to Agnes", async () => {
     const provider = await readFile(join(delegatorRoot, "references", "providers", "opencode.md"), "utf8");
 
+    expect(provider).toContain("Known-Good Fast Path");
     expect(provider).toMatch(/1\. `opencode\/deepseek-v4-flash-free`[\s\S]*2\. `agnes\/agnes-2\.0-flash`/);
     expect(provider).toContain("when the task requires image understanding");
     expect(provider).toContain("when DeepSeek is unavailable, rate-limited, rejects the request, or otherwise fails");
     expect(provider).toContain("A provider rate limit is a model failure event");
+    expect(provider).toContain('-m "opencode/deepseek-v4-flash-free"');
+    expect(provider).toContain('-m "agnes/agnes-2.0-flash"');
+    expect(provider).toContain('"<same_detailed_prompt>"');
     expect(provider).not.toMatch(/opencode run[^\n]*--prompt/);
     expect(provider).toContain("prompt as the trailing positional message");
+  });
+
+  it("uses direct commands by default and limits environment probes to diagnostics", async () => {
+    const provider = await readFile(join(delegatorRoot, "references", "providers", "opencode.md"), "utf8");
+    const skill = await readFile(join(delegatorRoot, "SKILL.md"), "utf8");
+
+    expect(provider).toContain("do not rediscover the binary, version, model list, or help text before every run");
+    expect(provider).toContain("Do not run environment probes between the primary and fallback commands");
+    expect(provider).toContain("Diagnostic Preflight");
+    expect(provider).toContain("Do not execute this whole bundle as routine ceremony");
+    expect(provider).toContain("Run diagnostics only for first-time setup in a new environment");
+    expect(skill).toContain("Use the known-good fast path");
+    expect(skill).toContain("Do not repeat binary, version, model-list, or help probes");
+    expect(skill).toContain("retry the exact same prompt once with the ready-to-use Agnes command");
   });
 
   it("waits on activity events instead of elapsed-time limits", async () => {
@@ -120,11 +138,15 @@ describe("cli-agent-delegator capability contract", () => {
       scenarios: Array<{ id: string; should_trigger: boolean; expected: string[]; forbidden: string[] }>;
     };
     const scenario = evals.scenarios.find((candidate) => candidate.id === "trigger-regression-main-agent-multifile-scan");
+    const researchScenario = evals.scenarios.find((candidate) => candidate.id === "deep-web-research");
 
     expect(scenario).toBeDefined();
     expect(scenario).toMatchObject({ should_trigger: true });
     expect(scenario?.expected).toContain("delegate the multi-file audit first");
     expect(scenario?.forbidden).toContain("main agent performs the whole multi-file scan itself");
+    expect(researchScenario?.expected).toContain("direct DeepSeek command");
+    expect(researchScenario?.expected).toContain("Agnes one-time fallback after an explicit model failure");
+    expect(researchScenario?.forbidden).toContain("repeat version, model-list, or help probes before routine execution");
   });
 });
 

@@ -34,8 +34,8 @@
       "id": "deep-web-research",
       "prompt": "Use an external agent to deeply research the current behavior of these APIs and compare primary sources.",
       "should_trigger": true,
-      "expected": ["OpenCode", "DeepSeek default", "research skill", "current date", "primary sources", "citations", "controller verification"],
-      "forbidden": ["uncited search snippets", "main agent spends context on the full search corpus"]
+      "expected": ["OpenCode", "direct DeepSeek command", "Agnes one-time fallback after an explicit model failure", "research skill", "current date", "primary sources", "citations", "controller verification"],
+      "forbidden": ["repeat version, model-list, or help probes before routine execution", "uncited search snippets", "main agent spends context on the full search corpus"]
     },
     {
       "id": "visual-inspection",

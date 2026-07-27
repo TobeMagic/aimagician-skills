@@ -2,9 +2,43 @@
 
 OpenCode is the current CLI worker for discovery, research, visual inspection, bounded operations, short isolated implementation, verification, and independent review. The main Agent supplies the delegation contract and validates material claims.
 
-## Preflight
+## Known-Good Fast Path
 
-Verify the installed binary and command shape instead of relying on remembered flags:
+The managed environment is validated against OpenCode 1.17.x. Its `run` command accepts the prompt as the trailing positional message, not `--prompt`. For routine delegation, do not rediscover the binary, version, model list, or help text before every run.
+
+Use this primary command directly for ordinary non-visual work:
+
+```bash
+opencode run --dir "<source_path>" \
+  -m "opencode/deepseek-v4-flash-free" \
+  --print-logs --log-level INFO \
+  "<detailed_prompt>"
+```
+
+If that run ends with an explicit rate limit, provider rejection, unavailable-model error, or other model failure, preserve the error and rerun the exact same prompt once with Agnes:
+
+```bash
+opencode run --dir "<source_path>" \
+  -m "agnes/agnes-2.0-flash" \
+  --print-logs --log-level INFO \
+  "<same_detailed_prompt>"
+```
+
+Do not run environment probes between the primary and fallback commands. Confirm that the DeepSeek process has exited before starting Agnes. Do not switch models merely because a progressing run is slow or temporarily quiet.
+
+For visual input, use Agnes as the first command:
+
+```bash
+opencode run --dir "<source_path>" \
+  -m "agnes/agnes-2.0-flash" \
+  -f "<image_path>" \
+  --print-logs --log-level INFO \
+  "<detailed_prompt>"
+```
+
+## Diagnostic Preflight
+
+Run diagnostics only for first-time setup in a new environment, a known runtime or configuration change, a missing-command or invalid-syntax failure, a model/provider configuration failure, or an explicit user request. Use the narrowest command that diagnoses the observed failure:
 
 ```bash
 command -v opencode
@@ -12,6 +46,8 @@ opencode --version
 opencode models
 opencode run --help
 ```
+
+Do not execute this whole bundle as routine ceremony.
 
 When a repository or local source is in scope:
 
@@ -34,7 +70,7 @@ or:
 curl -fsSL https://opencode.ai/install | bash
 ```
 
-Then rerun `command -v opencode`, `opencode --version`, `opencode models`, and `opencode run --help`. If the binary exists but is not executable, use `chmod +x "<opencode_binary_path>"` only on that user-owned binary. If it is outside `PATH`, add its user-level bin directory to the shell path. Never use `sudo` without explicit authorization. Record any installation or config change.
+Then run the narrow diagnostics required to verify the repaired failure. If the binary exists but is not executable, use `chmod +x "<opencode_binary_path>"` only on that user-owned binary. If it is outside `PATH`, add its user-level bin directory to the shell path. Never use `sudo` without explicit authorization. Record any installation or config change.
 
 ## Configuration
 
@@ -76,7 +112,7 @@ For visual work, Agnes is primary rather than fallback. Attach the exact image u
 
 ## Execution Syntax
 
-OpenCode 1.17.x accepts the prompt as the trailing positional message. Do not use the obsolete `--prompt` form unless the installed help explicitly documents it.
+OpenCode 1.17.x accepts the prompt as the trailing positional message. Do not use the obsolete `--prompt` form. Inspect installed help only when a command-syntax failure or runtime change makes the known-good contract invalid.
 
 Canonical non-interactive command:
 
@@ -88,12 +124,6 @@ Use structured output only when the installed version supports the required form
 
 ```bash
 opencode run --dir "<source_path>" -m "<model>" --format json --print-logs --log-level INFO "<detailed_prompt>"
-```
-
-For an attached visual source:
-
-```bash
-opencode run --dir "<source_path>" -m "agnes/agnes-2.0-flash" -f "<image_path>" --print-logs --log-level INFO "<detailed_prompt>"
 ```
 
 Rules:
@@ -124,7 +154,7 @@ Rules:
 3. Confirm stale state only when neither process/provider health nor session/event state is advancing. Record the last event and the evidence used to classify it.
 4. Stop on process exit, clear CLI error, provider rejection or rate limit, permission/config failure, user cancellation, or confirmed stale state.
 5. Never start the fallback model while the original process is still alive.
-6. After a provider/model failure, preserve the error and retry once with the routed fallback using the same task contract.
+6. After a provider/model failure, preserve the error and retry once with the routed fallback using the exact same prompt and task contract; do not repeat preflight probes.
 7. Do not fabricate a final result when a run fails or is stopped.
 
 The controller may poll at any convenient interval, but an interval is only an observation cadence, not a deadline.
