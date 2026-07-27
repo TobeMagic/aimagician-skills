@@ -69,6 +69,7 @@ FAMILY_IDS = {
     "process",
     "product-showcase",
     "quadrant",
+    "recommendation",
     "risk-recommendation",
     "roadmap",
     "section",
@@ -298,11 +299,22 @@ def test_dark_theme_is_an_explicit_safe_default_not_model_improvisation() -> Non
     assert select_theme("business-report", prefer_dark=True) == "executive-dark"
 
 
-def test_twenty_four_families_have_at_least_three_unique_variants() -> None:
+def test_portable_theme_uses_installed_office_safe_font_fallback() -> None:
+    resolved = resolve_theme(
+        "marketing-vibrant",
+        installed_fonts={"Liberation Sans"},
+    )
+
+    assert resolved.fonts["heading"] == "Liberation Sans"
+    assert resolved.fonts["body"] == "Liberation Sans"
+    assert all(event.code != "FONT_SAFE_DEFAULT_UNVERIFIED" for event in resolved.events)
+
+
+def test_twenty_five_families_have_at_least_three_unique_variants() -> None:
     registry = load_layout_registry()
 
     assert set(registry.families) == FAMILY_IDS
-    assert len(registry.variants) >= 72
+    assert len(registry.variants) >= 75
     assert len(registry.variants) == len(set(registry.variants))
     for family in registry.families.values():
         assert len(family.variant_ids) >= 3
@@ -492,14 +504,15 @@ def test_layout_selection_varies_deterministically_after_repetition() -> None:
 
 def test_layout_rhythm_cycles_after_all_compatible_variants_are_used() -> None:
     size = SlideSize(13.333, 7.5)
+    cycle_size = len(load_layout_registry().families["cards"].variant_ids)
     history: tuple[str, ...] = ()
     selected: list[str] = []
-    for _ in range(6):
+    for _ in range(cycle_size * 2):
         layout = resolve_layout("cards", size, previous_layouts=history)
         selected.append(layout.id)
         history += (layout.id,)
 
-    assert selected[:3] == selected[3:]
+    assert selected[:cycle_size] == selected[cycle_size:]
 
 
 def test_layout_capacity_filters_incompatible_variants_before_rhythm() -> None:
@@ -512,6 +525,170 @@ def test_layout_capacity_filters_incompatible_variants_before_rhythm() -> None:
     assert "sparse" in sparse.capacity.densities
     assert dense.capacity.min_items <= 5 <= dense.capacity.max_items
     assert "dense" in dense.capacity.densities
+
+
+@pytest.mark.parametrize(
+    ("item_count", "expected"),
+    [
+        (1, "cards.top-band"),
+        (3, "cards.three-column"),
+        (4, "cards.grid-four"),
+        (5, "cards.grid-four"),
+    ],
+)
+def test_layout_selection_prefers_the_closest_governed_slot_count(
+    item_count: int, expected: str
+) -> None:
+    layout = resolve_layout(
+        "cards",
+        SlideSize(13.333, 7.5),
+        item_count=item_count,
+        density="balanced",
+    )
+
+    assert layout.id == expected
+
+
+def test_agenda_five_item_variant_has_one_exact_slot_per_section() -> None:
+    layout = resolve_layout(
+        "agenda",
+        SlideSize(13.333, 7.5),
+        item_count=5,
+        density="balanced",
+    )
+
+    assert layout.id == "agenda.five-card"
+    assert sum(slot.component == "card" for slot in layout.slots) == 5
+
+
+def test_agenda_six_item_variant_has_one_exact_slot_per_section() -> None:
+    layout = resolve_layout(
+        "agenda",
+        SlideSize(13.333, 7.5),
+        item_count=6,
+        density="balanced",
+    )
+
+    assert layout.id == "agenda.six-card"
+    assert sum(slot.component == "card" for slot in layout.slots) == 6
+
+
+def test_single_metric_pages_rotate_between_assetless_compositions() -> None:
+    size = SlideSize(13.333, 7.5)
+    forbidden = frozenset({"image-frame", "decoration"})
+
+    first = resolve_layout(
+        "big-number",
+        size,
+        item_count=1,
+        density="balanced",
+        forbidden_components=forbidden,
+    )
+    second = resolve_layout(
+        "big-number",
+        size,
+        previous_layouts=(first.id,),
+        item_count=1,
+        density="balanced",
+        forbidden_components=forbidden,
+    )
+    third = resolve_layout(
+        "big-number",
+        size,
+        previous_layouts=(first.id, second.id),
+        item_count=1,
+        density="balanced",
+        forbidden_components=forbidden,
+    )
+
+    assert {first.id, second.id, third.id} == {
+        "big-number.centered",
+        "big-number.metric-left",
+        "big-number.top-band",
+    }
+
+
+def test_two_metric_dashboard_uses_two_editable_kpi_panels() -> None:
+    layout = resolve_layout(
+        "kpi-dashboard",
+        SlideSize(13.333, 7.5),
+        item_count=2,
+        density="balanced",
+        forbidden_components=frozenset({"image-frame", "decoration"}),
+    )
+
+    assert layout.id == "big-number.split"
+    assert [slot.component for slot in layout.slots].count("kpi") == 2
+
+
+def test_two_recommendations_use_two_editable_recommendation_panels() -> None:
+    layout = resolve_layout(
+        "recommendation",
+        SlideSize(13.333, 7.5),
+        item_count=2,
+        density="balanced",
+        forbidden_components=frozenset({"image-frame", "decoration"}),
+    )
+
+    assert layout.id == "recommendation.dual"
+    assert [slot.component for slot in layout.slots].count("recommendation-panel") == 2
+
+
+def test_layout_selection_can_forbid_asset_dependent_variants() -> None:
+    size = SlideSize(13.333, 7.5)
+
+    layout = resolve_layout(
+        "cover",
+        size,
+        item_count=1,
+        forbidden_components=frozenset({"image-frame"}),
+    )
+
+    assert layout.id == "cover.editorial"
+    assert all(slot.component != "image-frame" for slot in layout.slots)
+    with pytest.raises(ValueError, match="forbidden component"):
+        resolve_layout(
+            "cover.hero-left",
+            size,
+            item_count=1,
+            forbidden_components=frozenset({"image-frame"}),
+        )
+
+    one_image = resolve_layout(
+        "image-story",
+        size,
+        item_count=2,
+        component_limits={"image-frame": 1},
+    )
+    assert sum(slot.component == "image-frame" for slot in one_image.slots) == 1
+
+
+def test_layout_rhythm_avoids_recent_recipe_across_page_families() -> None:
+    size = SlideSize(13.333, 7.5)
+    forbidden = frozenset({"image-frame"})
+    cover = resolve_layout(
+        "cover",
+        size,
+        item_count=1,
+        forbidden_components=forbidden,
+    )
+    focal = resolve_layout(
+        "focal-statement",
+        size,
+        previous_layouts=(cover.id,),
+        item_count=1,
+        forbidden_components=forbidden,
+    )
+    closing = resolve_layout(
+        "cta",
+        size,
+        previous_layouts=(cover.id, focal.id),
+        item_count=1,
+        forbidden_components=forbidden,
+    )
+
+    assert cover.recipe_id != focal.recipe_id
+    assert closing.recipe_id not in {cover.recipe_id, focal.recipe_id}
 
 
 def test_layout_capacity_rejects_invalid_or_unserviceable_requests() -> None:

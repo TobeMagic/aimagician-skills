@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "asset-plan.v1.schema.json",
+  "title": "Window-PPTX AssetPlan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "design_pack_id", "assets"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "design_pack_id": {"type": "string"},
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "purpose", "kind", "priority", "fallback", "editable"],
+        "properties": {
+          "id": {"type": "string"},
+          "slide_id": {"type": "string"},
+          "purpose": {"type": "string"},
+          "kind": {"enum": ["photo", "illustration", "icon", "logo", "texture", "chart", "diagram"]},
+          "priority": {"type": "array", "items": {"enum": ["user", "template", "licensed", "generated", "native"]}},
+          "fallback": {"type": "string"},
+          "editable": {"type": "boolean"},
+          "status": {"enum": ["planned", "bound", "fallback", "missing"]}
+        }
+      }
+    }
+  }
+}

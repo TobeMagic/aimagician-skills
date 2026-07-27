@@ -20,6 +20,7 @@ from window_pptx.deck_plan import (  # noqa: E402
 import window_pptx_automation as automation  # noqa: E402
 from window_pptx.cli import build_dry_run_result, parse_args  # noqa: E402
 from window_pptx.layouts import SlideSize  # noqa: E402
+from window_pptx.preview_quality import inspect_render_plan_delivery  # noqa: E402
 from window_pptx.recording_com import RecordingPresentation  # noqa: E402
 from window_pptx.render_plan import (  # noqa: E402
     ChartSpec,
@@ -100,6 +101,53 @@ def advanced_deck(*, motion: str = "off") -> dict[str, object]:
     }
 
 
+def percent_chart_deck() -> dict[str, object]:
+    return {
+        "schema_version": "1.0",
+        "project": {
+            "title": "Percent chart contract",
+            "scenario": "data-analysis",
+            "audience": "executive",
+            "language": "en-US",
+        },
+        "preferences": {"density": "balanced", "motion": "off"},
+        "slides": [
+            {
+                "id": "conversion",
+                "role": "analysis",
+                "title": "Conversion trend",
+                "blocks": [
+                    {
+                        "id": "conversion-data",
+                        "kind": "trend",
+                        "chart_intent": "trend",
+                        "items": [
+                            {
+                                "category": "Q3",
+                                "series": "Conversion",
+                                "value": 81,
+                                "unit": "percent",
+                            },
+                            {
+                                "category": "Q1",
+                                "series": "Conversion",
+                                "value": 59,
+                                "unit": "percent",
+                            },
+                            {
+                                "category": "Q2",
+                                "series": "Conversion",
+                                "value": 72,
+                                "unit": "percent",
+                            },
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+
 def test_advanced_semantics_are_versioned_and_survive_compilation() -> None:
     payload = advanced_deck(motion="subtle-fade")
     schema = json.loads(
@@ -161,9 +209,11 @@ def test_render_plan_contains_exact_native_advanced_specs() -> None:
     table = next(
         item for item in plan.slides[1].objects if isinstance(item.advanced, TableSpec)
     )
-    diagram = next(
-        item for item in plan.slides[2].objects if isinstance(item.advanced, DiagramSpec)
-    )
+    diagrams = [
+        item
+        for item in plan.slides[2].objects
+        if isinstance(item.advanced, DiagramSpec)
+    ]
 
     assert chart.kind == "chart"
     assert chart.text is None
@@ -179,9 +229,13 @@ def test_render_plan_contains_exact_native_advanced_specs() -> None:
         ("Margin", "42%", "40%"),
     )
     assert table.hyperlink == "slide:process"
-    assert diagram.kind == "diagram"
-    assert diagram.advanced.diagram_type == "process"
-    assert tuple(node.label for node in diagram.advanced.nodes) == (
+    assert all(diagram.kind == "diagram" for diagram in diagrams)
+    assert all(diagram.advanced.diagram_type == "process" for diagram in diagrams)
+    assert tuple(
+        node.label
+        for diagram in diagrams
+        for node in diagram.advanced.nodes
+    ) == (
         "Discover",
         "Design",
         "Deliver",
@@ -191,6 +245,23 @@ def test_render_plan_contains_exact_native_advanced_specs() -> None:
     assert not any(
         finding.code == "DEFERRED_ADVANCED_COMPONENT" for finding in plan.findings
     )
+
+
+def test_percent_chart_spec_preserves_source_order_and_shared_unit() -> None:
+    plan = build_render_plan(
+        percent_chart_deck(),
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    )
+
+    chart = next(
+        item for item in plan.slides[0].objects if isinstance(item.advanced, ChartSpec)
+    )
+
+    assert chart.advanced.value_unit == "percent"
+    assert chart.advanced.categories == ("Q3", "Q1", "Q2")
+    assert chart.advanced.series[0].values == (81.0, 59.0, 72.0)
+    assert chart.advanced.to_dict()["value_unit"] == "percent"
 
 
 def test_public_advanced_specs_are_rederived_before_com_mutation() -> None:
@@ -254,6 +325,16 @@ def test_renderer_creates_native_chart_table_diagram_notes_links_and_opt_in_moti
     assert native_table.Table.Cell(2, 1).Shape.TextFrame.TextRange.Text == "Revenue"
     assert native_chart.ActionSettings(1).Hyperlink.Address == "https://example.test/evidence"
     assert native_table.ActionSettings(1).Hyperlink.SubAddress.startswith("258,3,")
+    diagram_group = next(
+        shape
+        for slide in presentation.Slides.items
+        for shape in slide.Shapes.items
+        if any(child.Name.endswith("__frame") for child in shape.GroupItems)
+    )
+    diagram_frame = next(
+        child for child in diagram_group.GroupItems if child.Name.endswith("__frame")
+    )
+    assert diagram_frame.Fill.Transparency == 1.0
 
 
 def test_advanced_renderer_is_deterministic() -> None:
@@ -438,16 +519,214 @@ def test_multi_node_diagram_hyperlink_is_applied_to_editable_children() -> None:
     presentation = RecordingPresentation()
     PowerPointRenderer().render(plan, presentation)
 
-    diagram_name = next(
+    diagram_names = [
         item.name for item in plan.slides[2].objects if item.kind == "diagram"
-    )
-    diagram = presentation.Slides.items[2].Shapes.Item(diagram_name)
+    ]
+    diagrams = [
+        presentation.Slides.items[2].Shapes.Item(name) for name in diagram_names
+    ]
     diagram_nodes = [
-        child for child in diagram.GroupItems if "__node_" in child.Name
+        child
+        for diagram in diagrams
+        for child in diagram.GroupItems
+        if "__node_" in child.Name
     ]
     assert len(diagram_nodes) == 3
     assert all(
         child.ActionSettings(1).Hyperlink.Address
         == "https://example.test/process"
-        for child in diagram.GroupItems
+        for child in diagram_nodes
     )
+
+
+def test_selected_chart_form_survives_public_plan_revalidation() -> None:
+    payload = advanced_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": f"composition-{index}",
+            "role": "findings",
+            "title": f"Composition {index}",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": f"composition-data-{index}",
+                    "kind": "generic",
+                    "chart_intent": "composition",
+                    "items": [
+                        {"category": "A", "value": 60},
+                        {"category": "B", "value": 40},
+                    ],
+                }
+            ],
+        }
+        for index in range(1, 4)
+    ]
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    )
+    chart_types = [
+        item.advanced.chart_type
+        for slide in plan.slides
+        for item in slide.objects
+        if isinstance(item.advanced, ChartSpec)
+    ]
+
+    assert chart_types == ["doughnut", "doughnut", "stacked-column"]
+    assert '"_selected_form":"stacked-bar"' in next(
+        item.semantic_source or ""
+        for item in plan.slides[2].objects
+        if isinstance(item.advanced, ChartSpec)
+    )
+    assert validate_render_plan(plan) is plan
+
+
+def test_long_advanced_fact_uses_focus_layout_without_engineering_copy() -> None:
+    payload = advanced_deck()
+    long_fact = (
+        "Complete the governed discovery review with accountable owners across "
+        "each business unit before the next planning decision is finalized"
+    )
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "long-process",
+            "role": "next-steps",
+            "title": "Complete the discovery review",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "long-process-data",
+                    "kind": "process",
+                    "text": long_fact,
+                }
+            ],
+        }
+    ]
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    )
+
+    assert plan.slides[0].layout_id == "process.focus"
+    assert any(
+        isinstance(item.advanced, DiagramSpec)
+        and item.advanced.nodes[0].label == long_fact
+        for item in plan.slides[0].objects
+    )
+    customer_text = " ".join(
+        item.text or "" for item in plan.slides[0].objects
+    ).casefold()
+    assert "editable" not in customer_text
+    assert "data point" not in customer_text
+    assert not any(
+        finding.severity == "hard-gate"
+        for finding in inspect_render_plan_delivery(plan)
+    )
+
+
+def test_adjacent_single_fact_process_slides_rotate_focus_compositions() -> None:
+    payload = advanced_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": f"process-{index}",
+            "role": "demonstration" if index == 1 else "practice",
+            "title": f"Process step {index}",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": f"process-data-{index}",
+                    "kind": "process",
+                    "text": (
+                        "Verify the governed incident facts before publishing "
+                        f"manager update {index}."
+                    ),
+                }
+            ],
+        }
+        for index in range(1, 4)
+    ]
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    )
+    layout_ids = [slide.layout_id for slide in plan.slides]
+
+    assert all(
+        current != previous
+        for previous, current in zip(layout_ids, layout_ids[1:])
+    )
+    assert set(layout_ids) >= {"process.focus", "process.compact"}
+    assert validate_render_plan(plan) is plan
+
+
+def test_advanced_slide_retains_every_non_basis_fact_in_native_text() -> None:
+    payload = advanced_deck()
+    supplemental_fact = "Enterprise adoption drove the quarter-over-quarter increase."
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "multi-block-trend",
+            "role": "performance",
+            "title": "Revenue accelerates",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "revenue-trend",
+                    "kind": "trend",
+                    "items": [
+                        {"category": "Q1", "series": "Revenue", "value": 12},
+                        {"category": "Q2", "series": "Revenue", "value": 18},
+                    ],
+                },
+                {
+                    "id": "revenue-driver",
+                    "kind": "statement",
+                    "text": supplemental_fact,
+                },
+            ],
+        }
+    ]
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    )
+
+    assert any(
+        isinstance(item.advanced, ChartSpec)
+        for item in plan.slides[0].objects
+    )
+    assert any(
+        supplemental_fact in item.text
+        for item in plan.slides[0].objects
+        if item.text
+    )
+    assert not any(
+        finding.severity == "hard-gate"
+        for finding in inspect_render_plan_delivery(plan)
+    )
+
+
+def test_multi_block_supplemental_hyperlink_fails_instead_of_being_dropped() -> None:
+    payload = advanced_deck()
+    payload["slides"][0]["blocks"].append(  # type: ignore[index]
+        {
+            "id": "linked-driver",
+            "kind": "statement",
+            "text": "Enterprise adoption drove the increase.",
+            "hyperlink": "https://example.test/driver",
+        }
+    )
+
+    with pytest.raises(RenderPlanError, match="supplemental hyperlinks"):
+        build_render_plan(
+            payload,
+            slide_size=SlideSize(13.333, 7.5),
+            installed_fonts={"Arial"},
+        )

@@ -109,7 +109,10 @@ describe("bootstrap package smoke", () => {
       status: "healthy",
       targets: [{ target: "claude", status: "healthy" }]
     });
-  }, 60000);
+  // The smoke test performs a full dry-run pack of every shipped skill before
+  // bootstrap and doctor. Keep a functional timeout while allowing the
+  // multi-thousand-file package to complete on slower mounted workspaces.
+  }, 120_000);
 
   it("runs the compiled bootstrap CLI with plugin installs and skip reporting", async () => {
     const workspaceRoot = await mkdtemp(join(tmpdir(), "aimagician-plugin-smoke-"));

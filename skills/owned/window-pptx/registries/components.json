@@ -17,6 +17,8 @@
     {"id": "recommendation-panel", "object_policy": "native_editable", "min_font_pt": 14, "max_items": 5},
     {"id": "footer", "object_policy": "native_editable", "min_font_pt": 11, "max_items": 3},
     {"id": "decoration", "object_policy": "native_editable", "min_font_pt": 11, "max_items": 3},
+    {"id": "accent", "object_policy": "native_editable", "min_font_pt": 11, "max_items": 3},
+    {"id": "statement", "object_policy": "native_editable", "min_font_pt": 18, "max_items": 1},
     {"id": "quote", "object_policy": "native_editable", "min_font_pt": 20, "max_items": 1},
     {"id": "team-member", "object_policy": "native_editable", "min_font_pt": 14, "max_items": 6},
     {"id": "cta", "object_policy": "native_editable", "min_font_pt": 18, "max_items": 3}

@@ -24,10 +24,16 @@ from window_pptx.quality import (  # noqa: E402
     repair_quality,
     write_quality_artifacts,
 )
+from window_pptx.quality_v2 import (  # noqa: E402
+    QualityFindingV2,
+    QualityV2GateError,
+    adapt_legacy_quality_report,
+)
 from window_pptx.recording_com import RecordingPresentation  # noqa: E402
 from window_pptx.render_plan import build_render_plan  # noqa: E402
 from window_pptx.renderer import PowerPointRenderer  # noqa: E402
 from window_pptx.runner import run_render_pipeline  # noqa: E402
+from window_pptx.transaction import TransactionError  # noqa: E402
 
 
 def quality_deck(*, repeated: bool = False) -> dict[str, object]:
@@ -312,7 +318,7 @@ def test_transaction_finalization_enforces_package_and_source_hard_gates() -> No
     )
     assert failed.passed is False
 
-    valid = CandidateResult(
+    unvalidated_reopen = CandidateResult(
         output_path=Path("final.pptx"),
         promoted=True,
         candidate_path=None,
@@ -327,10 +333,55 @@ def test_transaction_finalization_enforces_package_and_source_hard_gates() -> No
         ),
         cleanup_errors=(),
     )
+    reopen_failed = finalize_quality_report(
+        preliminary, unvalidated_reopen, policy, export_pdf=False
+    )
+    assert "PACKAGE_VALIDATION_MISSING" in reopen_failed.hard_gate_failures
+
+    valid = CandidateResult(
+        output_path=Path("final.pptx"),
+        promoted=True,
+        candidate_path=None,
+        source_hash_before="same",
+        source_hash_after="same",
+        validation_steps=(
+            "save-copy",
+            "ooxml-package",
+            "macro-disabled-reopen",
+            "reopened-content-validation",
+            "validation-copy-closed",
+            "atomic-promote",
+        ),
+        cleanup_errors=(),
+    )
     passed = finalize_quality_report(preliminary, valid, policy, export_pdf=False)
     assert passed.hard_gate_failures == ()
     assert passed.passed is True
     assert next(item for item in passed.layers if item.layer == "package").status == "pass"
+
+
+def test_quality_v2_adapter_preserves_editability_and_preview_taxonomy() -> None:
+    repeated_plan, repeated_presentation, repeated_render = render_quality_deck(
+        repeated=True
+    )
+    repeated_report = inspect_quality(
+        repeated_plan, repeated_render, repeated_presentation
+    )
+    repeated_v2 = adapt_legacy_quality_report(repeated_report)
+    assert next(
+        item for item in repeated_v2 if item.code == "DECK_FAMILY_REPETITION"
+    ).namespace == "preview"
+
+    plan, presentation, render_report = render_quality_deck()
+    chart_item = next(item for item in plan.slides[0].objects if item.kind == "chart")
+    chart_shape = presentation.Slides.items[0].Shapes.Item(chart_item.name)
+    chart_shape.Chart.spec = None
+    chart_shape.Chart.SeriesCollection = lambda: type("Series", (), {"Count": 99})()
+    chart_report = inspect_quality(plan, render_report, presentation)
+    chart_v2 = adapt_legacy_quality_report(chart_report)
+    assert next(
+        item for item in chart_v2 if item.code == "CHART_DATA_MISMATCH"
+    ).namespace == "editability"
 
 
 def test_default_runner_serializes_quality_report_and_repair_log() -> None:
@@ -373,6 +424,51 @@ def test_default_runner_serializes_quality_report_and_repair_log() -> None:
     assert payload["inspection"]["transaction_status"] == "skipped"
 
 
+def test_runner_records_post_render_repair_with_real_v2_defect_vectors() -> None:
+    class DriftingRenderer(PowerPointRenderer):
+        def render(self, plan: object, presentation: object) -> object:
+            report = super().render(plan, presentation)  # type: ignore[arg-type]
+            first = plan.slides[0].objects[0]  # type: ignore[union-attr]
+            presentation.Slides.items[0].Shapes.Item(first.name).Left += 12  # type: ignore[union-attr]
+            return report
+
+    def saver(
+        current: object,
+        app: object,
+        policy: OutputPolicy,
+        **kwargs: object,
+    ) -> CandidateResult:
+        return CandidateResult(
+            output_path=policy.output_path or Path(),
+            promoted=False,
+            candidate_path=None,
+            source_hash_before=None,
+            source_hash_after=None,
+            validation_steps=(),
+            cleanup_errors=(),
+        )
+
+    result = run_render_pipeline(
+        quality_deck(),
+        presentation=RecordingPresentation(),
+        app=object(),
+        output_policy=OutputPolicy(None, None, no_output_deck=True),
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        renderer=DriftingRenderer(),
+        saver=saver,
+    )
+
+    assert len(result.post_render_repair_passes) == 1
+    repair_pass = result.post_render_repair_passes[0]
+    assert repair_pass.stage == "post-render"
+    assert repair_pass.accepted is True
+    assert repair_pass.after_vector < repair_pass.before_vector
+    assert result.to_dict()["post_render_repair_passes"][0]["before_vector"] == list(
+        repair_pass.before_vector
+    )
+
+
 def test_chart_table_and_diagram_data_fidelity_are_hard_gates() -> None:
     payload = quality_deck()
     payload["slides"].append(  # type: ignore[union-attr]
@@ -410,7 +506,7 @@ def test_chart_table_and_diagram_data_fidelity_are_hard_gates() -> None:
     )
     diagram_shape = presentation.Slides.items[1].Shapes.Item(diagram_item.name)
     diagram_shape.GroupItems = tuple(
-        child for child in diagram_shape.GroupItems if "__node_03" not in child.Name
+        child for child in diagram_shape.GroupItems if "__node_01" not in child.Name
     )
 
     table_item = next(item for item in plan.slides[2].objects if item.kind == "table")
@@ -571,6 +667,206 @@ def test_default_runner_blocks_hard_gates_before_saver(tmp_path: Path) -> None:
     assert json.loads(
         Path(captured.value.artifacts["quality_report"]).read_text(encoding="utf-8")
     )["passed"] is False
+
+
+def test_brief_quality_v2_missing_preview_blocks_saver_and_persists_evidence(
+    tmp_path: Path,
+) -> None:
+    saves: list[str] = []
+
+    def saver(*args: object, **kwargs: object) -> CandidateResult:
+        saves.append("save")
+        raise AssertionError("v2 hard-gate candidate must not reach saver")
+
+    with pytest.raises(QualityV2GateError) as captured:
+        run_render_pipeline(
+            quality_deck(),
+            presentation=RecordingPresentation(),
+            app=object(),
+            output_policy=OutputPolicy(
+                source_path=None,
+                output_path=None,
+                no_output_deck=True,
+            ),
+            slide_size=SlideSize(13.333, 7.5),
+            installed_fonts={"Arial"},
+            saver=saver,
+            audit_dir=tmp_path / "audits",
+            quality_v2_findings=(),
+            preview_exporter=lambda presentation: {"files": []},
+            quality_v2_slide_ids=("trend", "process"),
+        )
+
+    assert saves == []
+    assert "PREVIEW_EXPORT_MISSING" in (
+        captured.value.quality_report_v2.hard_gate_failures
+    )
+    artifact = Path(captured.value.artifacts["quality_report_v2"])
+    assert artifact.is_file()
+    persisted = json.loads(artifact.read_text(encoding="utf-8"))
+    assert persisted == captured.value.quality_report_v2.to_dict()
+    assert not list(artifact.parent.glob("*.tmp"))
+
+
+def test_brief_quality_v2_runs_before_save_and_is_exposed(
+    tmp_path: Path,
+) -> None:
+    image_module = pytest.importorskip("PIL.Image")
+    preview_paths = (tmp_path / "one.png", tmp_path / "two.png")
+    first_preview = image_module.new("RGB", (320, 180), "white")
+    first_preview.paste("black", (40, 40, 160, 90))
+    first_preview.save(preview_paths[0])
+    second_preview = image_module.new("RGB", (320, 180), "navy")
+    second_preview.paste("white", (160, 90, 280, 140))
+    second_preview.save(preview_paths[1])
+    events: list[str] = []
+    audit_dir = tmp_path / "audits"
+
+    def export_previews(presentation: object) -> dict[str, object]:
+        events.append("preview")
+        return {"files": [str(path) for path in preview_paths]}
+
+    def saver(
+        presentation: object,
+        app: object,
+        policy: OutputPolicy,
+        **kwargs: object,
+    ) -> CandidateResult:
+        events.append("save")
+        assert (audit_dir / "quality-report.v2.json").is_file()
+        return CandidateResult(
+            output_path=policy.output_path or Path(),
+            promoted=False,
+            candidate_path=None,
+            source_hash_before=None,
+            source_hash_after=None,
+            validation_steps=(),
+            cleanup_errors=(),
+        )
+
+    result = run_render_pipeline(
+        quality_deck(),
+        presentation=RecordingPresentation(),
+        app=object(),
+        output_policy=OutputPolicy(
+            source_path=None,
+            output_path=None,
+            no_output_deck=True,
+        ),
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        saver=saver,
+        audit_dir=audit_dir,
+        quality_v2_findings=(
+            QualityFindingV2(
+                "narrative",
+                "FACT_COVERAGE_OK",
+                "info",
+                None,
+                None,
+                "all facts retained",
+            ),
+        ),
+        preview_exporter=export_previews,
+        quality_v2_slide_ids=("trend", "process"),
+    )
+
+    assert events == ["preview", "save"]
+    assert result.quality_report_v2 is not None
+    assert result.quality_report_v2.passed is True
+    assert result.quality_report_v2.transaction_status == "transaction-skipped"
+    assert result.stages.index("quality-v2-gate") < result.stages.index(
+        "transactional-save"
+    )
+    assert result.to_dict()["quality_report_v2"] == (
+        result.quality_report_v2.to_dict()
+    )
+
+
+def test_quality_v2_persists_transaction_failure_as_package_hard_gate(
+    tmp_path: Path,
+) -> None:
+    image_module = pytest.importorskip("PIL.Image")
+    preview_paths = (tmp_path / "one.png", tmp_path / "two.png")
+    first_preview = image_module.new("RGB", (320, 180), "white")
+    first_preview.paste("black", (40, 40, 160, 90))
+    first_preview.save(preview_paths[0])
+    second_preview = image_module.new("RGB", (320, 180), "navy")
+    second_preview.paste("white", (160, 90, 280, 140))
+    second_preview.save(preview_paths[1])
+    audit_dir = tmp_path / "audits"
+
+    def saver(*args: object, **kwargs: object) -> CandidateResult:
+        raise TransactionError("candidate promotion failed")
+
+    with pytest.raises(TransactionError, match="promotion failed"):
+        run_render_pipeline(
+            quality_deck(),
+            presentation=RecordingPresentation(),
+            app=object(),
+            output_policy=OutputPolicy(None, tmp_path / "final.pptx"),
+            slide_size=SlideSize(13.333, 7.5),
+            installed_fonts={"Arial"},
+            saver=saver,
+            audit_dir=audit_dir,
+            quality_v2_findings=(),
+            preview_exporter=lambda presentation: {
+                "files": [str(path) for path in preview_paths]
+            },
+            quality_v2_slide_ids=("trend", "process"),
+        )
+
+    persisted = json.loads(
+        (audit_dir / "quality-report.v2.json").read_text(encoding="utf-8")
+    )
+    assert persisted["transaction_status"] == "transaction-failed"
+    assert "TRANSACTION_FAILED" in persisted["hard_gate_failures"]
+
+
+def test_custom_transaction_must_invoke_governed_reopened_validator(
+    tmp_path: Path,
+) -> None:
+    all_steps = (
+        "save-copy",
+        "ooxml-package",
+        "macro-disabled-reopen",
+        "reopened-content-validation",
+        "validation-copy-closed",
+        "atomic-promote",
+    )
+
+    def saver(
+        current: object,
+        app: object,
+        policy: OutputPolicy,
+        **kwargs: object,
+    ) -> CandidateResult:
+        assert callable(kwargs.get("candidate_validator"))
+        # Deliberately self-attest without invoking the callback. The runner
+        # must remove evidence it did not observe and fail the package gate.
+        return CandidateResult(
+            output_path=policy.output_path or Path(),
+            promoted=True,
+            candidate_path=None,
+            source_hash_before=None,
+            source_hash_after=None,
+            validation_steps=all_steps,
+            cleanup_errors=(),
+        )
+
+    with pytest.raises(
+        quality_module.QualityGateError, match="PACKAGE_VALIDATION_MISSING"
+    ):
+        run_render_pipeline(
+            quality_deck(),
+            presentation=RecordingPresentation(),
+            app=object(),
+            output_policy=OutputPolicy(None, tmp_path / "final.pptx"),
+            slide_size=SlideSize(13.333, 7.5),
+            installed_fonts={"Arial"},
+            saver=saver,
+            audit_dir=tmp_path / "audits",
+        )
 
 
 def test_default_runner_blocks_failed_transaction_evidence_after_save(

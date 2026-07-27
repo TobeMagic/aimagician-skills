@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "id": "institutional-annual-editorial",
+  "name": "Institutional Annual Editorial",
+  "runtime_theme_id": "public-enterprise",
+  "scenarios": ["business-report", "annual-review", "strategy-planning", "operations-review", "project-kickoff", "brand-introduction"],
+  "theme": {
+    "mode": "mixed",
+    "primary": "26594F",
+    "accent": "D6B678",
+    "background": "F3F0E8",
+    "heading_font": ["Source Han Serif SC", "Noto Serif CJK SC", "Microsoft YaHei"],
+    "body_font": ["Source Han Sans SC", "Noto Sans CJK SC", "Microsoft YaHei"]
+  },
+  "page_families": ["cover", "contents", "section", "executive-summary", "big-number", "kpi-towers", "chart-story", "comparison", "card-grid", "org-map", "team-orbit", "roadmap", "risk-actions", "summary", "closing"],
+  "pacing": {
+    "max_same_family_run": 2,
+    "hero_interval": 4,
+    "density_pattern": ["sparse", "balanced", "dense", "balanced"]
+  },
+  "asset_strategy": {
+    "priority": ["user", "template", "licensed", "generated", "native"],
+    "required_for": ["cover", "section", "team-orbit", "roadmap"]
+  },
+  "safe_fallback": {
+    "family": "editorial-statement-with-kpi-rail",
+    "max_body_chars": 180,
+    "max_items": 5
+  },
+  "template_pack": "institutional-work-summary-v1"
+}

@@ -1,0 +1,237 @@
+from __future__ import annotations
+
+import hashlib
+import io
+import json
+import sys
+import zipfile
+from pathlib import Path
+
+import pytest
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SCRIPTS_ROOT = SKILL_ROOT / "scripts"
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+
+from window_pptx.template_pack import (  # noqa: E402
+    TemplatePackError,
+    adapt_template_pack,
+    load_template_bindings,
+    load_template_pack,
+)
+from window_pptx.cli import build_dry_run_result, parse_args  # noqa: E402
+
+
+def _sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _entry_hashes(path: Path) -> dict[str, str]:
+    with zipfile.ZipFile(path) as archive:
+        return {
+            name: hashlib.sha256(archive.read(name)).hexdigest()
+            for name in archive.namelist()
+        }
+
+
+def test_reference_template_pack_is_authorized_hash_bound_and_complete() -> None:
+    pack = load_template_pack("institutional-work-summary-v1")
+
+    assert pack.slide_count == 15
+    assert pack.template_path.name == "template.pptx"
+    assert pack.template_sha256 == _sha(pack.template_path)
+    assert len(pack.slots) == 220
+    assert len(pack.chart_slots) == 36
+    assert len(pack.slots_by_id) == 256
+    assert len(pack.chart_slots) == 36
+    assert len(pack.slots_by_id) == len(pack.slots) + len(pack.chart_slots)
+    assert {slot.slide for slot in pack.slots} == set(range(1, 16))
+
+
+def test_no_op_adaptation_is_byte_identical(tmp_path: Path) -> None:
+    pack = load_template_pack("institutional-work-summary-v1")
+    output = tmp_path / "noop.pptx"
+
+    report = adapt_template_pack(
+        pack,
+        {},
+        output,
+        require_all_required=False,
+    )
+
+    assert output.read_bytes() == pack.template_path.read_bytes()
+    assert report.no_op_copy is True
+    assert report.changed_parts == ()
+    assert report.output_sha256 == report.source_sha256
+    assert report.source_integrity_preserved is True
+
+
+def test_partial_adaptation_changes_only_declared_slide_part(tmp_path: Path) -> None:
+    pack = load_template_pack("institutional-work-summary-v1")
+    output = tmp_path / "adapted.pptx"
+    source_before = _sha(pack.template_path)
+
+    report = adapt_template_pack(
+        pack,
+        {"s01.presenter": "汇报人：普通模型"},
+        output,
+        require_all_required=False,
+    )
+
+    assert report.changed_parts == ("ppt/slides/slide1.xml",)
+    assert report.source_integrity_preserved is True
+    assert _sha(pack.template_path) == source_before
+    source_entries = _entry_hashes(pack.template_path)
+    output_entries = _entry_hashes(output)
+    assert source_entries.keys() == output_entries.keys()
+    assert {
+        name
+        for name in source_entries
+        if source_entries[name] != output_entries[name]
+    } == {"ppt/slides/slide1.xml"}
+    with zipfile.ZipFile(output) as archive:
+        slide_xml = archive.read("ppt/slides/slide1.xml").decode("utf-8")
+    assert "汇报人：普通模型" in slide_xml
+    assert "ppt/media/" in "\n".join(output_entries)
+
+
+def test_display_title_style_rule_clamps_missing_font_risk(tmp_path: Path) -> None:
+    pack = load_template_pack("institutional-work-summary-v1")
+    output = tmp_path / "portable-title.pptx"
+
+    adapt_template_pack(
+        pack,
+        {"s01.title.1": "技"},
+        output,
+        require_all_required=False,
+    )
+
+    with zipfile.ZipFile(output) as archive:
+        slide_xml = archive.read("ppt/slides/slide1.xml").decode("utf-8")
+    assert 'sz="9200"' in slide_xml
+    assert 'typeface="Microsoft YaHei"' in slide_xml
+    assert 'typeface="演示夏行楷"' in slide_xml
+
+
+def test_full_work_summary_bindings_adapt_all_fifteen_slides(tmp_path: Path) -> None:
+    binding_path = SKILL_ROOT / "evals" / "v5.1-work-summary-bindings.json"
+    pack_id, bindings = load_template_bindings(binding_path)
+    output = tmp_path / "reference-grade-work-summary.pptx"
+
+    report = adapt_template_pack(pack_id, bindings, output)
+
+    assert report.slide_count == 15
+    assert set(report.changed_parts) == {
+        *(f"ppt/slides/slide{index}.xml" for index in range(1, 16)),
+        *(f"ppt/charts/chart{index}.xml" for index in range(1, 5)),
+        "ppt/embeddings/Microsoft_Excel_Worksheet.xlsx",
+        "ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx",
+        "ppt/embeddings/Microsoft_Excel_Worksheet2.xlsx",
+        "ppt/embeddings/Microsoft_Excel_Worksheet3.xlsx",
+    }
+    assert len(report.slot_changes) == len(bindings)
+    with zipfile.ZipFile(output) as archive:
+        combined = "\n".join(
+            archive.read(f"ppt/slides/slide{index}.xml").decode("utf-8")
+            for index in range(1, 16)
+        )
+        names = set(archive.namelist())
+        chart3 = archive.read("ppt/charts/chart3.xml").decode("utf-8")
+        embedded = archive.read(
+            "ppt/embeddings/Microsoft_Excel_Worksheet2.xlsx"
+        )
+    assert "Window-PPTX" in combined
+    assert "客户交付为唯一视觉标准" in combined
+    assert "ppt/charts/chart1.xml" in names
+    assert "ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx" in names
+    assert any(name.startswith("ppt/media/") for name in names)
+    assert "结构检查" in chart3
+    with zipfile.ZipFile(io.BytesIO(embedded)) as workbook:
+        shared_strings = workbook.read("xl/sharedStrings.xml").decode("utf-8")
+    assert "结构检查" in shared_strings
+
+
+def test_adapter_rejects_unknown_over_capacity_missing_and_source_overwrite(
+    tmp_path: Path,
+) -> None:
+    pack = load_template_pack("institutional-work-summary-v1")
+
+    with pytest.raises(TemplatePackError, match="unknown TemplatePack slots"):
+        adapt_template_pack(
+            pack,
+            {"not-a-slot": "x"},
+            tmp_path / "unknown.pptx",
+            require_all_required=False,
+        )
+    with pytest.raises(TemplatePackError, match="capacity is 1"):
+        adapt_template_pack(
+            pack,
+            {"s01.title.1": "超过"},
+            tmp_path / "capacity.pptx",
+            require_all_required=False,
+        )
+    with pytest.raises(TemplatePackError, match="missing required"):
+        adapt_template_pack(pack, {"s01.year": "2026年"}, tmp_path / "missing.pptx")
+    with pytest.raises(TemplatePackError, match="must not overwrite"):
+        adapt_template_pack(
+            pack,
+            {},
+            pack.template_path,
+            require_all_required=False,
+        )
+
+
+def test_v51_contract_schemas_accept_owned_pack_manifests() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    design_schema = json.loads(
+        (SKILL_ROOT / "schemas" / "design-pack.v1.schema.json").read_text()
+    )
+    template_schema = json.loads(
+        (SKILL_ROOT / "schemas" / "template-pack.v1.schema.json").read_text()
+    )
+    for manifest in (SKILL_ROOT / "design-packs").glob("*/pack.json"):
+        jsonschema.Draft202012Validator(design_schema).validate(
+            json.loads(manifest.read_text(encoding="utf-8"))
+        )
+    jsonschema.Draft202012Validator(template_schema).validate(
+        json.loads(
+            (
+                SKILL_ROOT
+                / "design-packs"
+                / "institutional-annual-editorial"
+                / "template-pack.json"
+            ).read_text(encoding="utf-8")
+        )
+    )
+
+
+def test_template_pack_cli_is_portable_and_reports_all_dry_run_outputs(
+    tmp_path: Path,
+) -> None:
+    args = parse_args(
+        [
+            "--project-dir",
+            str(tmp_path),
+            "--render-template-pack",
+            "--template-pack",
+            "institutional-work-summary-v1",
+            "--template-bindings",
+            str(SKILL_ROOT / "evals" / "v5.1-work-summary-bindings.json"),
+            "--output",
+            "output/work-summary.pptx",
+            "--dry-run",
+        ]
+    )
+
+    assert args.backend == "auto"
+    assert args.verification == "portable"
+    result = build_dry_run_result(args, tmp_path)
+    assert result["would_run"] == ["render_template_pack"]
+    assert str(tmp_path / "output" / "work-summary.pptx") in result["would_write"]
+    assert any(
+        value.endswith("template-adaptation-report.json")
+        for value in result["would_write"]
+    )

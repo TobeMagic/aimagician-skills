@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimagician.local/window-pptx/benchmark-protocol.v1.schema.json",
+  "title": "Window-PPTX Benchmark Protocol v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "benchmark_id", "seed", "repeats", "models", "arms", "metric_weights", "thresholds", "blind_review_rubric"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "benchmark_id": {"type": "string", "minLength": 1},
+    "seed": {"type": "integer", "minimum": 0},
+    "repeats": {"const": 2},
+    "models": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label", "ordinary"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "label": {"type": "string", "pattern": "^ordinary-[a-z0-9-]+$"},
+          "ordinary": {"const": true}
+        }
+      }
+    },
+    "arms": {
+      "type": "array",
+      "prefixItems": [
+        {"$ref": "#/$defs/armUnassisted"},
+        {"$ref": "#/$defs/armGoverned"},
+        {"$ref": "#/$defs/armFull"}
+      ],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "metric_weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["response_json_valid", "deck_plan_valid", "fact_retention", "prohibited_claim_safety", "numeric_claim_safety", "compile_success", "archetype_match", "slide_count_fit", "semantic_form_coverage", "rhythm_compliance", "native_editable_coverage", "hard_gate_pass"],
+      "properties": {
+        "response_json_valid": {"$ref": "#/$defs/weight"},
+        "deck_plan_valid": {"$ref": "#/$defs/weight"},
+        "fact_retention": {"$ref": "#/$defs/weight"},
+        "prohibited_claim_safety": {"$ref": "#/$defs/weight"},
+        "numeric_claim_safety": {"$ref": "#/$defs/weight"},
+        "compile_success": {"$ref": "#/$defs/weight"},
+        "archetype_match": {"$ref": "#/$defs/weight"},
+        "slide_count_fit": {"$ref": "#/$defs/weight"},
+        "semantic_form_coverage": {"$ref": "#/$defs/weight"},
+        "rhythm_compliance": {"$ref": "#/$defs/weight"},
+        "native_editable_coverage": {"$ref": "#/$defs/weight"},
+        "hard_gate_pass": {"$ref": "#/$defs/weight"}
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["full_v5_plan_validity", "full_v5_compile_success", "full_v5_hard_gate_pass", "full_v5_fact_retention", "prohibited_numeric_inventions", "delta_vs_unassisted_points", "delta_vs_governed_plan_points", "human_delivery_mean", "human_delta_vs_unassisted", "human_repeat_stddev_max", "artifact_hash_coverage"],
+      "properties": {
+        "full_v5_plan_validity": {"type": "number", "minimum": 0, "maximum": 1},
+        "full_v5_compile_success": {"type": "number", "minimum": 0, "maximum": 1},
+        "full_v5_hard_gate_pass": {"type": "number", "minimum": 0, "maximum": 1},
+        "full_v5_fact_retention": {"type": "number", "minimum": 0, "maximum": 1},
+        "prohibited_numeric_inventions": {"const": 0.0},
+        "delta_vs_unassisted_points": {"type": "number", "minimum": 0},
+        "delta_vs_governed_plan_points": {"type": "number", "minimum": 0},
+        "human_delivery_mean": {"type": "number", "minimum": 1, "maximum": 5},
+        "human_delta_vs_unassisted": {"type": "number", "minimum": 0},
+        "human_repeat_stddev_max": {"type": "number", "minimum": 0},
+        "artifact_hash_coverage": {"const": 1.0}
+      }
+    },
+    "blind_review_rubric": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}
+    }
+  },
+  "$defs": {
+    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+    "armBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "pipeline", "prompt_contract"],
+      "properties": {
+        "id": {"type": "string"},
+        "pipeline": {"type": "string"},
+        "prompt_contract": {"type": "string", "minLength": 40}
+      }
+    },
+    "armUnassisted": {
+      "allOf": [
+        {"$ref": "#/$defs/armBase"},
+        {"type": "object", "properties": {"id": {"const": "unassisted-json"}, "pipeline": {"const": "response-only"}}}
+      ]
+    },
+    "armGoverned": {
+      "allOf": [
+        {"$ref": "#/$defs/armBase"},
+        {"type": "object", "properties": {"id": {"const": "governed-plan"}, "pipeline": {"const": "deckplan-compile"}}}
+      ]
+    },
+    "armFull": {
+      "allOf": [
+        {"$ref": "#/$defs/armBase"},
+        {"type": "object", "properties": {"id": {"const": "full-v5"}, "pipeline": {"const": "factstore-brief-narrative-direction-compile-render-qa-repair"}}}
+      ]
+    }
+  }
+}

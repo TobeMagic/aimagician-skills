@@ -84,7 +84,11 @@ def _split_text(text: str, limit: int) -> tuple[str, ...]:
 
 
 def _split_item_groups(
-    items: tuple[object, ...], count_limit: int, unit_limit: int
+    items: tuple[object, ...],
+    count_limit: int,
+    unit_limit: int,
+    *,
+    minimum_last_items: int = 1,
 ) -> tuple[tuple[object, ...], ...]:
     if not items:
         return ()
@@ -105,21 +109,57 @@ def _split_item_groups(
         units += item_units
     if current:
         groups.append(tuple(current))
+    if len(groups) > 1 and len(groups[-1]) < minimum_last_items:
+        mutable = [list(group) for group in groups]
+        while (
+            len(mutable[-1]) < minimum_last_items
+            and len(mutable[-2]) > minimum_last_items
+        ):
+            candidate = mutable[-2][-1]
+            if (
+                len(mutable[-1]) >= count_limit
+                or sum(_item_units(item) for item in mutable[-1])
+                + _item_units(candidate)
+                > unit_limit
+            ):
+                break
+            mutable[-2].pop()
+            mutable[-1].insert(0, candidate)
+        groups = [tuple(group) for group in mutable]
     return tuple(groups)
 
 
-def _split_block(block: ContentBlock, density: str) -> tuple[ContentBlock, ...]:
+def _split_block(
+    block: ContentBlock,
+    density: str,
+    *,
+    item_limit_override: int | None = None,
+    minimum_last_items: int = 1,
+) -> tuple[ContentBlock, ...]:
     unit_limit = DENSITY_UNIT_LIMIT[density]
     count_limit = min(
         unit_limit,
-        max(1, ITEM_LIMITS[block.kind] + DENSITY_ITEM_ADJUSTMENT[density]),
+        max(
+            1,
+            (
+                item_limit_override
+                if item_limit_override is not None
+                else ITEM_LIMITS[block.kind]
+            )
+            + DENSITY_ITEM_ADJUSTMENT[density],
+        ),
     )
     text_chunks = (
         _split_text(block.text, DENSITY_TEXT_LIMIT[density])
         if block.text
         else ()
     )
-    item_groups = _split_item_groups(block.items, count_limit, unit_limit)
+    item_groups = _split_item_groups(
+        block.items,
+        count_limit,
+        unit_limit,
+        minimum_last_items=minimum_last_items,
+    )
     if (
         len(text_chunks) <= 1
         and len(item_groups) <= 1
@@ -182,7 +222,27 @@ def split_slide(
     if density not in DENSITY_ITEM_ADJUSTMENT:
         raise ValueError(f"unregistered density: {density}")
     unit_limit = DENSITY_UNIT_LIMIT[density]
-    split_blocks = [_split_block(block, density) for block in slide.blocks]
+    # Structural navigation is a special governed content type: a short fifth
+    # or sixth section must not become an orphaned ``Agenda · continued`` page.
+    # The agenda family has dedicated five-card and top-band compositions, so
+    # keep up to the density unit limit together and let layout resolution pick
+    # the exact-capacity variant.  Ordinary bullet slides retain the stricter
+    # four-item readability rule.
+    split_blocks = [
+        _split_block(
+            block,
+            density,
+            item_limit_override=(
+                DENSITY_UNIT_LIMIT[density]
+                if slide.role == "agenda" and block.kind == "bullets"
+                else None
+            ),
+            minimum_last_items=(
+                3 if slide.role == "agenda" and block.kind == "bullets" else 1
+            ),
+        )
+        for block in slide.blocks
+    ]
     had_oversized_block = any(len(parts) > 1 for parts in split_blocks)
     if had_oversized_block:
         pages = [(part,) for parts in split_blocks for part in parts]

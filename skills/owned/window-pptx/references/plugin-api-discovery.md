@@ -63,7 +63,7 @@ On an earlier interactive test machine (historical evidence, not produced by the
 - iSlide appeared as `iSlideTools.Public`, direct dispatch succeeded, and `COMAddIn.Object` existed. Its visible type info exposed `_IDTExtensibility2` lifecycle methods only.
 - OKPlus appeared as connected `Slibe.OKPlus`, but direct dispatch failed and `COMAddIn.Object` was `None`. Registry showed a VSTO manifest path.
 
-Practical result: native PowerPoint COM remained the correct execution path for deck generation, animation, transition, text, shape, image, and export operations.
+Historical practical result: native PowerPoint COM was the usable path for plugin-bound operations on that machine. The current core generation path is the governed portable backend; COM remains explicit for animation, physical template/source import, macro/template formats, native grouping, plugin-bound behavior, or optional PowerPoint certification.
 
 ## Safety Rules
 
@@ -71,4 +71,4 @@ Practical result: native PowerPoint COM remained the correct execution path for 
 - Do not start PowerPoint or dispatch add-in classes for routine inventory.
 - Do not press Ribbon buttons through UI automation unless explicitly requested as a last resort.
 - Do not enable/disable add-ins unless the user asks and the run plan records it.
-- Do not depend on plugin behavior for the core output when native COM can produce the result.
+- Do not depend on plugin behavior for the core output. Prefer governed portable primitives; use explicit COM only when capability negotiation proves the requested result is not portable.

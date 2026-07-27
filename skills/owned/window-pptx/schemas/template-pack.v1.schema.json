@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "template-pack.v1.schema.json",
+  "title": "Window-PPTX TemplatePack v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "template_path",
+    "template_sha256",
+    "authorization",
+    "slide_count",
+    "slots"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]+$"},
+    "name": {"type": "string", "minLength": 1},
+    "template_path": {"type": "string", "pattern": "\\.pptx$"},
+    "template_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "scope", "recorded_at"],
+      "properties": {
+        "status": {"const": "user-authorized"},
+        "scope": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "recorded_at": {"type": "string", "format": "date"}
+      }
+    },
+    "slide_count": {"type": "integer", "minimum": 1},
+    "supported_scenarios": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "slots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/slot"}
+    },
+    "chart_slots": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/chart_slot"}
+    },
+    "text_style_rules": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/text_style_rule"}
+    }
+  },
+  "$defs": {
+    "text_style_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "slide_numbers", "kinds"],
+      "anyOf": [
+        {"required": ["font_face"]},
+        {"required": ["maximum_font_size_pt"]}
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+        "slide_numbers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "integer", "minimum": 1}
+        },
+        "kinds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["text", "number", "label", "title", "body"]}
+        },
+        "max_chars_lte": {"type": "integer", "minimum": 1},
+        "font_face": {"type": "string", "minLength": 1},
+        "maximum_font_size_pt": {
+          "type": "number",
+          "minimum": 6,
+          "maximum": 240
+        }
+      }
+    },
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "slide", "shape_id", "kind", "max_chars", "required"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+        "slide": {"type": "integer", "minimum": 1},
+        "shape_id": {"type": "integer", "minimum": 1},
+        "kind": {"enum": ["text", "number", "label", "title", "body"]},
+        "max_chars": {"type": "integer", "minimum": 1},
+        "required": {"type": "boolean"},
+        "original_text_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "description": {"type": "string"}
+      }
+    },
+    "chart_slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "chart_part",
+        "cache_index",
+        "kind",
+        "max_chars",
+        "required",
+        "workbook_path"
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+        "chart_part": {"type": "string", "pattern": "^ppt/charts/chart[0-9]+\\.xml$"},
+        "cache_index": {"type": "integer", "minimum": 0},
+        "kind": {"enum": ["chart-text", "chart-number"]},
+        "max_chars": {"type": "integer", "minimum": 1},
+        "required": {"type": "boolean"},
+        "workbook_path": {"type": "string", "pattern": "^ppt/embeddings/.+\\.xlsx$"},
+        "workbook_shared_string_index": {"type": "integer", "minimum": 0},
+        "workbook_cell": {"type": "string", "pattern": "^[A-Z]+[1-9][0-9]*$"}
+      },
+      "oneOf": [
+        {"required": ["workbook_shared_string_index"]},
+        {"required": ["workbook_cell"]}
+      ]
+    }
+  }
+}

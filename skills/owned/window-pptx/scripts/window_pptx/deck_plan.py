@@ -662,7 +662,7 @@ def _dominant_semantic_block(
 ) -> tuple[ContentBlock, str, int]:
     ranked: list[tuple[int, int, int, ContentBlock, str]] = []
     for index, block in enumerate(slide.blocks):
-        semantic_type = block.chart_intent or block.kind
+        semantic_type = _block_semantic_type(block)
         priority = (
             200
             if block.chart_intent is not None
@@ -676,7 +676,18 @@ def _dominant_semantic_block(
     return block, semantic_type, -negative_index
 
 
-def compile_deck_plan(payload: Any) -> dict[str, Any]:
+def _block_semantic_type(block: ContentBlock) -> str:
+    if block.kind == "comparison" and block.chart_intent == "comparison":
+        return "categorical-comparison"
+    return block.chart_intent or block.kind
+
+
+def compile_deck_plan(
+    payload: Any,
+    *,
+    preferred_families: tuple[str, ...] = (),
+    visual_family_by_slide: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
     """Compile validated semantic intent into deterministic, design-neutral slides."""
 
     from .capacity import split_slide
@@ -686,18 +697,40 @@ def compile_deck_plan(payload: Any) -> dict[str, Any]:
         _deck_plan_payload(payload) if isinstance(payload, DeckPlan) else payload
     )
     archetype = resolve_archetype(plan.project.scenario)
+    governed_visual_families = dict(visual_family_by_slide or {})
+    slide_ids = {slide.id for slide in plan.slides}
+    unknown_visual_slides = sorted(set(governed_visual_families) - slide_ids)
+    if unknown_visual_slides:
+        raise DeckPlanValidationError(
+            "VisualPlan references unknown slide ids: "
+            + ", ".join(unknown_visual_slides)
+        )
     compiled_slides: list[dict[str, Any]] = []
     previous_families: list[str] = []
     density = plan.preferences_dict().get("density", "balanced")
     for source_slide in plan.slides:
         for slide in split_slide(source_slide, density=density):
             primary, semantic_type, block_index = _dominant_semantic_block(slide)
-            item_count = len(primary.items) or (1 if primary.text or primary.title else 0)
+            item_count = sum(
+                len(block.items) or int(bool(block.text or block.title))
+                for block in slide.blocks
+                if _block_semantic_type(block) == semantic_type
+            )
             decision = rank_page_families(
                 semantic_type,
                 item_count=item_count,
                 previous_families=previous_families,
+                preferred_families=(
+                    *preferred_families,
+                    *(
+                        (governed_visual_families[source_slide.id],)
+                        if source_slide.id in governed_visual_families
+                        else ()
+                    ),
+                ),
+                structural_role=slide.role,
             )
+            visual_family = governed_visual_families.get(source_slide.id)
             compiled = slide.to_dict()
             compiled["page_family"] = decision.selected
             compiled["semantic_basis"] = {
@@ -706,7 +739,15 @@ def compile_deck_plan(payload: Any) -> dict[str, Any]:
                 "semantic_type": semantic_type,
                 "rule_id": "DOMINANT_SEMANTIC_BLOCK",
             }
-            compiled["decision_trace"] = decision.to_dict()
+            trace = decision.to_dict()
+            if visual_family is not None:
+                trace["visual_plan_recommendation"] = {
+                    "source_slide_id": source_slide.id,
+                    "preferred_family": visual_family,
+                    "selected": decision.selected == visual_family,
+                    "rule_id": "VISUAL_PLAN_GOVERNED_FAMILY",
+                }
+            compiled["decision_trace"] = trace
             compiled_slides.append(compiled)
             previous_families.append(decision.selected)
     return {

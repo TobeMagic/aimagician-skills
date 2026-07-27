@@ -6,7 +6,7 @@ import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from . import assets as assets_module
 from . import themes as themes_module
@@ -36,6 +36,7 @@ EXPECTED_FAMILIES = {
     "process",
     "product-showcase",
     "quadrant",
+    "recommendation",
     "risk-recommendation",
     "roadmap",
     "section",
@@ -102,6 +103,8 @@ EXPECTED_COMPONENTS = {
     "recommendation-panel",
     "footer",
     "decoration",
+    "accent",
+    "statement",
     "quote",
     "team-member",
     "cta",
@@ -125,6 +128,7 @@ FAMILY_COMPONENT_REQUIREMENTS = {
         "recommendation-panel",
         "matrix-cell",
     },
+    "recommendation": {"recommendation-panel"},
     "cta": {"cta"},
     "image-story": {"image-frame"},
 }
@@ -335,6 +339,29 @@ class RegistryIssue:
     message: str
 
 
+def layout_geometry_signature(
+    registry: LayoutRegistry,
+    variant: LayoutVariant,
+) -> tuple[tuple[object, ...], ...]:
+    """Return a ratio-independent structural signature for one layout variant."""
+
+    if variant.recipe_id not in registry.recipes:
+        raise ValueError(f"layout variant has unknown recipe: {variant.recipe_id}")
+    overrides = dict(variant.component_overrides)
+    return tuple(
+        (
+            overrides.get(slot.id, slot.component),
+            slot.id,
+            slot.col,
+            slot.row,
+            slot.col_span,
+            slot.row_span,
+            bool(slot.allow_overlap),
+        )
+        for slot in registry.recipes[variant.recipe_id]
+    )
+
+
 def _read_json(path: Path) -> dict[str, Any]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     if raw.get("schema_version") != "1.0":
@@ -543,6 +570,27 @@ def _effective_capacity(
         max_items=min(declared.max_items, component_limit),
         densities=declared.densities,
     )
+
+
+def _variant_components(
+    registry: LayoutRegistry, variant: LayoutVariant
+) -> frozenset[str]:
+    overrides = dict(variant.component_overrides)
+    return frozenset(
+        overrides.get(slot.id, slot.component)
+        for slot in registry.recipes[variant.recipe_id]
+    )
+
+
+def _variant_component_counts(
+    registry: LayoutRegistry, variant: LayoutVariant
+) -> dict[str, int]:
+    overrides = dict(variant.component_overrides)
+    result: dict[str, int] = {}
+    for slot in registry.recipes[variant.recipe_id]:
+        component = overrides.get(slot.id, slot.component)
+        result[component] = result.get(component, 0) + 1
+    return result
 
 
 def _resolve_density(capacity: LayoutCapacity, requested: str) -> str | None:
@@ -1098,6 +1146,9 @@ def resolve_layout(
     *,
     item_count: int | None = None,
     density: str = "balanced",
+    variant_seed: str | None = None,
+    forbidden_components: frozenset[str] = frozenset(),
+    component_limits: Mapping[str, int] | None = None,
 ) -> ResolvedLayout:
     """Resolve a semantic form/family/variant and scale its governed slots."""
 
@@ -1118,6 +1169,31 @@ def resolve_layout(
         raise ValueError("item_count must be a non-negative integer")
     _enforce_runtime_registry_gate()
     registry, components = _runtime_registry_bundle()
+    if not isinstance(forbidden_components, frozenset):
+        raise ValueError("forbidden_components must be a frozenset")
+    unknown_forbidden = forbidden_components - set(components)
+    if unknown_forbidden:
+        raise ValueError(
+            "unknown forbidden components: " + ", ".join(sorted(unknown_forbidden))
+        )
+    resolved_component_limits = dict(component_limits or {})
+    unknown_limits = set(resolved_component_limits) - set(components)
+    if unknown_limits:
+        raise ValueError(
+            "unknown component limits: " + ", ".join(sorted(unknown_limits))
+        )
+    if any(
+        isinstance(value, bool) or not isinstance(value, int) or value < 0
+        for value in resolved_component_limits.values()
+    ):
+        raise ValueError("component limits must be non-negative integers")
+
+    def exceeds_component_limits(candidate: LayoutVariant) -> bool:
+        counts = _variant_component_counts(registry, candidate)
+        return any(
+            counts.get(component, 0) > limit
+            for component, limit in resolved_component_limits.items()
+        )
     minimum_width = (
         2 * registry.grid.safe_margin_x_in
         + (registry.grid.columns - 1) * registry.grid.column_gap_pt / 72
@@ -1130,6 +1206,12 @@ def resolve_layout(
         raise ValueError("slide size is too small for governed margins and gutters")
     if selector in registry.variants:
         variant = registry.variants[selector]
+        if _variant_components(registry, variant) & forbidden_components:
+            raise ValueError(
+                f"layout {selector} contains a forbidden component"
+            )
+        if exceeds_component_limits(variant):
+            raise ValueError(f"layout {selector} exceeds a component limit")
         capacity = _effective_capacity(registry, components, variant)
         resolved_density = _resolve_density(capacity, density)
         if (
@@ -1145,9 +1227,13 @@ def resolve_layout(
         family = registry.families.get(family_id)
         if family is None:
             raise ValueError(f"unknown layout selector: {selector}")
-        candidates: list[tuple[str, LayoutCapacity, str]] = []
+        candidates: list[tuple[str, LayoutCapacity, str, int]] = []
         for variant_id in family.variant_ids:
             candidate = registry.variants[variant_id]
+            if _variant_components(registry, candidate) & forbidden_components:
+                continue
+            if exceeds_component_limits(candidate):
+                continue
             candidate_capacity = _effective_capacity(
                 registry, components, candidate
             )
@@ -1158,9 +1244,45 @@ def resolve_layout(
                 <= candidate_capacity.max_items
             )
             if candidate_density is not None and item_fits:
-                candidates.append(
-                    (variant_id, candidate_capacity, candidate_density)
+                capacity_slot_count = len(
+                    registry.recipe_capacity_slots[candidate.recipe_id]
                 )
+                fit_distance = (
+                    abs(capacity_slot_count - item_count)
+                    if item_count is not None
+                    else 0
+                )
+                candidates.append(
+                    (
+                        variant_id,
+                        candidate_capacity,
+                        candidate_density,
+                        fit_distance,
+                    )
+                )
+        if candidates and item_count is not None:
+            best_fit = min(candidate[3] for candidate in candidates)
+            candidates = [
+                candidate for candidate in candidates if candidate[3] == best_fit
+            ]
+        if len(candidates) > 1 and previous_layouts:
+            recent_recipes = tuple(
+                previous_variant.recipe_id
+                for layout_id in previous_layouts[-2:]
+                if (previous_variant := registry.variants.get(layout_id)) is not None
+            )
+            recipe_penalties = {
+                candidate[0]: recent_recipes.count(
+                    registry.variants[candidate[0]].recipe_id
+                )
+                for candidate in candidates
+            }
+            minimum_penalty = min(recipe_penalties.values(), default=0)
+            candidates = [
+                candidate
+                for candidate in candidates
+                if recipe_penalties[candidate[0]] == minimum_penalty
+            ]
         compatible = tuple(candidate[0] for candidate in candidates)
         if not compatible:
             raise ValueError(
@@ -1171,13 +1293,20 @@ def resolve_layout(
             None,
         )
         if last_compatible is None:
-            variant_id = compatible[0]
+            if variant_seed:
+                seed_value = sum(
+                    (index + 1) * ord(character)
+                    for index, character in enumerate(variant_seed)
+                )
+                variant_id = compatible[seed_value % len(compatible)]
+            else:
+                variant_id = compatible[0]
         else:
             variant_id = compatible[
                 (compatible.index(last_compatible) + 1) % len(compatible)
             ]
         variant = registry.variants[variant_id]
-        _, capacity, resolved_density = next(
+        _, capacity, resolved_density, _ = next(
             candidate for candidate in candidates if candidate[0] == variant_id
         )
     resolved_slots: list[ResolvedSlot] = []

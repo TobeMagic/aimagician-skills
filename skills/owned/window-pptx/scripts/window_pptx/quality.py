@@ -20,6 +20,7 @@ from .render_plan import (
     inches_to_points,
 )
 from .renderer import RenderReport
+from .text_layout import estimate_text_layout
 
 
 QUALITY_REPORT_VERSION = "1.0"
@@ -368,6 +369,17 @@ def _shape_font(shape: Any) -> Any | None:
         return None
 
 
+def _office_rgb_value(value: str) -> int:
+    red = int(value[1:3], 16)
+    green = int(value[3:5], 16)
+    blue = int(value[5:7], 16)
+    return red | (green << 8) | (blue << 16)
+
+
+def _utf16_units(value: str) -> int:
+    return len(value.encode("utf-16-le")) // 2
+
+
 def _shape_maps(slide: Any) -> tuple[dict[str, Any], dict[str, Any]]:
     by_name: dict[str, Any] = {}
     by_id: dict[str, Any] = {}
@@ -598,14 +610,6 @@ def _intersection_ratio(first: Any, second: Any) -> float:
     return 0.0 if smaller <= 0 else intersection / smaller
 
 
-def _text_capacity(item: RenderObject) -> int:
-    usable_width = max(1.0, inches_to_points(item.width) - 16)
-    usable_height = max(1.0, inches_to_points(item.height) - 12)
-    lines = max(1, int(usable_height / (item.font_size_pt * 1.25)))
-    chars_per_line = max(1, int(usable_width / (item.font_size_pt * 0.58)))
-    return lines * chars_per_line
-
-
 def _max_run(values: Iterable[str]) -> int:
     maximum = 0
     current = 0
@@ -658,7 +662,16 @@ def inspect_quality(
             )
         )
 
-    expected_count = sum(len(slide.objects) for slide in plan.slides)
+    # Decorative art-direction primitives are editable for authoring, but they
+    # must not dilute semantic editability coverage. Otherwise adding more
+    # decoration can hide a missing chart, table, diagram, title, or content
+    # object by keeping the raw object ratio above the hard-gate threshold.
+    expected_count = sum(
+        1
+        for slide in plan.slides
+        for item in slide.objects
+        if item.component != "decoration"
+    )
     found_count = 0
     native_expected = 0
     native_found = 0
@@ -712,7 +725,8 @@ def inspect_quality(
                     )
                 )
                 continue
-            found_count += 1
+            if item.component != "decoration":
+                found_count += 1
             located[item.name] = shape
             if item.kind in {"chart", "table", "diagram"}:
                 if _native_matches(item, shape):
@@ -809,10 +823,36 @@ def inspect_quality(
             if item.text:
                 text_count += 1
                 font = _shape_font(shape)
-                if font is not None and (
+                font_drift = False
+                if item.text_runs is not None:
+                    try:
+                        character_offset = 1
+                        for run in item.text_runs:
+                            run_length = _utf16_units(run.text)
+                            run_font = shape.TextFrame.TextRange.Characters(
+                                character_offset, run_length
+                            ).Font
+                            if (
+                                str(run_font.Name) != item.font_name
+                                or not math.isclose(
+                                    float(run_font.Size), run.font_size_pt, abs_tol=0.1
+                                )
+                                or int(run_font.Color.RGB)
+                                != _office_rgb_value(run.text_color)
+                                or bool(int(run_font.Bold)) != run.bold
+                                or bool(int(run_font.Italic)) != run.italic
+                            ):
+                                font_drift = True
+                                break
+                            character_offset += run_length + int(run.break_after)
+                    except Exception:
+                        font_drift = True
+                elif font is not None and (
                     str(font.Name) != item.font_name
                     or not math.isclose(float(font.Size), item.font_size_pt, abs_tol=0.1)
                 ):
+                    font_drift = True
+                if font_drift:
                     findings.append(
                         _finding(
                             "FONT_DRIFT",
@@ -842,10 +882,16 @@ def inspect_quality(
                         )
                     )
                 normalized_text = "".join(actual_text.split())
-                capacity = _text_capacity(item)
+                estimate = estimate_text_layout(
+                    actual_text,
+                    width_in=item.width,
+                    height_in=item.height,
+                    font_size_pt=item.font_size_pt,
+                )
+                capacity = estimate.approximate_character_capacity
                 slide_text_length += len(normalized_text)
                 slide_text_capacity += capacity
-                if len(normalized_text) > capacity:
+                if not estimate.fits:
                     findings.append(
                         _finding(
                             "TEXT_OVERFLOW_RISK",
@@ -856,6 +902,8 @@ def inspect_quality(
                             object_name=item.name,
                             text_length=len(normalized_text),
                             estimated_capacity=capacity,
+                            required_lines=estimate.required_lines,
+                            available_lines=estimate.available_lines,
                         )
                     )
                 lowered = actual_text.casefold()
@@ -1112,6 +1160,7 @@ def finalize_quality_report(
         "save-copy",
         "ooxml-package",
         "macro-disabled-reopen",
+        "reopened-content-validation",
         "validation-copy-closed",
         "atomic-promote",
     }

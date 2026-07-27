@@ -21,6 +21,7 @@ MSO_FALSE = 0
 MSO_TRUE = -1
 MSO_TEXT_ORIENTATION_HORIZONTAL = 1
 MSO_SHAPE_RECTANGLE = 1
+MSO_SHAPE_ROUNDED_RECTANGLE = 5
 MSO_BRING_TO_FRONT = 0
 MSO_SEND_TO_BACK = 1
 PP_LAYOUT_BLANK = 12
@@ -35,6 +36,15 @@ XL_CHART_TYPES = {
     "doughnut": -4120,
     "stacked-column": 52,
     "scatter": -4169,
+}
+ROUNDED_COMPONENTS = {
+    "card",
+    "kpi",
+    "comparison-panel",
+    "risk-panel",
+    "recommendation-panel",
+    "team-member",
+    "quote",
 }
 
 
@@ -68,6 +78,10 @@ def _office_rgb(value: str) -> int:
     except ValueError as exc:
         raise RenderError(f"invalid governed color: {value!r}") from exc
     return red | (green << 8) | (blue << 16)
+
+
+def _utf16_units(value: str) -> int:
+    return len(value.encode("utf-16-le")) // 2
 
 
 def _record(presentation: Any, operation: str, target: str, *args: Any) -> None:
@@ -256,7 +270,15 @@ class PowerPointRenderer:
             )
         elif item.kind == "shape":
             shape = slide.Shapes.AddShape(
-                MSO_SHAPE_RECTANGLE, left, top, width, height
+                (
+                    MSO_SHAPE_ROUNDED_RECTANGLE
+                    if item.component in ROUNDED_COMPONENTS
+                    else MSO_SHAPE_RECTANGLE
+                ),
+                left,
+                top,
+                width,
+                height,
             )
         elif item.kind == "image":
             if item.source_path is None:
@@ -287,18 +309,49 @@ class PowerPointRenderer:
         if item.kind not in {"image", "chart", "table", "diagram"}:
             shape.Fill.Solid()
             shape.Fill.ForeColor.RGB = _office_rgb(item.fill_color)
+            if item.component == "decoration":
+                shape.Fill.Transparency = 0.88
+            elif item.component == "accent":
+                shape.Fill.Transparency = 0.82
             if item.kind == "text":
                 shape.Line.Visible = MSO_FALSE
             else:
-                shape.Line.Visible = MSO_TRUE
-                shape.Line.ForeColor.RGB = _office_rgb(item.line_color)
-                shape.Line.Weight = 1.0
+                shape.Line.Visible = (
+                    MSO_FALSE
+                    if item.component in {"decoration", "accent"}
+                    else MSO_TRUE
+                )
+                if shape.Line.Visible == MSO_TRUE:
+                    shape.Line.ForeColor.RGB = _office_rgb(item.line_color)
+                    shape.Line.Weight = 1.0
         if item.text:
             text_range = shape.TextFrame.TextRange
             text_range.Text = item.text
             text_range.Font.Name = item.font_name
             text_range.Font.Size = item.font_size_pt
             text_range.Font.Color.RGB = _office_rgb(item.text_color)
+            text_range.Font.Bold = MSO_TRUE if item.component in {
+                "title",
+                "card",
+                "kpi",
+                "comparison-panel",
+                "risk-panel",
+                "recommendation-panel",
+                "team-member",
+                "cta",
+            } else MSO_FALSE
+            text_range.Font.Italic = MSO_TRUE if item.component == "quote" else MSO_FALSE
+            if item.text_runs is not None:
+                character_offset = 1
+                for run in item.text_runs:
+                    run_length = _utf16_units(run.text)
+                    run_range = text_range.Characters(character_offset, run_length)
+                    run_range.Font.Name = item.font_name
+                    run_range.Font.Size = run.font_size_pt
+                    run_range.Font.Color.RGB = _office_rgb(run.text_color)
+                    run_range.Font.Bold = MSO_TRUE if run.bold else MSO_FALSE
+                    run_range.Font.Italic = MSO_TRUE if run.italic else MSO_FALSE
+                    character_offset += run_length + int(run.break_after)
             shape.TextFrame.MarginLeft = 8
             shape.TextFrame.MarginRight = 8
             shape.TextFrame.MarginTop = 6
@@ -404,6 +457,22 @@ class PowerPointRenderer:
                     native_series.Format.Fill.ForeColor.RGB = _office_rgb(
                         item.line_color
                     )
+            if (spec.value_unit or "").strip().casefold() in {
+                "%",
+                "percent",
+                "percentage",
+            }:
+                value_axis = chart.Axes(2)
+                value_axis.MinimumScale = 0
+                value_axis.MaximumScale = 100
+                value_axis.MajorUnit = 20
+                value_axis.TickLabels.NumberFormat = '0"%"'
+                value_axis.HasTitle = MSO_TRUE
+                value_axis.AxisTitle.Text = "Percent"
+                for index in range(1, int(native_series_collection.Count) + 1):
+                    native_series = native_series_collection(index)
+                    native_series.ApplyDataLabels()
+                    native_series.DataLabels().NumberFormat = '0"%"'
         _record(
             presentation,
             "set-chart-data",
@@ -475,7 +544,7 @@ class PowerPointRenderer:
         frame.Tags.Add("window-pptx:editable", "true")
         frame.Fill.Solid()
         frame.Fill.ForeColor.RGB = _office_rgb(item.fill_color)
-        frame.Fill.Transparency = 100
+        frame.Fill.Transparency = 1.0
         frame.Line.Visible = MSO_FALSE
         names: list[str] = [frame.Name]
         if spec.diagram_type == "funnel":
@@ -506,6 +575,17 @@ class PowerPointRenderer:
                     cell_height,
                 )
                 for index in range(count)
+            ]
+        elif spec.diagram_type in {"timeline", "roadmap"} and count == 1:
+            node_width = width * 0.62
+            node_height = height * 0.45
+            boxes = [
+                (
+                    left + (width - node_width) / 2,
+                    top + (height - node_height) / 2,
+                    node_width,
+                    node_height,
+                )
             ]
         else:
             gap = min(18.0, width * 0.025)

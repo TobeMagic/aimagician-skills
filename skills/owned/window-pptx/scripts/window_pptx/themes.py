@@ -28,6 +28,10 @@ SCRIPT_PROFILE_IDS = {"zh-hans", "zh-hant", "ja", "ko"}
 class BrandOverrides:
     primary: str | None = None
     accent: str | None = None
+    positive: str | None = None
+    warning: str | None = None
+    negative: str | None = None
+    background: str | None = None
     heading_font: str | None = None
     body_font: str | None = None
 
@@ -234,11 +238,17 @@ def _resolve_font(
     font_scripts: dict[str, set[str]],
 ) -> tuple[str, tuple[ResolutionEvent, ...]]:
     events: list[ResolutionEvent] = []
-    candidates = tuple(
-        candidate
-        for candidate in (override, preferred, *fallbacks)
-        if candidate is not None
+    office_safe_fallbacks = (
+        "Arial",
+        "Liberation Sans",
+        "Carlito",
+        "DejaVu Sans",
     )
+    candidates = tuple(dict.fromkeys(
+        candidate
+        for candidate in (override, preferred, *fallbacks, *office_safe_fallbacks)
+        if candidate is not None
+    ))
     chosen: str | None = None
     for candidate in candidates:
         installed_name = installed.get(candidate.casefold())
@@ -281,7 +291,34 @@ def resolve_theme(
     brand = brand or BrandOverrides()
     colors = dict(definition.colors)
     events: list[ResolutionEvent] = []
-    for field, requested in (("primary", brand.primary), ("accent", brand.accent)):
+    if brand.background is not None:
+        requested_background = _normalize_color(brand.background, "background")
+        if contrast_ratio(requested_background, colors["text"]) < 4.5:
+            events.append(
+                ResolutionEvent(
+                    "BRAND_COLOR_CONTRAST_FALLBACK",
+                    "background",
+                    brand.background,
+                    colors["background"],
+                )
+            )
+        else:
+            colors["background"] = requested_background
+            events.append(
+                ResolutionEvent(
+                    "BRAND_COLOR_OVERRIDE",
+                    "background",
+                    brand.background,
+                    requested_background,
+                )
+            )
+    for field, requested in (
+        ("primary", brand.primary),
+        ("accent", brand.accent),
+        ("positive", brand.positive),
+        ("warning", brand.warning),
+        ("negative", brand.negative),
+    ):
         if requested is None:
             continue
         resolved = _normalize_color(requested, field)

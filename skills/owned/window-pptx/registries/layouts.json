@@ -19,6 +19,62 @@
       {"id": "body", "component": "body-text", "col": 3, "row": 12, "col_span": 6, "row_span": 6},
       {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
+    {"id": "cover-editorial", "capacity": {"min_items": 1, "max_items": 2, "densities": ["sparse", "balanced"]}, "capacity_slots": ["body"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 4, "col_span": 8, "row_span": 6},
+      {"id": "body", "component": "body-text", "col": 0, "row": 13, "col_span": 6, "row_span": 5},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "metric-left", "capacity": {"min_items": 1, "max_items": 1, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["metric"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "metric", "component": "kpi", "col": 0, "row": 7, "col_span": 8, "row_span": 10},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "metric-spotlight", "capacity": {"min_items": 1, "max_items": 1, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["metric"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 4},
+      {"id": "metric", "component": "kpi", "col": 0, "row": 7, "col_span": 8, "row_span": 13},
+      {"id": "accent", "component": "accent", "col": 10, "row": 10, "col_span": 1, "row_span": 8},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "metric-duo", "capacity": {"min_items": 2, "max_items": 2, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["primary", "secondary"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 5},
+      {"id": "primary", "component": "kpi", "col": 0, "row": 8, "col_span": 6, "row_span": 13},
+      {"id": "secondary", "component": "kpi", "col": 6, "row": 8, "col_span": 6, "row_span": 13},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "focus-panel", "capacity": {"min_items": 1, "max_items": 1, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["content"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 5},
+      {"id": "content", "component": "body-text", "col": 1, "row": 8, "col_span": 10, "row_span": 12},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "statement-stage", "capacity": {"min_items": 1, "max_items": 1, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["content"], "slots": [
+      {"id": "title", "component": "title", "col": 1, "row": 2, "col_span": 10, "row_span": 4},
+      {"id": "accent", "component": "accent", "col": 0, "row": 8, "col_span": 1, "row_span": 11},
+      {"id": "content", "component": "statement", "col": 1, "row": 7, "col_span": 10, "row_span": 13},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "statement-rail", "capacity": {"min_items": 1, "max_items": 1, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["content"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 3, "col_span": 10, "row_span": 4},
+      {"id": "accent", "component": "accent", "col": 0, "row": 10, "col_span": 1, "row_span": 8},
+      {"id": "content", "component": "statement", "col": 1, "row": 8, "col_span": 9, "row_span": 12},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "cta-stage", "capacity": {"min_items": 1, "max_items": 2, "densities": ["sparse", "balanced"]}, "capacity_slots": ["body"], "slots": [
+      {"id": "title", "component": "title", "col": 1, "row": 4, "col_span": 10, "row_span": 4},
+      {"id": "body", "component": "cta", "col": 1, "row": 11, "col_span": 10, "row_span": 6},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "cta-rail", "capacity": {"min_items": 1, "max_items": 2, "densities": ["sparse", "balanced"]}, "capacity_slots": ["body"], "slots": [
+      {"id": "title", "component": "title", "col": 1, "row": 4, "col_span": 10, "row_span": 4},
+      {"id": "accent", "component": "accent", "col": 0, "row": 10, "col_span": 1, "row_span": 8},
+      {"id": "body", "component": "cta", "col": 1, "row": 11, "col_span": 9, "row_span": 6},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "metric-rail", "capacity": {"min_items": 1, "max_items": 1, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["metric"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 2, "col_span": 11, "row_span": 4},
+      {"id": "accent", "component": "accent", "col": 0, "row": 9, "col_span": 1, "row_span": 8},
+      {"id": "metric", "component": "kpi", "col": 1, "row": 8, "col_span": 8, "row_span": 10},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
     {"id": "top-band", "capacity": {"min_items": 1, "max_items": 10, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["content"], "slots": [
       {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
       {"id": "content", "component": "body-text", "col": 0, "row": 6, "col_span": 12, "row_span": 16},
@@ -43,12 +99,38 @@
       {"id": "three", "component": "card", "col": 8, "row": 6, "col_span": 4, "row_span": 15},
       {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
+    {"id": "three-tile", "capacity": {"min_items": 3, "max_items": 3, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["one", "two", "three"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 4},
+      {"id": "one", "component": "card", "col": 0, "row": 9, "col_span": 4, "row_span": 7},
+      {"id": "two", "component": "card", "col": 4, "row": 9, "col_span": 4, "row_span": 7},
+      {"id": "three", "component": "card", "col": 8, "row": 9, "col_span": 4, "row_span": 7},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
     {"id": "grid-four", "capacity": {"min_items": 4, "max_items": 8, "densities": ["balanced", "dense"]}, "capacity_slots": ["one", "two", "three", "four"], "slots": [
       {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
       {"id": "one", "component": "card", "col": 0, "row": 5, "col_span": 6, "row_span": 7},
       {"id": "two", "component": "card", "col": 6, "row": 5, "col_span": 6, "row_span": 7},
       {"id": "three", "component": "card", "col": 0, "row": 13, "col_span": 6, "row_span": 8},
       {"id": "four", "component": "card", "col": 6, "row": 13, "col_span": 6, "row_span": 8},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "five-card", "capacity": {"min_items": 5, "max_items": 5, "densities": ["balanced", "dense"]}, "capacity_slots": ["one", "two", "three", "four", "five"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "one", "component": "card", "col": 0, "row": 5, "col_span": 4, "row_span": 7},
+      {"id": "two", "component": "card", "col": 4, "row": 5, "col_span": 4, "row_span": 7},
+      {"id": "three", "component": "card", "col": 8, "row": 5, "col_span": 4, "row_span": 7},
+      {"id": "four", "component": "card", "col": 1, "row": 14, "col_span": 5, "row_span": 7},
+      {"id": "five", "component": "card", "col": 6, "row": 14, "col_span": 5, "row_span": 7},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "six-card", "capacity": {"min_items": 6, "max_items": 6, "densities": ["balanced", "dense"]}, "capacity_slots": ["one", "two", "three", "four", "five", "six"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "one", "component": "card", "col": 0, "row": 5, "col_span": 4, "row_span": 7},
+      {"id": "two", "component": "card", "col": 4, "row": 5, "col_span": 4, "row_span": 7},
+      {"id": "three", "component": "card", "col": 8, "row": 5, "col_span": 4, "row_span": 7},
+      {"id": "four", "component": "card", "col": 0, "row": 14, "col_span": 4, "row_span": 7},
+      {"id": "five", "component": "card", "col": 4, "row": 14, "col_span": 4, "row_span": 7},
+      {"id": "six", "component": "card", "col": 8, "row": 14, "col_span": 4, "row_span": 7},
       {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
     {"id": "chart-focus", "capacity": {"min_items": 1, "max_items": 10, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["chart"], "slots": [
@@ -91,29 +173,30 @@
     ]}
   ],
   "families": [
-    {"id": "cover", "variants": [{"id": "cover.hero-left", "recipe": "hero-left"}, {"id": "cover.hero-right", "recipe": "hero-right"}, {"id": "cover.centered", "recipe": "centered"}]},
+    {"id": "cover", "variants": [{"id": "cover.hero-left", "recipe": "hero-left"}, {"id": "cover.hero-right", "recipe": "hero-right"}, {"id": "cover.editorial", "recipe": "cover-editorial"}, {"id": "cover.centered", "recipe": "centered"}]},
     {"id": "section", "variants": [{"id": "section.centered", "recipe": "centered"}, {"id": "section.hero-left", "recipe": "hero-left"}, {"id": "section.full-visual", "recipe": "full-visual"}]},
-    {"id": "agenda", "variants": [{"id": "agenda.top-band", "recipe": "top-band"}, {"id": "agenda.three-column", "recipe": "three-column"}, {"id": "agenda.grid-four", "recipe": "grid-four"}]},
-    {"id": "executive-summary", "variants": [{"id": "executive-summary.top-band", "recipe": "top-band"}, {"id": "executive-summary.split-left", "recipe": "split-left"}, {"id": "executive-summary.grid-four", "recipe": "grid-four"}]},
-    {"id": "focal-statement", "variants": [{"id": "focal-statement.centered", "recipe": "centered"}, {"id": "focal-statement.hero-left", "recipe": "hero-left"}, {"id": "focal-statement.full-visual", "recipe": "full-visual"}]},
-    {"id": "big-number", "variants": [{"id": "big-number.hero-left", "recipe": "hero-left", "components": {"body": "kpi"}}, {"id": "big-number.three-column", "recipe": "three-column", "components": {"one": "kpi", "two": "kpi", "three": "kpi"}}, {"id": "big-number.grid-four", "recipe": "grid-four", "components": {"one": "kpi", "two": "kpi", "three": "kpi", "four": "kpi"}}]},
+    {"id": "agenda", "variants": [{"id": "agenda.top-band", "recipe": "top-band"}, {"id": "agenda.three-column", "recipe": "three-column"}, {"id": "agenda.grid-four", "recipe": "grid-four"}, {"id": "agenda.five-card", "recipe": "five-card"}, {"id": "agenda.six-card", "recipe": "six-card"}]},
+    {"id": "executive-summary", "variants": [{"id": "executive-summary.top-band", "recipe": "top-band"}, {"id": "executive-summary.centered", "recipe": "centered"}, {"id": "executive-summary.editorial-left", "recipe": "hero-left", "components": {"visual": "decoration"}}, {"id": "executive-summary.split-left", "recipe": "split-left"}, {"id": "executive-summary.grid-four", "recipe": "grid-four"}]},
+    {"id": "focal-statement", "variants": [{"id": "focal-statement.centered", "recipe": "statement-stage"}, {"id": "focal-statement.top-band", "recipe": "top-band", "components": {"content": "statement"}}, {"id": "focal-statement.editorial-left", "recipe": "statement-rail"}, {"id": "focal-statement.quote-centered", "recipe": "focus-panel", "components": {"content": "quote"}}, {"id": "focal-statement.quote-left", "recipe": "statement-rail", "components": {"content": "quote"}}]},
+    {"id": "big-number", "variants": [{"id": "big-number.centered", "recipe": "metric-spotlight"}, {"id": "big-number.metric-left", "recipe": "metric-left"}, {"id": "big-number.top-band", "recipe": "top-band", "components": {"content": "kpi"}}, {"id": "big-number.editorial-left", "recipe": "metric-rail"}, {"id": "big-number.hero-left", "recipe": "hero-left", "components": {"body": "kpi"}}, {"id": "big-number.split", "recipe": "metric-duo"}, {"id": "big-number.three-column", "recipe": "three-column", "components": {"one": "kpi", "two": "kpi", "three": "kpi"}}, {"id": "big-number.grid-four", "recipe": "grid-four", "components": {"one": "kpi", "two": "kpi", "three": "kpi", "four": "kpi"}}]},
     {"id": "text-media", "variants": [{"id": "text-media.split-left", "recipe": "split-left"}, {"id": "text-media.split-right", "recipe": "split-right"}, {"id": "text-media.hero-left", "recipe": "hero-left"}]},
-    {"id": "cards", "variants": [{"id": "cards.three-column", "recipe": "three-column"}, {"id": "cards.grid-four", "recipe": "grid-four"}, {"id": "cards.top-band", "recipe": "top-band", "components": {"content": "card"}}]},
+    {"id": "cards", "variants": [{"id": "cards.three-column", "recipe": "three-column"}, {"id": "cards.compact-three", "recipe": "three-tile"}, {"id": "cards.grid-four", "recipe": "grid-four"}, {"id": "cards.top-band", "recipe": "top-band", "components": {"content": "card"}}]},
     {"id": "timeline", "variants": [{"id": "timeline.horizontal", "recipe": "timeline-flow"}, {"id": "timeline.split", "recipe": "split-left", "components": {"primary": "timeline-node"}}, {"id": "timeline.focus", "recipe": "top-band", "components": {"content": "timeline-node"}}]},
-    {"id": "process", "variants": [{"id": "process.horizontal", "recipe": "linear-flow"}, {"id": "process.cards", "recipe": "three-column", "components": {"one": "process-step", "two": "process-step", "three": "process-step"}}, {"id": "process.focus", "recipe": "top-band", "components": {"content": "process-step"}}]},
-    {"id": "comparison", "variants": [{"id": "comparison.split", "recipe": "split-left", "components": {"primary": "comparison-panel", "secondary": "comparison-panel"}}, {"id": "comparison.columns", "recipe": "three-column", "components": {"one": "comparison-panel", "two": "comparison-panel", "three": "comparison-panel"}}, {"id": "comparison.matrix", "recipe": "grid-four", "components": {"one": "comparison-panel", "two": "comparison-panel", "three": "comparison-panel", "four": "comparison-panel"}}]},
+    {"id": "process", "variants": [{"id": "process.horizontal", "recipe": "linear-flow"}, {"id": "process.cards", "recipe": "three-column", "components": {"one": "process-step", "two": "process-step", "three": "process-step"}}, {"id": "process.focus", "recipe": "top-band", "components": {"content": "process-step"}}, {"id": "process.compact", "recipe": "matrix-focus", "components": {"matrix": "process-step"}}]},
+    {"id": "comparison", "variants": [{"id": "comparison.focus", "recipe": "focus-panel", "components": {"content": "comparison-panel"}}, {"id": "comparison.split", "recipe": "metric-duo", "components": {"primary": "comparison-panel", "secondary": "comparison-panel"}}, {"id": "comparison.columns", "recipe": "three-column", "components": {"one": "comparison-panel", "two": "comparison-panel", "three": "comparison-panel"}}, {"id": "comparison.matrix", "recipe": "grid-four", "components": {"one": "comparison-panel", "two": "comparison-panel", "three": "comparison-panel", "four": "comparison-panel"}}]},
     {"id": "matrix", "variants": [{"id": "matrix.focus", "recipe": "matrix-focus"}, {"id": "matrix.grid", "recipe": "grid-four", "components": {"one": "matrix-cell", "two": "matrix-cell", "three": "matrix-cell", "four": "matrix-cell"}}, {"id": "matrix.split", "recipe": "split-left", "components": {"primary": "matrix-cell", "secondary": "matrix-cell"}}]},
     {"id": "quadrant", "variants": [{"id": "quadrant.focus", "recipe": "matrix-focus"}, {"id": "quadrant.insight", "recipe": "chart-focus"}, {"id": "quadrant.split", "recipe": "split-right", "components": {"primary": "matrix-cell", "secondary": "matrix-cell"}}]},
-    {"id": "funnel", "variants": [{"id": "funnel.focus", "recipe": "chart-focus"}, {"id": "funnel.flow", "recipe": "linear-flow"}, {"id": "funnel.split", "recipe": "split-left", "components": {"primary": "process-step"}}]},
-    {"id": "roadmap", "variants": [{"id": "roadmap.timeline", "recipe": "timeline-flow"}, {"id": "roadmap.flow", "recipe": "linear-flow"}, {"id": "roadmap.columns", "recipe": "three-column", "components": {"one": "timeline-node", "two": "timeline-node", "three": "timeline-node"}}]},
+    {"id": "funnel", "variants": [{"id": "funnel.focus", "recipe": "chart-focus"}, {"id": "funnel.flow", "recipe": "linear-flow"}, {"id": "funnel.split", "recipe": "split-left", "components": {"primary": "process-step"}}, {"id": "funnel.compact", "recipe": "top-band", "components": {"content": "process-step"}}]},
+    {"id": "roadmap", "variants": [{"id": "roadmap.timeline", "recipe": "timeline-flow"}, {"id": "roadmap.flow", "recipe": "linear-flow"}, {"id": "roadmap.columns", "recipe": "three-column", "components": {"one": "timeline-node", "two": "timeline-node", "three": "timeline-node"}}, {"id": "roadmap.focus", "recipe": "top-band", "components": {"content": "timeline-node"}}]},
     {"id": "data-chart", "variants": [{"id": "data-chart.focus", "recipe": "chart-focus"}, {"id": "data-chart.full", "recipe": "top-band", "components": {"content": "chart"}}, {"id": "data-chart.split", "recipe": "split-left", "components": {"primary": "chart", "secondary": "body-text"}}]},
     {"id": "table", "variants": [{"id": "table.focus", "recipe": "table-focus"}, {"id": "table.split", "recipe": "split-left", "components": {"primary": "table", "secondary": "body-text"}}, {"id": "table.summary", "recipe": "top-band", "components": {"content": "table"}}]},
     {"id": "product-showcase", "variants": [{"id": "product-showcase.hero-left", "recipe": "hero-left"}, {"id": "product-showcase.hero-right", "recipe": "hero-right"}, {"id": "product-showcase.gallery", "recipe": "gallery-two"}]},
     {"id": "case-study", "variants": [{"id": "case-study.split", "recipe": "split-left"}, {"id": "case-study.story", "recipe": "top-band"}, {"id": "case-study.gallery", "recipe": "gallery-two"}]},
     {"id": "team", "variants": [{"id": "team.three", "recipe": "three-column", "components": {"one": "team-member", "two": "team-member", "three": "team-member"}}, {"id": "team.grid", "recipe": "grid-four", "components": {"one": "team-member", "two": "team-member", "three": "team-member", "four": "team-member"}}, {"id": "team.profile", "recipe": "split-right", "components": {"secondary": "team-member"}}]},
-    {"id": "risk-recommendation", "variants": [{"id": "risk-recommendation.split", "recipe": "split-left", "components": {"primary": "risk-panel", "secondary": "recommendation-panel"}}, {"id": "risk-recommendation.matrix", "recipe": "matrix-focus"}, {"id": "risk-recommendation.cards", "recipe": "grid-four", "components": {"one": "risk-panel", "two": "risk-panel", "three": "recommendation-panel", "four": "recommendation-panel"}}]},
+    {"id": "risk-recommendation", "variants": [{"id": "risk-recommendation.focus", "recipe": "focus-panel", "components": {"content": "risk-panel"}}, {"id": "risk-recommendation.dual", "recipe": "metric-duo", "components": {"primary": "risk-panel", "secondary": "risk-panel"}}, {"id": "risk-recommendation.split", "recipe": "split-left", "components": {"primary": "risk-panel", "secondary": "recommendation-panel"}}, {"id": "risk-recommendation.cards", "recipe": "grid-four", "components": {"one": "risk-panel", "two": "risk-panel", "three": "recommendation-panel", "four": "recommendation-panel"}}]},
+    {"id": "recommendation", "variants": [{"id": "recommendation.focus", "recipe": "focus-panel", "components": {"content": "recommendation-panel"}}, {"id": "recommendation.dual", "recipe": "metric-duo", "components": {"primary": "recommendation-panel", "secondary": "recommendation-panel"}}, {"id": "recommendation.columns", "recipe": "three-column", "components": {"one": "recommendation-panel", "two": "recommendation-panel", "three": "recommendation-panel"}}, {"id": "recommendation.grid", "recipe": "grid-four", "components": {"one": "recommendation-panel", "two": "recommendation-panel", "three": "recommendation-panel", "four": "recommendation-panel"}}]},
     {"id": "summary", "variants": [{"id": "summary.top-band", "recipe": "top-band"}, {"id": "summary.grid", "recipe": "grid-four"}, {"id": "summary.centered", "recipe": "centered"}]},
-    {"id": "cta", "variants": [{"id": "cta.centered", "recipe": "centered", "components": {"body": "cta"}}, {"id": "cta.hero-left", "recipe": "hero-left", "components": {"body": "cta"}}, {"id": "cta.full-visual", "recipe": "full-visual", "components": {"overlay": "cta"}}]},
+    {"id": "cta", "variants": [{"id": "cta.centered", "recipe": "cta-stage"}, {"id": "cta.top-band", "recipe": "top-band", "components": {"content": "cta"}}, {"id": "cta.editorial-left", "recipe": "cta-rail"}, {"id": "cta.hero-left", "recipe": "hero-left", "components": {"body": "cta"}}, {"id": "cta.full-visual", "recipe": "full-visual", "components": {"overlay": "cta"}}]},
     {"id": "image-story", "variants": [{"id": "image-story.full", "recipe": "full-visual"}, {"id": "image-story.gallery", "recipe": "gallery-two"}, {"id": "image-story.split", "recipe": "split-right"}]}
   ],
   "semantic_form_map": {
@@ -123,7 +206,7 @@
     "kpi-dashboard": "big-number", "line-chart": "data-chart", "area-chart": "data-chart", "bar-chart": "data-chart",
     "composition-chart": "data-chart", "stacked-bar": "data-chart", "distribution-chart": "data-chart", "dot-plot": "data-chart",
     "scatter-plot": "data-chart", "bubble-chart": "data-chart", "matrix": "matrix", "quadrant": "quadrant",
-    "risk-recommendation": "risk-recommendation", "recommendation": "risk-recommendation", "image-story": "image-story",
+    "risk-recommendation": "risk-recommendation", "recommendation": "recommendation", "image-story": "image-story",
     "product-showcase": "product-showcase"
   }
 }

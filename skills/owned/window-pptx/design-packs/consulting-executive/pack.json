@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "id": "consulting-executive",
+  "name": "Consulting Executive",
+  "runtime_theme_id": "executive-light",
+  "scenarios": ["business-report", "project-proposal", "market-analysis", "sales-proposal", "strategy-planning", "operations-review"],
+  "theme": {
+    "mode": "light",
+    "primary": "14213D",
+    "accent": "FCA311",
+    "background": "F7F8FA",
+    "heading_font": ["Aptos Display", "Arial", "Noto Sans CJK SC"],
+    "body_font": ["Aptos", "Arial", "Noto Sans CJK SC"]
+  },
+  "page_families": ["cover", "executive-summary", "issue-tree", "big-number", "comparison", "process", "timeline", "matrix", "quadrant", "chart-story", "table", "case-study", "risk-actions", "recommendation", "closing"],
+  "pacing": {
+    "max_same_family_run": 2,
+    "hero_interval": 5,
+    "density_pattern": ["balanced", "dense", "balanced", "sparse"]
+  },
+  "asset_strategy": {
+    "priority": ["user", "licensed", "generated", "native"],
+    "required_for": ["cover", "case-study"]
+  },
+  "safe_fallback": {
+    "family": "consulting-message-with-evidence-grid",
+    "max_body_chars": 220,
+    "max_items": 6
+  }
+}

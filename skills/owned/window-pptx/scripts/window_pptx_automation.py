@@ -25,16 +25,50 @@ from window_pptx.cli import (
     emit_result,
     parse_args as parse_cli_args,
 )
+from window_pptx.backends import BackendSelection, negotiate_backend
+from window_pptx.com_diagnostics import (
+    certify_powerpoint,
+    doctor_powerpoint,
+    validate_portable_certification_input,
+)
 from window_pptx.com_session import dispatch_powerpoint, macro_security
 from window_pptx.deck_plan import compile_deck_plan, load_deck_plan
-from window_pptx.errors import OutputPolicyError
+from window_pptx.brand import discover_installed_fonts, load_brand_spec
+from window_pptx.errors import ComSessionError, OutputPolicyError, WindowPptxError
+from window_pptx.generation import BriefGeneration, prepare_brief_generation
+from window_pptx.design_quality import inspect_design_quality
 from window_pptx.layouts import SlideSize
 from window_pptx.models import CandidateResult, OutputPolicy, PowerPointHandle
 from window_pptx.output_policy import calculate_export_size, validate_output_policy
-from window_pptx.quality import QualityReport, RepairLog, write_quality_artifacts
+from window_pptx.quality import (
+    QualityGateError,
+    QualityReport,
+    RepairLog,
+    write_quality_artifacts,
+)
+from window_pptx.quality_v2 import (
+    QualityV2GateError,
+    StageRepairPass,
+    generation_quality_findings,
+)
+from window_pptx.reference_quality import (
+    assess_reference_grade_quality,
+    write_reference_quality_report,
+)
 from window_pptx.render_plan import compile_render_plan, load_asset_bindings
+from window_pptx.html_proof import write_html_proof
+from window_pptx.libreoffice import LibreOfficeVerifier
+from window_pptx.portable_runner import execute_portable_render_plan
 from window_pptx.runner import execute_render_plan
+from window_pptx.template_pack import (
+    TemplatePack,
+    adapt_template_pack,
+    load_template_bindings,
+    load_template_pack,
+    write_adaptation_report,
+)
 from window_pptx.transaction import save_candidate
+from window_pptx.weak_model import load_fact_store, normalize_brief_plan
 
 
 MISSING = "<unavailable>"
@@ -438,6 +472,18 @@ def export_all_slides_to_png(presentation: Any, export_dir: Path) -> dict[str, A
         list(range(1, int(presentation.Slides.Count) + 1)),
         export_dir,
     )
+
+
+def export_quality_v2_previews(
+    presentation: Any,
+    audit_dir: Path,
+) -> dict[str, Any]:
+    """Export a fresh pre-save PNG set that cannot reuse stale evidence."""
+
+    preview_root = audit_dir / "quality-v2-previews"
+    preview_root.mkdir(parents=True, exist_ok=True)
+    run_dir = Path(tempfile.mkdtemp(prefix="pre-save-", dir=preview_root))
+    return export_all_slides_to_png(presentation, run_dir)
 
 
 EXCEL_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
@@ -2074,6 +2120,98 @@ def read_ooxml_slide_size(template: Path | None) -> SlideSize | None:
         return None
 
 
+def write_brief_generation_artifacts(
+    generation: BriefGeneration,
+    audit_dir: Path,
+    post_render_repair_passes: Sequence[StageRepairPass] = (),
+) -> dict[str, str]:
+    """Persist the fact-safe narrative and direction decisions beside QA evidence."""
+
+    audit_dir.mkdir(parents=True, exist_ok=True)
+    artifacts = {
+        "narrative_plan": audit_dir / "narrative-plan.json",
+        "visual_plan": audit_dir / "visual-plan.json",
+        "asset_plan": audit_dir / "asset-plan.json",
+        "generation_manifest": audit_dir / "generation-manifest.json",
+        "repair_log_v2": audit_dir / "repair-log.v2.json",
+    }
+    artifacts["narrative_plan"].write_text(
+        json.dumps(
+            generation.compilation.narrative.to_dict(),
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    artifacts["visual_plan"].write_text(
+        json.dumps(
+            generation.visual_plan.to_dict(), ensure_ascii=False, indent=2
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    artifacts["asset_plan"].write_text(
+        json.dumps(
+            generation.asset_plan.to_dict(), ensure_ascii=False, indent=2
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    if generation.direction is not None:
+        artifacts["direction_decision"] = audit_dir / "direction-decision.json"
+        artifacts["direction_decision"].write_text(
+            json.dumps(
+                generation.direction.to_dict(),
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+    artifacts["generation_manifest"].write_text(
+        json.dumps(
+            generation.to_dict(include_render_plan=False),
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    repair_passes = [
+        {
+            "stage": item.stage,
+            "before_vector": list(item.before_vector),
+            "after_vector": list(item.after_vector),
+            "accepted": item.accepted,
+            "rolled_back": item.rolled_back,
+            "failure_code": item.failure_code,
+        }
+        for item in generation.pre_render_repair_passes
+    ]
+    for item in post_render_repair_passes[:1]:
+        repair_passes.append(
+            {
+                "stage": item.stage,
+                "before_vector": list(item.before_vector),
+                "after_vector": list(item.after_vector),
+                "accepted": item.accepted,
+                "rolled_back": item.rolled_back,
+                "failure_code": item.failure_code,
+            }
+        )
+    artifacts["repair_log_v2"].write_text(
+        json.dumps(
+            {"schema_version": "2.0", "passes": repair_passes[:2]},
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return {key: str(value) for key, value in artifacts.items()}
+
+
 def main(
     argv: Sequence[str] | None = None,
     *,
@@ -2090,7 +2228,44 @@ def main(
     prepared_render_plan = None
     prepared_render_size: SlideSize | None = None
     prepared_asset_bindings = {}
-    if args.compile_deck_plan or args.render_deck_plan:
+    prepared_brief_generation: BriefGeneration | None = None
+    prepared_normalized_brief: dict[str, Any] | None = None
+    prepared_normalization_changes: tuple[str, ...] = ()
+    prepared_brand_spec_path: Path | None = None
+    prepared_asset_manifest_path: Path | None = None
+    prepared_backend: BackendSelection | None = None
+    prepared_template_pack: TemplatePack | None = None
+    prepared_template_bindings: dict[str, str] | None = None
+    if args.render_template_pack:
+        binding_path = resolve_path(project_dir, args.template_bindings)
+        if binding_path is None:
+            die("TemplatePack binding path could not be resolved.")
+        pack_identifier: str | Path = args.template_pack
+        pack_path = resolve_path(project_dir, args.template_pack)
+        if pack_path is not None and pack_path.is_file():
+            pack_identifier = pack_path
+        prepared_template_pack = load_template_pack(pack_identifier)
+        binding_pack_id, prepared_template_bindings = load_template_bindings(
+            binding_path
+        )
+        if binding_pack_id != prepared_template_pack.id:
+            die(
+                "TemplatePack binding id does not match the selected pack: "
+                f"{binding_pack_id} != {prepared_template_pack.id}"
+            )
+        template = prepared_template_pack.template_path
+        validate_output_policy(
+            OutputPolicy(
+                source_path=template,
+                output_path=output_path,
+                dry_run=args.dry_run,
+                no_output_deck=args.no_output_deck,
+                allow_overwrite=False,
+            )
+        )
+        if args.no_output_deck:
+            die("--render-template-pack requires an output deck")
+    elif args.compile_deck_plan or args.render_deck_plan:
         deck_plan_path = resolve_path(project_dir, args.deck_plan)
         if deck_plan_path is None:
             die("DeckPlan path could not be resolved.")
@@ -2125,14 +2300,174 @@ def main(
                 asset_manifest_path = resolve_path(project_dir, args.asset_manifest)
                 if asset_manifest_path is None:
                     die("Asset manifest path could not be resolved.")
+                prepared_asset_manifest_path = asset_manifest_path
                 prepared_asset_bindings = load_asset_bindings(asset_manifest_path)
             prepared_compiled, prepared_render_plan = compile_render_plan(
                 deck_plan,
                 slide_size=prepared_render_size,
-                installed_fonts=set(args.installed_font) or {"Arial"},
+                installed_fonts=set(args.installed_font) or discover_installed_fonts(),
                 theme_id=args.theme_id,
                 asset_bindings=prepared_asset_bindings,
             )
+    elif args.normalize_brief_plan or args.compile_brief_plan or args.render_brief_plan:
+        fact_store_path = resolve_path(project_dir, args.fact_store)
+        brief_plan_path = resolve_path(project_dir, args.brief_plan)
+        if fact_store_path is None or brief_plan_path is None:
+            die("FactStore or BriefPlan path could not be resolved.")
+        fact_store = load_fact_store(fact_store_path)
+        try:
+            brief_text = brief_plan_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            die(f"BriefPlan could not be read: {exc}")
+        if args.normalize_brief_plan:
+            prepared_normalized_brief, normalization_trace = normalize_brief_plan(
+                brief_text
+            )
+            prepared_normalization_changes = normalization_trace.changes
+        else:
+            retry_payloads: list[str] = []
+            for retry_value in args.brief_retry_plan:
+                retry_path = resolve_path(project_dir, retry_value)
+                if retry_path is None:
+                    die("BriefPlan retry path could not be resolved.")
+                try:
+                    retry_payloads.append(retry_path.read_text(encoding="utf-8"))
+                except OSError as exc:
+                    die(f"BriefPlan retry could not be read: {exc}")
+
+            fallback_scenario_id: str | None = None
+            for candidate_text in (brief_text, *retry_payloads):
+                candidate = candidate_text.strip()
+                fenced = re.fullmatch(
+                    r"```(?:json)?\s*(.*?)\s*```", candidate, re.I | re.S
+                )
+                if fenced is not None:
+                    candidate = fenced.group(1)
+                try:
+                    candidate_payload = json.loads(candidate)
+                except json.JSONDecodeError:
+                    continue
+                scenario_value = (
+                    candidate_payload.get("scenario_id")
+                    if isinstance(candidate_payload, dict)
+                    else None
+                )
+                if isinstance(scenario_value, str) and scenario_value.strip():
+                    fallback_scenario_id = scenario_value.strip()
+                    break
+            if fallback_scenario_id is None:
+                die(
+                    "No parseable scenario_id was found in the BriefPlan attempts; "
+                    "a fact-safe default cannot choose an archetype."
+                )
+
+            brand_spec = None
+            if args.brand_spec:
+                brand_spec_path = resolve_path(project_dir, args.brand_spec)
+                if brand_spec_path is None:
+                    die("BrandSpec path could not be resolved.")
+                prepared_brand_spec_path = brand_spec_path
+                brand_spec = load_brand_spec(brand_spec_path)
+            if args.render_brief_plan:
+                if not project_dir.exists():
+                    die(f"Project folder not found: {project_dir}")
+                template = choose_template(project_dir, args.template)
+                preflight_policy = OutputPolicy(
+                    source_path=template,
+                    output_path=output_path,
+                    dry_run=args.dry_run,
+                    no_output_deck=args.no_output_deck,
+                    allow_overwrite=args.allow_overwrite,
+                )
+                validate_output_policy(preflight_policy)
+                if (
+                    template is not None
+                    and template.resolve(strict=False)
+                    == output_path.resolve(strict=False)
+                ):
+                    raise OutputPolicyError(
+                        "The renderer cannot use a same-path source/output transaction."
+                    )
+                prepared_render_size = (
+                    SlideSize(args.slide_width_in, args.slide_height_in)
+                    if args.slide_width_in is not None
+                    else read_ooxml_slide_size(template) or SlideSize(13.333, 7.5)
+                )
+                if args.asset_manifest:
+                    asset_manifest_path = resolve_path(project_dir, args.asset_manifest)
+                    if asset_manifest_path is None:
+                        die("Asset manifest path could not be resolved.")
+                    prepared_asset_manifest_path = asset_manifest_path
+                    prepared_asset_bindings = load_asset_bindings(asset_manifest_path)
+            installed_fonts = set(args.installed_font) or discover_installed_fonts()
+            prepared_brief_generation = prepare_brief_generation(
+                fact_store,
+                brief_text,
+                slide_size=prepared_render_size,
+                installed_fonts=installed_fonts,
+                theme_id=args.theme_id,
+                brand_spec=brand_spec,
+                brand_spec_source=(
+                    str(prepared_brand_spec_path)
+                    if prepared_brand_spec_path is not None
+                    else None
+                ),
+                asset_bindings=prepared_asset_bindings,
+                asset_manifest_source=(
+                    str(prepared_asset_manifest_path)
+                    if prepared_asset_manifest_path is not None
+                    else None
+                ),
+                direction_mode=args.direction_mode,
+                direction_id=args.direction_id,
+                design_system_version=args.design_system_version,
+                build_render=args.render_brief_plan,
+                brief_retry_payloads=tuple(retry_payloads),
+                use_safe_default=True,
+                fallback_scenario_id=fallback_scenario_id,
+            )
+            prepared_normalized_brief = json.loads(
+                json.dumps(
+                    {
+                        "schema_version": prepared_brief_generation.compilation.brief_plan.schema_version,
+                        "scenario_id": prepared_brief_generation.compilation.brief_plan.scenario_id,
+                        "groups": [
+                            {
+                                "id": group.id,
+                                "fact_refs": list(group.fact_refs),
+                                **(
+                                    {"beat_hint": group.beat_hint}
+                                    if group.beat_hint is not None
+                                    else {}
+                                ),
+                                **(
+                                    {"semantic_hint": group.semantic_hint}
+                                    if group.semantic_hint is not None
+                                    else {}
+                                ),
+                                "importance": group.importance,
+                            }
+                            for group in prepared_brief_generation.compilation.brief_plan.groups
+                        ],
+                        "preferences": prepared_brief_generation.compilation.brief_plan.preferences_dict(),
+                    }
+                )
+            )
+            prepared_normalization_changes = (
+                prepared_brief_generation.compilation.normalization_trace.changes
+            )
+            prepared_compiled = prepared_brief_generation.compiled_deck
+            prepared_render_plan = prepared_brief_generation.render_plan
+
+    if args.render_deck_plan or args.render_brief_plan:
+        if prepared_render_plan is None:
+            raise RuntimeError("governed renderer preflight did not produce a RenderPlan")
+        prepared_backend = negotiate_backend(
+            args.backend,
+            prepared_render_plan,
+            output_path=output_path,
+            require_physical_template=template is not None,
+        )
 
     if args.dry_run:
         emit_result(
@@ -2143,9 +2478,139 @@ def main(
         )
         return 0
 
+    if args.render_template_pack:
+        if prepared_template_pack is None or prepared_template_bindings is None:
+            raise RuntimeError("TemplatePack preflight did not produce an adaptation plan")
+        audit_dir = project_dir / ".window-pptx" / "audits"
+        report = adapt_template_pack(
+            prepared_template_pack,
+            prepared_template_bindings,
+            output_path,
+        )
+        report_path = write_adaptation_report(
+            report,
+            audit_dir / "template-adaptation-report.json",
+        )
+        slide_size = read_ooxml_slide_size(prepared_template_pack.template_path)
+        if slide_size is None:
+            raise RuntimeError("TemplatePack source has no readable slide size")
+        proof = LibreOfficeVerifier().verify(
+            output_path,
+            artifact_dir=audit_dir / "template-portable-proof",
+            expected_slide_count=prepared_template_pack.slide_count,
+            slide_size=slide_size,
+        )
+        reference_quality = assess_reference_grade_quality(
+            output_path,
+            png_paths=proof.png_paths,
+            expected_slide_count=prepared_template_pack.slide_count,
+        )
+        reference_quality_path = write_reference_quality_report(
+            reference_quality,
+            audit_dir / "reference-quality-report.json",
+        )
+        if not reference_quality.passed:
+            output_path.unlink(missing_ok=True)
+            raise RuntimeError(
+                "TemplatePack candidate failed the reference-grade visual complexity gate"
+            )
+        exported_pdf: str | None = None
+        if args.export_pdf:
+            pdf_output = output_path.with_suffix(".pdf")
+            shutil.copy2(proof.pdf_path, pdf_output)
+            exported_pdf = str(pdf_output)
+        emit_result(
+            {
+                "template_pack_adaptation": {
+                    "template_pack_id": report.template_pack_id,
+                    "source_sha256": report.source_sha256,
+                    "output_sha256": report.output_sha256,
+                    "changed_parts": list(report.changed_parts),
+                    "slot_change_count": len(report.slot_changes),
+                    "unchanged_part_count": report.unchanged_part_count,
+                },
+                "adaptation_report": str(report_path),
+                "portable_verification": proof.to_dict(),
+                "reference_quality": reference_quality.to_dict(),
+                "reference_quality_report": str(reference_quality_path),
+                "exported_pdf": exported_pdf,
+            },
+            args.json,
+            sys.stdout,
+            sys.stderr,
+        )
+        return 0
+
+    if args.com_doctor:
+        emit_result(
+            {"powerpoint_com_doctor": doctor_powerpoint().to_dict()},
+            args.json,
+            sys.stdout,
+            sys.stderr,
+        )
+        return 0
+
+    if args.certify_pptx:
+        certification_target = resolve_path(project_dir, args.certify_pptx)
+        verification_report = resolve_path(
+            project_dir,
+            args.portable_verification_report,
+        )
+        if certification_target is None:
+            die("PowerPoint certification target could not be resolved.")
+        if verification_report is None:
+            die("Portable verification report could not be resolved.")
+        validate_portable_certification_input(
+            certification_target,
+            verification_report,
+        )
+        certification = certify_powerpoint(
+            certification_target,
+            artifact_dir=(
+                project_dir
+                / ".window-pptx"
+                / "audits"
+                / "powerpoint-certification"
+            ),
+        )
+        emit_result(
+            {"powerpoint_certification": certification.to_dict()},
+            args.json,
+            sys.stdout,
+            sys.stderr,
+        )
+        return 0
+
     if args.compile_deck_plan:
         emit_result(
             {"compiled_deck": prepared_compiled},
+            args.json,
+            sys.stdout,
+            sys.stderr,
+        )
+        return 0
+
+    if args.normalize_brief_plan:
+        emit_result(
+            {
+                "normalized_brief_plan": prepared_normalized_brief,
+                "normalization_trace": list(prepared_normalization_changes),
+            },
+            args.json,
+            sys.stdout,
+            sys.stderr,
+        )
+        return 0
+
+    if args.compile_brief_plan or (
+        args.render_brief_plan
+        and prepared_brief_generation is not None
+        and prepared_brief_generation.interaction_required
+    ):
+        if prepared_brief_generation is None:
+            raise RuntimeError("BriefPlan preflight did not produce a generation")
+        emit_result(
+            prepared_brief_generation.to_dict(),
             args.json,
             sys.stdout,
             sys.stderr,
@@ -2201,6 +2666,7 @@ def main(
     deck_input_requested = deck_output_requested or any(
         [
             args.render_deck_plan,
+            args.render_brief_plan,
             args.extract_media,
             args.export_slides,
             args.add_master_watermark,
@@ -2277,9 +2743,138 @@ def main(
     if args.download_icon:
         non_com_results["iconify_download"] = download_icon(project_dir, args.download_icon, args)
 
+    portable_render_requested = (
+        (args.render_deck_plan or args.render_brief_plan)
+        and prepared_backend is not None
+        and prepared_backend.backend_id == "pptxgenjs"
+    )
+    if portable_render_requested:
+        if prepared_compiled is None or prepared_render_plan is None:
+            raise RuntimeError("portable renderer preflight did not produce a plan")
+        if args.verification == "powerpoint" and platform.system().casefold() != "windows":
+            die(
+                "PowerPoint certification requires native Windows. Use "
+                "--verification portable for OOXML + LibreOffice/Poppler verification."
+            )
+        audit_dir = project_dir / ".window-pptx" / "audits"
+        html_proof: Path | None = None
+        html_proof_error: str | None = None
+        if not args.no_html_proof:
+            try:
+                html_proof = write_html_proof(
+                    prepared_render_plan,
+                    audit_dir / "render-proof.html",
+                )
+            except (OSError, ValueError) as exc:
+                html_proof_error = f"optional HTML proof was not written: {exc}"
+        brief_v2_findings = ()
+        if args.render_brief_plan:
+            if prepared_brief_generation is None:
+                raise RuntimeError("BriefPlan renderer lost generation evidence")
+            write_brief_generation_artifacts(prepared_brief_generation, audit_dir)
+            brief_v2_findings = (
+                *generation_quality_findings(prepared_brief_generation),
+                *inspect_design_quality(prepared_brief_generation),
+            )
+        output_policy = OutputPolicy(
+            source_path=template,
+            output_path=output_path,
+            dry_run=False,
+            no_output_deck=args.no_output_deck,
+            allow_overwrite=args.allow_overwrite,
+        )
+        certifier = None
+        if args.verification == "powerpoint":
+            certifier = lambda candidate, artifact_dir: certify_powerpoint(
+                candidate,
+                artifact_dir=artifact_dir,
+            ).to_dict()
+        pipeline_result = execute_portable_render_plan(
+            prepared_compiled,
+            prepared_render_plan,
+            output_policy=output_policy,
+            audit_dir=audit_dir,
+            requested_backend=prepared_backend.backend_id,
+            verification_level=args.verification,
+            export_pdf=args.export_pdf,
+            quality_v2_findings=brief_v2_findings,
+            powerpoint_certifier=certifier,
+        )
+
+        rendered_export_result: dict[str, Any] | None = None
+        rendered_qa_result: dict[str, Any] | None = None
+        verification = pipeline_result.verification
+        proof_pngs = (
+            verification.libreoffice.png_paths if verification is not None else ()
+        )
+        if args.export_slides:
+            requested_slides = parse_slide_spec(args.export_slides)
+            invalid = [
+                slide_number
+                for slide_number in requested_slides
+                if slide_number < 1 or slide_number > len(proof_pngs)
+            ]
+            if invalid:
+                die(
+                    "Requested slide export is outside the rendered deck: "
+                    + ", ".join(str(value) for value in invalid)
+                )
+            export_dir = (
+                resolve_path(project_dir, args.export_dir)
+                or (project_dir / ".window-pptx" / "exports")
+            )
+            export_dir.mkdir(parents=True, exist_ok=True)
+            exported_paths: list[str] = []
+            for slide_number in requested_slides:
+                target = export_dir / f"slide-{slide_number:03d}.png"
+                shutil.copy2(proof_pngs[slide_number - 1], target)
+                exported_paths.append(str(target))
+            rendered_export_result = {
+                "slide_numbers": requested_slides,
+                "paths": exported_paths,
+                "source": "libreoffice-poppler-proof",
+            }
+        if args.export_qa:
+            qa_dir = project_dir / ".window-pptx" / "exports" / "qa"
+            qa_dir.mkdir(parents=True, exist_ok=True)
+            qa_paths: list[str] = []
+            for index, source in enumerate(proof_pngs, start=1):
+                target = qa_dir / f"slide-{index:03d}.png"
+                shutil.copy2(source, target)
+                qa_paths.append(str(target))
+            rendered_qa_result = {
+                "slide_count": len(qa_paths),
+                "paths": qa_paths,
+                "source": "libreoffice-poppler-proof",
+            }
+        generation_artifacts = None
+        if args.render_brief_plan and prepared_brief_generation is not None:
+            generation_artifacts = write_brief_generation_artifacts(
+                prepared_brief_generation,
+                audit_dir,
+            )
+        emit_result(
+            {
+                "render_pipeline": pipeline_result.to_dict(),
+                "html_proof": str(html_proof) if html_proof is not None else None,
+                "html_proof_error": html_proof_error,
+                "slide_export": rendered_export_result,
+                "qa_export": rendered_qa_result,
+                "quality_v2_artifact": pipeline_result.artifacts.get(
+                    "quality_report_v2"
+                ),
+                "generation_artifacts": generation_artifacts,
+            },
+            args.json,
+            sys.stdout,
+            sys.stderr,
+        )
+        return 0
+
     com_needed = any(
         [
             args.render_deck_plan,
+            args.render_brief_plan,
             args.export_slides,
             args.intake_template_library,
             args.add_master_watermark,
@@ -2302,6 +2897,15 @@ def main(
         emit_result(result, args.json, sys.stdout, sys.stderr)
         return 0
 
+    if args.render_brief_plan and prepared_brief_generation is not None:
+        # Persist model-independent preflight evidence before any Windows/COM
+        # dependency can fail. A successful render replaces the repair log with
+        # the final transaction evidence later in this function.
+        write_brief_generation_artifacts(
+            prepared_brief_generation,
+            project_dir / ".window-pptx" / "audits",
+        )
+
     require_windows()
     if args.clear_com_cache:
         maybe_clear_com_cache()
@@ -2312,6 +2916,13 @@ def main(
 
     try:
         handle = dispatch_powerpoint(args.attach_existing, client)
+        if (
+            args.render_deck_plan or args.render_brief_plan
+        ) and handle.dispatch_mode == "dynamic_dispatch_fallback":
+            raise ComSessionError(
+                "Governed rendering requires an owned DispatchEx PowerPoint session; "
+                "dynamic Dispatch ownership cannot be proven."
+            )
         app = handle.app
         if args.visible:
             try:
@@ -2408,18 +3019,55 @@ def main(
 
         presentation = open_or_create_presentation(app, effective_template, args.visible)
 
-        if args.render_deck_plan:
+        if args.render_deck_plan or args.render_brief_plan:
             if prepared_compiled is None or prepared_render_plan is None:
-                raise RuntimeError("DeckPlan renderer preflight did not produce a plan")
-            pipeline_result = execute_render_plan(
-                prepared_compiled,
-                prepared_render_plan,
-                presentation=presentation,
-                app=app,
-                output_policy=output_policy,
-                export_pdf=args.export_pdf,
-                audit_dir=project_dir / ".window-pptx" / "audits",
-            )
+                raise RuntimeError("governed renderer preflight did not produce a plan")
+            audit_dir = project_dir / ".window-pptx" / "audits"
+            brief_v2_findings = None
+            preview_exporter = None
+            quality_v2_slide_ids = None
+            if args.render_brief_plan:
+                if prepared_brief_generation is None:
+                    raise RuntimeError("BriefPlan renderer lost generation evidence")
+                brief_v2_findings = (
+                    *generation_quality_findings(prepared_brief_generation),
+                    *inspect_design_quality(prepared_brief_generation),
+                )
+                preview_exporter = lambda current: export_quality_v2_previews(
+                    current,
+                    audit_dir,
+                )
+                quality_v2_slide_ids = tuple(
+                    slide.source_id for slide in prepared_render_plan.slides
+                )
+            try:
+                pipeline_result = execute_render_plan(
+                    prepared_compiled,
+                    prepared_render_plan,
+                    presentation=presentation,
+                    app=app,
+                    output_policy=output_policy,
+                    export_pdf=args.export_pdf,
+                    audit_dir=audit_dir,
+                    max_repair_passes=1 if args.render_brief_plan else 2,
+                    quality_v2_findings=brief_v2_findings,
+                    preview_exporter=preview_exporter,
+                    quality_v2_slide_ids=quality_v2_slide_ids,
+                )
+            except QualityV2GateError as exc:
+                if prepared_brief_generation is not None:
+                    write_brief_generation_artifacts(
+                        prepared_brief_generation,
+                        audit_dir,
+                    )
+                raise
+            except QualityGateError as exc:
+                if args.render_brief_plan and prepared_brief_generation is not None:
+                    write_brief_generation_artifacts(
+                        prepared_brief_generation,
+                        audit_dir,
+                    )
+                raise
             rendered_export_result: dict[str, Any] | None = None
             if args.export_slides:
                 rendered_export_result = export_slides_to_png(
@@ -2435,13 +3083,25 @@ def main(
                     project_dir / ".window-pptx" / "exports" / "qa",
                 )
             quality_artifacts: dict[str, str] | None = None
+            quality_v2_artifact = pipeline_result.quality_v2_artifacts.get(
+                "quality_report_v2"
+            )
             if isinstance(pipeline_result.inspection, QualityReport) and isinstance(
                 pipeline_result.repair, RepairLog
             ):
                 quality_artifacts = write_quality_artifacts(
                     pipeline_result.inspection,
                     pipeline_result.repair,
-                    project_dir / ".window-pptx" / "audits",
+                    audit_dir,
+                )
+            generation_artifacts: dict[str, str] | None = None
+            if args.render_brief_plan:
+                if prepared_brief_generation is None:
+                    raise RuntimeError("BriefPlan renderer lost generation evidence")
+                generation_artifacts = write_brief_generation_artifacts(
+                    prepared_brief_generation,
+                    audit_dir,
+                    pipeline_result.post_render_repair_passes,
                 )
             emit_result(
                 {
@@ -2449,6 +3109,8 @@ def main(
                     "slide_export": rendered_export_result,
                     "qa_export": rendered_qa_result,
                     "quality_artifacts": quality_artifacts,
+                    "quality_v2_artifact": quality_v2_artifact,
+                    "generation_artifacts": generation_artifacts,
                 },
                 args.json,
                 sys.stdout,
@@ -2459,6 +3121,7 @@ def main(
         should_add_summary = not any(
             [
                 args.render_deck_plan,
+                args.render_brief_plan,
                 args.add_master_watermark,
                 args.audit_deck,
                 args.export_qa,
@@ -2526,10 +3189,19 @@ def main(
             print("window-pptx run complete")
         emit_result(result, args.json, sys.stdout, sys.stderr)
     finally:
+        active_error = sys.exc_info()[0] is not None
         if handle is not None:
             if presentation is not None:
                 handle.close_presentation(presentation, keep_open=args.keep_open)
             handle.quit(keep_open=args.keep_open)
+            if handle.cleanup_errors:
+                message = "PowerPoint cleanup failed: " + " | ".join(
+                    handle.cleanup_errors
+                )
+                if active_error:
+                    print(message, file=sys.stderr)
+                else:
+                    raise WindowPptxError(message)
     return 0
 
 

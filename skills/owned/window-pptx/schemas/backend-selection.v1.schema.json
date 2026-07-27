@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "backend-selection.v1.schema.json",
+  "title": "window-pptx backend selection v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["backend_id", "capabilities", "required_capabilities"],
+  "properties": {
+    "backend_id": {"enum": ["pptxgenjs", "com"]},
+    "capabilities": {"$ref": "#/$defs/capabilities"},
+    "required_capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/capabilityName"}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"backend_id": {"const": "pptxgenjs"}}},
+      "then": {"properties": {"capabilities": {"properties": {"backend_id": {"const": "pptxgenjs"}}}}}
+    },
+    {
+      "if": {"properties": {"backend_id": {"const": "com"}}},
+      "then": {"properties": {"capabilities": {"properties": {"backend_id": {"const": "com"}}}}}
+    }
+  ],
+  "$defs": {
+    "capabilityName": {
+      "enum": [
+        "native_text", "native_shape", "native_image", "native_table",
+        "native_chart", "master_layout", "speaker_notes", "hyperlinks",
+        "logical_diagram", "physical_template_import", "macro_enabled_output",
+        "powerpoint_template_output", "shape_grouping", "shape_animation",
+        "powerpoint_render", "headless_render"
+      ]
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backend_id", "native_text", "native_shape", "native_image",
+        "native_table", "native_chart", "master_layout", "speaker_notes",
+        "hyperlinks", "logical_diagram", "physical_template_import",
+        "macro_enabled_output", "powerpoint_template_output", "shape_grouping",
+        "shape_animation", "powerpoint_render", "headless_render"
+      ],
+      "properties": {
+        "backend_id": {"enum": ["pptxgenjs", "com"]},
+        "native_text": {"type": "boolean"},
+        "native_shape": {"type": "boolean"},
+        "native_image": {"type": "boolean"},
+        "native_table": {"type": "boolean"},
+        "native_chart": {"type": "boolean"},
+        "master_layout": {"type": "boolean"},
+        "speaker_notes": {"type": "boolean"},
+        "hyperlinks": {"type": "boolean"},
+        "logical_diagram": {"type": "boolean"},
+        "physical_template_import": {"type": "boolean"},
+        "macro_enabled_output": {"type": "boolean"},
+        "powerpoint_template_output": {"type": "boolean"},
+        "shape_grouping": {"type": "boolean"},
+        "shape_animation": {"type": "boolean"},
+        "powerpoint_render": {"type": "boolean"},
+        "headless_render": {"type": "boolean"}
+      }
+    }
+  }
+}

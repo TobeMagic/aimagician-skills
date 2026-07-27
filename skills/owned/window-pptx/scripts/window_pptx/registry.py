@@ -25,6 +25,8 @@ class Archetype:
     name: str
     aliases: tuple[str, ...]
     sections: tuple[str, ...]
+    slide_count_min: int
+    slide_count_max: int
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -32,6 +34,7 @@ class Archetype:
             "name": self.name,
             "aliases": list(self.aliases),
             "sections": list(self.sections),
+            "slide_count_range": [self.slide_count_min, self.slide_count_max],
         }
 
 
@@ -72,7 +75,7 @@ def load_archetypes(path: Path | str | None = None) -> dict[str, Archetype]:
         path_prefix = f"archetypes[{index}]"
         if not isinstance(entry, dict):
             raise RegistryError(f"{path_prefix} must be an object")
-        allowed = {"id", "name", "aliases", "sections"}
+        allowed = {"id", "name", "aliases", "sections", "slide_count_range"}
         unknown = sorted(set(entry) - allowed)
         if unknown:
             raise RegistryError(f"{path_prefix} has unknown fields: {', '.join(unknown)}")
@@ -84,11 +87,25 @@ def load_archetypes(path: Path | str | None = None) -> dict[str, Archetype]:
             raise RegistryError(
                 f"{path_prefix}.sections must contain at least six roles from cover to closing"
             )
+        slide_count_range = entry.get("slide_count_range")
+        if (
+            not isinstance(slide_count_range, list)
+            or len(slide_count_range) != 2
+            or any(type(value) is not int for value in slide_count_range)
+            or slide_count_range[0] < 5
+            or slide_count_range[1] < slide_count_range[0]
+            or slide_count_range[1] > 30
+        ):
+            raise RegistryError(
+                f"{path_prefix}.slide_count_range must be [min, max] integers"
+            )
         archetype = Archetype(
             id=archetype_id,
             name=_required_string(entry.get("name"), f"{path_prefix}.name"),
             aliases=_required_string_list(entry.get("aliases"), f"{path_prefix}.aliases"),
             sections=sections,
+            slide_count_min=slide_count_range[0],
+            slide_count_max=slide_count_range[1],
         )
         registry[archetype_id] = archetype
         for alias in (archetype_id, *archetype.aliases):

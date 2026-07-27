@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "id": "data-research-editorial",
+  "name": "Data Research Editorial",
+  "runtime_theme_id": "finance-investor",
+  "scenarios": ["market-analysis", "data-analysis", "research-report", "training-deck"],
+  "theme": {
+    "mode": "light",
+    "primary": "0F4C5C",
+    "accent": "E36414",
+    "background": "F5F3EE",
+    "heading_font": ["Source Han Serif SC", "Noto Serif CJK SC", "Arial"],
+    "body_font": ["Source Han Sans SC", "Noto Sans CJK SC", "Arial"]
+  },
+  "page_families": ["cover", "abstract", "method", "big-number", "annotated-chart", "small-multiples", "distribution", "comparison", "matrix", "table", "evidence-cards", "process", "training-concept", "takeaways", "closing"],
+  "pacing": {
+    "max_same_family_run": 2,
+    "hero_interval": 5,
+    "density_pattern": ["balanced", "dense", "dense", "sparse"]
+  },
+  "asset_strategy": {
+    "priority": ["user", "licensed", "generated", "native"],
+    "required_for": ["cover", "training-concept"]
+  },
+  "safe_fallback": {
+    "family": "annotated-evidence-with-takeaway",
+    "max_body_chars": 240,
+    "max_items": 7
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "benchmark_id": "window-pptx-v5-ordinary-models",
+  "seed": 20260720,
+  "repeats": 2,
+  "models": [
+    {
+      "id": "opencode/deepseek-v4-flash-free",
+      "label": "ordinary-a",
+      "ordinary": true
+    },
+    {
+      "id": "opencode/nemotron-3-ultra-free",
+      "label": "ordinary-b",
+      "ordinary": true
+    }
+  ],
+  "arms": [
+    {
+      "id": "unassisted-json",
+      "pipeline": "response-only",
+      "prompt_contract": "Create a presentation plan for the supplied brief. Return one JSON object only with project information and slide/content ideas. Do not invent facts."
+    },
+    {
+      "id": "governed-plan",
+      "pipeline": "deckplan-compile",
+      "prompt_contract": "Choose the commercial narrative first, then map each fact to a semantic page form. Return strict Window-PPTX DeckPlan v1 JSON only. Root keys are schema_version, project, exactly one of slides or content, and optional preferences. project requires title and scenario and may contain audience, objective, language. Prefer slides: each slide requires id and role matching ^[a-z0-9][a-z0-9._-]{0,79}$, so use executive-summary rather than words with spaces; choose roles from the brief's required beats or standard cover and closing roles. importance is only low, normal, high, or critical. Each block requires a lowercase semantic id, kind, and at least one of title, text, or items. source_ref is optional but, when used, must be one string rather than an array; omit it when no governed asset exists. Allowed kinds are bullets, metrics, comparison, sequence, timeline, process, roadmap, quadrant, funnel, trend, composition, matrix, risk, recommendation, quote, table, image, statement, generic. preferences may use tone professional, density balanced, audience_mode from executive, customer, investor, internal, learner, general, and motion off. Use concise titles, explicit scalar data items, safe defaults, and no coordinates, colors, fonts, unsupported keys, or invented facts."
+    },
+    {
+      "id": "full-v5",
+      "pipeline": "factstore-brief-narrative-direction-compile-render-qa-repair",
+      "prompt_contract": "Follow the Window-PPTX restricted weak-model workflow. Return strict BriefPlan v1 JSON only, with no explanation before or after it. The entire response must be either the JSON object or that same object inside one whole-response JSON fence; any leading or trailing commentary makes the response invalid. Root keys are schema_version, scenario_id, groups, and optional preferences. schema_version must be 1.0 and scenario_id must exactly match the frozen scenario id. Each group requires a lowercase hyphenated id and a non-empty fact_refs array. Reference every supplied fact id exactly once across all groups; never copy, paraphrase, summarize, or invent fact text. Assign a beat_hint from allowed_beat_hints to each group when the evidence fits, cover the supplied required_beats without duplicating facts, and ensure at least one group uses required_critical_beats. Optional semantic_hint must be one of bullets, metrics, comparison, sequence, timeline, process, roadmap, quadrant, funnel, trend, composition, matrix, risk, recommendation, quote, table, image, statement, generic. Optional importance is only low, normal, high, or critical. preferences may use tone professional, density balanced, audience_mode from executive, customer, investor, internal, learner, general, and motion off. Never emit project fields, slide titles, prose, coordinates, colors, fonts, template ids, placeholders, or unsupported keys. The immutable FactStore, narrative compiler, art-direction registry, native renderer, quality gates, and bounded repair own all factual text, structure, visual decisions, and engineering output."
+    }
+  ],
+  "metric_weights": {
+    "response_json_valid": 0.05,
+    "deck_plan_valid": 0.10,
+    "fact_retention": 0.15,
+    "prohibited_claim_safety": 0.15,
+    "numeric_claim_safety": 0.05,
+    "compile_success": 0.10,
+    "archetype_match": 0.05,
+    "slide_count_fit": 0.05,
+    "semantic_form_coverage": 0.05,
+    "rhythm_compliance": 0.05,
+    "native_editable_coverage": 0.10,
+    "hard_gate_pass": 0.10
+  },
+  "thresholds": {
+    "full_v5_plan_validity": 0.95,
+    "full_v5_compile_success": 0.95,
+    "full_v5_hard_gate_pass": 0.95,
+    "full_v5_fact_retention": 0.95,
+    "prohibited_numeric_inventions": 0.0,
+    "delta_vs_unassisted_points": 15.0,
+    "delta_vs_governed_plan_points": 8.0,
+    "human_delivery_mean": 4.0,
+    "human_delta_vs_unassisted": 0.5,
+    "human_repeat_stddev_max": 0.35,
+    "artifact_hash_coverage": 1.0
+  },
+  "blind_review_rubric": [
+    "narrative_clarity",
+    "content_accuracy",
+    "visual_hierarchy",
+    "layout_fitness_variety",
+    "readability",
+    "chart_diagram_appropriateness",
+    "brand_consistency",
+    "editability",
+    "customer_delivery_readiness"
+  ]
+}
