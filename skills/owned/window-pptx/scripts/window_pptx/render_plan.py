@@ -1106,7 +1106,23 @@ def _supporting_slot_text(
     slide: Mapping[str, Any], project: Mapping[str, Any]
 ) -> str:
     title = str(slide.get("title") or "").strip().casefold()
-    role = str(slide.get("role") or "").replace("-", " ").title()
+    raw_role = str(slide.get("role") or "")
+    language = str(project.get("language") or "").casefold()
+    localized_roles = {
+        "cover": "提案概览",
+        "section": "章节导读",
+        "closing": "决策事项",
+        "next-steps": "下一步行动",
+        "recommendations": "建议行动",
+        "risks": "风险与应对",
+        "team": "治理机制",
+        "timeline": "关键里程碑",
+    }
+    role = (
+        localized_roles.get(raw_role, raw_role.replace("-", " "))
+        if language.startswith("zh")
+        else raw_role.replace("-", " ").title()
+    )
     contextual = [
         str(project.get("objective") or "").strip(),
         (
@@ -2459,6 +2475,7 @@ def _build_render_plan_from_compiled(
     slide_total = len(compiled["slides"])
 
     for slide_index, slide in enumerate(compiled["slides"], start=1):
+        slide_variant_seed = slide.get("layout_variant_seed") or art_direction_id
         basis_id = slide["semantic_basis"]["block_id"]
         basis_block = next(block for block in slide["blocks"] if block["id"] == basis_id)
         linked_secondary_blocks = tuple(
@@ -2531,7 +2548,7 @@ def _build_render_plan_from_compiled(
                 previous_layouts,
                 item_count=item_count,
                 density=density,
-                variant_seed=art_direction_id,
+                variant_seed=slide_variant_seed,
                 forbidden_components=forbidden_components,
                 component_limits=component_limits,
             )
@@ -2548,7 +2565,7 @@ def _build_render_plan_from_compiled(
                 previous_layouts,
                 item_count=item_count,
                 density=density,
-                variant_seed=art_direction_id,
+                variant_seed=slide_variant_seed,
                 forbidden_components=forbidden_components,
                 component_limits=component_limits,
             )
@@ -2572,7 +2589,7 @@ def _build_render_plan_from_compiled(
             previous_layouts=previous_layouts,
             item_count=item_count,
             density=density,
-            variant_seed=art_direction_id,
+            variant_seed=slide_variant_seed,
             forbidden_components=forbidden_components,
             component_limits=component_limits,
             typography=theme.typography,
@@ -2609,7 +2626,7 @@ def _build_render_plan_from_compiled(
                 previous_layouts=previous_layouts,
                 item_count=item_count,
                 density=density,
-                variant_seed=art_direction_id,
+                variant_seed=slide_variant_seed,
                 forbidden_components=forbidden_components,
                 component_limits=component_limits,
                 typography=theme.typography,
@@ -2735,7 +2752,7 @@ def _build_render_plan_from_compiled(
                 previous_layouts=previous_layouts,
                 item_count=item_count,
                 density=density,
-                variant_seed=art_direction_id,
+                variant_seed=slide_variant_seed,
                 forbidden_components=forbidden_components,
                 component_limits=component_limits,
                 typography=theme.typography,
@@ -3014,6 +3031,7 @@ def compile_render_plan(
     asset_bindings: Mapping[str, AssetBinding] | None = None,
     preferred_families: tuple[str, ...] = (),
     visual_family_by_slide: Mapping[str, str] | None = None,
+    visual_recipe_by_slide: Mapping[str, str] | None = None,
     art_direction_id: str | None = None,
 ) -> tuple[dict[str, Any], RenderPlan]:
     """Compile semantic input exactly once and build its governed render plan."""
@@ -3022,6 +3040,7 @@ def compile_render_plan(
         payload,
         preferred_families=preferred_families,
         visual_family_by_slide=visual_family_by_slide,
+        visual_recipe_by_slide=visual_recipe_by_slide,
     )
     plan = _build_render_plan_from_compiled(
         compiled,
@@ -3045,6 +3064,7 @@ def build_render_plan(
     asset_bindings: Mapping[str, AssetBinding] | None = None,
     preferred_families: tuple[str, ...] = (),
     visual_family_by_slide: Mapping[str, str] | None = None,
+    visual_recipe_by_slide: Mapping[str, str] | None = None,
     art_direction_id: str | None = None,
 ) -> RenderPlan:
     """Compile semantic input and join it to exact governed render commands."""
@@ -3058,6 +3078,7 @@ def build_render_plan(
         asset_bindings=asset_bindings,
         preferred_families=preferred_families,
         visual_family_by_slide=visual_family_by_slide,
+        visual_recipe_by_slide=visual_recipe_by_slide,
         art_direction_id=art_direction_id,
     )[1]
 

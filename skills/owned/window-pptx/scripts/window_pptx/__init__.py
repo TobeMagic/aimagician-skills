@@ -30,6 +30,13 @@ from .com_diagnostics import (
 )
 from .cli import build_dry_run_result, collect_requested_actions, emit_result, parse_args
 from .capacity import split_slide
+from .composition_grammar import (
+    CompositionGrammar,
+    CompositionGrammarError,
+    CompositionRecipe,
+    load_composition_grammars,
+    select_composition_recipe,
+)
 from .brand import (
     BrandSpec,
     BrandSpecError,
@@ -208,10 +215,28 @@ from .template_pack import (
     TemplateChartSlot,
     TemplatePack,
     TemplatePackError,
+    TemplateVisualMask,
     adapt_template_pack,
     load_template_bindings,
     load_template_pack,
     write_adaptation_report,
+)
+from .template_geometry import (
+    TemplateGeometryInventory,
+    VisualMask,
+    build_template_geometry_inventory,
+    propose_visual_masks,
+)
+from .visual_similarity import (
+    SlideVisualSimilarity,
+    VisualSimilarityError,
+    VisualSimilarityReport,
+    compare_masked_previews,
+)
+from .golden_template_replay import (
+    GoldenReplayError,
+    GoldenReplayResult,
+    run_golden_template_replay,
 )
 from .themes import (
     BrandOverrides,
@@ -264,6 +289,9 @@ __all__ = [
     "ChartSeries",
     "ChartSpec",
     "ComSessionError",
+    "CompositionGrammar",
+    "CompositionGrammarError",
+    "CompositionRecipe",
     "ContentBlock",
     "CandidateResult",
     "CandidateScore",
@@ -345,6 +373,14 @@ __all__ = [
     "TemplateChartSlot",
     "TemplatePack",
     "TemplatePackError",
+    "TemplateVisualMask",
+    "TemplateGeometryInventory",
+    "VisualMask",
+    "SlideVisualSimilarity",
+    "VisualSimilarityError",
+    "VisualSimilarityReport",
+    "GoldenReplayError",
+    "GoldenReplayResult",
     "VerificationResult",
     "VisualPlan",
     "VisualSlide",
@@ -354,6 +390,10 @@ __all__ = [
     "ART_DIRECTION_IDS",
     "adapt_legacy_quality_report",
     "adapt_template_pack",
+    "build_template_geometry_inventory",
+    "propose_visual_masks",
+    "compare_masked_previews",
+    "run_golden_template_replay",
     "adapt_render_findings",
     "apply_asset_safe_fallback",
     "filter_usable_asset_bindings",
@@ -402,6 +442,7 @@ __all__ = [
     "load_design_pack",
     "load_design_packs",
     "load_components",
+    "load_composition_grammars",
     "load_deck_plan",
     "load_brand_spec",
     "load_brief_plan",
@@ -434,6 +475,7 @@ __all__ = [
     "resolve_layout",
     "resolve_theme",
     "select_art_directions",
+    "select_composition_recipe",
     "select_proof_slide_ids",
     "select_design_pack",
     "semantic_form_chart_type",

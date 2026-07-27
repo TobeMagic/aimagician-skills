@@ -97,6 +97,23 @@ def test_schema_artifact_is_versioned_and_strict() -> None:
     assert schema["$defs"]["contentBlock"]["properties"]["items"]["minItems"] == 1
 
 
+def test_composition_recipe_is_carried_into_compiler_variant_seed() -> None:
+    payload = minimal_plan(kind="comparison")
+    compiled = compile_deck_plan(
+        payload,
+        visual_family_by_slide={"summary": "comparison"},
+        visual_recipe_by_slide={"summary": "proposal.problem"},
+    )
+
+    slide = compiled["slides"][0]
+    assert slide["layout_variant_seed"] == "proposal.problem"
+    assert slide["decision_trace"]["composition_recipe"] == {
+        "source_slide_id": "summary",
+        "recipe_id": "proposal.problem",
+        "rule_id": "COMPOSITION_GRAMMAR_VARIANT_SEED",
+    }
+
+
 def test_schema_and_manual_validator_agree_on_whitespace_and_data_item_types() -> None:
     jsonschema = pytest.importorskip("jsonschema")
     schema = json.loads(

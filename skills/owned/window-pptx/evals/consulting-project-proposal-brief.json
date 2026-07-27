@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "project-proposal",
+  "groups": [
+    {
+      "id": "context",
+      "fact_refs": ["context-fragmentation"],
+      "beat_hint": "context",
+      "semantic_hint": "comparison",
+      "importance": "high"
+    },
+    {
+      "id": "problem",
+      "fact_refs": ["problem-cycle"],
+      "beat_hint": "problem",
+      "semantic_hint": "metrics",
+      "importance": "critical"
+    },
+    {
+      "id": "objectives",
+      "fact_refs": ["objective-cycle"],
+      "beat_hint": "objectives",
+      "semantic_hint": "metrics",
+      "importance": "critical"
+    },
+    {
+      "id": "solution",
+      "fact_refs": ["solution-loop"],
+      "beat_hint": "solution",
+      "semantic_hint": "process",
+      "importance": "high"
+    },
+    {
+      "id": "scope",
+      "fact_refs": ["scope-workstreams"],
+      "beat_hint": "scope",
+      "semantic_hint": "matrix",
+      "importance": "normal"
+    },
+    {
+      "id": "approach",
+      "fact_refs": ["approach-phases"],
+      "beat_hint": "approach",
+      "semantic_hint": "process",
+      "importance": "high"
+    },
+    {
+      "id": "timeline",
+      "fact_refs": ["timeline-six-months"],
+      "beat_hint": "timeline",
+      "semantic_hint": "timeline",
+      "importance": "high"
+    },
+    {
+      "id": "team",
+      "fact_refs": ["team-governance"],
+      "beat_hint": "team",
+      "semantic_hint": "matrix",
+      "importance": "normal"
+    },
+    {
+      "id": "risks",
+      "fact_refs": ["risk-adoption"],
+      "beat_hint": "risks",
+      "semantic_hint": "risk",
+      "importance": "high"
+    },
+    {
+      "id": "next-steps",
+      "fact_refs": ["next-step-approval"],
+      "beat_hint": "next-steps",
+      "semantic_hint": "recommendation",
+      "importance": "critical"
+    }
+  ],
+  "preferences": {
+    "tone": "professional",
+    "density": "balanced",
+    "audience_mode": "executive",
+    "motion": "off"
+  }
+}

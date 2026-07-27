@@ -219,6 +219,24 @@ scenario -> DesignPack -> page family candidates -> paced variant
 -> components -> AssetPlan -> VisualPlan
 ```
 
+For scenarios with a registered composition grammar, the model also receives
+a bounded recipe rather than an open-ended design prompt:
+
+```text
+slide role + semantic kind -> registered recipe
+-> family/variant/density/emphasis/components/capacity
+-> deterministic recipe seed -> editable RenderPlan
+```
+
+Recipes live in `registries/composition-grammars.json`. Each scenario must
+provide exactly one safe wildcard recipe. A missing scenario grammar preserves
+the existing DesignPack path; a malformed grammar fails closed. The first
+production tracer is `consulting-project-proposal-v1`, including governed
+cover, problem, outcome, approach, workstream, timeline, governance, risk,
+next-step, and closing compositions. Explicit Chinese source lists are
+preserved as editable process, timeline, matrix, governance, or risk/action
+nodes rather than collapsed into a single text block.
+
 The four built-in DesignPacks are:
 
 - `institutional-annual-editorial`
@@ -241,7 +259,10 @@ TemplatePack instead of rebuilding the design from raw coordinates. A
 TemplatePack is valid only when its source SHA-256 matches the manifest and
 every change targets a declared stable shape or chart slot. Unbound OOXML parts
 must remain byte-identical. Editable chart changes must update both chart
-caches and the corresponding embedded XLSX.
+caches and the corresponding embedded XLSX. Its `visual_masks` must exactly
+match geometry derived from the hash-bound source shape tree, including nested
+group transforms and relationship-resolved chart frames; the model never
+authors or expands masks.
 
 Portable TemplatePack example:
 
@@ -260,6 +281,31 @@ Template bindings are complete, schema-bounded, and capacity-checked before
 mutation. A newline inside a binding separates existing rich-text runs; it
 does not invent a paragraph or arbitrary line break. The adapter writes a new
 candidate atomically and never changes the authorized source template.
+
+Before registering or changing a TemplatePack, emit the read-only authoring
+inventory and review all declared targets:
+
+```bash
+python scripts/inventory_window_pptx_template.py \
+  --template-pack institutional-work-summary-v1 \
+  --output template-geometry-inventory.json
+```
+
+For the owned work-summary golden, use the one-command replay:
+
+```bash
+python scripts/run_window_pptx_golden_replay.py \
+  --template-pack institutional-work-summary-v1 \
+  --bindings evals/v5.1-work-summary-bindings.json \
+  --output-dir .window-pptx/audits/golden-replay
+```
+
+The replay adapts the candidate, renders source and candidate with one
+LibreOffice/rasterizer fingerprint, and compares only pixels outside trusted
+editable regions. Every slide requires similarity `>= 0.98`, changed-pixel
+ratio `<= 0.02` at an 8/255 channel tolerance, and trusted-mask coverage
+`<= 0.80`. Page count, dimensions, renderer fingerprint, mask geometry, source
+hash, or candidate hash drift fails closed.
 
 The reference-grade structural gate rejects sparse but technically valid
 decks. For the institutional work-summary profile it checks average visual

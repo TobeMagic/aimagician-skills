@@ -675,6 +675,22 @@ def _action_title(
     # fact-kind labels below until localized archetype labels are registered.
     if role and not fact.language.casefold().startswith(("zh", "ja", "ko")):
         return role.replace("-", " ").title()
+    if role and fact.language.casefold().startswith("zh"):
+        localized_roles = {
+            "context": "现状与挑战",
+            "problem": "核心问题",
+            "objectives": "项目目标",
+            "solution": "解决方案",
+            "scope": "试点范围",
+            "approach": "实施路径",
+            "timeline": "关键里程碑",
+            "team": "治理机制",
+            "investment": "资源投入",
+            "risks": "风险与应对",
+            "next-steps": "下一步行动",
+        }
+        if role in localized_roles:
+            return localized_roles[role]
     labels = {
         "claim": "Key takeaway",
         "metric": "Key metric",
@@ -744,6 +760,10 @@ _EXACT_PARALLEL_LIST_PATTERN = re.compile(
     r"\b(?:supports|includes|offers|integrates with)\s+"
     r"(?P<items>[A-Za-z0-9][A-Za-z0-9, /&+.-]{1,140}?)\.\s*$",
     re.IGNORECASE,
+)
+_CJK_PARALLEL_LIST_PATTERN = re.compile(
+    r"(?:包括|依次完成|连接|分为|覆盖|包含)"
+    r"(?P<items>[^。！？]{3,180}?)(?:。|！|？)?$"
 )
 
 
@@ -940,25 +960,71 @@ def _structured_parallel_items(fact: Fact) -> list[str] | None:
     """Extract a short, explicit source list without paraphrasing its items."""
 
     match = _EXACT_PARALLEL_LIST_PATTERN.search(fact.text)
-    if match is None:
-        return None
-    raw = match.group("items")
-    if not re.search(r"\band\b", raw, re.IGNORECASE) or re.search(
-        r"\d,\d{3}\b", raw
-    ):
-        return None
-    parts = []
-    for item in re.split(r"\s*,\s*|\s+and\s+", raw, flags=re.IGNORECASE):
-        normalized = re.sub(r"\s+", " ", item).strip(" ,")
-        normalized = re.sub(r"^and\s+", "", normalized, flags=re.IGNORECASE)
-        parts.append(normalized)
+    cjk_match = _CJK_PARALLEL_LIST_PATTERN.search(fact.text)
+    if match is None and cjk_match is None:
+        # Governance statements often carry an explicit Chinese clause list
+        # without an introductory "包括". Preserve each source-present clause.
+        if (
+            fact.language.casefold().startswith("zh")
+            and fact.text.count("负责") >= 2
+        ):
+            parts = [
+                item.strip(" ，,；;。")
+                for item in re.split(r"[，,；;]", fact.text)
+                if item.strip(" ，,；;。")
+            ]
+        else:
+            return None
+    elif cjk_match is not None:
+        raw = cjk_match.group("items")
+        raw = re.sub(
+            r"(?:[一二三四五六七八九十\d]+(?:个|条|项|阶段|环节|工作流))$",
+            "",
+            raw,
+        ).strip(" ，,；;")
+        parts = [
+            item.strip(" ，,；;。")
+            for item in re.split(r"[、，,；;]|\s*(?:以及|和|及)\s*", raw)
+            if item.strip(" ，,；;。")
+        ]
+    else:
+        raw = match.group("items")
+        if not re.search(r"\band\b", raw, re.IGNORECASE) or re.search(
+            r"\d,\d{3}\b", raw
+        ):
+            return None
+        parts = []
+        for item in re.split(r"\s*,\s*|\s+and\s+", raw, flags=re.IGNORECASE):
+            normalized = re.sub(r"\s+", " ", item).strip(" ,")
+            normalized = re.sub(r"^and\s+", "", normalized, flags=re.IGNORECASE)
+            parts.append(normalized)
     if (
-        not 2 <= len(parts) <= 5
+        not 2 <= len(parts) <= 6
         or any(not item or len(item) > 48 for item in parts)
         or len({item.casefold() for item in parts}) != len(parts)
     ):
         return None
     return parts
+
+
+def _structured_risk_items(fact: Fact) -> list[dict[str, str]] | None:
+    if not fact.language.casefold().startswith("zh"):
+        return None
+    match = re.fullmatch(
+        r"\s*(?:主要)?风险(?:是|为)(?P<risk>[^；;。]+)"
+        r"[；;]\s*(?:对应)?措施(?:是|为)(?P<action>[^。]+)[。]?\s*",
+        fact.text,
+    )
+    if match is None:
+        return None
+    risk = match.group("risk").strip()
+    action = match.group("action").strip()
+    if not risk or not action or len(risk) > 80 or len(action) > 140:
+        return None
+    return [
+        {"label": "风险", "text": risk},
+        {"label": "应对", "text": action},
+    ]
 
 
 def _semantic_hint_compatible(kind: str, facts: tuple[Fact, ...]) -> bool:
@@ -985,6 +1051,10 @@ def _semantic_hint_compatible(kind: str, facts: tuple[Fact, ...]) -> bool:
         return len(numeric) >= 2 and all(fact.time_scope for fact in numeric)
     if kind in {"comparison", "table", "matrix", "quadrant"}:
         return len(facts) >= 2 or (
+            kind == "matrix"
+            and len(facts) == 1
+            and _structured_parallel_items(facts[0]) is not None
+        ) or (
             kind == "comparison"
             and len(facts) == 1
             and (
@@ -1119,9 +1189,17 @@ def _fact_block(
     instruction_items = (
         _structured_instruction_items(fact) if kind == "recommendation" else None
     )
-    parallel_items = _structured_parallel_items(fact) if kind == "bullets" else None
+    parallel_items = (
+        _structured_parallel_items(fact)
+        if kind in {"bullets", "process", "sequence", "timeline", "matrix", "roadmap"}
+        else None
+    )
+    risk_items = _structured_risk_items(fact) if kind == "risk" else None
     if instruction_items is not None:
         block["items"] = instruction_items
+        block["text"] = fact.text
+    elif risk_items is not None:
+        block["items"] = risk_items
         block["text"] = fact.text
     elif parallel_items is not None:
         block["items"] = parallel_items

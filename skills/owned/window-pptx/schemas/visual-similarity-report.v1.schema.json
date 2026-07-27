@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "visual-similarity-report.v1.schema.json",
+  "title": "Window-PPTX masked visual similarity report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_renderer_fingerprint",
+    "candidate_renderer_fingerprint",
+    "profile",
+    "slides",
+    "passed"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "source_renderer_fingerprint": {"type": "string", "minLength": 1},
+    "candidate_renderer_fingerprint": {"type": "string", "minLength": 1},
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum_similarity",
+        "maximum_changed_pixel_ratio",
+        "channel_tolerance",
+        "maximum_mask_coverage"
+      ],
+      "properties": {
+        "minimum_similarity": {"type": "number", "minimum": 0, "maximum": 1},
+        "maximum_changed_pixel_ratio": {"type": "number", "minimum": 0, "maximum": 1},
+        "channel_tolerance": {"type": "integer", "minimum": 0, "maximum": 255},
+        "maximum_mask_coverage": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "slide",
+          "similarity",
+          "changed_pixel_ratio",
+          "mask_coverage",
+          "unmasked_pixels",
+          "passed"
+        ],
+        "properties": {
+          "slide": {"type": "integer", "minimum": 1},
+          "similarity": {"type": "number", "minimum": 0, "maximum": 1},
+          "changed_pixel_ratio": {"type": "number", "minimum": 0, "maximum": 1},
+          "mask_coverage": {"type": "number", "minimum": 0, "maximum": 1},
+          "unmasked_pixels": {"type": "integer", "minimum": 1},
+          "passed": {"type": "boolean"}
+        }
+      }
+    },
+    "passed": {"type": "boolean"}
+  }
+}

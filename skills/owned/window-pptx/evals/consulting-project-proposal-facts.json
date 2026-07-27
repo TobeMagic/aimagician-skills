@@ -1,0 +1,132 @@
+{
+  "schema_version": "1.0",
+  "project": {
+    "title": "企业知识协同平台建设提案",
+    "objective": "批准六个月试点，以统一知识入口、缩短审批周期并建立可量化的运营闭环。",
+    "audience": "客户管理委员会",
+    "language": "zh-CN"
+  },
+  "sources": [
+    {
+      "id": "request",
+      "kind": "request",
+      "locator": "phase-32-consulting-tracer"
+    }
+  ],
+  "facts": [
+    {
+      "id": "context-fragmentation",
+      "kind": "claim",
+      "text": "当前知识分散在文档库、即时通讯和个人网盘，员工无法通过统一入口检索权威版本。",
+      "language": "zh-CN",
+      "source_id": "request",
+      "locator": "context",
+      "required": true,
+      "recommended_beat": "context",
+      "recommended_semantic": "comparison"
+    },
+    {
+      "id": "problem-cycle",
+      "kind": "metric",
+      "text": "关键知识审批平均需要 10 天。",
+      "language": "zh-CN",
+      "source_id": "request",
+      "locator": "problem",
+      "required": true,
+      "value": 10,
+      "unit": "天",
+      "recommended_beat": "problem",
+      "recommended_semantic": "metrics"
+    },
+    {
+      "id": "objective-cycle",
+      "kind": "metric",
+      "text": "审批周期目标：5 天。",
+      "language": "zh-CN",
+      "source_id": "request",
+      "locator": "objectives",
+      "required": true,
+      "value": 5,
+      "unit": "天",
+      "recommended_beat": "objectives",
+      "recommended_semantic": "metrics"
+    },
+    {
+      "id": "solution-loop",
+      "kind": "instruction",
+      "text": "统一入口连接采集、审核、发布和复盘四个环节。",
+      "language": "zh-CN",
+      "source_id": "request",
+      "locator": "solution",
+      "required": true,
+      "recommended_beat": "solution",
+      "recommended_semantic": "process"
+    },
+    {
+      "id": "scope-workstreams",
+      "kind": "claim",
+      "text": "试点范围包括知识治理、智能检索、运营看板和权限体系四条工作流。",
+      "language": "zh-CN",
+      "source_id": "request",
+      "locator": "scope",
+      "required": true,
+      "recommended_beat": "scope",
+      "recommended_semantic": "matrix"
+    },
+    {
+      "id": "approach-phases",
+      "kind": "instruction",
+      "text": "项目依次完成诊断、蓝图、构建、试点和推广准备。",
+      "language": "zh-CN",
+      "source_id": "request",
+      "locator": "approach",
+      "required": true,
+      "recommended_beat": "approach",
+      "recommended_semantic": "process"
+    },
+    {
+      "id": "timeline-six-months",
+      "kind": "date",
+      "text": "六个月试点分为第 1 月诊断、第 2 月蓝图、第 3 至 4 月构建、第 5 月试点和第 6 月复盘。",
+      "language": "zh-CN",
+      "source_id": "request",
+      "locator": "timeline",
+      "required": true,
+      "recommended_beat": "timeline",
+      "recommended_semantic": "timeline"
+    },
+    {
+      "id": "team-governance",
+      "kind": "claim",
+      "text": "管理委员会负责决策，业务负责人负责验收，产品团队负责交付，知识运营团队负责持续运营。",
+      "language": "zh-CN",
+      "source_id": "request",
+      "locator": "team",
+      "required": true,
+      "recommended_beat": "team",
+      "recommended_semantic": "matrix"
+    },
+    {
+      "id": "risk-adoption",
+      "kind": "claim",
+      "text": "主要风险是业务采用不足；对应措施是选择高频场景、设置内容责任人并按周复盘使用数据。",
+      "language": "zh-CN",
+      "source_id": "request",
+      "locator": "risks",
+      "required": true,
+      "recommended_beat": "risks",
+      "recommended_semantic": "risk"
+    },
+    {
+      "id": "next-step-approval",
+      "kind": "instruction",
+      "text": "下一步需要批准试点范围、业务负责人和启动日期。",
+      "language": "zh-CN",
+      "source_id": "request",
+      "locator": "next-steps",
+      "required": true,
+      "recommended_beat": "next-steps",
+      "recommended_semantic": "recommendation"
+    }
+  ]
+}

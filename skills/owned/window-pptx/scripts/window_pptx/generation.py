@@ -382,6 +382,11 @@ def prepare_brief_generation(
         slide.slide_id: governed_runtime_family(slide.family)
         for slide in visual_plan.slides
     }
+    visual_recipe_by_slide = {
+        slide.slide_id: slide.recipe_id
+        for slide in visual_plan.slides
+        if slide.recipe_id is not None
+    }
     bindings, asset_rejections = filter_usable_asset_bindings(asset_bindings)
     asset_kinds = available_asset_kinds(bindings)
     font_inventory = set(installed_fonts or {"Arial"})
@@ -540,6 +545,7 @@ def prepare_brief_generation(
             asset_bindings=bindings,
             preferred_families=preferred_families,
             visual_family_by_slide=visual_family_by_slide,
+            visual_recipe_by_slide=visual_recipe_by_slide,
             art_direction_id=selected_profile_id,
         )
     else:
@@ -547,6 +553,7 @@ def prepare_brief_generation(
             safe_deck,
             preferred_families=preferred_families,
             visual_family_by_slide=visual_family_by_slide,
+            visual_recipe_by_slide=visual_recipe_by_slide,
         )
         render_plan = None
     if resolved_brand is not None and render_plan is not None:

@@ -97,6 +97,18 @@ class TemplateChartSlot:
 
 
 @dataclass(frozen=True)
+class TemplateVisualMask:
+    slide: int
+    target_kind: str
+    target_id: str
+    x: float
+    y: float
+    width: float
+    height: float
+    padding: float = 0.0
+
+
+@dataclass(frozen=True)
 class TemplatePack:
     id: str
     name: str
@@ -108,6 +120,7 @@ class TemplatePack:
     chart_slots: tuple[TemplateChartSlot, ...]
     text_style_rules: tuple[TemplateTextStyleRule, ...]
     supported_scenarios: tuple[str, ...]
+    visual_masks: tuple[TemplateVisualMask, ...] = ()
 
     @property
     def slots_by_id(self) -> dict[str, TemplateSlot | TemplateChartSlot]:
@@ -454,13 +467,78 @@ def load_template_pack(identifier: str | Path) -> TemplatePack:
         not isinstance(value, str) or not value.strip() for value in supported
     ):
         raise TemplatePackError("supported_scenarios must be an array of strings")
+    visual_masks: list[TemplateVisualMask] = []
+    raw_visual_masks = raw.get("visual_masks", [])
+    if not isinstance(raw_visual_masks, list):
+        raise TemplatePackError("visual_masks must be an array")
+    mask_targets: set[tuple[int, str, str]] = set()
+    for index, entry in enumerate(raw_visual_masks):
+        if not isinstance(entry, dict):
+            raise TemplatePackError(f"visual_masks[{index}] must be an object")
+        slide = entry.get("slide")
+        target_kind = entry.get("target_kind")
+        target_id = entry.get("target_id")
+        values = {
+            field: entry.get(field)
+            for field in ("x", "y", "width", "height", "padding")
+        }
+        if (
+            type(slide) is not int
+            or slide < 1
+            or slide > raw["slide_count"]
+            or target_kind not in {"shape", "chart"}
+            or not isinstance(target_id, str)
+            or not target_id.strip()
+        ):
+            raise TemplatePackError(f"visual_masks[{index}] has an invalid target")
+        normalized: dict[str, float] = {}
+        for field, value in values.items():
+            if field == "padding" and value is None:
+                value = 0.0
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(float(value))
+            ):
+                raise TemplatePackError(
+                    f"visual_masks[{index}].{field} must be finite"
+                )
+            normalized[field] = float(value)
+        if (
+            normalized["x"] < 0
+            or normalized["y"] < 0
+            or normalized["width"] <= 0
+            or normalized["height"] <= 0
+            or normalized["padding"] != 0
+            or normalized["x"] + normalized["width"] > 1
+            or normalized["y"] + normalized["height"] > 1
+        ):
+            raise TemplatePackError(
+                f"visual_masks[{index}] must be normalized with zero padding"
+            )
+        target = (slide, target_kind, target_id.strip())
+        if target in mask_targets:
+            raise TemplatePackError(f"duplicate visual mask target: {target}")
+        mask_targets.add(target)
+        visual_masks.append(
+            TemplateVisualMask(
+                slide=slide,
+                target_kind=target_kind,
+                target_id=target_id.strip(),
+                x=normalized["x"],
+                y=normalized["y"],
+                width=normalized["width"],
+                height=normalized["height"],
+                padding=normalized["padding"],
+            )
+        )
     with zipfile.ZipFile(template_path) as archive:
         slide_count = sum(1 for name in archive.namelist() if _SLIDE_RE.fullmatch(name))
     if slide_count != raw["slide_count"]:
         raise TemplatePackError(
             f"TemplatePack declares {raw['slide_count']} slides but contains {slide_count}"
         )
-    return TemplatePack(
+    pack = TemplatePack(
         id=_required_string(raw["id"], "id"),
         name=_required_string(raw["name"], "name"),
         manifest_path=manifest_path,
@@ -471,7 +549,43 @@ def load_template_pack(identifier: str | Path) -> TemplatePack:
         chart_slots=tuple(chart_slots),
         text_style_rules=tuple(text_style_rules),
         supported_scenarios=tuple(value.strip() for value in supported),
+        visual_masks=tuple(visual_masks),
     )
+    if pack.visual_masks:
+        from .template_geometry import propose_visual_masks
+
+        proposed = propose_visual_masks(pack)
+        declared = tuple(
+            (
+                mask.slide,
+                mask.target_kind,
+                mask.target_id,
+                mask.x,
+                mask.y,
+                mask.width,
+                mask.height,
+                mask.padding,
+            )
+            for mask in pack.visual_masks
+        )
+        expected = tuple(
+            (
+                mask.slide,
+                mask.target_kind,
+                mask.target_id,
+                mask.x,
+                mask.y,
+                mask.width,
+                mask.height,
+                mask.padding,
+            )
+            for mask in proposed
+        )
+        if declared != expected:
+            raise TemplatePackError(
+                "visual_masks do not exactly match source-derived declared targets"
+            )
+    return pack
 
 
 def load_template_bindings(path: str | Path) -> tuple[str, dict[str, str]]:

@@ -12,7 +12,8 @@ A TemplatePack must contain:
 - a source PPTX copied into the owned skill only with explicit authorization;
 - `ORIGIN.md` recording source path, authorization scope, and SHA-256;
 - `template-pack.json` declaring the source hash, slide count, supported
-  scenarios, shape slots, chart slots, and capacity;
+  scenarios, shape slots, chart slots, capacity, and source-derived visual
+  masks;
 - a DesignPack manifest that selects the TemplatePack only for compatible
   scenarios.
 
@@ -100,7 +101,38 @@ content touching edges, missing previews, and adjacent near-duplicates.
 Structural and PNG gates complement each other: neither is a pixel-perfect
 PowerPoint certification.
 
-## 7. Font portability
+## 7. Trusted non-slot visual preservation
+
+`visual_masks` are an authoring artifact, not a generation decision. Produce
+them only from the hash-bound source PPTX with:
+
+```bash
+python scripts/inventory_window_pptx_template.py \
+  --template-pack <id-or-manifest> \
+  --output template-geometry-inventory.json
+```
+
+The inventory composes nested group affine transforms, resolves chart frames
+through slide relationships, and normalizes target rectangles to page
+coordinates. The TemplatePack loader recomputes those rectangles from the
+source and rejects a manifest whose masks differ. It also rejects unknown
+targets, invalid or off-page geometry, nonzero padding, duplicate targets, or
+source-hash drift.
+
+Golden replay renders the authorized source and adapted candidate through the
+same renderer fingerprint. It ignores only the union of trusted masks and
+measures all remaining RGB pixels:
+
+- mean absolute similarity must be at least `0.98` on every page;
+- changed-pixel ratio must be at most `0.02`;
+- a pixel is changed when any RGB channel differs by more than `8`;
+- mask union coverage must not exceed `0.80` on any page.
+
+Masks are never inferred from observed source/candidate differences. An
+out-of-mask mutation is a hard failure even when package structure remains
+valid.
+
+## 8. Font portability
 
 LibreOffice can substitute Windows or commercial fonts. This can visibly
 change line breaks or make calligraphic titles appear oversized even when the
@@ -119,12 +151,15 @@ Therefore:
   the customer environment depends on those fonts;
 - never claim PowerPoint pixel identity from LibreOffice proof alone.
 
-## 8. Delivery evidence
+## 9. Delivery evidence
 
 Keep these files under `.window-pptx/audits/`:
 
 - `template-adaptation-report.json`
 - `reference-quality-report.json`
+- `template-geometry-inventory.json`
+- `visual-similarity-report.json`
+- `golden-replay-manifest.json`
 - `template-portable-proof/portable-proof.pdf`
 - one PNG per slide
 - engine versions, candidate hash before/after, and source-template hash
@@ -132,7 +167,13 @@ Keep these files under `.window-pptx/audits/`:
 The final response must link the promoted PPTX and report unresolved font or
 cross-engine differences explicitly.
 
-## 9. Visual reviewer routing
+The repeatable owned command is
+`scripts/run_window_pptx_golden_replay.py`. Two clean output directories must
+produce byte-identical candidates and semantically identical compact
+manifests. PDF/PNG proof files remain local; commit only compact manifests and
+selected previews when required.
+
+## 10. Visual reviewer routing
 
 Pixel-level judgment must come from a reviewer that demonstrably decoded the
 rendered slide images in the current session. Use

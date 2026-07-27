@@ -44,9 +44,38 @@
     "text_style_rules": {
       "type": "array",
       "items": {"$ref": "#/$defs/text_style_rule"}
+    },
+    "visual_masks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/visual_mask"}
     }
   },
   "$defs": {
+    "visual_mask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slide",
+        "target_kind",
+        "target_id",
+        "x",
+        "y",
+        "width",
+        "height",
+        "padding"
+      ],
+      "properties": {
+        "slide": {"type": "integer", "minimum": 1},
+        "target_kind": {"enum": ["shape", "chart"]},
+        "target_id": {"type": "string", "minLength": 1},
+        "x": {"type": "number", "minimum": 0, "maximum": 1},
+        "y": {"type": "number", "minimum": 0, "maximum": 1},
+        "width": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "height": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "padding": {"const": 0}
+      }
+    },
     "text_style_rule": {
       "type": "object",
       "additionalProperties": false,

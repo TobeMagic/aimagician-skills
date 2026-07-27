@@ -687,6 +687,7 @@ def compile_deck_plan(
     *,
     preferred_families: tuple[str, ...] = (),
     visual_family_by_slide: Mapping[str, str] | None = None,
+    visual_recipe_by_slide: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Compile validated semantic intent into deterministic, design-neutral slides."""
 
@@ -698,8 +699,11 @@ def compile_deck_plan(
     )
     archetype = resolve_archetype(plan.project.scenario)
     governed_visual_families = dict(visual_family_by_slide or {})
+    governed_visual_recipes = dict(visual_recipe_by_slide or {})
     slide_ids = {slide.id for slide in plan.slides}
-    unknown_visual_slides = sorted(set(governed_visual_families) - slide_ids)
+    unknown_visual_slides = sorted(
+        (set(governed_visual_families) | set(governed_visual_recipes)) - slide_ids
+    )
     if unknown_visual_slides:
         raise DeckPlanValidationError(
             "VisualPlan references unknown slide ids: "
@@ -731,8 +735,11 @@ def compile_deck_plan(
                 structural_role=slide.role,
             )
             visual_family = governed_visual_families.get(source_slide.id)
+            visual_recipe = governed_visual_recipes.get(source_slide.id)
             compiled = slide.to_dict()
             compiled["page_family"] = decision.selected
+            if visual_recipe is not None:
+                compiled["layout_variant_seed"] = visual_recipe
             compiled["semantic_basis"] = {
                 "block_id": primary.id,
                 "block_index": block_index,
@@ -746,6 +753,12 @@ def compile_deck_plan(
                     "preferred_family": visual_family,
                     "selected": decision.selected == visual_family,
                     "rule_id": "VISUAL_PLAN_GOVERNED_FAMILY",
+                }
+            if visual_recipe is not None:
+                trace["composition_recipe"] = {
+                    "source_slide_id": source_slide.id,
+                    "recipe_id": visual_recipe,
+                    "rule_id": "COMPOSITION_GRAMMAR_VARIANT_SEED",
                 }
             compiled["decision_trace"] = trace
             compiled_slides.append(compiled)

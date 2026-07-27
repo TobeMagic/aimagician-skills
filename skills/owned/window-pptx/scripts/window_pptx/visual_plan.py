@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 
 from .design_packs import DesignPack, select_design_pack
+from .composition_grammar import select_composition_recipe
 from .weak_model import NarrativePlan, NarrativeSlide
 
 
@@ -25,6 +26,7 @@ class VisualSlide:
     components: tuple[str, ...]
     asset_refs: tuple[str, ...]
     decision_rules: tuple[str, ...]
+    recipe_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -37,6 +39,7 @@ class VisualSlide:
             "components": list(self.components),
             "asset_refs": list(self.asset_refs),
             "decision_rules": list(self.decision_rules),
+            "recipe_id": self.recipe_id,
         }
 
 
@@ -266,9 +269,23 @@ def compile_visual_plan(
     assets: list[PlannedAsset] = []
     recent: list[str] = []
     for index, slide in enumerate(narrative.slides):
-        density = pack.pacing.density_pattern[index % len(pack.pacing.density_pattern)]
-        family, rule = _family_for_slide(slide, pack)
-        if (
+        recipe = select_composition_recipe(
+            scenario_id or narrative.archetype_id,
+            design_pack_id=pack.id,
+            role=slide.role,
+            semantic_kind=slide.semantic_kind,
+        )
+        density = (
+            recipe.density
+            if recipe is not None
+            else pack.pacing.density_pattern[index % len(pack.pacing.density_pattern)]
+        )
+        if recipe is not None:
+            family = _available_family(pack, (recipe.family,))
+            rule = f"GRAMMAR_{recipe.id}"
+        else:
+            family, rule = _family_for_slide(slide, pack)
+        if recipe is None and (
             len(recent) >= pack.pacing.max_same_family_run
             and all(item == family for item in recent[-pack.pacing.max_same_family_run :])
         ):
@@ -282,8 +299,14 @@ def compile_visual_plan(
         recent.append(family)
         critical = slide.importance in {"high", "critical"}
         hero_due = index > 0 and index % pack.pacing.hero_interval == 0
-        emphasis = "hero" if critical or hero_due else (
-            "quiet" if slide.structural else "standard"
+        emphasis = (
+            recipe.emphasis
+            if recipe is not None
+            else "hero"
+            if critical or hero_due
+            else "quiet"
+            if slide.structural
+            else "standard"
         )
         asset_refs: tuple[str, ...] = ()
         asset_required = family in pack.asset_strategy.required_for
@@ -329,16 +352,33 @@ def compile_visual_plan(
                 slide_id=slide.id,
                 role=slide.role,
                 family=family,
-                variant=_variant_for(family, index, density),
+                variant=(
+                    recipe.variant
+                    if recipe is not None
+                    else _variant_for(family, index, density)
+                ),
                 emphasis=emphasis,
                 density=density,
-                components=_components_for(family),
+                components=(
+                    recipe.components
+                    if recipe is not None
+                    else _components_for(family)
+                ),
                 asset_refs=asset_refs,
                 decision_rules=(
                     rule,
                     f"DENSITY_PATTERN_{density.upper()}",
                     f"PACK_{pack.id}",
+                    *(
+                        (
+                            f"CAPACITY_MAX_ITEMS_{recipe.max_items}",
+                            f"CAPACITY_MAX_BODY_CHARS_{recipe.max_body_chars}",
+                        )
+                        if recipe is not None
+                        else ()
+                    ),
                 ),
+                recipe_id=recipe.id if recipe is not None else None,
             )
         )
     return (

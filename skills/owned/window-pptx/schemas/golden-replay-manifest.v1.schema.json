@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "golden-replay-manifest.v1.schema.json",
+  "title": "Window-PPTX golden replay manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "template_pack_id",
+    "source_sha256",
+    "bindings_sha256",
+    "candidate_sha256",
+    "slide_count",
+    "changed_parts",
+    "changed_slot_count",
+    "source_integrity_preserved",
+    "renderer_fingerprint",
+    "reference_quality",
+    "visual_similarity",
+    "artifacts",
+    "passed"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "template_pack_id": {"type": "string", "minLength": 1},
+    "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "bindings_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "candidate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "slide_count": {"type": "integer", "minimum": 1},
+    "changed_parts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "changed_slot_count": {"type": "integer", "minimum": 0},
+    "source_integrity_preserved": {"const": true},
+    "renderer_fingerprint": {"type": "string", "minLength": 1},
+    "reference_quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "passed",
+        "average_objects_per_slide",
+        "layout_signature_count",
+        "chart_count",
+        "media_count"
+      ],
+      "properties": {
+        "passed": {"const": true},
+        "average_objects_per_slide": {"type": "number", "minimum": 0},
+        "layout_signature_count": {"type": "integer", "minimum": 1},
+        "chart_count": {"type": "integer", "minimum": 0},
+        "media_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "visual_similarity": {"$ref": "visual-similarity-report.v1.schema.json"},
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate",
+        "similarity_report",
+        "source_proof_dir",
+        "candidate_proof_dir"
+      ],
+      "properties": {
+        "candidate": {"type": "string", "minLength": 1},
+        "similarity_report": {"type": "string", "minLength": 1},
+        "source_proof_dir": {"type": "string", "minLength": 1},
+        "candidate_proof_dir": {"type": "string", "minLength": 1}
+      }
+    },
+    "passed": {"const": true}
+  }
+}

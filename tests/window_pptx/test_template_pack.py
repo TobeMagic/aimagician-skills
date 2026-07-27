@@ -5,9 +5,11 @@ import io
 import json
 import sys
 import zipfile
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -23,6 +25,8 @@ from window_pptx.template_pack import (  # noqa: E402
     load_template_pack,
 )
 from window_pptx.cli import build_dry_run_result, parse_args  # noqa: E402
+from window_pptx.golden_template_replay import run_golden_template_replay  # noqa: E402
+from window_pptx.libreoffice import LibreOfficeVerificationResult  # noqa: E402
 
 
 def _sha(path: Path) -> str:
@@ -46,6 +50,7 @@ def test_reference_template_pack_is_authorized_hash_bound_and_complete() -> None
     assert len(pack.slots) == 220
     assert len(pack.chart_slots) == 36
     assert len(pack.slots_by_id) == 256
+    assert len(pack.visual_masks) == 224
     assert len(pack.chart_slots) == 36
     assert len(pack.slots_by_id) == len(pack.slots) + len(pack.chart_slots)
     assert {slot.slide for slot in pack.slots} == set(range(1, 16))
@@ -235,3 +240,71 @@ def test_template_pack_cli_is_portable_and_reports_all_dry_run_outputs(
         value.endswith("template-adaptation-report.json")
         for value in result["would_write"]
     )
+
+
+def test_golden_replay_is_semantically_reproducible_with_one_renderer_fingerprint(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeVerifier:
+        dpi = 144
+
+        def verify(
+            self,
+            candidate: Path,
+            *,
+            artifact_dir: Path,
+            expected_slide_count: int,
+            slide_size: object,
+        ) -> LibreOfficeVerificationResult:
+            artifact_dir.mkdir(parents=True, exist_ok=True)
+            pngs = []
+            for index in range(1, expected_slide_count + 1):
+                path = artifact_dir / f"slide-{index:03d}.png"
+                Image.new("RGB", (160, 90), "white").save(path)
+                pngs.append(path)
+            pdf = artifact_dir / "portable-proof.pdf"
+            pdf.write_bytes(b"%PDF-fake")
+            digest = _sha(candidate)
+            return LibreOfficeVerificationResult(
+                engine_version="LibreOffice test",
+                poppler_version="Ghostscript test",
+                page_count=expected_slide_count,
+                page_width_pt=960,
+                page_height_pt=540,
+                pdf_path=pdf,
+                png_paths=tuple(pngs),
+                candidate_hash_before=digest,
+                candidate_hash_after=digest,
+            )
+
+    monkeypatch.setattr(
+        "window_pptx.golden_template_replay.assess_reference_grade_quality",
+        lambda *args, **kwargs: SimpleNamespace(
+            passed=True,
+            complexity=SimpleNamespace(
+                average_objects_per_slide=56.467,
+                layout_signature_count=12,
+                chart_count=4,
+                media_count=29,
+            ),
+        ),
+    )
+    bindings = SKILL_ROOT / "evals" / "v5.1-work-summary-bindings.json"
+
+    first = run_golden_template_replay(
+        "institutional-work-summary-v1",
+        bindings,
+        tmp_path / "first",
+        verifier=FakeVerifier(),  # type: ignore[arg-type]
+    )
+    second = run_golden_template_replay(
+        "institutional-work-summary-v1",
+        bindings,
+        tmp_path / "second",
+        verifier=FakeVerifier(),  # type: ignore[arg-type]
+    )
+
+    assert first.candidate_sha256 == second.candidate_sha256
+    assert first.manifest == second.manifest
+    assert first.similarity.passed is True

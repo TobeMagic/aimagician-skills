@@ -23,6 +23,7 @@ from window_pptx.design_packs import (
 from window_pptx.generation import prepare_brief_generation
 from window_pptx.layouts import SlideSize
 from window_pptx.visual_plan import compile_visual_plan
+from window_pptx.composition_grammar import load_composition_grammars
 from window_pptx.weak_model import NarrativePlan, NarrativeSlide
 
 def _narrative(archetype_id: str = "business-report") -> NarrativePlan:
@@ -192,3 +193,131 @@ def test_brief_generation_consumes_design_visual_and_asset_plans() -> None:
     assert payload["design_pack_id"] == generation.design_pack.id
     assert payload["visual_plan"]["slides"]
     assert "asset_plan" in payload
+
+
+def test_project_proposal_uses_deterministic_consulting_composition_grammar() -> None:
+    roles = (
+        "cover",
+        "executive-summary",
+        "problem",
+        "objectives",
+        "approach",
+        "workstreams",
+        "timeline",
+        "governance",
+        "risks",
+        "recommendations",
+        "closing",
+    )
+    semantics = (
+        "cards",
+        "cards",
+        "comparison",
+        "metrics",
+        "process",
+        "matrix",
+        "timeline",
+        "hierarchy",
+        "risk",
+        "recommendation",
+        "cards",
+    )
+    narrative = NarrativePlan(
+        schema_version="1.0",
+        archetype_id="project-proposal",
+        fact_store_digest="0" * 64,
+        slides=tuple(
+            NarrativeSlide(
+                id=f"proposal-{index:02d}",
+                role=role,
+                title=f"Proposal claim {index}",
+                importance="normal",
+                fact_refs=(f"fact-{index:02d}",),
+                semantic_kind=semantics[index - 1],
+                structural=role == "cover",
+            )
+            for index, role in enumerate(roles, start=1)
+        ),
+        coverage={"required_fact_ids": [], "covered_fact_ids": []},
+        decisions=(),
+    )
+
+    grammar = load_composition_grammars()
+    visual, _assets = compile_visual_plan(narrative)
+
+    assert len(grammar) == 1
+    assert visual.design_pack_id == "consulting-executive"
+    assert [slide.recipe_id for slide in visual.slides] == [
+        "proposal.cover",
+        "proposal.executive-summary",
+        "proposal.problem",
+        "proposal.outcomes",
+        "proposal.approach",
+        "proposal.workstreams",
+        "proposal.timeline",
+        "proposal.governance",
+        "proposal.risks",
+        "proposal.next-step",
+        "proposal.close",
+    ]
+    assert [slide.family for slide in visual.slides] == [
+        "cover",
+        "executive-summary",
+        "comparison",
+        "big-number",
+        "process",
+        "matrix",
+        "timeline",
+        "process",
+        "risk-actions",
+        "recommendation",
+        "closing",
+    ]
+    assert visual.slides[5].density == "dense"
+    assert "CAPACITY_MAX_ITEMS_8" in visual.slides[5].decision_rules
+
+
+def test_consulting_tracer_structures_chinese_process_timeline_and_risk_evidence() -> None:
+    facts = json.loads(
+        (
+            SKILL_ROOT / "evals" / "consulting-project-proposal-facts.json"
+        ).read_text(encoding="utf-8")
+    )
+    brief = json.loads(
+        (
+            SKILL_ROOT / "evals" / "consulting-project-proposal-brief.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    generation = prepare_brief_generation(
+        facts,
+        brief,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        build_render=True,
+    )
+    deck_slides = {
+        slide["id"]: slide for slide in generation.compilation.deck_plan["slides"]
+    }
+
+    assert len(deck_slides["solution"]["blocks"][0]["items"]) == 4
+    assert len(deck_slides["scope"]["blocks"][0]["items"]) == 4
+    assert len(deck_slides["approach"]["blocks"][0]["items"]) == 5
+    assert len(deck_slides["timeline"]["blocks"][0]["items"]) == 5
+    assert len(deck_slides["team"]["blocks"][0]["items"]) == 4
+    assert deck_slides["risks"]["blocks"][0]["items"] == [
+        {"label": "风险", "text": "业务采用不足"},
+        {
+            "label": "应对",
+            "text": "选择高频场景、设置内容责任人并按周复盘使用数据",
+        },
+    ]
+    assert deck_slides["scope"]["title"] == "试点范围"
+    assert deck_slides["team"]["title"] == "治理机制"
+    assert deck_slides["risks"]["title"] == "风险与应对"
+    next_step = next(
+        slide
+        for slide in generation.render_plan.slides
+        if slide.source_id == "next-steps"
+    )
+    assert all(item.text != "Next Steps" for item in next_step.objects)
