@@ -339,7 +339,8 @@ export async function previewInstallSkills(
     allowedRootsByTarget: createAllowedRootsByTarget(targetHomes),
     selectedTargets,
     installs: selectedManagedInstalls,
-    previousInstalls: previousManifest?.managedInstalls ?? []
+    previousInstalls: previousManifest?.managedInstalls ?? [],
+    pruneMissing: false
   });
 
   return {
@@ -478,7 +479,8 @@ export async function installSkills(options: InstallSkillsOptions): Promise<Inst
     allowedRootsByTarget,
     selectedTargets,
     installs: selectedManagedInstalls,
-    previousInstalls
+    previousInstalls,
+    pruneMissing: false
   });
 
   const nextManifest = mergeInstalledManifest(

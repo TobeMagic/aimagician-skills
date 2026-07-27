@@ -10,6 +10,7 @@ export interface SyncManagedInstallsOptions {
   selectedTargets: SupportedTarget[];
   installs: ResolvedManagedInstall[];
   previousInstalls: BootstrapManifestManagedInstall[];
+  pruneMissing?: boolean;
 }
 
 export interface ManagedInstallSyncResult {
@@ -64,6 +65,7 @@ export function planManagedInstallSync(
   options: SyncManagedInstallsOptions
 ): ManagedInstallSyncOperation[] {
   const operations: ManagedInstallSyncOperation[] = [];
+  const pruneMissing = options.pruneMissing ?? true;
 
   for (const target of options.selectedTargets) {
     const desiredInstalls = options.installs
@@ -87,10 +89,10 @@ export function planManagedInstallSync(
         continue;
       }
 
-      if (isManagedPath(normalizedPath, allowedRoots)) {
-        operations.push(toRemoveOperation(install));
-      } else {
+      if (!isManagedPath(normalizedPath, allowedRoots)) {
         operations.push(toSkipOperation(install));
+      } else if (pruneMissing) {
+        operations.push(toRemoveOperation(install));
       }
     }
 

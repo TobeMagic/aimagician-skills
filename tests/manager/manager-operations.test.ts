@@ -241,6 +241,46 @@ describe("manager operations", () => {
     await expectPath(join(manualSkillDir, "SKILL.md"));
   });
 
+  it("adds a selected skill without removing an unrelated managed install", async () => {
+    const fixture = await createManagerFixture();
+
+    await installSkills({
+      assetIds: ["research-helper"],
+      scope: "project",
+      projectDir: fixture.projectDir,
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides,
+      now: "2026-05-24T11:10:00Z"
+    });
+    await installSkills({
+      assetIds: ["daily-ops"],
+      scope: "project",
+      projectDir: fixture.projectDir,
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides,
+      now: "2026-05-24T11:20:00Z"
+    });
+
+    await expectPath(join(fixture.projectDir, ".claude", "skills", "research-helper", "SKILL.md"));
+    await expectPath(join(fixture.projectDir, ".claude", "skills", "daily-ops", "SKILL.md"));
+
+    const manifest = JSON.parse(
+      await readFile(join(fixture.projectDir, ".skillbird", "manifest.json"), "utf8")
+    ) as {
+      managedInstalls: Array<{ assetId: string }>;
+    };
+    expect(manifest.managedInstalls.map((install) => install.assetId).sort()).toEqual([
+      "daily-ops",
+      "research-helper"
+    ]);
+  });
+
   it("installs skills selected by category without explicit asset ids", async () => {
     const fixture = await createManagerFixture();
 
@@ -357,6 +397,16 @@ describe("manager operations", () => {
   it("previews install sync without writing target files", async () => {
     const fixture = await createManagerFixture();
 
+    await installSkills({
+      assetIds: ["research-helper"],
+      scope: "project",
+      projectDir: fixture.projectDir,
+      selectedTargets: ["claude"],
+      catalog: fixture.catalog,
+      taxonomyPath: fixture.taxonomyPath,
+      platform: fixture.platform,
+      githubRepoOverrides: fixture.githubRepoOverrides
+    });
     const preview = await previewInstallSkills({
       assetIds: ["daily-ops"],
       scope: "project",
@@ -381,6 +431,7 @@ describe("manager operations", () => {
       }
     ]);
     await expectMissing(join(fixture.projectDir, ".claude", "skills", "daily-ops", "SKILL.md"));
+    await expectPath(join(fixture.projectDir, ".claude", "skills", "research-helper", "SKILL.md"));
   });
 
   it("persists scoped include exclude and default skill overrides", async () => {

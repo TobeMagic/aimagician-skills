@@ -10,6 +10,8 @@ The recommended scope is global because the delegation policy must be available 
 
 Make external CLI delegation a reliable default for broad evidence work and independent review, while keeping requirements, architecture, risk acceptance, integration, and final judgment with the main Agent.
 
+Installation validation also established the CLI contract: targeted `install` operations are additive, while `bootstrap` and `reset` remain full reconciliation operations.
+
 The previous trigger was dominated by “read-only exploration.” In the observed failure, the main Agent directly scanned a multi-file set of skill, documentation, and test changes before delegating the audit. That consumed main-context budget and proved the trigger surface was too narrow.
 
 ## Capability Change
@@ -60,6 +62,7 @@ Automated checks cover:
 - strong natural-language trigger phrases in frontmatter and the body;
 - the exact observed multi-file-scan regression scenario;
 - required skill loading and `NEEDS_CONTEXT` behavior;
+- explicit controller injection of `REQUIRED_SKILLS`; no reliance on worker self-selection from generic task wording;
 - child-agent scope inheritance;
 - DeepSeek/Agnes routing and current OpenCode positional prompt syntax;
 - event-driven waiting without fixed elapsed deadlines;

@@ -169,6 +169,8 @@ See [`docs/design/html-universal-design-capability-merge.md`](docs/design/html-u
 | `skillbird reset --target claude --scope project --install-all --yes` | Rebuild a target scope |
 | `skillbird bootstrap` | Legacy all-selected bootstrap workflow |
 
+`install` is additive: installing one skill or selected bundle preserves other managed skills. Use `bootstrap` or `reset` when the target should be reconciled to the full active owner-skill set.
+
 Useful flags:
 
 ```bash

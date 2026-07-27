@@ -1,6 +1,6 @@
 ---
 name: cli-agent-delegator
-description: Use before the main Agent directly performs broad or multi-source exploration, repository scanning, architecture mapping, deep web research, image or visual inspection, independent plan/code/spec/verification/audit review, or a bounded short task such as git inspection, test execution, reporting, or isolated low-risk implementation that an external CLI agent can handle. Prefer OpenCode, give it the required owned skills and complete context, then validate critical claims. Keep one- or two-file lookups and core product or architecture decisions with the main Agent.
+description: MANDATORY CLI delegation and prompt-contract gate. Use before the main Agent directly performs broad or multi-source exploration, repository scanning, architecture mapping, deep web research, image or visual inspection, independent plan/code/spec/verification/audit review, or a bounded short task such as git inspection, test execution, reporting, or isolated low-risk implementation that an external CLI agent can handle. Prefer OpenCode, put cli-agent-delegator plus every domain skill in REQUIRED_SKILLS, require actual Skill tool calls before worker action, then validate critical claims. Keep one- or two-file lookups and core product or architecture decisions with the main Agent.
 category: operate
 subcategory: agent-orchestration
 tags:
@@ -37,6 +37,10 @@ Before the main Agent starts a broad scan or mechanical verification, ask whethe
 This gate applies even when the user says only “check,” “inspect,” “research,” “review,” “verify,” or “audit.” Do not let the main Agent silently perform a multi-file or multi-source scan that should have been delegated.
 
 Do not delegate a lookup limited to one or two known files, a tiny fact already in context, user discussion, unresolved product choices, architecture ownership decisions, security acceptance, or final completion judgment.
+
+## Worker-Side Loading Gate
+
+Do not rely on worker self-selection from task wording. For every OpenCode or other CLI-worker exploration, research, review, git inspection, test execution, reporting, verification, audit, or bounded-work task, the controller must put `cli-agent-delegator` and every domain skill in `REQUIRED_SKILLS`. The worker must then invoke the Skill tool for each named skill before substantive reads, commands, or edits. Mentioning a skill in prose does not satisfy this gate. If a named skill cannot be loaded, return `NEEDS_CONTEXT` instead of improvising a workflow.
 
 ## Capability Routing
 

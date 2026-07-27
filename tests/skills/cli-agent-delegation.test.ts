@@ -21,6 +21,7 @@ describe("cli-agent-delegator capability contract", () => {
     const skill = await readFile(join(delegatorRoot, "SKILL.md"), "utf8");
     const description = frontmatterDescription(skill);
 
+    expect(description).toMatch(/^MANDATORY CLI delegation and prompt-contract gate\./);
     for (const trigger of [
       "broad or multi-source exploration",
       "deep web research",
@@ -36,6 +37,10 @@ describe("cli-agent-delegator capability contract", () => {
     expect(description).toContain("Keep one- or two-file lookups");
     expect(skill).toContain("Before the main Agent starts a broad scan or mechanical verification");
     expect(skill).toContain("This gate applies even when the user says only");
+    expect(skill).toContain("Worker-Side Loading Gate");
+    expect(skill).toContain("Do not rely on worker self-selection from task wording");
+    expect(skill).toContain("the controller must put `cli-agent-delegator` and every domain skill in `REQUIRED_SKILLS`");
+    expect(skill).toContain("Mentioning a skill in prose does not satisfy this gate");
   });
 
   it("requires complete context, owned skill loading, bounded permissions, and inherited child scope", async () => {

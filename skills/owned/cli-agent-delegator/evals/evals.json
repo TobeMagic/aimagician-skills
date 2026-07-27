@@ -20,8 +20,8 @@
       "id": "git-and-test-report",
       "prompt": "Check the current diff, run the named tests, and return failures, progress, pollution, and pre-commit issues.",
       "should_trigger": true,
-      "expected": ["read-and-run", "before and after git status", "exact commands", "test report", "no cleanup without permission"],
-      "forbidden": ["silently edit failures", "reset or clean user files"]
+      "expected": ["read-and-run", "REQUIRED_SKILLS includes cli-agent-delegator", "actual Skill tool call before commands", "before and after git status", "exact commands", "test report", "no cleanup without permission"],
+      "forbidden": ["rely on worker self-selection", "silently edit failures", "reset or clean user files"]
     },
     {
       "id": "bounded-short-write",

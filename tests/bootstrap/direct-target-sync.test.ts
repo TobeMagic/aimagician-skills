@@ -79,6 +79,45 @@ describe("direct target sync", () => {
     await expect(access(join(createDestination, "SKILL.md"))).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+  it("keeps unrelated managed installs when pruning is disabled", async () => {
+    const root = await mkdtemp(join(tmpdir(), "skillbird-sync-additive-"));
+    tempDirectories.push(root);
+    const allowedRoot = join(root, "allowed");
+    const sourceDir = join(root, "source", "new-skill");
+    const createDestination = join(allowedRoot, "new-skill");
+    const retainedDestination = join(allowedRoot, "retained-skill");
+
+    await mkdir(sourceDir, { recursive: true });
+    await mkdir(retainedDestination, { recursive: true });
+    await writeFile(join(sourceDir, "SKILL.md"), "# New Skill\n", "utf8");
+    await writeFile(join(retainedDestination, "SKILL.md"), "# Retained\n", "utf8");
+
+    const operations = planManagedInstallSync({
+      allowedRootsByTarget: {
+        codex: [allowedRoot], claude: [], opencode: [], gemini: [], hermes: [], cursor: [], copilot: []
+      },
+      selectedTargets: ["codex"],
+      installs: [
+        {
+          target: "codex", assetId: "new-skill", kind: "skill", origin: "owned",
+          sourcePath: sourceDir, destinationPath: createDestination, installType: "directory", installArea: "skills"
+        }
+      ],
+      previousInstalls: [
+        {
+          target: "codex", assetId: "retained-skill", kind: "skill", origin: "owned",
+          destinationPath: retainedDestination, installType: "directory", installArea: "skills"
+        }
+      ],
+      pruneMissing: false
+    });
+
+    expect(operations.map((operation) => ({ kind: operation.kind, assetId: operation.assetId }))).toEqual([
+      { kind: "create", assetId: "new-skill" }
+    ]);
+    await access(join(retainedDestination, "SKILL.md"), constants.F_OK);
+  });
+
   it("copies owned and GitHub-resolved skills into Codex, Claude Code, and OpenCode homes", async () => {
     const fixture = await createFixtureRepository();
     const workspaceRoot = join(fixture.root, "workspace");
