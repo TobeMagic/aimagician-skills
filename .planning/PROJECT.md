@@ -8,7 +8,7 @@ The product is for one primary user first: AImagician. The active v5.0 goal is t
 
 ## Core Value
 
-Skillbird resolves catalog defaults plus user YAML overrides into safe, previewed, repeatable sync plans. For v5.0, the same safety discipline extends to semantic PowerPoint planning, deterministic design selection, native editable rendering, and hard-gated customer delivery.
+Skillbird resolves catalog defaults plus user YAML overrides into safe, previewed, repeatable sync plans. For v5.0, the same safety discipline extends to semantic PowerPoint planning, deterministic design selection, portable native-editable OOXML rendering, cross-engine verification, and hard-gated customer delivery.
 
 ## Requirements
 
@@ -19,12 +19,11 @@ Skillbird resolves catalog defaults plus user YAML overrides into safe, previewe
 
 ### Active
 
-- [ ] Complete Phase 22 real Windows PowerPoint safety and transactional acceptance.
-- [ ] Compile versioned semantic DeckPlans through deterministic narrative, layout, capacity, and fallback rules.
-- [ ] Provide eight themes and at least 72 governed layout variants across 24 page families.
-- [ ] Render editable PowerPoint objects transactionally and validate package, COM, visual, and deck quality.
+- [ ] Complete Phase 27.2 portable PptxGenJS generation, OOXML semantic inspection, and LibreOffice/Poppler verification without adopting a model-authored HTML-to-PPTX runtime.
+- [ ] Compile immutable facts through strict BriefPlan and deterministic NarrativePlan into canonical DeckPlan v1.
+- [ ] Add twelve art directions, three candidate proofs, executable brand/layout/theme rules, and quality-report v2.
 - [ ] Benchmark three generation arms across two ordinary models and 15 business scenarios.
-- [ ] Ship only after the Windows acceptance matrix and customer-delivery hard gates pass.
+- [ ] Ship only after portable customer-delivery hard gates, the formal benchmark, blind review, and sampled PowerPoint certification pass.
 
 ### Out of Scope
 
@@ -35,15 +34,16 @@ Skillbird resolves catalog defaults plus user YAML overrides into safe, previewe
 
 ## Current Milestone: v5.0 Window-PPTX Verified Production Engine
 
-**Goal:** Move presentation quality from model improvisation into a versioned compiler, design system, layout/component registries, native renderer, bounded repair loop, and reproducible weak-model benchmark.
+**Goal:** Move presentation quality from model improvisation into a versioned compiler, design system, layout/component registries, portable native renderer, bounded repair loop, cross-engine verifier, and reproducible weak-model benchmark.
 
 **Target features:**
-- Strict dry-run, source/output protection, COM ownership, macro-security restoration, and transactional candidate promotion
+- Strict dry-run, source/output protection, backend capability negotiation, COM ownership where applicable, and transactional candidate promotion
 - DeckPlan schema, 15 business archetypes, semantic layout ranking, capacity splitting, rhythm, and weak-model fallbacks
 - Eight themes, 24 layout families, at least 72 deterministic variants, reusable components, and brand/font fallbacks
-- Native editable charts, tables, diagrams, notes, links, controlled motion, and ratio-aware exports
+- Native editable charts, tables, diagrams, notes, links, capability-gated motion, and ratio-aware exports
+- Backend-neutral rendering, deterministic OOXML packaging, semantic package inspection, isolated LibreOffice/Poppler proof rendering, and proof-only HTML
 - Five-layer quality inspection with bounded monotonic repair and stable report schemas
-- Fifteen-scenario, three-arm weak-model benchmark plus final Windows PowerPoint acceptance
+- Fifteen-scenario, three-arm weak-model benchmark plus final cross-engine acceptance and sampled PowerPoint certification
 
 ## Context
 
@@ -88,8 +88,9 @@ The user expects all major targets to be covered in v1 because the integration i
 | Project and global scopes are independent | The user wants current-project installs such as `<project>/.claude/skills` without affecting global CLI homes | - Pending |
 | v3.0 treats Skillbee as configuration orchestration first | The PRD requires YAML intent, eligibility resolution, preview, and managed sync rather than direct install side effects | - Pending |
 | v5.0 uses semantic DeckPlan input | Ordinary models should choose governed semantic roles, not invent raw coordinates, fonts, or colors | Active |
-| v5.0 keeps native PowerPoint as production renderer | Client deliverables require editable objects and real PowerPoint compatibility | Active |
+| v5.0 keeps DeckPlan and RenderPlan canonical and uses PptxGenJS for governed daily delivery | Portable native-editable OOXML removes COM from the daily critical path while preserving deterministic planning | Active |
+| v5.0 uses LibreOffice for independent daily proof and PowerPoint for sampled certification | One renderer cannot prove its own output; sampled PowerPoint evidence covers release compatibility without making COM a daily dependency | Active |
 | v5.0 gates promotion on measurable evidence | Package validity, source integrity, editability, and reopen checks must precede delivery | Active |
 
 ---
-*Last updated: 2026-07-20 after starting the v5.0 Window-PPTX Verified Production Engine milestone*
+*Last updated: 2026-07-21 after accepting the Phase 27.2 portable-first and sampled-PowerPoint architecture*

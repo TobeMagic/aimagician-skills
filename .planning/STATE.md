@@ -1,19 +1,19 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Window-PPTX Verified Production Engine
-current_phase: 28
-current_phase_name: Window-PPTX Weak-Model Benchmark
+milestone: v5.1
+milestone_name: Window-PPTX Reference-Grade Visual Engine
+current_phase: 30
+current_phase_name: Reference Visual Baseline and Contracts
 status: in_progress
-stopped_at: Phase 27 quality gates passed 19 focused and 404 full tests; Phase 28 frozen weak-model benchmark is next
-last_updated: "2026-07-20T19:46:01+08:00"
-last_activity: 2026-07-20
+stopped_at: reference-grade r10 accepted; Agnes image probe unavailable, so visual blind review remains NOT_RUN
+last_updated: "2026-07-27T18:20:00+08:00"
+last_activity: 2026-07-27
 progress:
-  total_phases: 29
-  completed_phases: 27
-  total_plans: 28
-  completed_plans: 27
-  percent: 93
+  total_phases: 37
+  completed_phases: 28
+  total_plans: 34
+  completed_plans: 31
+  percent: 76
 ---
 
 # Project State
@@ -26,15 +26,23 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** Phase 28 frozen fifteen-scenario weak-model benchmarking, controlled arms, deterministic scoring, hashes, and blind-review evidence for the active `v5.0 Window-PPTX Verified Production Engine` milestone.
+**Current focus:** v5.1 Phase 30 now has a reference-grade 15-slide r10
+TemplatePack deliverable with portable font repair, editable charts/workbooks,
+structural visual gates, LibreOffice/Ghostscript proof, and zero source-domain
+residuals. The generated DesignPack route has a deterministic editable
+art-direction layer and sparse-deck hard gates, but its four DeepSeek
+diagnostics still fail the supplied reference's human visual bar. Quantitative
+non-slot similarity, richer non-template packs, blind review, and the formal
+benchmark remain open. PowerPoint is optional sampled certification, not a
+daily hard dependency.
 
 ## Current Position
 
 Milestone: v5.0 Window-PPTX Verified Production Engine
-Current Phase: 28 of 29
+Current Phase: 28 (v5 phase 9 of 10)
 Current Phase Name: Window-PPTX Weak-Model Benchmark
-Status: In Progress (current milestone 6/8 phases complete)
-Last Activity: 2026-07-20
+Status: In Progress (current milestone 7/10 phases complete)
+Last Activity: 2026-07-21
 
 Foundation completed:
 
@@ -76,6 +84,13 @@ Active v5 foundation:
 - Phase 25 is complete with a pure governed render plan, native editable text/shape/image output, deterministic master/footer/group/z-order behavior, strict asset evidence, COM preflight, recording fake COM, transactional saving, 45 focused tests, 357 full tests, and final OpenCode PASS;
 - Phase 26 is complete with native editable charts/tables, six deterministic diagram families, notes, safe links, opt-in motion, ratio-aware PNG/PDF routes, 28 focused tests, 385 full tests, and final OpenCode PASS;
 - Phase 27 is complete with stable five-layer reports, fail-closed native-object fidelity checks, hard delivery gates, bounded exception-safe repair, atomic audit artifacts, 19 focused tests, and 404 full tests.
+- Phase 27.1 local implementation adds immutable FactStore-to-BriefPlan-to-NarrativePlan authority, 12 deterministic art directions, six-color BrandSpec/font/asset/pattern gates with provenance hashes, passive governed SVG assets, pre-save quality report v2, canonical content-safe repair, orchestration-observed post-save candidate reinspection, progressive weak-model guidance, six deterministic calibration packets, typed component fingerprints, and a threshold/artifact/PPTX-PNG-blind-review-gated 180-trial contract. The complete Window-PPTX suite passes 505 tests; actual PowerPoint and ordinary-model evidence are still absent.
+- Phase 27.2 is complete with backend-neutral RenderPlan execution, PptxGenJS 4.0.1 native OOXML generation, deterministic packaging, semantic OOXML inspection, isolated LibreOffice/Poppler rendering, proof-only HTML, optional safe PowerPoint certification, and six 6/6 portable calibration packets across 56 pages.
+- Phase 27.2 manual review remains `FAIL_CUSTOMER_DELIVERY_VISUAL_BAR`: empty frames, orphan agendas, and generic headings were fixed, but asset coverage, content-to-visual mapping, analytical annotation, training pedagogy, and industry differentiation remain below the senior-designer target.
+- Phase 28 is active. Preserved real DeepSeek responses now regenerate real editable portable artifacts for business-report r12 (98.75), product-launch r8 (98.75), and data-analysis r9 (99.00); all three latest diagnostics pass portable hard gates and generated-plan numeric safety, but each is one of 180, fingerprint-missing, formally ineligible, and release-incomplete.
+- The latest visual-floor iteration preserves the source-grounded `Above Q1` relative label, makes plain claims editorial rather than quotation-like, caps three label-only cards at 1.88 inches, converts one-event timelines into compact native milestone bands, replaces large empty accent panels with governed narrow rails, emits high-contrast decision/action bands, verifies native percentage axes/labels, and searches same-family capacity-safe variants before generic fallback.
+- Phase 28's formal runner now requires an immutable contract bound to the complete manifest and clean fingerprint, exact-contract resume, and per-trial contract digests; it rejects partial, manifest-only, replay-only, and diagnostic-to-formal promotion paths.
+- The data-analysis iteration exposed an automatic-score blind spot: a high early score coexisted with `42,180` being reduced to `180`. The latest r9 fixes that defect and the missing percentage-axis contract, but automatic scoring remains separate from blind human customer-delivery review.
 
 ## Decisions
 
@@ -110,15 +125,47 @@ Active v5 foundation:
 - [Phase 26]: Motion is off by default, only two governed presets are allowed, and every advanced COM failure stops before candidate saving.
 - [Phase 27]: Repair may change only registered candidate page size, geometry, fonts, names, and tags; it is capped at two passes, keeps rename last, and rolls back any non-monotonic or exception-raising pass.
 - [Phase 27]: Native chart/table/diagram data and transaction evidence fail closed, while pre/post-save hard-gate errors atomically persist their report and repair log.
+- [Phase 27.1]: Huashu is a pinned method reference only; no runtime, prompts, named styles, media, fonts, or HTML conversion code are imported.
+- [Phase 27.1]: The default ordinary-model route controls only fact IDs and registered semantic hints; immutable facts and deterministic registries own prose, narrative, art direction, layout, and repair.
+- [Phase 27.1]: A complete benchmark cannot advance to human review without a clean, post-Huashu, internally matching fingerprint; provider-unavailable trials and dirty calibration are never imputed as success.
+- [Phase 27.1]: Human blind scoring is rejected until hash-verified readable OOXML PPTX and PNG evidence is staged under anonymized review paths.
+- [Phase 27.2]: DeckPlan and RenderPlan remain canonical; governed `auto` generation uses PptxGenJS, while COM remains an explicit legacy and sampled-certification adapter.
+- [Phase 27.2]: Portable customer delivery fails closed on OOXML semantic checks, isolated LibreOffice PDF/PNG rendering, and Quality-v2; it does not fall back silently to COM or raster slides.
+- [Phase 27.2]: HTML is a deterministic RenderPlan-derived proof and QA view only, never the canonical PPTX intermediate or model-authored layout surface.
+- [Phase 27.2]: Portable diagrams use editable child shapes plus stable logical-group metadata. Native grouping, motion, SmartArt, physical template import, and macro-enabled output remain capability-gated COM routes.
+- [Phase 27.2]: PowerPoint certification is read-only and sampled. It never rewrites the portable canonical artifact, never kills an unowned process, and never performs automatic registry repair.
+- [Phase 27.2]: Portable engineering PASS and manual visual acceptance are separate verdicts. The phase requirements pass on 6/6 deterministic real-artifact packets, while the v5 milestone remains blocked by the explicit manual visual failure and later blind review.
+- [Phase 28]: Real-response dirty-worktree diagnostics may validate provider integration, portable generation, and rule fixes, but cannot enter the formal aggregate or change the release verdict.
+- [Phase 28]: Formal mode is an immutable 180-trial contract tied to a clean fingerprint; exact resume is allowed, while partial selection, replay/manifest-only operation, and diagnostic import fail closed.
+- [Phase 28]: Automatic composites are engineering signals, not visual acceptance. Blind human review remains mandatory after the score blind spot observed in the first data-analysis diagnostic.
 
 ## Next Actions
 
-1. Freeze fifteen scenario briefs, three benchmark arms, ordinary-model identities, repeat policy, scoring rubric, and release thresholds.
-2. Implement deterministic benchmark manifests, hashing, artifact validation, scorecards, and blind-review packets without fabricating model outputs.
-3. Execute available ordinary-model trials, generate governed artifacts, compare before/after reliability, and carry Windows-only visual evidence into Phase 29.
+1. Discuss and lock the Phase 31 optimization choices in
+   `31-DISCUSSION-DRAFT.md`: lane priority, masked non-slot similarity,
+   reviewer provider, evidence storage, and the first generated-lane scenario.
+2. Close the TemplatePack contract with reproducible golden-r10 generation,
+   masked non-slot metrics, authoring support, and optional read-only
+   PowerPoint sampling.
+3. Extract the reference's composition grammar into DesignPack recipes before
+   expanding scenario packs or running the formal benchmark.
+4. Run four-scenario generated-lane UAT with a verified pixel reviewer, then
+   refreeze and execute the two-model formal benchmark.
 
 ## Blockers / Concerns
 
 - Actual live current-user CLI homes were not mutated during automated acceptance. The same global path logic was verified through an isolated `--home` after `install --dry-run`.
 - Phase 22 startup is slow on this host because installed PowerPoint add-ins load during real COM sessions; safety inspection therefore remains registry-only.
-- v5.0 is active and unshipped; QA, benchmark, and final Windows UAT remain required.
+- v5.0 is active and unshipped. Portable QA is complete, but manual customer visual acceptance failed; visual remediation, the formal benchmark, blind review, and final cross-engine UAT remain required.
+- Microsoft `MSPPT.OLB` and late-bound PowerPoint automation work, but early-bound pywin32 `_Application.QueryInterface` fails with `TYPE_E_CANTLOADLIBRARY` because the interface registry points to a stale, missing WPS TypeLib. This does not block portable delivery; it remains a sampled-certification concern.
+- OpenCode `opencode/deepseek-v4-flash-free` completed read-only session `ses_07d23c7d0ffetnEwNzbfy0zA2b`. Its findings were independently checked and some inaccurate capability claims were rejected; it is research evidence, not the final post-implementation `V5-UAT-04` audit.
+- Phase 27.2 OpenCode 1.17.6 re-audit session `ses_07c11cc8bffe8HmjcQX73B1We4` confirmed portable engineering PASS, customer visual FAIL, release NO_GO, reconciled planning state, 602/602 regression, and present V5-PORT-07 evidence. It remains Phase 27.2 review evidence; Phase 29 owns the final post-benchmark `V5-UAT-04` audit.
+- Phase 28 repair-focused OpenCode session `ses_07afb9f00ffecq2Y9LQJdzYPWC` on `opencode/deepseek-v4-flash-free` confirmed both targeted defects fixed and no Critical/Important code defect, while retaining `VISUAL=PARTIAL`, `PHASE28=NOT_COMPLETE`, and `V5=NO_GO`; it is diagnostic review, not the Phase 29 final audit.
+- The second frozen benchmark model remains unavailable/unreliable, so the complete 180-trial comparison and human blind review are still `NOT_RUN`.
+- OpenCode 1.17.6 exposes `agnes/agnes-2.0-flash`, but the 2026-07-27
+  attachment probe explicitly rejected image input. Reviewer routing therefore
+  fails closed: Agnes visual UAT remains `NOT_RUN`, DeepSeek cannot substitute
+  for pixel judgment, and only a successfully probed vision model or human
+  reviewer may close the visual gate.
+- Phase 28's three latest DeepSeek visual-floor diagnostics (business r12, product r8, data r9) are deliberately noncanonical: no clean component fingerprint exists, only one model and one full-v5 trial per scenario are represented, and automatic composites do not satisfy customer visual review.
+- Phase 29 sampled PowerPoint certification is `NOT_RUN`; the stale WPS TypeLib that breaks early-bound COM does not block portable daily delivery but remains relevant to that sample.
