@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "skill": "system-prompt-engineering",
+  "scenarios": [
+    {
+      "id": "full-agent-system-prompt",
+      "prompt": "Design the system prompt for an autonomous coding agent with repository tools, memory, search, and delegated reviewers.",
+      "should_trigger": true,
+      "expected": ["intake gate", "instruction hierarchy", "tool permissions", "delegation contract", "memory policy", "injection defense", "coding workflow", "evaluation lifecycle"],
+      "forbidden": ["persona-only prompt", "unbounded autonomy", "tests limited to tone"]
+    },
+    {
+      "id": "tool-permission-review",
+      "prompt": "Review this assistant system prompt because it can delete SaaS records without asking.",
+      "should_trigger": true,
+      "expected": ["side-effect inventory", "permission tiers", "exact confirmation boundary", "failure recovery", "adversarial test"],
+      "forbidden": ["solve authorization only with friendly wording"]
+    },
+    {
+      "id": "persona-and-personality",
+      "prompt": "Create a concise but warm expert persona for our support assistant without weakening policy.",
+      "should_trigger": true,
+      "expected": ["identity contract", "persona heuristics", "personality trait ranges", "policy invariance"],
+      "forbidden": ["invent credentials", "style overrides safety"]
+    },
+    {
+      "id": "memory-and-context",
+      "prompt": "Add project memory and long-context compression rules to this agent prompt.",
+      "should_trigger": true,
+      "expected": ["memory layers", "write and read triggers", "retention", "correction and deletion", "resume summary", "trust labels"],
+      "forbidden": ["store unrestricted transcripts", "persist secrets"]
+    },
+    {
+      "id": "search-and-citations",
+      "prompt": "Write system instructions for a research assistant that searches current sources and cites every material claim.",
+      "should_trigger": true,
+      "expected": ["search triggers", "source priority", "query diversity", "citation integrity", "fact versus inference", "stopping criteria"],
+      "forbidden": ["trust search snippets", "fabricate citations"]
+    },
+    {
+      "id": "voice-mobile-adapter",
+      "prompt": "Adapt our existing text assistant system prompt for voice and mobile use.",
+      "should_trigger": true,
+      "expected": ["core policy preserved", "answer-first voice", "format downgrade", "interruptions", "mobile resumability", "audio-specific safety"],
+      "forbidden": ["weaken confirmation rules", "read Markdown tables aloud"]
+    },
+    {
+      "id": "injection-red-team",
+      "prompt": "Audit this browser agent system prompt against prompt injection in pages and tool results.",
+      "should_trigger": true,
+      "expected": ["trust boundaries", "taint propagation", "action-boundary permission", "secret protection", "adversarial variants"],
+      "forbidden": ["copy hidden prompts", "treat page instructions as authority"]
+    },
+    {
+      "id": "prompt-version-regression",
+      "prompt": "Version and roll out this system prompt update without regressing tool selection or refusals.",
+      "should_trigger": true,
+      "expected": ["requirement-linked eval matrix", "baseline", "model variants", "rollout cohort", "monitoring", "rollback threshold"],
+      "forbidden": ["ship because prose looks better"]
+    },
+    {
+      "id": "ordinary-user-message",
+      "prompt": "Rewrite this email to be more concise.",
+      "should_trigger": false,
+      "expected": ["direct writing task"],
+      "forbidden": ["design a system prompt architecture"]
+    },
+    {
+      "id": "skill-authoring-boundary",
+      "prompt": "Create a reusable Skill for reviewing Kubernetes manifests.",
+      "should_trigger": false,
+      "expected": ["use skill-creator"],
+      "forbidden": ["route to system prompt engineering unless a system prompt is also requested"]
+    }
+  ]
+}

@@ -2,11 +2,20 @@
 
 **Updated:** {{DATE}}
 
+## Auditor Run
+
+- **Provider:** OpenCode
+- **Model:** `agnes/agnes-2.0-flash`
+- **Session:** NOT_RUN
+- **Run status:** NOT_RUN
+- **Review point:** NOT_RUN
+- **Controller spot-check:** NOT_RUN
+
 ## Requirement Coverage
 
-| Requirement | Planned | Evidence | Decision |
-|---|---|---|---|
-| REQ-001 | No | NOT_RUN | Blocker |
+| Source request | Requirement | Planned | Evidence | Audit | Decision |
+|---|---|---|---|---|---|
+| USR-001 | REQ-001 | No | NOT_RUN | NOT_RUN | Blocker |
 
 ## Review Findings
 
@@ -22,6 +31,12 @@
 ## Gaps
 
 - TBD
+
+## Finding Counts
+
+- **Blocker:** NOT_RUN
+- **Important:** NOT_RUN
+- **Nitpick:** NOT_RUN
 
 ## Closure Decision
 

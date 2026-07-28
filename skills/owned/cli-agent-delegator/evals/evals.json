@@ -48,8 +48,15 @@
       "id": "substantial-completion-audit",
       "prompt": "The phase looks complete. Independently audit requirements, implementation, verification, and handoff before I close it.",
       "should_trigger": true,
-      "expected": ["fresh OpenCode reviewer", "fixed review point", "Blocker Important Nitpick", "requirement evidence", "main-agent validation"],
+      "expected": ["fresh OpenCode reviewer", "Agnes primary", "original request traceability", "fixed review point", "Blocker Important Nitpick", "PASS FAIL NOT_RUN requirement evidence", "main-agent validation"],
       "forbidden": ["trust completion summary", "self-approval by implementer"]
+    },
+    {
+      "id": "quick-completion-audit",
+      "prompt": "This bounded fix passed its focused test; declare the task complete.",
+      "should_trigger": true,
+      "expected": ["fresh Agnes session", "compact combined review", "task checklist", "requirement matrix", "controller spot-check"],
+      "forbidden": ["complete from test success alone", "DeepSeek used before Agnes for completion"]
     },
     {
       "id": "trigger-regression-main-agent-multifile-scan",

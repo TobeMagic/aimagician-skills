@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -127,9 +127,55 @@ describe("parseCli", () => {
       assetIds: ["daily-ops"],
       targets: ["claude"],
       scope: "global",
+      dryRun: false,
       json: false,
       help: false
     });
+  });
+
+  it("supports the stable Agent contract and preview-by-default mutations", () => {
+    expect(parseCli(["--agent"])).toEqual({
+      command: "capabilities",
+      targets: ["codex", "claude", "opencode", "gemini", "hermes", "cursor", "copilot"],
+      json: true,
+      help: false,
+      agent: true
+    });
+    expect(parseCli(["--agent", "doctor", "--target", "codex"])).toEqual({
+      command: "doctor",
+      targets: ["codex"],
+      scope: "global",
+      json: true,
+      help: false,
+      agent: true
+    });
+    expect(parseCli(["install", "daily-ops", "--scope", "global", "--target", "codex", "--agent"])).toMatchObject({
+      command: "install",
+      agent: true,
+      json: true,
+      dryRun: true
+    });
+    expect(parseCli(["install", "daily-ops", "--scope", "global", "--target", "codex", "--agent", "--yes"])).toMatchObject({
+      command: "install",
+      agent: true,
+      json: true,
+      dryRun: false,
+      yes: true
+    });
+    expect(parseCli(["uninstall", "daily-ops", "--scope", "global", "--target", "codex", "--agent"])).toMatchObject({
+      command: "uninstall",
+      agent: true,
+      dryRun: true
+    });
+    expect(() => parseCli([
+      "install",
+      "daily-ops",
+      "--scope",
+      "global",
+      "--agent",
+      "--yes",
+      "--dry-run"
+    ])).toThrow("--yes cannot be combined with --dry-run in agent mode");
   });
 
   it("supports classification formatter commands", () => {
@@ -249,6 +295,138 @@ describe("runCli", () => {
     expect(result.stdout).toContain("list");
     expect(result.stdout).toContain("doctor");
     expect(result.stdout).toContain("--home");
+  });
+
+  it("returns a versioned Agent capabilities envelope and structured usage errors", async () => {
+    const capabilitiesResult = await runCli(["capabilities", "--agent"]);
+    expect(capabilitiesResult.exitCode).toBe(0);
+    expect(capabilitiesResult.stderr).toBe("");
+    expect(JSON.parse(capabilitiesResult.stdout)).toMatchObject({
+      schemaVersion: 1,
+      command: "capabilities",
+      status: "ok",
+      mode: "read",
+      data: {
+        targets: ["codex", "claude", "opencode", "gemini", "hermes", "cursor", "copilot"],
+        mutationContract: { default: "preview", applyFlag: "--yes" }
+      },
+      warnings: [],
+      errors: []
+    });
+    expect(capabilitiesResult.stdout).not.toContain("\u001b[");
+
+    const invalidResult = await runCli(["install", "daily-ops", "--agent"]);
+    expect(invalidResult.exitCode).toBe(2);
+    expect(invalidResult.stderr).toBe("");
+    expect(JSON.parse(invalidResult.stdout)).toMatchObject({
+      schemaVersion: 1,
+      command: "install",
+      status: "error",
+      errors: [{ code: "invalid-arguments" }]
+    });
+  });
+
+  it("previews Agent writes, applies with --yes, and reports real partial results", async () => {
+    const fixture = await createBootstrapFixture();
+    const installedPath = join(fixture.homeDir, ".claude", "skills", "gsd", "SKILL.md");
+
+    await withFixtureEnv(fixture, async () => {
+      const preview = await runCli([
+        "install",
+        "gsd",
+        "--scope",
+        "global",
+        "--target",
+        "claude",
+        "--agent"
+      ]);
+      expect(preview.exitCode).toBe(0);
+      expect(JSON.parse(preview.stdout)).toMatchObject({
+        status: "ok",
+        mode: "preview",
+        data: { dryRun: true }
+      });
+      await expect(access(installedPath)).rejects.toMatchObject({ code: "ENOENT" });
+
+      const applied = await runCli([
+        "install",
+        "gsd",
+        "--scope",
+        "global",
+        "--target",
+        "claude",
+        "--agent",
+        "--yes"
+      ]);
+      expect(applied.exitCode).toBe(0);
+      expect(JSON.parse(applied.stdout)).toMatchObject({
+        status: "ok",
+        mode: "apply",
+        data: { dryRun: false }
+      });
+      await access(installedPath);
+
+      const partial = await runCli([
+        "install",
+        "missing-skill",
+        "--scope",
+        "global",
+        "--target",
+        "claude",
+        "--agent"
+      ]);
+      expect(partial.exitCode).toBe(3);
+      expect(JSON.parse(partial.stdout)).toMatchObject({
+        status: "partial",
+        mode: "preview",
+        errors: [{ code: "install-skipped", assetId: "missing-skill" }]
+      });
+    });
+  }, 15000);
+
+  it("keeps Agent uninstall preview idempotent and makes unhealthy doctor non-zero", async () => {
+    const fixture = await createInspectionFixture();
+    const managedSkill = join(fixture.homeDir, ".codex", "skills", "daily-ops", "SKILL.md");
+
+    await withFixtureEnv(fixture, async () => {
+      const preview = await runCli([
+        "uninstall",
+        "daily-ops",
+        "--scope",
+        "global",
+        "--target",
+        "codex",
+        "--agent"
+      ]);
+      expect(preview.exitCode).toBe(0);
+      expect(JSON.parse(preview.stdout)).toMatchObject({
+        status: "ok",
+        mode: "preview",
+        data: { dryRun: true, changed: true }
+      });
+      await access(managedSkill);
+
+      await rm(join(fixture.homeDir, ".codex", "skills", "daily-ops"), { recursive: true, force: true });
+      const doctor = await runCli(["doctor", "--scope", "global", "--target", "codex", "--agent"]);
+      expect(doctor.exitCode).toBe(1);
+      expect(JSON.parse(doctor.stdout)).toMatchObject({
+        status: "error",
+        mode: "read",
+        errors: [expect.objectContaining({ code: "doctor-issue", target: "codex" })]
+      });
+    });
+  });
+
+  it("treats format-skills write as an Agent preview until confirmed", async () => {
+    const result = await runCli(["format-skills", "--write", "--agent"]);
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: 1,
+      command: "format-skills",
+      status: "ok",
+      mode: "preview",
+      data: { requestedMode: "write", mode: "check", changed: false }
+    });
   });
 });
 

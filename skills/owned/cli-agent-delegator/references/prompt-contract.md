@@ -14,6 +14,9 @@ REVIEW_POINT: <exact commit, diff, worktree state, source snapshot, URLs, or art
 SOURCE_OF_TRUTH:
 - <path, document, requirement set, user decision, or primary URL>
 
+ORIGINAL_REQUESTS:
+- <USR-* ID, PRD section, issue, or verbatim accepted request>
+
 ACCEPTED_DECISIONS:
 - <decision that must not be reopened>
 
@@ -63,6 +66,9 @@ Name only skills relevant to the role. Typical routing:
 - HTML visual review: add `interface-design`;
 - PR state: add `github-pr-workflow`;
 - parallel write lanes: add `parallel-worktree-pr-flow`.
+- system prompt or agent instruction design: add `system-prompt-engineering`.
+
+For a completion audit, `REQUIRED_SKILLS` always includes `cli-agent-delegator`, `aimagician-superpower`, and every domain skill used by the implementation. The output must include provider, model, session ID, frozen review point, one `PASS | FAIL | NOT_RUN` row per accepted requirement, finding counts, and evidence for controller spot-checks.
 
 ## Permission Semantics
 
@@ -115,6 +121,7 @@ Quiet output alone is not failure. While the process is alive and event state ad
 - Do not claim `DONE` from prose alone; attach evidence.
 - Do not claim a test or file is absent without a scoped search.
 - Do not hide skipped or failing checks.
+- Do not replace original-request coverage with phase-generated requirements; verify that each accepted request is represented and implemented.
 
 ## Final Status Rules
 
@@ -122,3 +129,5 @@ Quiet output alone is not failure. While the process is alive and event state ad
 - `DONE_WITH_CONCERNS`: deliverable exists, but uncertainty, skipped evidence, or an Important finding needs controller judgment.
 - `NEEDS_CONTEXT`: a named source, skill, decision, permission, or scope extension is required.
 - `BLOCKED`: a concrete dependency or repeated provider/environment failure prevents responsible progress.
+
+Completion-specific rule: `DONE` is invalid when any accepted requirement is `FAIL` or `NOT_RUN`, or when any Blocker or Important finding remains unresolved.

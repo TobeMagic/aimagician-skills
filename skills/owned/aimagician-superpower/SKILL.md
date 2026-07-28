@@ -1,6 +1,6 @@
 ---
 name: aimagician-superpower
-description: Use when starting or resuming substantial engineering work, understanding requirements, exploring a codebase, designing or implementing changes, debugging, refactoring, reviewing code, applying spec-driven development, coordinating agents, or closing work with verified evidence and a durable handoff.
+description: Use when starting or resuming engineering work, understanding requirements, exploring a codebase, designing or implementing changes, debugging, refactoring, reviewing code, applying spec-driven development, coordinating agents, or claiming any task, phase, milestone, or delivery complete. Requires original-request traceability, verified evidence, a fresh OpenCode Agnes completion audit, and a durable handoff.
 category: build
 subcategory: workflow
 tags:
@@ -55,7 +55,7 @@ The workflow is not complete when code exists. It is complete only when every ac
 Before any non-trivial execution, and always after resume, context compaction, handoff, interruption, or uncertain repository state:
 
 1. Read this `SKILL.md` again.
-2. Read workflow state and planning sources first: `.planning/STATE.md`, `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`, the active phase specification, context, discussion log, research, plans, validation, audit, and latest summary.
+2. Read workflow state and planning sources first: `.planning/REQUESTS.md`, `.planning/STATE.md`, `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`, the active task or phase specification, context, discussion log, research, plans, validation, audit, and latest summary.
 3. Read project sources of truth next: `README*`, relevant `docs/`, ADRs, contributor guidance, architecture, API documentation, and repository-specific workflow files.
 4. Read the project knowledge base when present: `llm-know-how-wiki`, `.llm-know-how-wiki`, `llm-wiki`, `.llm-wiki`, `wiki/`, or the documented equivalent.
 5. Read current git status and separate user changes from planned work.
@@ -118,6 +118,8 @@ A lightweight inline target is allowed only when all are true:
 
 If any condition fails, read `references/capabilities/spec-driven-development.md` and create or update the phase specification before planning.
 
+Every lightweight task that will end in a completion claim uses one `.planning/tasks/<id>.md` record. Preserve or link the original request, accepted decisions, requirement checklist, evidence, fresh Agnes audit, finding disposition, and final decision in that file. Pure discussion or clarification without a completion claim does not create a task record.
+
 ## Canonical Delivery Loop
 
 ### 1. Recover Context
@@ -156,6 +158,10 @@ Run narrow checks first, then the broader suite justified by blast radius. Trace
 
 Compare the result with the locked specification, original request, non-goals, plan, and evidence. Check integration wiring, regression risk, capability preservation, stale placeholders, security, cleanup, documentation, and installation state. Use a fresh OpenCode reviewer through `cli-agent-delegator` for phase audit and for milestone or complete closure. Reconcile its findings against primary evidence and classify every gap.
 
+Every completion claim, including a bounded quick task, must use a fresh OpenCode session with `agnes/agnes-2.0-flash` as the primary completion auditor. The audit freezes the reviewed commit or diff and maps `USR-* -> REQ-* -> implementation -> evidence -> audit decision`. Record provider, model, session, run status, review point, requirement matrix, Blocker/Important/Nitpick counts, and main-Agent spot-check evidence. Tests passing alone never satisfies this gate.
+
+Any `FAIL`, `NOT_RUN`, unresolved `Blocker`, or unresolved `Important` keeps the checklist open. Continue implementing and re-auditing while feasible. Defer an Important finding only through an explicit user decision. Stop as blocked only for a genuine external inability, not because the remaining work is inconvenient.
+
 ### 10. Handoff And Complete
 
 Update durable state and summarize what changed, what passed, what was not verified, residual risk, current git state, and the exact next action. Completion requires accepted requirements to have passing evidence or an explicit user-approved exclusion.
@@ -170,13 +176,16 @@ node scripts/workflow.mjs next --project <path> --phase <phase>
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate spec
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate execute
 node scripts/workflow.mjs trace --project <path> --phase <phase> --format json
+node scripts/workflow.mjs init --project <path> --task <task-id> --write
+node scripts/workflow.mjs status --project <path> --task <task-id>
+node scripts/workflow.mjs validate --project <path> --task <task-id> --gate complete
 node scripts/engineering-route.mjs --kind feature --risk medium --format json
 node scripts/engineering-route.mjs --kind refactor --risk high
 node scripts/engineering-route.mjs --kind discovery --risk high --format json
 node scripts/engineering-route.mjs --kind prototype --risk medium
 ```
 
-`spec` checks locked requirements and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires completed research, discussion, context, and accepted plans. `complete` requires passing evidence, audit, summary, and UAT when user-facing. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the minimum engineering stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
+`spec` checks locked requirements, USR source mapping, and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires completed research, discussion, context, and accepted plans. `complete` requires passing evidence, a recorded Agnes audit with no unresolved Blocker or Important, summary, and UAT when user-facing. Task mode supports one-file lightweight completion records and only the complete gate. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the minimum engineering stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
 
 ## Companion Routing
 

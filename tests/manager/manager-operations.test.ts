@@ -219,6 +219,19 @@ describe("manager operations", () => {
     await mkdir(manualSkillDir, { recursive: true });
     await writeFile(join(manualSkillDir, "SKILL.md"), "# Manual Skill\n", "utf8");
 
+    const uninstallPreview = await uninstallSkills({
+      assetIds: ["daily-ops", "manual-skill"],
+      scope: "project",
+      projectDir: fixture.projectDir,
+      selectedTargets: ["claude"],
+      platform: fixture.platform,
+      dryRun: true
+    });
+
+    expect(uninstallPreview.dryRun).toBe(true);
+    expect(uninstallPreview.removed.map((install) => install.assetId)).toEqual(["daily-ops"]);
+    await expectPath(join(fixture.projectDir, ".claude", "skills", "daily-ops", "SKILL.md"));
+
     const uninstallResult = await uninstallSkills({
       assetIds: ["daily-ops", "manual-skill"],
       scope: "project",
@@ -228,6 +241,7 @@ describe("manager operations", () => {
       now: "2026-05-24T12:00:00Z"
     });
 
+    expect(uninstallResult.dryRun).toBe(false);
     expect(uninstallResult.removed.map((install) => install.assetId)).toEqual(["daily-ops"]);
     expect(uninstallResult.skipped).toEqual([
       {

@@ -18,6 +18,7 @@ TBD - describe current behavior with concrete repository or runtime evidence.
 
 ### REQ-001: TBD
 
+- **Source requests:** USR-001
 - **Current:** TBD
 - **Target:** TBD
 - **Acceptance:** TBD

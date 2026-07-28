@@ -84,6 +84,7 @@ export interface UninstallSkillsOptions extends Pick<ManagerBaseOptions, "scope"
   assetIds: string[];
   selectedTargets?: SupportedTarget[];
   now?: string;
+  dryRun?: boolean;
 }
 
 export interface ResetSkillsOptions extends Omit<ManagerBaseOptions, "selectedTargets" | "scope" | "includeArchived"> {
@@ -126,6 +127,7 @@ export interface UninstallSkillsResult {
   scope: InstallScope;
   workspaceRoot: string;
   manifestPath: string;
+  dryRun: boolean;
   removed: BootstrapManifestManagedInstall[];
   skipped: Array<{ assetId: string; target: SupportedTarget; reason: "not-managed" }>;
   changed: boolean;
@@ -532,6 +534,27 @@ export async function uninstallSkills(options: UninstallSkillsOptions): Promise<
   const removedKeys = new Set(removed.map(createManagedInstallKey));
   const removedTargetsByAsset = new Map<string, Set<SupportedTarget>>();
 
+  const skipped: UninstallSkillsResult["skipped"] = [];
+  for (const assetId of options.assetIds) {
+    for (const target of selectedTargets) {
+      if (!removed.some((install) => install.assetId === assetId && install.target === target)) {
+        skipped.push({ assetId, target, reason: "not-managed" });
+      }
+    }
+  }
+
+  if (options.dryRun) {
+    return {
+      scope: options.scope,
+      workspaceRoot: workspace.rootDir,
+      manifestPath: workspace.manifestPath,
+      dryRun: true,
+      removed,
+      skipped,
+      changed: removed.length > 0
+    };
+  }
+
   for (const install of removed) {
     if (isManagedPath(normalize(install.destinationPath), allowedRootsByTarget[install.target] ?? [])) {
       await rm(install.destinationPath, {
@@ -542,20 +565,12 @@ export async function uninstallSkills(options: UninstallSkillsOptions): Promise<
     addTarget(removedTargetsByAsset, install.assetId, install.target);
   }
 
-  const skipped: UninstallSkillsResult["skipped"] = [];
-  for (const assetId of options.assetIds) {
-    for (const target of selectedTargets) {
-      if (!removed.some((install) => install.assetId === assetId && install.target === target)) {
-        skipped.push({ assetId, target, reason: "not-managed" });
-      }
-    }
-  }
-
   if (!previousManifest) {
     return {
       scope: options.scope,
       workspaceRoot: workspace.rootDir,
       manifestPath: workspace.manifestPath,
+      dryRun: false,
       removed: [],
       skipped,
       changed: false
@@ -583,6 +598,7 @@ export async function uninstallSkills(options: UninstallSkillsOptions): Promise<
     scope: options.scope,
     workspaceRoot: workspace.rootDir,
     manifestPath: workspace.manifestPath,
+    dryRun: false,
     removed,
     skipped,
     changed: removed.length > 0

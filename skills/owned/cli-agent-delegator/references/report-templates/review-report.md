@@ -6,6 +6,8 @@
 ## Review Contract
 
 - Role:
+- Provider / model / session:
+- Original request or PRD IDs:
 - Objective and accepted decisions:
 - Review point:
 - Requirements / non-goals:
@@ -29,9 +31,13 @@
 
 ## Requirement Evidence
 
-| Requirement | Implementation | Evidence | Status |
-|---|---|---|---|
-| | | | PASS / FAIL / NOT_RUN |
+| Source request | Requirement | Implementation | Evidence | Status |
+|---|---|---|---|---|
+| USR-* | REQ-* | | | PASS / FAIL / NOT_RUN |
+
+## Controller Spot-check Targets
+
+<completion-critical PASS claims and Blocker/Important claims the controller must reproduce or inspect>
 
 ## Unsupported Claims And Residual Risk
 

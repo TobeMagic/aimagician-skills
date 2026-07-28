@@ -1,6 +1,6 @@
 ---
 name: cli-agent-delegator
-description: MANDATORY CLI delegation and prompt-contract gate. Use before the main Agent directly performs broad or multi-source exploration, repository scanning, architecture mapping, deep web research, image or visual inspection, independent plan/code/spec/verification/audit review, or a bounded short task such as git inspection, test execution, reporting, or isolated low-risk implementation that an external CLI agent can handle. Prefer OpenCode, put cli-agent-delegator plus every domain skill in REQUIRED_SKILLS, require actual Skill tool calls before worker action, then validate critical claims. Keep one- or two-file lookups and core product or architecture decisions with the main Agent.
+description: MANDATORY CLI delegation and completion-audit gate. Use before broad or multi-source exploration, repository scanning, architecture mapping, deep web research, image inspection, independent plan/code/spec/verification review, bounded git/test/report/write work, and before any task, phase, milestone, or delivery is declared complete. Prefer OpenCode, require cli-agent-delegator plus all domain skills to be loaded, use Agnes as the primary completion auditor, and validate critical claims.
 category: operate
 subcategory: agent-orchestration
 tags:
@@ -102,7 +102,7 @@ The prompt must require the worker to load every named skill before doing substa
 1. **Classify.** Choose discovery/research, bounded operation/execution, or independent review/audit.
 2. **Protect macro reasoning.** Keep unresolved requirements, architecture tradeoffs, risk acceptance, and final decisions with the main Agent.
 3. **Lock the contract.** Define sources, skills, scope, permission mode, commands, evidence, git policy, and escalation.
-4. **Select provider and model.** Read `references/providers/opencode.md`. Use DeepSeek V4 Flash Free for ordinary non-visual tasks. Use Agnes for visual input and as the normal fallback when DeepSeek is unavailable, rate-limited, or fails.
+4. **Select provider and model.** Read `references/providers/opencode.md`. Use DeepSeek V4 Flash Free for ordinary non-visual tasks. Use Agnes for visual input, as the normal fallback when DeepSeek fails, and as the mandatory primary model for every completion audit.
 5. **Use the known-good fast path.** Run the provider's ready-to-use DeepSeek command directly. Do not repeat binary, version, model-list, or help probes unless first-time setup, an environment change, or a concrete command/provider failure requires diagnosis.
 6. **Run non-interactively.** Use the detailed positional prompt and keep logs attached. On an explicit DeepSeek model/provider failure, wait for process exit and retry the exact same prompt once with the ready-to-use Agnes command; do not probe again between attempts.
 7. **Wait by events.** Continue while logs, tool calls, stage transitions, file references, session changes, or provider activity show progress. Do not stop an active worker because a fixed number of seconds elapsed.
@@ -120,7 +120,23 @@ Use risk-scaled independent review rather than forcing the same ceremony onto ev
 - substantial work: independent plan review before execution, specification review before quality review, independent verification, phase audit, and milestone or completion audit;
 - high-risk security, data, concurrency, migration, or architecture work: add focused reviewers where their axes are genuinely independent.
 
+Regardless of task size, any `complete` claim gets a fresh Agnes audit. A bounded quick write may combine specification, quality, verification, and completion in one compact review; substantial work keeps independent staged reviewers and adds a final whole-result Agnes audit. Pure discussion without a completion claim is exempt.
+
 Review findings use exactly `Blocker`, `Important`, or `Nitpick`. A Blocker stops progression. An Important finding is fixed and re-reviewed, or deferred only by an explicit user decision. A Nitpick is non-blocking but recorded when useful.
+
+## Mandatory Completion Audit
+
+Use a fresh OpenCode session with `agnes/agnes-2.0-flash`. Freeze the exact commit, diff, task record, phase, or milestone under review. Include the original request or PRD, accepted decisions, `.planning/REQUESTS.md`, requirement IDs, implementation, verification, UAT, documentation, installation state, and existing findings.
+
+The auditor returns:
+
+- one row per accepted requirement with `PASS`, `FAIL`, or `NOT_RUN`;
+- findings using only `Blocker`, `Important`, or `Nitpick`;
+- evidence paths and commands;
+- missing, extra, shallow, or incorrectly narrowed behavior;
+- final recommendation and OpenCode session ID.
+
+The controller reproduces every Blocker and material Important finding where feasible and spot-checks each completion-critical PASS. `FAIL`, `NOT_RUN`, unresolved Blocker, or unresolved Important means continue the checklist and re-audit. Do not replace requirement coverage with a test-success summary.
 
 ## Main-Agent Validation Protocol
 

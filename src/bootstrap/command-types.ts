@@ -6,12 +6,18 @@ export interface BaseCliCommand {
   json: boolean;
   help: boolean;
   homeDir?: string;
+  agent?: true;
+}
+
+export interface CapabilitiesCommand extends BaseCliCommand {
+  command: "capabilities";
 }
 
 export interface BootstrapCommand extends BaseCliCommand {
   command: "bootstrap";
   dryRun: boolean;
   clean?: boolean;
+  yes?: true;
 }
 
 export interface ListCommand extends BaseCliCommand {
@@ -58,6 +64,7 @@ export interface InstallCommand extends BaseCliCommand {
   category?: string;
   subcategory?: string;
   tags?: string[];
+  yes?: true;
 }
 
 export interface UninstallCommand extends BaseCliCommand {
@@ -65,6 +72,8 @@ export interface UninstallCommand extends BaseCliCommand {
   assetIds: string[];
   scope: InstallScope;
   projectDir?: string;
+  dryRun: boolean;
+  yes?: true;
 }
 
 export interface ResetCommand extends BaseCliCommand {
@@ -79,10 +88,12 @@ export interface ResetCommand extends BaseCliCommand {
 export interface FormatSkillsCommand extends BaseCliCommand {
   command: "format-skills";
   mode: "check" | "write";
+  yes?: true;
 }
 
 export type ParsedCli =
   | TuiCommand
+  | CapabilitiesCommand
   | BootstrapCommand
   | SearchCommand
   | InstallCommand

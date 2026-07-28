@@ -59,6 +59,12 @@ skills:
     subgroup: skills
     tags: [skills, authoring, taxonomy]
     recommendedScopes: [global]
+  system-prompt-engineering:
+    group: build
+    subgroup: prompt-engineering
+    tags: [system-prompt, prompt-engineering, agents, tools, safety, memory, evaluation]
+    recommendedScopes: [global]
+    description: "Design, review, evaluate, version, and safely operate system prompts and agent instruction contracts through progressive capability modules."
   writing-skills:
     group: build
     subgroup: skills

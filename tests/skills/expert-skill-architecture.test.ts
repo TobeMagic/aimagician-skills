@@ -486,10 +486,12 @@ describe("owned skill trigger contracts", () => {
     expect(pptxFrontmatter).toContain("deck");
   });
 
-  it("prefers the free Agnes model for long-running OpenCode delegation", async () => {
-    const provider = await readFile(join(ownedRoot, "cli-agent-orchestrator", "references", "providers", "opencode.md"), "utf8");
-    expect(provider.indexOf("agnes/agnes-2.0-flash")).toBeLessThan(provider.indexOf("opencode/deepseek-v4-flash-free"));
-    expect(provider).toContain("provider limit is a model failure event");
+  it("routes ordinary delegation to DeepSeek and completion audits directly to Agnes", async () => {
+    const provider = await readFile(join(ownedRoot, "cli-agent-delegator", "references", "providers", "opencode.md"), "utf8");
+    expect(provider.indexOf("opencode/deepseek-v4-flash-free")).toBeLessThan(provider.indexOf("agnes/agnes-2.0-flash"));
+    expect(provider).toContain("A provider rate limit is a model failure event");
+    expect(provider).toContain("For every task, phase, milestone, release, or delivery completion audit, use Agnes as the first and required model");
+    expect(provider).toContain("Do not try DeepSeek first for a completion audit");
   });
 });
 

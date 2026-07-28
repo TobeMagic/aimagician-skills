@@ -2,6 +2,7 @@ import { supportedTargets, type SupportedTarget } from "../model/targets";
 import { isInstallScope, isResetScope, type InstallScope, type ResetScope } from "../model/scopes";
 import type {
   BootstrapCommand,
+  CapabilitiesCommand,
   DoctorCommand,
   InstallCommand,
   InspectCommand,
@@ -17,6 +18,7 @@ import type {
 const supportedTargetSet = new Set<SupportedTarget>(supportedTargets);
 const supportedCommands = [
   "tui",
+  "capabilities",
   "bootstrap",
   "search",
   "install",
@@ -32,14 +34,20 @@ type SupportedCommand = (typeof supportedCommands)[number];
 
 export function parseCli(argv: string[]): ParsedCli {
   const args = [...argv];
+  const prefixFlags: string[] = [];
+  while (args[0] === "--agent" || args[0] === "--json") {
+    prefixFlags.push(args.shift()!);
+  }
   const firstArg = args[0];
   const command =
     !firstArg || firstArg.startsWith("-") ? "tui" : consumeCommand(args.shift()!);
+  args.unshift(...prefixFlags);
 
   const targetSelections: SupportedTarget[] = [];
   let dryRun = false;
   let clean = false;
   let json = false;
+  let agent = false;
   let help = false;
   let includeArchived = false;
   let installAll = false;
@@ -58,10 +66,14 @@ export function parseCli(argv: string[]): ParsedCli {
 
     switch (argument) {
       case "--dry-run":
-        if (command !== "bootstrap" && command !== "install" && command !== "reset") {
+        if (command !== "bootstrap" && command !== "install" && command !== "uninstall" && command !== "reset") {
           throw new Error(`Unsupported argument for ${command}: ${argument}`);
         }
         dryRun = true;
+        break;
+      case "--agent":
+        agent = true;
+        json = true;
         break;
       case "--check":
         if (command !== "format-skills") {
@@ -83,7 +95,13 @@ export function parseCli(argv: string[]): ParsedCli {
         break;
       case "--yes":
       case "-y":
-        if (command !== "reset") {
+        if (
+          command !== "bootstrap" &&
+          command !== "install" &&
+          command !== "uninstall" &&
+          command !== "reset" &&
+          command !== "format-skills"
+        ) {
           throw new Error(`Unsupported argument for ${command}: ${argument}`);
         }
         yes = true;
@@ -153,8 +171,20 @@ export function parseCli(argv: string[]): ParsedCli {
     targets: targetSelections.length > 0 ? dedupeTargets(targetSelections) : [...supportedTargets],
     json,
     help,
+    ...(agent ? { agent: true as const } : {}),
     ...(homeDir ? { homeDir } : {})
   };
+
+  if (agent && yes && dryRun) {
+    throw new Error("--yes cannot be combined with --dry-run in agent mode");
+  }
+
+  if (command === "tui" && agent) {
+    return {
+      command: "capabilities",
+      ...base
+    } satisfies CapabilitiesCommand;
+  }
 
   switch (command) {
     case "tui":
@@ -163,12 +193,19 @@ export function parseCli(argv: string[]): ParsedCli {
         ...base,
         ...(projectDir ? { projectDir } : {})
       } satisfies TuiCommand;
+    case "capabilities":
+      rejectScopeForCapabilities(scope, projectDir, positional);
+      return {
+        command,
+        ...base
+      } satisfies CapabilitiesCommand;
     case "bootstrap":
       rejectScopeForBootstrap(scope, projectDir);
       return {
         command,
-        dryRun,
+        dryRun: dryRun || (agent && !yes),
         ...(clean ? { clean: true } : {}),
+        ...(yes ? { yes: true } : {}),
         ...base
       } satisfies BootstrapCommand;
     case "search":
@@ -190,12 +227,13 @@ export function parseCli(argv: string[]): ParsedCli {
         command,
         assetIds: positional,
         scope,
-        dryRun,
+        dryRun: dryRun || (agent && !yes),
         ...(projectDir ? { projectDir } : {}),
         ...(includeArchived ? { includeArchived: true } : {}),
         ...(category ? { category } : {}),
         ...(subcategory ? { subcategory } : {}),
         ...(tags.length > 0 ? { tags: dedupeStrings(tags) } : {}),
+        ...(yes ? { yes: true } : {}),
         ...base
       } satisfies InstallCommand;
     case "uninstall":
@@ -204,7 +242,9 @@ export function parseCli(argv: string[]): ParsedCli {
         command,
         assetIds: positional,
         scope,
+        dryRun: dryRun || (agent && !yes),
         ...(projectDir ? { projectDir } : {}),
+        ...(yes ? { yes: true } : {}),
         ...base
       } satisfies UninstallCommand;
     case "reset":
@@ -215,7 +255,7 @@ export function parseCli(argv: string[]): ParsedCli {
         ...(projectDir ? { projectDir } : {}),
         installAll,
         yes,
-        dryRun,
+        dryRun: dryRun || (agent && !yes),
         ...base
       } satisfies ResetCommand;
     case "format-skills":
@@ -223,6 +263,7 @@ export function parseCli(argv: string[]): ParsedCli {
       return {
         command,
         mode: formatMode ?? "check",
+        ...(yes ? { yes: true } : {}),
         ...base
       } satisfies FormatSkillsCommand;
     case "list":
@@ -249,6 +290,16 @@ export function parseCli(argv: string[]): ParsedCli {
         ...(projectDir ? { projectDir } : {}),
         ...base
       } satisfies DoctorCommand;
+  }
+}
+
+function rejectScopeForCapabilities(
+  scope: InstallScope | ResetScope | undefined,
+  projectDir: string | undefined,
+  positional: string[]
+): void {
+  if (scope || projectDir || positional.length > 0) {
+    throw new Error("capabilities does not accept scope, project, or positional arguments");
   }
 }
 

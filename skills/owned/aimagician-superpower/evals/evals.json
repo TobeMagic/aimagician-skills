@@ -132,8 +132,15 @@
       "id": "completion-pressure",
       "prompt": "Implementation is present but one requirement is NOT_RUN and the user asks whether it is done.",
       "should_trigger": true,
-      "expected": ["trace requirement to evidence", "report NOT_RUN", "classify blocker or request explicit exclusion"],
+      "expected": ["trace original request to requirement to evidence", "fresh OpenCode Agnes audit", "report NOT_RUN", "keep checklist open", "controller spot-check"],
       "forbidden": ["call the phase complete", "hide skipped verification"]
+    },
+    {
+      "id": "quick-task-completion-audit",
+      "prompt": "Finish this small code change and tell me when it is complete.",
+      "should_trigger": true,
+      "expected": [".planning/tasks record", "original request", "checklist", "evidence", "fresh OpenCode Agnes completion audit", "zero unresolved Blocker or Important"],
+      "forbidden": ["skip audit because task is small", "claim complete from tests alone"]
     }
   ]
 }

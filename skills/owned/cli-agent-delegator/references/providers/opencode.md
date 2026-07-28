@@ -36,6 +36,17 @@ opencode run --dir "<source_path>" \
   "<detailed_prompt>"
 ```
 
+For every task, phase, milestone, release, or delivery completion audit, use Agnes as the first and required model:
+
+```bash
+opencode run --dir "<source_path>" \
+  -m "agnes/agnes-2.0-flash" \
+  --print-logs --log-level INFO \
+  "<completion_audit_prompt>"
+```
+
+Do not try DeepSeek first for a completion audit. If Agnes fails, report the audit as unavailable and do not claim completion; do not substitute an implementer or controller self-review.
+
 ## Diagnostic Preflight
 
 Run diagnostics only for first-time setup in a new environment, a known runtime or configuration change, a missing-command or invalid-syntax failure, a model/provider configuration failure, or an explicit user request. Use the narrowest command that diagnoses the observed failure:
@@ -105,6 +116,7 @@ Use this route:
 2. `agnes/agnes-2.0-flash` when the task requires image understanding.
 3. `agnes/agnes-2.0-flash` when DeepSeek is unavailable, rate-limited, rejects the request, or otherwise fails.
 4. If neither model is usable, report the available model list and request a decision instead of silently choosing a paid or unknown model.
+5. `agnes/agnes-2.0-flash` is mandatory and primary for completion audits, independent of the ordinary-task route above.
 
 A provider rate limit is a model failure event, not an inactivity timeout. Do not wait forever on a clear rate-limit error, and do not misclassify a progressing long run as rate-limited.
 

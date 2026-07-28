@@ -23,6 +23,7 @@ describe("aimagician-superpower workflow runtime", () => {
     const previewResult = JSON.parse(preview.stdout) as { mode: string; planned: string[] };
     expect(previewResult.mode).toBe("preview");
     expect(previewResult.planned).toContain(".planning/phases/01-runtime/01-SPEC.md");
+    expect(previewResult.planned).toContain(".planning/REQUESTS.md");
     await expect(access(join(project, ".planning"), constants.F_OK)).rejects.toMatchObject({ code: "ENOENT" });
 
     const apply = await runNode(workflowScript, [
@@ -40,6 +41,38 @@ describe("aimagician-superpower workflow runtime", () => {
     expect(rerun.exitCode).toBe(0);
     expect(await readFile(requirementsPath, "utf8")).toBe("# User-owned requirements\n");
     expect((JSON.parse(rerun.stdout) as { skipped: string[] }).skipped).toContain(".planning/REQUIREMENTS.md");
+  });
+
+  it("creates one lightweight task record and blocks completion without Agnes evidence", async () => {
+    const project = await makeProject();
+    const apply = await runNode(workflowScript, [
+      "init", "--project", project, "--task", "quick-fix", "--write", "--format", "json"
+    ]);
+    expect(apply.exitCode).toBe(0);
+    expect(JSON.parse(apply.stdout)).toMatchObject({
+      task: "quick-fix",
+      planned: expect.arrayContaining([".planning/tasks/quick-fix.md"])
+    });
+
+    const incomplete = await runNode(workflowScript, [
+      "validate", "--project", project, "--task", "quick-fix", "--gate", "complete", "--format", "json"
+    ]);
+    expect(incomplete.exitCode).toBe(1);
+    expect((JSON.parse(incomplete.stdout) as { findings: Array<{ code: string }> }).findings.map((item) => item.code)).toEqual(
+      expect.arrayContaining(["TASK_PLACEHOLDER", "TASK_CHECKLIST_OPEN", "AUDIT_SESSION_MISSING"])
+    );
+
+    await writeFile(join(project, ".planning", "REQUESTS.md"), validRequests(), "utf8");
+    await writeFile(join(project, ".planning", "tasks", "quick-fix.md"), validTask(), "utf8");
+    const complete = await runNode(workflowScript, [
+      "validate", "--project", project, "--task", "quick-fix", "--gate", "complete", "--format", "json"
+    ]);
+    expect(complete.exitCode).toBe(0);
+    expect(JSON.parse(complete.stdout)).toMatchObject({
+      ok: true,
+      task: "quick-fix",
+      status: "passed"
+    });
   });
 
   it("enforces specification scoring and reports stable finding codes", async () => {
@@ -114,7 +147,7 @@ describe("aimagician-superpower workflow runtime", () => {
     await writeFile(fixture.contextPath, validContext(), "utf8");
     await unlink(fixture.validationPath);
     await writeFile(join(fixture.phaseDir, "01-VERIFICATION.md"), validValidation(), "utf8");
-    await writeFile(fixture.auditPath, "# Audit\n\n**Status:** Complete\n\n## Closure\n\nAll requirements passed.\n", "utf8");
+    await writeFile(fixture.auditPath, validAudit(), "utf8");
     await writeFile(fixture.summaryPath, "# Summary\n\n**Status:** Complete\n\n## Outcome\n\nRuntime behavior is verified.\n", "utf8");
 
     const trace = await runNode(workflowScript, ["trace", "--project", fixture.project, "--phase", "1", "--format", "json"]);
@@ -224,6 +257,7 @@ async function makeInitializedPhase(): Promise<{
   const project = await makeProject();
   const result = await runNode(workflowScript, ["init", "--project", project, "--phase", "01-runtime", "--write", "--format", "json"]);
   expect(result.exitCode).toBe(0);
+  await writeFile(join(project, ".planning", "REQUESTS.md"), validRequests(), "utf8");
   const phaseDir = join(project, ".planning", "phases", "01-runtime");
   return {
     project,
@@ -260,12 +294,14 @@ The skill previously provided prose guidance without executable artifact checks.
 
 ### ASR-01: Validate artifacts
 
+- **Source requests:** USR-TEST-001
 - **Current:** No runtime validation command exists.
 - **Target:** The runtime validates the controlled phase artifact contract.
 - **Acceptance:** A valid fixture exits zero and an invalid fixture reports a stable finding code.
 
 ### ASR-02: Trace evidence
 
+- **Source requests:** USR-TEST-001
 - **Current:** Requirement coverage is reviewed manually.
 - **Target:** The runtime maps each locked requirement to a plan and evidence status.
 - **Acceptance:** Trace output reports both requirements as planned with PASS evidence.
@@ -306,6 +342,25 @@ The skill previously provided prose guidance without executable artifact checks.
 | Round | Perspective | Question | Decision |
 |---:|---|---|---|
 | 1 | Reality | What is missing? | Executable gates and traceability. |
+`;
+}
+
+function validRequests(): string {
+  return `# Request Ledger
+
+## USR-TEST-001: Workflow runtime
+
+**Status:** Accepted
+**Source:** Test requirement
+
+### Original Request
+
+Provide deterministic workflow validation and traceability.
+
+### Derived Requirements
+
+- ASR-01
+- ASR-02
 `;
 }
 
@@ -450,6 +505,84 @@ function validValidation(): string {
 |---|---|---|---|
 | ASR-01 | PASS | focused runtime test | Valid and invalid fixtures behave as specified. |
 | ASR-02 | PASS | trace test | Both requirements are planned and evidenced. |
+`;
+}
+
+function validAudit(): string {
+  return `# Runtime Audit
+
+## Auditor Run
+
+- **Provider:** OpenCode
+- **Model:** \`agnes/agnes-2.0-flash\`
+- **Session:** ses_test_complete
+- **Run status:** DONE
+- **Review point:** test-fixture-head
+- **Controller spot-check:** PASS - decisive fixture assertions were rerun.
+
+## Requirement Coverage
+
+| Source request | Requirement | Planned | Evidence | Audit | Decision |
+|---|---|---|---|---|---|
+| USR-TEST-001 | ASR-01 | Yes | PASS | PASS | Complete |
+| USR-TEST-001 | ASR-02 | Yes | PASS | PASS | Complete |
+
+## Finding Counts
+
+- **Blocker:** 0
+- **Important:** 0
+- **Nitpick:** 0
+
+## Closure Decision
+
+**Status:** Complete
+**Reason:** Requirements and evidence passed independent review.
+`;
+}
+
+function validTask(): string {
+  return `# Task: quick-fix
+
+**Task ID:** quick-fix
+**Status:** Complete
+**Source request:** USR-TEST-001
+**Review point:** test-fixture-head
+
+## Original Request
+
+Apply and verify a bounded quick fix.
+
+## Accepted Decisions
+
+- Keep the change inside the fixture.
+
+## Checklist
+
+- [x] TASK-REQ-001: Implement and verify the fix.
+
+## Evidence
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| TASK-REQ-001 | Focused test passed. | PASS |
+
+## Agnes Completion Audit
+
+- **Provider:** OpenCode
+- **Model:** \`agnes/agnes-2.0-flash\`
+- **Session:** ses_task_complete
+- **Run status:** DONE
+- **Review point:** test-fixture-head
+- **Requirement matrix:** PASS
+- **Blocker:** 0
+- **Important:** 0
+- **Nitpick:** 0
+- **Controller spot-check:** PASS - focused evidence was inspected.
+
+## Final Decision
+
+**Status:** Complete
+**Reason:** Checklist, evidence, and audit passed.
 `;
 }
 

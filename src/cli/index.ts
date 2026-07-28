@@ -18,16 +18,57 @@ import {
   type FormatOwnedSkillsResult
 } from "../manager/skill-format";
 import { runDashboard } from "../tui/dashboard";
+import {
+  createAgentCapabilities,
+  createAgentError,
+  createAgentOutput,
+  type AgentMessage
+} from "./agent-contract";
 import { parseCli } from "./parse-cli";
 
 export async function runCli(argv: string[]): Promise<CommandOutput> {
-  try {
-    const parsed = parseCli(argv);
+  const agentRequested = argv.includes("--agent");
+  let parsed: ParsedCli;
 
+  try {
+    parsed = parseCli(argv);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown CLI usage error";
+    return agentRequested
+      ? createAgentError(inferCommand(argv), "invalid-arguments", message, 2)
+      : { exitCode: 1, stdout: "", stderr: message };
+  }
+
+  try {
     if (parsed.help) {
+      if (parsed.agent) {
+        return createAgentOutput({
+          command: parsed.command,
+          mode: "read",
+          data: createAgentCapabilities()
+        });
+      }
       return {
         exitCode: 0,
         stdout: renderHelp(),
+        stderr: ""
+      };
+    }
+
+    if (parsed.command === "capabilities") {
+      const capabilities = createAgentCapabilities();
+      if (parsed.agent) {
+        return createAgentOutput({
+          command: parsed.command,
+          mode: "read",
+          data: capabilities
+        });
+      }
+      return {
+        exitCode: 0,
+        stdout: parsed.json
+          ? JSON.stringify({ command: parsed.command, ...capabilities }, null, 2)
+          : renderCapabilities(capabilities),
         stderr: ""
       };
     }
@@ -47,6 +88,37 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
         clean: parsed.clean,
         platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
       });
+
+      if (parsed.agent) {
+        const errors: AgentMessage[] = [
+          ...result.targetReports
+            .filter((report) => report.status === "deferred")
+            .map((report) => ({
+              code: "target-deferred",
+              message: report.reason ?? `Target ${report.target} was deferred.`,
+              target: report.target
+            })),
+          ...result.pluginReports
+            .filter((report) => report.status === "skipped")
+            .map((report) => ({
+              code: "plugin-skipped",
+              message: report.reason ?? `Plugin ${report.assetId} was skipped.`,
+              target: report.target,
+              assetId: report.assetId
+            }))
+        ];
+        return createAgentOutput({
+          command: parsed.command,
+          mode: result.mode === "dry-run" ? "preview" : "apply",
+          status: errors.length > 0 ? "partial" : "ok",
+          data: createBootstrapPreview(parsed, result),
+          errors,
+          nextActions: result.mode === "dry-run"
+            ? ["Review the preview, then repeat the command with --yes to apply."]
+            : [],
+          exitCode: errors.length > 0 ? 3 : 0
+        });
+      }
 
       return {
         exitCode: 0,
@@ -69,6 +141,14 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
         includeArchived: parsed.includeArchived,
         platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
       });
+
+      if (parsed.agent) {
+        return createAgentOutput({
+          command: parsed.command,
+          mode: "read",
+          data: { scope: parsed.scope, skills: result }
+        });
+      }
 
       return {
         exitCode: 0,
@@ -93,6 +173,26 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
         platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
       });
 
+      if (parsed.agent) {
+        const errors = result.skipped.map((skip) => ({
+          code: "install-skipped",
+          message: `Requested install was skipped: ${skip.reason}.`,
+          ...(skip.target ? { target: skip.target } : {}),
+          assetId: skip.assetId
+        }));
+        return createAgentOutput({
+          command: parsed.command,
+          mode: result.dryRun ? "preview" : "apply",
+          status: errors.length > 0 ? "partial" : "ok",
+          data: result,
+          errors,
+          nextActions: result.dryRun
+            ? ["Review the preview, then repeat the command with --yes to apply."]
+            : [],
+          exitCode: errors.length > 0 ? 3 : 0
+        });
+      }
+
       return {
         exitCode: 0,
         stdout: parsed.json
@@ -108,8 +208,27 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
         scope: parsed.scope,
         projectDir: parsed.projectDir,
         selectedTargets: parsed.targets,
+        dryRun: parsed.dryRun,
         platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
       });
+
+      if (parsed.agent) {
+        const warnings = result.skipped.map((skip) => ({
+          code: "already-uninstalled",
+          message: "Managed skill was not installed for this target.",
+          target: skip.target,
+          assetId: skip.assetId
+        }));
+        return createAgentOutput({
+          command: parsed.command,
+          mode: result.dryRun ? "preview" : "apply",
+          data: result,
+          warnings,
+          nextActions: result.dryRun
+            ? ["Review the preview, then repeat the command with --yes to apply."]
+            : []
+        });
+      }
 
       return {
         exitCode: 0,
@@ -131,6 +250,28 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
         platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
       });
 
+      if (parsed.agent) {
+        const errors = result.scopes.flatMap((scope) =>
+          scope.skipped.map((skip) => ({
+            code: "reset-install-skipped",
+            message: `Reset reinstall was skipped: ${skip.reason}.`,
+            ...(skip.target ? { target: skip.target } : {}),
+            assetId: skip.assetId
+          }))
+        );
+        return createAgentOutput({
+          command: parsed.command,
+          mode: result.dryRun ? "preview" : "apply",
+          status: errors.length > 0 ? "partial" : "ok",
+          data: result,
+          errors,
+          nextActions: result.dryRun
+            ? ["Review the preview, then repeat the command with --yes to apply."]
+            : [],
+          exitCode: errors.length > 0 ? 3 : 0
+        });
+      }
+
       return {
         exitCode: 0,
         stdout: parsed.json
@@ -141,7 +282,32 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
     }
 
     if (parsed.command === "format-skills") {
-      const result = await formatOwnedSkills({ mode: parsed.mode });
+      const previewRequested = Boolean(parsed.agent && parsed.mode === "write" && !parsed.yes);
+      const result = await formatOwnedSkills({ mode: previewRequested ? "check" : parsed.mode });
+      const issueRecords = result.records.filter((record) => record.status !== "ok");
+
+      if (parsed.agent) {
+        const messages = issueRecords.map((record) => ({
+          code: record.status,
+          message: record.issues.join(", "),
+          assetId: record.id
+        }));
+        const checkFailed = parsed.mode === "check" && issueRecords.length > 0;
+        return createAgentOutput({
+          command: parsed.command,
+          mode: parsed.mode === "check" ? "read" : previewRequested ? "preview" : "apply",
+          status: checkFailed ? "error" : "ok",
+          data: {
+            requestedMode: parsed.mode,
+            ...result
+          },
+          ...(checkFailed ? { errors: messages } : { warnings: messages }),
+          nextActions: previewRequested
+            ? ["Review the proposed taxonomy repairs, then repeat the command with --yes to apply."]
+            : [],
+          exitCode: checkFailed ? 1 : 0
+        });
+      }
 
       return {
         exitCode: result.records.some((record) => record.status !== "ok") && parsed.mode === "check" ? 1 : 0,
@@ -159,6 +325,32 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
       platform: parsed.homeDir ? { homeDir: parsed.homeDir } : undefined
     });
 
+    if (parsed.agent) {
+      const data = createInspectionPreview(parsed.command, inspection);
+      if (parsed.command === "doctor" && inspection.status !== "healthy") {
+        const errors = inspection.targets.flatMap((target) =>
+          target.issues.map((issue) => ({
+            code: "doctor-issue",
+            message: issue,
+            target: target.target
+          }))
+        );
+        return createAgentOutput({
+          command: parsed.command,
+          mode: "read",
+          status: "error",
+          data,
+          errors,
+          exitCode: 1
+        });
+      }
+      return createAgentOutput({
+        command: parsed.command,
+        mode: "read",
+        data
+      });
+    }
+
     return {
       exitCode: 0,
       stdout: parsed.json
@@ -167,18 +359,22 @@ export async function runCli(argv: string[]): Promise<CommandOutput> {
       stderr: ""
     };
   } catch (error) {
-    return {
-      exitCode: 1,
-      stdout: "",
-      stderr: error instanceof Error ? error.message : "Unknown CLI error"
-    };
+    const message = error instanceof Error ? error.message : "Unknown CLI error";
+    return parsed.agent
+      ? createAgentError(parsed.command, "execution-failed", message, 1)
+      : { exitCode: 1, stdout: "", stderr: message };
   }
 }
 
 export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
-  const parsed = parseCli(argv);
+  let parsed: ParsedCli | undefined;
+  try {
+    parsed = parseCli(argv);
+  } catch {
+    // runCli renders usage errors in the selected human or Agent contract.
+  }
 
-  if (parsed.command === "tui" && !parsed.help && process.stdin.isTTY && process.stdout.isTTY) {
+  if (parsed?.command === "tui" && !parsed.help && process.stdin.isTTY && process.stdout.isTTY) {
     await runDashboard({
       selectedTargets: parsed.targets,
       projectDir: parsed.projectDir,
@@ -200,6 +396,10 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   if (result.exitCode !== 0) {
     process.exitCode = result.exitCode;
   }
+}
+
+function inferCommand(argv: string[]): string {
+  return argv.find((argument) => !argument.startsWith("-")) ?? "capabilities";
 }
 
 function createBootstrapPreview(parsed: ParsedCli, result: Awaited<ReturnType<typeof runBootstrap>>) {
@@ -282,10 +482,11 @@ function renderInspection(
 
 function renderHelp(): string {
   return [
-    "Usage: skillbird <command> [--target <codex|claude|opencode|gemini|hermes|cursor|copilot>] [--json]",
+    "Usage: skillbird <command> [--target <codex|claude|opencode|gemini|hermes|cursor|copilot>] [--json|--agent]",
     "",
     "Commands:",
     "  tui           Open the skill manager dashboard (default command)",
+    "  capabilities  Describe commands, targets, scopes, mutation gates, and exit codes",
     "  search        Search local packaged skills",
     "  install       Install selected skills, or preview with --dry-run (requires --scope)",
     "  uninstall     Uninstall managed skills only (requires --scope)",
@@ -308,12 +509,29 @@ function renderHelp(): string {
     "  --check       format-skills check mode (default)",
     "  --write       format-skills write mode",
     "  --install-all Reset-only flag: reinstall every active skill after clearing",
-    "  --yes, -y     Confirm reset when applying changes",
+    "  --yes, -y     Confirm an Agent-mode write, or confirm reset in human mode",
     "  --include-archived  Show or install archived owned skills",
     "  --dry-run     Print bootstrap/install/reset intent without applying changes",
     "  --clean       Wipe all target skill/plugin dirs before install (bootstrap only)",
     "  --json        Render machine-readable output",
+    "  --agent       Stable JSON, no interaction, writes preview unless --yes is present",
     "  -h, --help    Show command help"
+  ].join("\n");
+}
+
+function renderCapabilities(capabilities: ReturnType<typeof createAgentCapabilities>): string {
+  return [
+    "Skillbird capabilities",
+    `Targets: ${capabilities.targets.join(", ")}`,
+    `Scopes: ${capabilities.scopes.join(", ")}`,
+    "Commands:",
+    ...capabilities.commands.map((command) =>
+      `  ${command.name}: ${command.kind}${command.confirmationRequired ? " (Agent apply requires --yes)" : ""}`
+    ),
+    "Exit codes:",
+    ...Object.entries(capabilities.exitCodes).map(([code, description]) => `  ${code}: ${description}`),
+    "Examples:",
+    ...capabilities.examples.map((example) => `  ${example}`)
   ].join("\n");
 }
 
@@ -355,6 +573,7 @@ function renderInstall(result: InstallSkillsResult): string {
 function renderUninstall(result: UninstallSkillsResult): string {
   return [
     "Skillbird uninstall",
+    `Mode: ${result.dryRun ? "dry-run" : "apply"}`,
     `Scope: ${result.scope}`,
     `Workspace: ${result.workspaceRoot}`,
     `Removed: ${result.removed.length > 0 ? result.removed.map((install) => `${install.assetId}->${install.target}`).join(", ") : "none"}`,

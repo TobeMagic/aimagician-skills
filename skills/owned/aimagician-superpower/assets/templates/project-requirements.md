@@ -4,7 +4,7 @@
 
 ## Active Requirements
 
-- [ ] **REQ-001:** TBD - state a falsifiable project requirement.
+- [ ] **REQ-001:** TBD - state a falsifiable project requirement. Source: USR-001.
 
 ## Out Of Scope
 
@@ -12,6 +12,6 @@
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|---|---|---|
-| REQ-001 | {{PHASE}} | Planned |
+| Source request | Requirement | Phase | Status |
+|---|---|---|---|
+| USR-001 | REQ-001 | {{PHASE}} | Planned |

@@ -14,6 +14,7 @@ const RISKS = new Set(["low", "medium", "high"]);
 const EXTENSIONS = new Set(["ui", "ai", "security-ops"]);
 
 const PROJECT_TEMPLATES = [
+  ["project-requests.md", "REQUESTS.md"],
   ["project-requirements.md", "REQUIREMENTS.md"],
   ["project-roadmap.md", "ROADMAP.md"],
   ["project-state.md", "STATE.md"]
@@ -61,6 +62,7 @@ function parseArgs(argv) {
     command,
     project: process.cwd(),
     phase: undefined,
+    task: undefined,
     format: "text",
     gate: "spec",
     risk: "medium",
@@ -76,13 +78,14 @@ function parseArgs(argv) {
     }
 
     const next = argv[index + 1];
-    if (["--project", "--phase", "--format", "--gate", "--risk", "--extensions"].includes(token)) {
+    if (["--project", "--phase", "--task", "--format", "--gate", "--risk", "--extensions"].includes(token)) {
       if (!next || next.startsWith("--")) {
         throw new WorkflowError("USAGE_MISSING_VALUE", `${token} requires a value`);
       }
       index += 1;
       if (token === "--project") options.project = next;
       if (token === "--phase") options.phase = next;
+      if (token === "--task") options.task = next;
       if (token === "--format") options.format = next;
       if (token === "--gate") options.gate = next;
       if (token === "--risk") options.risk = next;
@@ -113,6 +116,10 @@ function parseArgs(argv) {
       throw new WorkflowError("USAGE_INVALID_EXTENSION", `Unsupported extension: ${extension}`);
     }
   }
+  if (options.phase && options.task) {
+    throw new WorkflowError("USAGE_SCOPE_CONFLICT", "--phase and --task are mutually exclusive");
+  }
+  if (options.task) assertSafeTaskToken(options.task);
 
   options.project = resolve(options.project);
   return options;
@@ -130,6 +137,12 @@ async function exists(path) {
 function assertSafePhaseToken(value) {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value) || value.includes("..")) {
     throw new WorkflowError("PHASE_INVALID", `Unsafe phase identifier: ${value}`);
+  }
+}
+
+function assertSafeTaskToken(value) {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value) || value.includes("..")) {
+    throw new WorkflowError("TASK_INVALID", `Unsafe task identifier: ${value}`);
   }
 }
 
@@ -225,6 +238,7 @@ function replaceTokens(content, context) {
     .replaceAll("{{PHASE}}", context.phase?.name ?? "TBD")
     .replaceAll("{{PHASE_PREFIX}}", context.phase?.prefix ?? "TBD")
     .replaceAll("{{PHASE_NAME}}", context.phase?.displayName ?? "TBD")
+    .replaceAll("{{TASK}}", context.task ?? "TBD")
     .replaceAll("{{RISK}}", context.risk)
     .replaceAll("{{DATE}}", context.date);
 }
@@ -234,10 +248,15 @@ async function initArtifacts(options) {
     throw new WorkflowError("PROJECT_NOT_FOUND", `Project directory not found: ${options.project}`);
   }
   const planningDir = join(options.project, ".planning");
-  const phase = options.phase ? await findPhase(options.project, options.phase, true) : await findPhase(options.project, undefined, false).catch(() => null);
+  const phase = options.task
+    ? null
+    : options.phase
+      ? await findPhase(options.project, options.phase, true)
+      : await findPhase(options.project, undefined, false).catch(() => null);
   const context = {
     projectName: basename(options.project),
     phase,
+    task: options.task,
     risk: options.risk,
     date: new Date().toISOString().slice(0, 10)
   };
@@ -261,6 +280,12 @@ async function initArtifacts(options) {
       });
     }
   }
+  if (options.task) {
+    candidates.push({
+      template: join(TEMPLATE_DIR, "task-record.md"),
+      destination: join(planningDir, "tasks", `${options.task}.md`)
+    });
+  }
 
   const planned = [];
   const skipped = [];
@@ -283,6 +308,7 @@ async function initArtifacts(options) {
     mode: options.write ? "write" : "preview",
     project: options.project,
     phase: phase?.name ?? null,
+    task: options.task ?? null,
     planned,
     skipped,
     findings: []
@@ -322,7 +348,37 @@ async function loadPhase(project, requested) {
       contents[key] = value ? { path: value, content: await readFile(value, "utf8") } : null;
     }
   }
-  return { project, phase, artifacts, contents };
+  const requestsPath = join(project, ".planning", "REQUESTS.md");
+  const requests = await exists(requestsPath)
+    ? { path: requestsPath, content: await readFile(requestsPath, "utf8") }
+    : null;
+  return { project, phase, artifacts, contents, requests };
+}
+
+async function loadTask(project, taskId) {
+  if (!await exists(project)) {
+    throw new WorkflowError("PROJECT_NOT_FOUND", `Project directory not found: ${project}`);
+  }
+  if (!taskId) {
+    throw new WorkflowError("TASK_REQUIRED", "Provide --task for a lightweight task workflow");
+  }
+  assertSafeTaskToken(taskId);
+  const taskPath = join(project, ".planning", "tasks", `${taskId}.md`);
+  await assertInside(project, taskPath);
+  if (!await exists(taskPath)) {
+    throw new WorkflowError("TASK_NOT_FOUND", `Task record not found: ${taskId}`);
+  }
+  const requestsPath = join(project, ".planning", "REQUESTS.md");
+  const requests = await exists(requestsPath)
+    ? { path: requestsPath, content: await readFile(requestsPath, "utf8") }
+    : null;
+  return {
+    project,
+    task: taskId,
+    path: taskPath,
+    content: await readFile(taskPath, "utf8"),
+    requests
+  };
 }
 
 function getSection(content, title) {
@@ -400,11 +456,21 @@ function extractRequirements(content) {
     return {
       id: match[1],
       block,
+      sourceRequests: extractIds(extractScalar(block, "Source requests") ?? "", "USR"),
       current: extractScalar(block, "Current"),
       target: extractScalar(block, "Target"),
       acceptance: extractScalar(block, "Acceptance")
     };
   });
+}
+
+function extractIds(content, prefix) {
+  const pattern = new RegExp(`\\b${prefix}-[A-Z0-9][A-Z0-9._-]*\\b`, "gi");
+  return [...new Set((content.match(pattern) ?? []).map((id) => id.toUpperCase()))];
+}
+
+function extractRequestIds(content) {
+  return new Set(extractIds(content, "USR"));
 }
 
 function extractRequirementReferences(content) {
@@ -446,6 +512,12 @@ function validateSpec(loaded) {
     findings.push(finding("SPEC_PLACEHOLDER", "Specification still contains unresolved placeholders", artifact));
   }
 
+  const requestArtifact = loaded.requests ? relative(loaded.project, loaded.requests.path) : null;
+  const requestIds = loaded.requests ? extractRequestIds(loaded.requests.content) : new Set();
+  if (!loaded.requests) {
+    findings.push(finding("REQUEST_LEDGER_MISSING", "Project .planning/REQUESTS.md is required", requestArtifact));
+  }
+
   const status = extractScalar(content, "Status")?.toLowerCase();
   if (status !== "locked") {
     findings.push(finding("SPEC_NOT_LOCKED", "Specification status must be Locked", artifact));
@@ -469,6 +541,24 @@ function validateSpec(loaded) {
       findings.push(finding("SPEC_REQUIREMENT_DUPLICATE", `Duplicate requirement: ${requirement.id}`, artifact, requirement.id));
     }
     seen.add(requirement.id);
+    if (requirement.sourceRequests.length === 0) {
+      findings.push(finding(
+        "SPEC_SOURCE_REQUEST_MISSING",
+        `${requirement.id} must cite at least one USR-* source request`,
+        artifact,
+        requirement.id
+      ));
+    }
+    for (const requestId of requirement.sourceRequests) {
+      if (!requestIds.has(requestId)) {
+        findings.push(finding(
+          "SPEC_SOURCE_REQUEST_UNKNOWN",
+          `${requirement.id} cites ${requestId}, which is absent from REQUESTS.md`,
+          artifact,
+          requirement.id
+        ));
+      }
+    }
     for (const [field, value] of [["Current", requirement.current], ["Target", requirement.target], ["Acceptance", requirement.acceptance]]) {
       if (!value || hasPlaceholder(value)) {
         findings.push(finding("SPEC_REQUIREMENT_FIELD_MISSING", `${requirement.id} is missing a concrete ${field} value`, artifact, requirement.id));
@@ -530,7 +620,7 @@ function validateSpec(loaded) {
     findings.push(finding("SPEC_ACCEPTANCE_INCOMPLETE", "Acceptance Criteria must cover every requirement", artifact));
   }
 
-  return { findings, requirements, risk, userFacing, status };
+  return { findings, requirements, risk, userFacing, status, requestIds };
 }
 
 function validatePlan(loaded) {
@@ -642,6 +732,84 @@ function traceLoaded(loaded) {
   return { findings, items, specFindings: spec.findings, userFacing: spec.userFacing };
 }
 
+function normalizeScalar(value) {
+  return value?.replaceAll("`", "").trim();
+}
+
+function validateAgnesRun(content, artifact) {
+  const findings = [];
+  const provider = normalizeScalar(extractScalar(content, "Provider"))?.toLowerCase();
+  const model = normalizeScalar(extractScalar(content, "Model"))?.toLowerCase();
+  const session = normalizeScalar(extractScalar(content, "Session"));
+  const runStatus = normalizeScalar(extractScalar(content, "Run status"))?.toLowerCase();
+  const reviewPoint = normalizeScalar(extractScalar(content, "Review point"));
+  const spotCheck = normalizeScalar(extractScalar(content, "Controller spot-check"));
+
+  if (provider !== "opencode") {
+    findings.push(finding("AUDIT_PROVIDER_INVALID", "Completion audit provider must be OpenCode", artifact));
+  }
+  if (model !== "agnes/agnes-2.0-flash") {
+    findings.push(finding("AUDIT_MODEL_INVALID", "Completion audit model must be agnes/agnes-2.0-flash", artifact));
+  }
+  if (!session || /NOT_RUN|TBD/i.test(session)) {
+    findings.push(finding("AUDIT_SESSION_MISSING", "Completion audit requires a recorded OpenCode session", artifact));
+  }
+  if (!runStatus || !new Set(["done", "complete", "pass", "passed"]).has(runStatus)) {
+    findings.push(finding("AUDIT_RUN_INCOMPLETE", "Completion audit run status must be DONE, COMPLETE, PASS, or PASSED", artifact));
+  }
+  if (!reviewPoint || /NOT_RUN|TBD/i.test(reviewPoint)) {
+    findings.push(finding("AUDIT_REVIEW_POINT_MISSING", "Completion audit must freeze and record the reviewed commit or diff", artifact));
+  }
+  if (!spotCheck || /NOT_RUN|TBD/i.test(spotCheck)) {
+    findings.push(finding("AUDIT_SPOT_CHECK_MISSING", "Main-Agent completion-critical spot-check evidence is required", artifact));
+  }
+
+  for (const severity of ["Blocker", "Important"]) {
+    const value = normalizeScalar(extractScalar(content, severity));
+    if (!value || !/^(?:0|none|no unresolved|pass)$/i.test(value)) {
+      findings.push(finding(
+        `AUDIT_${severity.toUpperCase()}_OPEN`,
+        `Completion requires zero unresolved ${severity} findings`,
+        artifact
+      ));
+    }
+  }
+  return findings;
+}
+
+function parsePipeCells(line) {
+  if (!line.trim().startsWith("|")) return [];
+  return line.split("|").slice(1, -1).map((cell) => cell.trim());
+}
+
+function auditCoversRequirement(content, requirementId) {
+  for (const line of content.split(/\r?\n/)) {
+    const cells = parsePipeCells(line);
+    const index = cells.findIndex((cell) => cell === requirementId);
+    if (index < 0) continue;
+    const passCells = cells.slice(index + 1).filter((cell) => cell.toUpperCase() === "PASS");
+    if (passCells.length >= 2) return true;
+  }
+  return false;
+}
+
+function validatePhaseAudit(loaded, requirements) {
+  const content = loaded.contents.audit.content;
+  const artifact = relative(loaded.project, loaded.contents.audit.path);
+  const findings = validateAgnesRun(content, artifact);
+  for (const requirement of requirements) {
+    if (!auditCoversRequirement(content, requirement.id)) {
+      findings.push(finding(
+        "AUDIT_REQUIREMENT_NOT_PASSED",
+        `${requirement.id} requires passing evidence and an Agnes PASS decision in the audit matrix`,
+        artifact,
+        requirement.id
+      ));
+    }
+  }
+  return findings;
+}
+
 function validateComplete(loaded) {
   const plan = validateExecute(loaded);
   const trace = traceLoaded(loaded);
@@ -657,6 +825,7 @@ function validateComplete(loaded) {
     if (extractScalar(loaded.contents.audit.content, "Status")?.toLowerCase() !== "complete") {
       findings.push(finding("AUDIT_NOT_COMPLETE", "Audit status must be Complete", artifact));
     }
+    findings.push(...validatePhaseAudit(loaded, plan.requirements));
   }
   if (!loaded.contents.summary) {
     findings.push(finding("SUMMARY_MISSING", "Completion requires a summary artifact"));
@@ -680,7 +849,110 @@ function validateComplete(loaded) {
   return { findings, items: trace.items };
 }
 
+function taskEvidence(content) {
+  const items = [];
+  for (const line of getSection(content, "Evidence").split(/\r?\n/)) {
+    const cells = parsePipeCells(line);
+    const id = cells[0];
+    if (!/^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$/.test(id ?? "") || id.startsWith("USR-")) continue;
+    items.push({
+      id,
+      evidence: cells[1] ?? "",
+      evidenceStatus: (cells[2] ?? "NOT_RUN").toUpperCase()
+    });
+  }
+  return items;
+}
+
+function validateTaskComplete(loaded) {
+  const artifact = relative(loaded.project, loaded.path);
+  const content = loaded.content;
+  const findings = [];
+
+  for (const section of ["Original Request", "Accepted Decisions", "Checklist", "Evidence", "Agnes Completion Audit", "Final Decision"]) {
+    if (!getSection(content, section)) {
+      findings.push(finding("TASK_SECTION_MISSING", `Task record is missing section: ${section}`, artifact));
+    }
+  }
+  if (hasPlaceholder(content)) {
+    findings.push(finding("TASK_PLACEHOLDER", "Task record contains unresolved placeholders", artifact));
+  }
+  if (extractScalar(content, "Status")?.toLowerCase() !== "complete") {
+    findings.push(finding("TASK_NOT_COMPLETE", "Task status must be Complete", artifact));
+  }
+
+  const sourceRequest = extractIds(extractScalar(content, "Source request") ?? "", "USR")[0];
+  const requestIds = loaded.requests ? extractRequestIds(loaded.requests.content) : new Set();
+  if (!loaded.requests) {
+    findings.push(finding("REQUEST_LEDGER_MISSING", "Project .planning/REQUESTS.md is required", artifact));
+  } else if (!sourceRequest || !requestIds.has(sourceRequest)) {
+    findings.push(finding("TASK_SOURCE_REQUEST_INVALID", "Task must cite a USR-* entry present in REQUESTS.md", artifact));
+  }
+
+  const unchecked = getSection(content, "Checklist").match(/^- \[ \]\s+.+$/gm) ?? [];
+  if (unchecked.length > 0) {
+    findings.push(finding("TASK_CHECKLIST_OPEN", `${unchecked.length} task checklist item(s) remain open`, artifact));
+  }
+
+  const items = taskEvidence(content);
+  if (items.length === 0) {
+    findings.push(finding("TASK_EVIDENCE_MISSING", "Task record has no stable requirement evidence rows", artifact));
+  }
+  for (const item of items) {
+    if (item.evidenceStatus !== "PASS" || !item.evidence || /NOT_RUN|TBD|Pending/i.test(item.evidence)) {
+      findings.push(finding(
+        "TASK_EVIDENCE_NOT_PASSED",
+        `${item.id} requires concrete PASS evidence`,
+        artifact,
+        item.id
+      ));
+    }
+  }
+
+  findings.push(...validateAgnesRun(content, artifact));
+  if (normalizeScalar(extractScalar(content, "Requirement matrix"))?.toUpperCase() !== "PASS") {
+    findings.push(finding("TASK_AUDIT_MATRIX_NOT_PASSED", "Agnes requirement matrix must be PASS", artifact));
+  }
+
+  return { findings, items };
+}
+
+async function validateTaskCommand(options) {
+  if (options.gate !== "complete") {
+    throw new WorkflowError("TASK_GATE_INVALID", "Lightweight task records support only the complete gate");
+  }
+  const loaded = await loadTask(options.project, options.task);
+  const result = validateTaskComplete(loaded);
+  return {
+    ok: result.findings.length === 0,
+    command: "validate",
+    project: options.project,
+    task: loaded.task,
+    gate: options.gate,
+    status: result.findings.length === 0 ? "passed" : "failed",
+    findings: result.findings
+  };
+}
+
+async function traceTaskCommand(options) {
+  const loaded = await loadTask(options.project, options.task);
+  const result = validateTaskComplete(loaded);
+  return {
+    ok: result.findings.length === 0,
+    command: "trace",
+    project: options.project,
+    task: loaded.task,
+    status: result.findings.length === 0 ? "covered" : "gaps",
+    items: result.items.map((item) => ({
+      ...item,
+      planned: !getSection(loaded.content, "Checklist").includes(`[ ] ${item.id}`)
+    })),
+    findings: result.findings
+  };
+}
+
 async function validateCommand(options) {
+  if (options.task) return validateTaskCommand(options);
   const loaded = await loadPhase(options.project, options.phase);
   let result;
   if (options.gate === "spec") result = validateSpec(loaded);
@@ -699,6 +971,7 @@ async function validateCommand(options) {
 }
 
 async function traceCommand(options) {
+  if (options.task) return traceTaskCommand(options);
   const loaded = await loadPhase(options.project, options.phase);
   const result = traceLoaded(loaded);
   return {
@@ -716,6 +989,18 @@ async function determineStatus(options) {
   const planningDir = join(options.project, ".planning");
   if (!await exists(planningDir)) {
     return { status: "uninitialized", nextAction: "Preview workflow.mjs init, then run it with --write." };
+  }
+  if (options.task) {
+    const loaded = await loadTask(options.project, options.task);
+    const result = validateTaskComplete(loaded);
+    return {
+      task: loaded.task,
+      status: result.findings.length === 0 ? "complete" : "in-progress",
+      nextAction: result.findings.length === 0
+        ? "No workflow action remains for this task."
+        : "Close checklist, evidence, and Agnes audit findings before completion.",
+      findings: result.findings
+    };
   }
   let loaded;
   try {
@@ -768,11 +1053,12 @@ async function statusCommand(options, command) {
   const state = await determineStatus(options);
   return {
     ok: !state.findings?.some((item) => item.severity === "error") || [
-      "research", "re-discuss", "repair-spec", "repair-plan", "review-plan", "verify", "repair-closure"
+      "in-progress", "research", "re-discuss", "repair-spec", "repair-plan", "review-plan", "verify", "repair-closure"
     ].includes(state.status),
     command,
     project: options.project,
     phase: state.phase ?? null,
+    task: state.task ?? null,
     status: state.status,
     nextAction: state.nextAction,
     findings: state.findings ?? []
@@ -784,10 +1070,14 @@ function usage() {
 
 Usage:
   node scripts/workflow.mjs init [--project PATH] [--phase ID] [--risk LEVEL] [--extensions ui,ai,security-ops] [--write] [--format text|json]
+  node scripts/workflow.mjs init --task ID [--project PATH] [--write] [--format text|json]
   node scripts/workflow.mjs status [--project PATH] [--phase ID] [--format text|json]
+  node scripts/workflow.mjs status --task ID [--project PATH] [--format text|json]
   node scripts/workflow.mjs next [--project PATH] [--phase ID] [--format text|json]
   node scripts/workflow.mjs validate --gate spec|plan|execute|complete [--project PATH] [--phase ID] [--format text|json]
+  node scripts/workflow.mjs validate --gate complete --task ID [--project PATH] [--format text|json]
   node scripts/workflow.mjs trace [--project PATH] [--phase ID] [--format text|json]
+  node scripts/workflow.mjs trace --task ID [--project PATH] [--format text|json]
 
 Gate semantics:
   spec      Locked requirements, sections, scores, boundaries, and ambiguity
@@ -802,6 +1092,7 @@ function renderText(result) {
   if (result.command === "help") return result.usage;
   const lines = [`Workflow ${result.command}`, `Project: ${result.project}`];
   if (result.phase) lines.push(`Phase: ${result.phase}`);
+  if (result.task) lines.push(`Task: ${result.task}`);
   if (result.mode) lines.push(`Mode: ${result.mode}`);
   if (result.gate) lines.push(`Gate: ${result.gate}`);
   if (result.status) lines.push(`Status: ${result.status}`);

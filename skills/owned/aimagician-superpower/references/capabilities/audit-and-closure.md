@@ -18,7 +18,7 @@ Compare actual files, runtime behavior, and evidence with:
 
 Do not infer compliance from a completion summary. Spot-check or execute critical evidence and inspect the final diff.
 
-For substantial phase closure and every milestone, release, or complete claim, load `cli-agent-delegator` and dispatch a fresh OpenCode auditor against a frozen review point. Supply the original objective, latest user decisions, specification, non-goals, actual diff or artifacts, reviews, verification, installation state, required owned skills, and exclusions. The main Agent reconciles findings against primary evidence and retains the final completion decision.
+For every task, phase, milestone, release, or complete claim, load `cli-agent-delegator` and dispatch a fresh OpenCode auditor using `agnes/agnes-2.0-flash` against a frozen review point. Supply the original objective or PRD, `.planning/REQUESTS.md`, latest user decisions, specification or task record, non-goals, actual diff or artifacts, reviews, verification, installation state, required owned skills, and exclusions. A quick task may use one compact combined review; substantial work keeps staged independent reviews. The main Agent reconciles findings against primary evidence and retains the final completion decision.
 
 ## Gap Classification
 
@@ -36,15 +36,19 @@ Audit findings use `Blocker`, `Important`, or `Nitpick`; the gap labels above de
 Closure requires:
 
 - all accepted requirements planned;
+- every accepted `USR-*` request mapped to one or more implemented requirements;
 - all required evidence `PASS`;
 - user-facing UAT complete when applicable;
 - no unresolved blocking review finding;
+- OpenCode provider, Agnes model, fresh session, frozen review point, requirement matrix, finding counts, and controller spot-check recorded;
 - no stale placeholder or accidental capability loss;
 - state and documentation updated;
 - temporary output handled intentionally;
 - current git, worktree, PR, or installation state reported accurately.
 
 Use `workflow.mjs validate --gate complete` for supported artifacts.
+
+Any `FAIL`, `NOT_RUN`, unresolved Blocker, or unresolved Important keeps the task open. Continue the checklist and re-audit while the work is feasible; tests passing does not override missing request coverage.
 
 ## Learning And Cleanup
 

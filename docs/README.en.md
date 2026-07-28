@@ -27,6 +27,7 @@ External catalog sources remain visible reference material and are disabled by d
 |---|---|
 | `aimagician-superpower` | Risk-scaled SDD, codebase exploration, progressive discovery, prototypes, engineering design, vertical delivery, debugging, review, verification, audit, and handoff |
 | `cli-agent-delegator` | Delegate broad discovery, deep research, visual inspection, bounded git/test/write work, and independent review to OpenCode while the main Agent retains final judgment |
+| `system-prompt-engineering` | Design and audit system prompts with routed guidance for tools, delegation, safety, memory, search, channels, coding agents, and evaluation |
 | `composio-tool-router` | Route SaaS tool discovery and execution through Composio CLI with service-scoped lookup and schema-on-demand |
 | `skill-creator` | Create, merge, classify, and verify skills |
 | `interface-design` | Universal HTML/CSS/JS design for prototypes, UI, dashboards, repository covers, posters, product video, creative coding, data visualization, marketing pages, HTML presentations, brand routing, and browser/media QA |
@@ -84,6 +85,15 @@ skillbird format-skills --write
 | `skillbird list --scope global` | List detected installs |
 | `skillbird inspect --scope project` | Inspect target paths and manifest state |
 | `skillbird doctor --scope global` | Check managed installs |
+| `skillbird --agent capabilities` | Return the versioned non-interactive Agent contract |
+
+Agent mode emits stable ANSI-free JSON. Read commands execute immediately; write commands preview unless `--yes` is present:
+
+```bash
+skillbird --agent list --scope global --target codex
+skillbird --agent install aimagician-superpower --scope global --target codex
+skillbird --agent install aimagician-superpower --scope global --target codex --yes
+```
 
 ## Development
 
