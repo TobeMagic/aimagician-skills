@@ -1,6 +1,6 @@
 # Phase 41 Audit
 
-**Status:** Release candidate; exact committed-state completion audit pending
+**Status:** Complete
 **Updated:** 2026-07-30
 
 ## Independent Audit Chain
@@ -29,6 +29,6 @@ the formerly tolerated false value.
 ## Release Rule
 
 The blind aggregate, deterministic gates, workflow checks, private staged
-guard, formatter, and diff checks must remain PASS. The release stays open
-until a fresh Agnes audit evaluates the exact closure commit and returns GO
-with no unresolved Blocker or Important finding.
+guard, formatter, and diff checks remain PASS. Push is authorized only if a
+fresh Agnes audit evaluates the exact final closure commit and returns GO with
+no unresolved Blocker or Important finding.

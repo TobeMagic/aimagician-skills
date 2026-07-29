@@ -656,7 +656,7 @@ AI reviews, reference-parity thresholds, and a fresh Agnes completion audit.
 **Depends on:** Phases 39–40
 **Requirements:** [V6-PORT-02, V6-EVID-01, V6-DOC-01, V6-UAT-01,
 V6-AUDIT-01, V6-REL-01]
-**Status:** In Progress — blind UAT PASS; completion audit pending
+**Status:** Complete — 2026-07-30
 
 ## v6.0 Progress
 
@@ -667,4 +667,4 @@ V6-AUDIT-01, V6-REL-01]
 | 38. Certified Template Intelligence | Complete | 2026-07-30 |
 | 39. Work-Report Flagship | Complete | 2026-07-30 |
 | 40. Campus and Academic Flagships | Complete | 2026-07-30 |
-| 41. AI-Only Acceptance and Closure | In Progress | — |
+| 41. AI-Only Acceptance and Closure | Complete | 2026-07-30 |

@@ -4,16 +4,16 @@ milestone: v6.0
 milestone_name: Window-PPTX Template-Intelligence Quality Reset
 current_phase: 41
 current_phase_name: AI-Only Acceptance and Closure
-status: in_progress
-stopped_at: Phase 41 blind UAT PASS; exact committed-state completion audit pending
-last_updated: "2026-07-30T06:00:00+08:00"
+status: complete
+stopped_at: Milestone v6.0 complete; exact final commit queued for push
+last_updated: "2026-07-30T06:20:00+08:00"
 last_activity: 2026-07-30
 progress:
   total_phases: 43
-  completed_phases: 38
+  completed_phases: 39
   total_plans: 42
-  completed_plans: 41
-  percent: 88
+  completed_plans: 42
+  percent: 91
 ---
 
 # Project State
@@ -26,10 +26,11 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v6.0 Phase 41 has passed deterministic regression and the
-three-context AI-only blind UAT for all three 32-slide flagships. Closure now
-waits only for the exact committed-state Agnes completion audit and push.
-Authenticated commercial sync remains optional `NEEDS_AUTH`.
+**Current focus:** v6.0 is complete after deterministic regression,
+three-context AI-only blind UAT, independent specification/quality/verification
+audits, and release documentation closure. The exact final commit must retain
+an Agnes completion-audit GO before push. Authenticated commercial sync remains
+optional `NEEDS_AUTH`.
 
 The v5.1 work is preserved at archive commit
 `e4ed78c7b31beebdb94f0f37c6c412012dfec085` and annotated tag
@@ -48,7 +49,7 @@ fully independent AI blind-review contexts for v6 acceptance.
 Milestone: v6.0 Window-PPTX Template-Intelligence Quality Reset
 Current Phase: 41
 Current Phase Name: AI-Only Acceptance and Closure
-Status: In progress — completion audit pending
+Status: Complete — release GO
 Last Activity: 2026-07-30
 
 Foundation completed:
@@ -104,6 +105,9 @@ Foundation completed:
     serious same-slide/same-dimension consensus failures are zero;
   - 829 non-benchmark and 42 benchmark tests pass, for 871/871 Window-PPTX
     regression tests.
+  - independent specification, corrected quality, and verification audits
+    contain no unresolved Blocker or Important finding; the final exact commit
+    remains fail closed until the last Agnes completion audit returns GO.
 - Phase 19 deep merge audit completed:
   - GSD state machine remains canonical;
   - Superpowers planning/writing quality gates are folded into `aimagician-superpower`;
@@ -223,13 +227,13 @@ Active v5 foundation:
 
 ## Next Actions
 
-1. Commit the Phase 41 closure candidate and run a fresh independent Agnes
-   completion audit against that exact commit.
-2. Resolve any Blocker or Important finding; otherwise record GO and push the
-   exact audited release commit.
-3. Plan v6.1 ordinary-model distillation from the accepted template,
+1. Run the final independent Agnes completion audit on the exact closure
+   commit and push only if it returns GO.
+2. Plan v6.1 ordinary-model distillation from the accepted template,
    composition, QA, and repair contracts; keep authenticated commercial sync
    optional until a short-lived credential is supplied under `.private/`.
+3. Expand certified industry spines and commercial-template inventory only
+   through the existing rights, quarantine, dependency, and private-path gates.
 
 ## Blockers / Concerns
 
@@ -237,8 +241,8 @@ Active v5 foundation:
   user confirms the old chat-only session is revoked and supplies a new
   short-lived cookie through the ignored private path. Non-authenticated work
   continues.
-- No artifact or engineering blocker remains. Final release is deliberately
-  fail closed until the exact committed-state Agnes completion audit passes.
+- No artifact or engineering blocker remains. Push is deliberately fail closed
+  until the exact final-commit Agnes completion audit passes.
 - Microsoft `MSPPT.OLB` late binding works, but early-bound pywin32
   `_Application.QueryInterface` can fail with `TYPE_E_CANTLOADLIBRARY` because
   the interface registry points to a stale missing WPS TypeLib. COM remains

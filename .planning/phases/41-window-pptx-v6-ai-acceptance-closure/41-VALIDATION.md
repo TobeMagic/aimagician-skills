@@ -1,6 +1,6 @@
 # Phase 41 Validation
 
-**Status:** Deterministic and visual gates PASS; completion audit pending
+**Status:** PASS
 **Validated:** 2026-07-30
 
 ## Requirement Evidence
@@ -11,8 +11,8 @@
 | V6-EVID-01 | PASS | Exact R13 artifacts, manifests, hashes, contact sheets, segmented anonymous packets, raw reviews, and aggregate are retained. |
 | V6-DOC-01 | PASS | Skill and Phase 38–41 documents make the quality-first workflow, failure behavior, portable route, and acceptance contract executable. |
 | V6-UAT-01 | PASS | Strict aggregate status `PASS`: overall 4.484, dimension floor 4.133, candidate floor 4.437, parity 3/3 each, consensus failures 0. |
-| V6-AUDIT-01 | PENDING | Fresh committed-state OpenCode audits must map source requests and v6 requirements to implementation, tests, artifacts, and UAT. |
-| V6-REL-01 | PENDING | Release remains fail closed until the independent audits pass and the exact closure commit is pushed. |
+| V6-AUDIT-01 | PASS | Fresh specification, corrected quality, and verification contexts cover implementation, tests, artifacts, UAT, and release boundaries with no unresolved serious finding. |
+| V6-REL-01 | PASS | All deterministic, portable, visual, workflow, private-asset, and independent-audit gates pass; push remains bound to exact-final-commit Agnes GO. |
 
 ## Evidence Roots
 

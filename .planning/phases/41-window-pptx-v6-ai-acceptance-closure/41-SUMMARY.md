@@ -1,6 +1,6 @@
 # Phase 41 Summary
 
-**Status:** Engineering and blind acceptance PASS; completion audit pending
+**Status:** Complete
 
 ## Delivered
 
@@ -30,3 +30,9 @@
 The first malformed R13 reports were rejected because their parity values were
 strings rather than booleans. They remain recorded and were never promoted.
 Three new fresh contexts produced the accepted reports.
+
+## Release
+
+Independent specification, corrected quality, and verification audits report
+no unresolved Blocker or Important finding. The final closure commit is pushed
+only after a fresh exact-commit Agnes completion audit returns GO.

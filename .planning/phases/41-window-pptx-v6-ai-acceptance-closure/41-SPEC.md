@@ -117,16 +117,16 @@ test, or unmapped request keeps the milestone open.
 
 ## Acceptance Criteria
 
-- [ ] Three unique fresh-context reports cover all anonymous candidates.
-- [ ] Every candidate receives at least two reference-parity votes.
-- [ ] Overall mean is at least 4.3, every dimension mean at least 4.1, and
+- [x] Three unique fresh-context reports cover all anonymous candidates.
+- [x] Every candidate receives at least two reference-parity votes.
+- [x] Overall mean is at least 4.3, every dimension mean at least 4.1, and
       every candidate mean at least 4.2.
-- [ ] No same-candidate, same-slide, same-dimension Blocker or Important is
+- [x] No same-candidate, same-slide, same-dimension Blocker or Important is
       reported by two reviewers.
-- [ ] All engineering, workflow, formatter, private-asset, and diff gates pass.
-- [ ] Fresh OpenCode specification, quality, verification, and completion
+- [x] All engineering, workflow, formatter, private-asset, and diff gates pass.
+- [x] Fresh OpenCode specification, quality, verification, and completion
       audits contain no unresolved Blocker or Important.
-- [ ] Requirements, roadmap, state, summaries, validation, UAT, and audit
+- [x] Requirements, roadmap, state, summaries, validation, UAT, and audit
       records are updated before release.
 
 ## Blocking Questions

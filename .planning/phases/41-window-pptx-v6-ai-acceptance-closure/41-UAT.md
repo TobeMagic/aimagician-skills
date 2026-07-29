@@ -1,7 +1,7 @@
 # Phase 41: AI-Only Acceptance and Closure - UAT
 
 **Updated:** 2026-07-30
-**Status:** Product UAT PASS; release audit pending
+**Status:** PASS
 
 ## Scenarios
 
@@ -39,5 +39,5 @@
 
 ## UAT Decision
 
-`GO`, subject only to the fresh committed-state OpenCode completion audit and
-repository push recorded in `41-AUDIT.md`.
+`GO`. Repository push remains mechanically gated on a fresh Agnes completion
+audit of the exact final closure commit.
