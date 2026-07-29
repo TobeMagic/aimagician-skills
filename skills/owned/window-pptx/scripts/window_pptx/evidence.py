@@ -136,15 +136,30 @@ def validate_portable_slide_pngs(
 def write_contact_sheet(
     png_paths: Iterable[Path | str],
     target: Path | str,
+    *,
+    slide_numbers: Iterable[int] | None = None,
+    banner: str | None = None,
 ) -> Path:
     """Atomically build a deterministic contact sheet from real slide pages."""
 
     pages = validate_portable_slide_pngs(png_paths)
+    numbers = (
+        tuple(slide_numbers)
+        if slide_numbers is not None
+        else tuple(range(1, len(pages) + 1))
+    )
+    if len(numbers) != len(pages) or any(
+        isinstance(number, bool) or not isinstance(number, int) or number < 1
+        for number in numbers
+    ):
+        raise ValueError("slide_numbers must contain one positive integer per page")
+    if banner is not None and (not isinstance(banner, str) or not banner.strip()):
+        raise ValueError("banner must be a non-empty string")
     destination = Path(target)
     if destination.resolve(strict=False) in pages:
         raise ValueError("contact sheet target must not replace a slide page")
     try:
-        from PIL import Image, ImageDraw, ImageOps
+        from PIL import Image, ImageDraw, ImageFont, ImageOps
     except ImportError as exc:  # pragma: no cover - runtime fingerprint includes Pillow
         raise RuntimeError("Pillow is required for portable contact sheets") from exc
 
@@ -152,16 +167,27 @@ def write_contact_sheet(
     rows = (len(pages) + columns - 1) // columns
     thumbnail_size = (480, 270)
     label_height = 32
+    banner_height = 72 if banner is not None else 0
     gutter = 18
     canvas = Image.new(
         "RGB",
         (
             gutter + columns * (thumbnail_size[0] + gutter),
-            gutter + rows * (thumbnail_size[1] + label_height + gutter),
+            banner_height
+            + gutter
+            + rows * (thumbnail_size[1] + label_height + gutter),
         ),
         "#E5E7EB",
     )
     draw = ImageDraw.Draw(canvas)
+    if banner is not None:
+        draw.rectangle((0, 0, canvas.width, banner_height), fill="#111827")
+        draw.text(
+            (gutter, 19),
+            banner,
+            fill="#FFFFFF",
+            font=ImageFont.load_default(size=24),
+        )
     for index, path in enumerate(pages):
         with Image.open(path) as opened:
             opened.verify()
@@ -173,7 +199,7 @@ def write_contact_sheet(
                 method=Image.Resampling.LANCZOS,
             )
         cell_x = gutter + (index % columns) * (thumbnail_size[0] + gutter)
-        cell_y = gutter + (index // columns) * (
+        cell_y = banner_height + gutter + (index // columns) * (
             thumbnail_size[1] + label_height + gutter
         )
         draw.rectangle(
@@ -190,9 +216,11 @@ def write_contact_sheet(
         image_x = cell_x + (thumbnail_size[0] - fitted.width) // 2
         image_y = cell_y + (thumbnail_size[1] - fitted.height) // 2
         canvas.paste(fitted, (image_x, image_y))
+        fitted.close()
+        page.close()
         draw.text(
             (cell_x + 8, cell_y + thumbnail_size[1] + 8),
-            f"Slide {index + 1:02d}",
+            f"Slide {numbers[index]:02d}",
             fill="#111827",
         )
 

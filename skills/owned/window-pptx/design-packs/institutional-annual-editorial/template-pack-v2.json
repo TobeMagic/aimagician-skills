@@ -1,0 +1,40 @@
+{
+  "schema_version": "2.0",
+  "pack_id": "institutional-work-summary-v2",
+  "name": "Institutional Work Summary Reference Spine",
+  "source_mode": "physical_ooxml",
+  "deck_family_id": "institutional-annual-editorial",
+  "style_cluster_id": "ivory-green-gold-editorial",
+  "certification": "certified",
+  "rights": {"decision": "allowed", "basis": "user-authorized", "evidence": "ORIGIN.md"},
+  "source": {"template_pack_v1": "template-pack.json", "sha256": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839"},
+  "materializer": "template_pack_v1_adapter",
+  "art_direction": {
+    "theme_id": "public-enterprise",
+    "palette": ["#F5F0E5", "#173D32", "#B79A5B", "#2A2F2B", "#FFFFFF"],
+    "type_scale": {"display": 48, "title": 32, "body": 18, "label": 12},
+    "grid": {"columns": 12, "safe_margin_x_in": 0.5, "safe_margin_y_in": 0.4},
+    "spacing_pt": [8, 16, 24, 32, 48, 64],
+    "motifs": ["lighthouse", "radial-line", "diagonal-beam"],
+    "forbidden": ["3d-chart", "mixed-icon-language", "tiny-label", "decorative-collision"],
+    "max_same_family_run": 2,
+    "hero_interval": 5
+  },
+  "pages": [
+    {"id": "physical.work-summary.s01", "slide": 1, "role": "cover", "family": "cover"},
+    {"id": "physical.work-summary.s02", "slide": 2, "role": "agenda", "family": "agenda"},
+    {"id": "physical.work-summary.s03", "slide": 3, "role": "section", "family": "section"},
+    {"id": "physical.work-summary.s04", "slide": 4, "role": "section", "family": "section"},
+    {"id": "physical.work-summary.s05", "slide": 5, "role": "body", "family": "data-chart"},
+    {"id": "physical.work-summary.s06", "slide": 6, "role": "body", "family": "data-chart"},
+    {"id": "physical.work-summary.s07", "slide": 7, "role": "body", "family": "table"},
+    {"id": "physical.work-summary.s08", "slide": 8, "role": "body", "family": "case-study"},
+    {"id": "physical.work-summary.s09", "slide": 9, "role": "body", "family": "big-number"},
+    {"id": "physical.work-summary.s10", "slide": 10, "role": "section", "family": "section"},
+    {"id": "physical.work-summary.s11", "slide": 11, "role": "body", "family": "process"},
+    {"id": "physical.work-summary.s12", "slide": 12, "role": "body", "family": "team"},
+    {"id": "physical.work-summary.s13", "slide": 13, "role": "section", "family": "section"},
+    {"id": "physical.work-summary.s14", "slide": 14, "role": "decision", "family": "roadmap"},
+    {"id": "physical.work-summary.s15", "slide": 15, "role": "closing", "family": "cta"}
+  ]
+}

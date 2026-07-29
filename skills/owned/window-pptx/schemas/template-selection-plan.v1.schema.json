@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimagician.local/window-pptx/template-selection-plan.v1.schema.json",
+  "title": "TemplateSelectionPlan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "brief_id", "spine_id", "selections"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "brief_id": {"type": "string", "minLength": 1},
+    "spine_id": {"type": "string", "minLength": 1},
+    "selections": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["slide_id", "candidate_id", "fact_refs", "asset_refs", "importance", "confidence", "fallback_reason", "rationale_codes"],
+        "properties": {
+          "slide_id": {"type": "string", "minLength": 1},
+          "candidate_id": {"type": "string", "minLength": 1},
+          "fact_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "asset_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "importance": {"enum": ["standard", "important", "hero"]},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "fallback_reason": {"type": ["string", "null"], "enum": [null, "LOW_CONFIDENCE_SAFE_DEFAULT", "SAME_FAMILY_CAPACITY_FALLBACK"]},
+          "rationale_codes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    }
+  }
+}

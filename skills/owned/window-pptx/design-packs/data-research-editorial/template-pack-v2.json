@@ -1,0 +1,23 @@
+{
+  "schema_version": "2.0",
+  "pack_id": "academic-defense-editorial-v2",
+  "name": "Academic Defense Editorial",
+  "source_mode": "registered_composition",
+  "deck_family_id": "academic-defense-editorial",
+  "style_cluster_id": "research-editorial-evidence",
+  "certification": "certified",
+  "rights": {"decision": "allowed", "basis": "first-party", "evidence": "repository-owned"},
+  "materializer": "registered_native_renderer",
+  "art_direction": {
+    "theme_id": "education-training",
+    "palette": ["#F4F1E8", "#183B56", "#D46A4C", "#506D78", "#FFFFFF"],
+    "type_scale": {"display": 44, "title": 30, "body": 17, "label": 12},
+    "grid": {"columns": 12, "safe_margin_x_in": 0.5, "safe_margin_y_in": 0.4},
+    "spacing_pt": [8, 16, 24, 32, 48, 64],
+    "motifs": ["citation-rule", "evidence-bracket", "method-grid"],
+    "forbidden": ["unsupported-sota", "decorative-chart", "tiny-citation", "3d-chart"],
+    "max_same_family_run": 2,
+    "hero_interval": 5
+  },
+  "choreography": ["cover", "agenda", "question", "related-work", "method", "experiment", "results", "limitations", "contribution", "closing", "appendix"]
+}

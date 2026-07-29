@@ -148,15 +148,32 @@ body pages must vary composition and energy while preserving the selected
 complete-work visual spine, theme, grid, typography, motif, imagery language,
 and chart/table system.
 
-Until the constrained v6 NarrativePlan/TemplateSelectionPlan/SlideBlueprint
-schemas and certified TemplatePack v2 route are available, stop after
-ProjectBriefPack lock for reference-grade v6 delivery. The legacy BriefPlan
-compiler remains runnable for regression and compatibility work, but it is not
-evidence that the new quality-first route or the v6 milestone has passed.
+After ProjectBriefPack lock, load Registry v3 and select exactly one certified
+complete-work spine. The governed pilot exposes 84 executable candidates: 15
+authorized physical reference pages, 60 registered composition variants, and
+nine specialty aliases for map, awards, people, partner wall, business model,
+architecture, mockup, quote, and six/multi-content pages. A model receives
+only 3–6 capacity-safe candidate IDs and returns IDs, fact/asset bindings,
+importance, confidence, and reason codes. `TemplateSelectionPlan` and
+`SlideBlueprint` reject geometry, shape IDs, OOXML, HTML, code, arbitrary
+style values, and model-written repair.
+
+Use `load_registry_v3`, `build_selection_plan`, and
+`compile_slide_blueprints` from `window_pptx.template_intelligence`.
+TemplatePack v1 remains unchanged and loads through
+`adapt_template_pack_v1`; registered-composition candidates materialize
+through the existing native renderer. Any unknown, uncertified,
+over-capacity, missing-asset, cross-family, or unbound-fact choice fails
+closed. The legacy BriefPlan compiler remains runnable for regression and
+compatibility work, but it is not evidence that the v6 reference-grade route
+has passed.
 
 Read [quality-first-v6-workflow.md](./references/quality-first-v6-workflow.md)
 for the state machine, corpus, private-library boundary, model authority,
 deck-anatomy rules, repair budget, and AI-only acceptance contract.
+Read [certified-template-intelligence.md](./references/certified-template-intelligence.md)
+for the v2/v3 manifests, 84-candidate derivation, selection contract, and
+materialization boundary.
 
 ## Realistic Brief Corpus
 
