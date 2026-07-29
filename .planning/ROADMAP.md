@@ -522,7 +522,7 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 **Goal:** Prove portable production reliability across the complete benchmark, certify a frozen sample read-only in real PowerPoint, publish canonical evidence, and close only when every hard gate passes.
 **Depends on:** Phase 28
 **Requirements:** [V5-UAT-01, V5-UAT-02, V5-UAT-03, V5-UAT-04, V5-UAT-05, V5-UAT-06]
-**Status:** In progress — specification locked; independent plan review open
+**Status:** Never started / cancelled / replaced by v6 phases / not complete
 **Success Criteria**:
   1. The portable matrix and ten-run reliability cases pass for paths, formats, ratios, fonts, locks, isolated LibreOffice profiles, source protection, and edit sentinels.
   2. All fifteen canonical portable outputs have exports, contact sheets, reports, hashes, and final human review evidence; a frozen 10% sample plus every high-risk capability sample passes read-only PowerPoint certification without repair prompts or process residue.
@@ -593,12 +593,78 @@ Quality v3, and direct Agnes gates
 **Goal:** Refreeze the benchmark, execute ordinary-model trials, complete blind review, and close only with fresh cross-engine evidence.
 **Depends on:** Phase 34
 **Requirements:** [V51-BENCH-01, V51-UAT-01]
-**Status:** In Progress — the final current-code six-trial ordinary-model
-matrix, portable gates, direct Agnes reviews, and sharded regression suite
-pass; refreshed blind packet `benchmark-reviewer-package-current-r2` is ready.
-The deterministic blind-review validator now rechecks frozen packet and
-artifact hashes, rejects incomplete templates as `NOT_RUN`, and enforces the
-locked `4.2` overall / `4.0` per-dimension score floor. It explicitly leaves
-human provenance for external confirmation rather than treating an `R-*`
-pseudonym as proof. Independent human scoring and the final post-review `GO`
-audit remain open.
+**Status:** `NO_GO` / superseded by v6.0 / not complete. The current work is
+preserved at archive commit `e4ed78c` and annotated tag
+`window-pptx-v5.1-no-go-20260729`. The final baseline collects 792 Python
+tests, with 789 passing and three known regressions. The user rejected the
+generated visual floor and replaced the unfinished human-review closure path
+with a new quality-first, AI-only v6 milestone.
+
+## Milestone v6.0 — Window-PPTX Template-Intelligence Quality Reset
+
+v6.0 prioritizes reference-grade customer delivery with Codex GPT-5.5 medium,
+realistic locked briefs, licensed complete-work visual spines, certified
+template intelligence, native-editable portable PPTX, bounded repair, and
+independent AI-only visual acceptance. Weak-model distillation is deferred to
+v6.1.
+
+### Phase 36: v6 Contracts and Realistic Corpus
+
+**Goal:** Lock ProjectBriefPack v1, private-asset safety, three complete
+flagships, twelve realistic skeletons, and v6 traceability.
+**Depends on:** v5.1 `NO_GO` archive
+**Requirements:** [V6-BRIEF-01, V6-CORPUS-01, V6-DOC-01]
+**Status:** In Progress
+
+### Phase 37: Secure Acquisition and Catalog
+
+**Goal:** Build entitlement-aware private acquisition, quarantine, content
+addressing, stable metadata, and a resumable queryable catalog.
+**Depends on:** Phase 36
+**Requirements:** [V6-ASSET-01, V6-LIB-01]
+**Status:** Planned
+
+### Phase 38: Certified Template Intelligence
+
+**Goal:** Add TemplatePack v2, Registry v3, ArtDirectionProfile, semantic
+retrieval, and certified complete-work visual spines.
+**Depends on:** Phase 37 `SEED_READY`; full sync may continue
+**Requirements:** [V6-LIB-01, V6-DESIGN-01, V6-DECK-01]
+**Status:** Planned
+
+### Phase 39: Work-Report Flagship Tracer
+
+**Goal:** Generate the 28-main-slide plus 4-appendix work-report flagship with
+GPT-5.5 medium and reference-grade editable output.
+**Depends on:** Phase 38
+**Requirements:** [V6-DESIGN-01, V6-DECK-01, V6-PORT-01, V6-QA-01,
+V6-EVID-01]
+**Status:** Planned
+
+### Phase 40: Campus and Academic Flagship Tracers
+
+**Goal:** Generate the complete campus-competition and academic-defense decks
+from locked facts and licensed visual spines.
+**Depends on:** Phase 39 and licensed flagship spines
+**Requirements:** [V6-PORT-01, V6-PORT-02, V6-QA-01, V6-EVID-01]
+**Status:** Planned
+
+### Phase 41: AI-Only Acceptance and Closure
+
+**Goal:** Close only after engineering gates, three independent visual-capable
+AI reviews, reference-parity thresholds, and a fresh Agnes completion audit.
+**Depends on:** Phases 39–40
+**Requirements:** [V6-PORT-02, V6-EVID-01, V6-DOC-01, V6-UAT-01,
+V6-AUDIT-01, V6-REL-01]
+**Status:** Planned
+
+## v6.0 Progress
+
+| Phase | Status | Completed |
+|-------|--------|-----------|
+| 36. Contracts and Realistic Corpus | In Progress | — |
+| 37. Secure Acquisition and Catalog | Planned | — |
+| 38. Certified Template Intelligence | Planned | — |
+| 39. Work-Report Flagship | Planned | — |
+| 40. Campus and Academic Flagships | Planned | — |
+| 41. AI-Only Acceptance and Closure | Planned | — |

@@ -4,7 +4,7 @@
 
 AImagician Skills / Skillbee is a local-first personal skill configuration orchestrator for AI coding CLIs. It lets AImagician keep self-authored skills in-repo, register external skill sources from GitHub or install commands, persist user intent in YAML, preview safe sync plans, and install the resolved skill set into global or project-level CLI skill directories.
 
-The product is for one primary user first: AImagician. The active v5.0 goal is to make the owned `window-pptx` skill a verified production engine while preserving the shipped Skillbird configuration and installation foundation.
+The product is for one primary user first: AImagician. The active v6.0 goal is to make the owned `window-pptx` skill a template-intelligent, reference-grade production workflow while preserving the shipped Skillbird configuration and portable PPTX foundation.
 
 ## Core Value
 
@@ -19,11 +19,11 @@ Skillbird resolves catalog defaults plus user YAML overrides into safe, previewe
 
 ### Active
 
-- [ ] Complete Phase 27.2 portable PptxGenJS generation, OOXML semantic inspection, and LibreOffice/Poppler verification without adopting a model-authored HTML-to-PPTX runtime.
-- [ ] Compile immutable facts through strict BriefPlan and deterministic NarrativePlan into canonical DeckPlan v1.
-- [ ] Add twelve art directions, three candidate proofs, executable brand/layout/theme rules, and quality-report v2.
-- [ ] Benchmark three generation arms across two ordinary models and 15 business scenarios.
-- [ ] Ship only after portable customer-delivery hard gates, the formal benchmark, blind review, and sampled PowerPoint certification pass.
+- [ ] Require discussion-locked ProjectBriefPack v1 inputs and realistic source-bound scenario packs.
+- [ ] Build a private, entitlement-aware template library with certified complete-work visual spines and TemplatePack v2.
+- [ ] Use Codex GPT-5.5 medium for constrained narrative and visual selection without arbitrary design code or invented facts.
+- [ ] Produce complete work-report, campus-competition, and academic-defense flagship decks.
+- [ ] Ship only after portable engineering gates and three independent AI-only reference-parity reviews pass.
 
 ### Out of Scope
 
@@ -32,18 +32,18 @@ Skillbird resolves catalog defaults plus user YAML overrides into safe, previewe
 - Deep plugin lifecycle management across every CLI - plugin support is conditional and secondary to skills deployment
 
 
-## Current Milestone: v5.0 Window-PPTX Verified Production Engine
+## Current Milestone: v6.0 Window-PPTX Template-Intelligence Quality Reset
 
-**Goal:** Move presentation quality from model improvisation into a versioned compiler, design system, layout/component registries, portable native renderer, bounded repair loop, cross-engine verifier, and reproducible weak-model benchmark.
+**Goal:** Combine discussion-locked realistic content, licensed complete-work art direction, a certified template/component catalog, GPT-5.5 constrained visual planning, native-editable portable rendering, bounded repair, and independent AI acceptance.
 
 **Target features:**
-- Strict dry-run, source/output protection, backend capability negotiation, COM ownership where applicable, and transactional candidate promotion
-- DeckPlan schema, 15 business archetypes, semantic layout ranking, capacity splitting, rhythm, and weak-model fallbacks
-- Eight themes, 24 layout families, at least 72 deterministic variants, reusable components, and brand/font fallbacks
-- Native editable charts, tables, diagrams, notes, links, capability-gated motion, and ratio-aware exports
-- Backend-neutral rendering, deterministic OOXML packaging, semantic package inspection, isolated LibreOffice/Poppler proof rendering, and proof-only HTML
-- Five-layer quality inspection with bounded monotonic repair and stable report schemas
-- Fifteen-scenario, three-arm weak-model benchmark plus final cross-engine acceptance and sampled PowerPoint certification
+- ProjectBriefPack v1 with Draft, NeedsDiscussion, and Locked states
+- Three complete flagship briefs and twelve realistic locked skeletons
+- Private acquisition, provenance, licensing, quarantine, catalog, dedupe, and retrieval
+- TemplatePack v2, Registry v3, complete-work ArtDirectionProfile, and semantic content-to-layout mapping
+- GPT-5.5 medium NarrativePlan, TemplateSelectionPlan, and SlideBlueprint contracts
+- Native-editable PPTX, deterministic OOXML, LibreOffice proof, quality checks, and bounded repair
+- Anonymous three-model AI review with locked reference-parity thresholds
 
 ## Context
 
@@ -87,10 +87,11 @@ The user expects all major targets to be covered in v1 because the integration i
 | `exclude` is the strongest eligibility rule | Prevents unwanted skills from being installed even when sources or includes would otherwise select them | - Pending |
 | Project and global scopes are independent | The user wants current-project installs such as `<project>/.claude/skills` without affecting global CLI homes | - Pending |
 | v3.0 treats Skillbee as configuration orchestration first | The PRD requires YAML intent, eligibility resolution, preview, and managed sync rather than direct install side effects | - Pending |
-| v5.0 uses semantic DeckPlan input | Ordinary models should choose governed semantic roles, not invent raw coordinates, fonts, or colors | Active |
-| v5.0 keeps DeckPlan and RenderPlan canonical and uses PptxGenJS for governed daily delivery | Portable native-editable OOXML removes COM from the daily critical path while preserving deterministic planning | Active |
-| v5.0 uses LibreOffice for independent daily proof and PowerPoint for sampled certification | One renderer cannot prove its own output; sampled PowerPoint evidence covers release compatibility without making COM a daily dependency | Active |
-| v5.0 gates promotion on measurable evidence | Package validity, source integrity, editability, and reopen checks must precede delivery | Active |
+| v6.0 requires a Locked ProjectBriefPack | Content truth and unresolved client decisions must be settled before design | Active |
+| v6.0 uses complete works as visual spines | Reference-grade rhythm and motif continuity cannot come from isolated generic cards | Active |
+| v6.0 uses GPT-5.5 medium inside constrained schemas | Strong visual judgment is allowed without raw coordinates, OOXML, HTML, code, or invented facts | Active |
+| v6.0 keeps portable native PPTX canonical | COM remains optional diagnostics and cannot block daily delivery | Active |
+| v6.0 gates promotion on engineering plus independent AI evidence | Automatic scores alone previously concealed visible quality failures | Active |
 
 ---
-*Last updated: 2026-07-21 after accepting the Phase 27.2 portable-first and sampled-PowerPoint architecture*
+*Last updated: 2026-07-29 after locking the v6.0 template-intelligence quality reset*

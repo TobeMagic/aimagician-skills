@@ -278,6 +278,38 @@ Completion requires the phase evidence and exit gates named in the traceability 
 - [ ] **V51-BENCH-01**: DeepSeek V4 Flash Free completes four representative scenario trials before a refrozen two-model formal benchmark
 - [ ] **V51-UAT-01**: Blind review averages at least 4.2/5 with no relevant dimension below 4, and every accepted requirement has fresh reproducible evidence
 
+## v6.0 Requirements (Template-Intelligence Quality Reset)
+
+| Requirement | Current | Target | Acceptance |
+|---|---|---|---|
+| **V6-BRIEF-01** | v5 briefs are shallow and allow generation without a full discussion-locked client contract | ProjectBriefPack v1 owns facts, sources, assets, audience, goals, timing, anatomy, decisions, prohibitions, rubric, status, and lock digest | `Draft` and `NeedsDiscussion` formal generation fail; only a complete `Locked` pack produces a plan |
+| **V6-CORPUS-01** | Fifteen scenarios average few facts and usually have no required assets | Three complete realistic flagships plus twelve locked skeletons cover all accepted scenarios | Every scenario validates; all accepted flagship facts, sources, asset roles, slide budgets, and decisions are present |
+| **V6-ASSET-01** | No governed private commercial-template acquisition boundary exists | Entitled assets use ignored private storage, host-scoped auth, redirect stripping, quarantine, provenance, rights, and resumable state | No credential/private byte is staged; auth, redirect, quarantine, rights, and resume tests pass |
+| **V6-LIB-01** | Four legacy single-slide files are unverified and disconnected from generation | Stable catalog IDs, TemplatePack v2 slots, dedupe, dependency closure, retrieval, and Registry v3 make certified templates selectable | Old registries remain compatible; certified items are queryable and uncertified legacy items are never auto-selected |
+| **V6-DESIGN-01** | Ordinary models rely on deterministic but visually shallow composition rules | GPT-5.5 medium creates grounded NarrativePlan, TemplateSelectionPlan, and SlideBlueprint from visual candidates | Unknown IDs, raw coordinates, raw OOXML/HTML/code, unsupported claims, and capacity violations fail closed |
+| **V6-DECK-01** | Generated decks omit or weaken directory, section rhythm, motif continuity, and complete-work art direction | Cover, directory, chapter pages, evidence body, decision/conclusion, closing, appendix, theme, motif, grid, type, imagery, and pacing are governed | All three flagships pass anatomy, rhythm, diversity, consistency, and reference-parity inspection |
+| **V6-PORT-01** | Portable rendering is editable but v5.1 visual quality is rejected | Complete-work OOXML materialization preserves masters, themes, groups, crops, charts/workbooks, tables, media, and unrelated parts | Three flagship PPTX files open, render, remain editable, and pass OOXML/source-integrity checks without COM |
+| **V6-PORT-02** | v5 cross-engine closure never started | Portable reliability covers repeated runs, paths, ratios, fonts, source protection, locks, and isolated rendering | Every mandatory portable case passes; real PowerPoint remains optional diagnostics only |
+| **V6-QA-01** | Repair is broad and can accumulate redundant component fixes | One deterministic local repair, one same-family reselection, and one visual replan are the complete bounded loop | Repair is monotonic, fact-safe, art-direction-safe, capped, and rejects unresolved candidates |
+| **V6-EVID-01** | Automatic scores obscure visible quality failures | Every delivery carries hashes, lineage, PPTX/PDF/PNG/contact sheet, structural/editability reports, and anonymous before/after evidence | Exact artifacts reproduce and all reviewer packets rehash successfully |
+| **V6-DOC-01** | Skill docs describe v5 compiler and human-review closure | Skill docs make quality-first generation, brief discussion, private library, GPT-5.5 route, QA, failures, and output bundle executable | Formatter and workflow behavior evals pass and no stale v5 default remains |
+| **V6-UAT-01** | v5.1 human review is `NOT_RUN` and generated trials are rejected by the user | Three fresh isolated visual-capable AIs perform anonymous reference-parity review | At least 2/3 parity PASS; overall `>=4.3`, dimensions `>=4.1`, flagships `>=4.2`, zero two-reviewer Blocker/Important consensus |
+| **V6-AUDIT-01** | No v6 completion audit exists | A fresh OpenCode Agnes audit maps original requests through requirements, implementation, tests, artifacts, and UAT | Every requirement is `PASS` and no Blocker or Important remains |
+| **V6-REL-01** | v5.1 remains `NO_GO` | v6.0 closes and becomes merge-ready only after all hard gates pass | Any `FAIL`, `NOT_RUN`, unmapped requirement, Blocker, or Important keeps the milestone open |
+
+### Superseded v5 intent
+
+- V5-UAT-01 intent is subsumed by V6-PORT-01; mandatory PowerPoint sampling is
+  removed.
+- V5-UAT-02 intent is subsumed by V6-PORT-02.
+- V5-UAT-03 intent is subsumed by V6-EVID-01.
+- V5-UAT-04 intent is subsumed by V6-AUDIT-01.
+- V5-UAT-05 intent is subsumed by V6-DOC-01.
+- V5-UAT-06 intent is subsumed by V6-REL-01.
+
+These mappings preserve intent only. Phase 29 never started and supplies no v5
+implementation or evidence.
+
 ## Out of Scope
 
 | Feature | Reason |
@@ -474,6 +506,30 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Open: 23
 - Unmapped: 0
 
+| Requirement | V6 Phase | Status |
+|-------------|----------|--------|
+| V6-BRIEF-01 | Phase 36 | In Progress |
+| V6-CORPUS-01 | Phase 36 | In Progress |
+| V6-ASSET-01 | Phase 37 | Planned |
+| V6-LIB-01 | Phase 37 | Planned |
+| V6-DESIGN-01 | Phase 38 | Planned |
+| V6-DECK-01 | Phase 38 | Planned |
+| V6-PORT-01 | Phase 39 | Planned |
+| V6-PORT-02 | Phase 40 | Planned |
+| V6-QA-01 | Phase 39 | Planned |
+| V6-EVID-01 | Phase 39 | Planned |
+| V6-DOC-01 | Phase 36 | In Progress |
+| V6-UAT-01 | Phase 41 | Planned |
+| V6-AUDIT-01 | Phase 41 | Planned |
+| V6-REL-01 | Phase 41 | Planned |
+
+**V6 Coverage:**
+- v6 requirements: 14 total
+- Mapped to exactly one primary phase: 14
+- In Progress: 3
+- Planned: 11
+- Unmapped: 0
+
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-07-20 after defining v5.0 Window-PPTX requirements*
+*Last updated: 2026-07-29 after locking v6.0 Window-PPTX requirements*

@@ -1,6 +1,29 @@
 # Milestones
 
-## v5.1 Window-PPTX Reference-Grade Visual Engine (Active)
+## v6.0 Window-PPTX Template-Intelligence Quality Reset (Active)
+
+**Goal:** Make Codex GPT-5.5 medium produce native-editable,
+reference-grade, customer-delivery PPTX from discussion-locked realistic
+briefs and licensed complete-work visual spines, then close only through
+deterministic engineering gates and three independent AI reviews.
+
+**Phase gates:**
+- Phase 36: v6 Contracts and Realistic Corpus
+- Phase 37: Secure Acquisition and Catalog
+- Phase 38: Certified Template Intelligence
+- Phase 39: Work-Report Flagship Tracer
+- Phase 40: Campus and Academic Flagship Tracers
+- Phase 41: AI-Only Acceptance and Closure
+
+**Status:** Active. The rejected v5.1 work is preserved on
+`archive/window-pptx-v5.1-no-go-20260729` at `e4ed78c`; the original v5
+branch remains unchanged. Phase 36 begins with private-asset safety,
+ProjectBriefPack v1, realistic corpus contracts, and repair of three archived
+regressions.
+
+---
+
+## v5.1 Window-PPTX Reference-Grade Visual Engine (Superseded / NO_GO)
 
 **Goal:** Make ordinary models produce editable, customer-delivery-grade PPTX by selecting and composing governed DesignPacks, or by adapting authorized TemplatePacks without flattening their visual language, masters, grouped shapes, charts, gradients, connectors, crops, and media.
 
@@ -12,17 +35,13 @@
 - Phase 34: Visual Regression, Auto-Repair, and Four-Scenario UAT
 - Phase 35: Weak-Model Benchmark and Cross-Engine Closure
 
-**Status:** In progress / `NO_GO`. The editable 15-slide TemplatePack target
-passes source-derived golden replay. The generated lane now has CompositionPlan
-v1, consulting DesignPack v2, a source-bound 14-page choreography, Quality v3,
-and direct Agnes Vision/Image adapters. R6 passes OOXML, LibreOffice/
-Ghostscript, editability, fact coverage, and Quality v2, but direct Agnes still
-returns `FAIL` and external-score-capped Quality v3 is `68.33`; therefore it is
-not reference grade. The full 711-test Window-PPTX suite, root 108-test Vitest
-suite, build, formatting, workflow trace, and independent implementation
-review pass. DeepSeek remains code/contract-only. COM is optional
-certification only; portable OOXML/PptxGenJS plus independent LibreOffice
-rendering remain the core paths.
+**Status:** Superseded / unshipped / `NO_GO`. The final archived baseline
+collects 792 Python tests, with 789 passing and three regressions. Portable
+engineering, TemplatePack adaptation, CompositionPlan, Quality v3, and Agnes
+review infrastructure remain useful foundations, but the user rejected the
+generated trials as materially below the accepted `工作总结.pptx` art-direction
+bar. Phase 35 is not complete; its unfinished human-review closure is replaced
+by the user-authorized v6 AI-only acceptance contract.
 
 ---
 

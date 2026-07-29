@@ -1,19 +1,19 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.1
-milestone_name: Window-PPTX Reference-Grade Visual Engine
-current_phase: 35
-current_phase_name: Weak-Model Benchmark and Milestone Closure
-status: blocked
-stopped_at: Phase 35 blocked after three consecutive checks found no independent-human completed score sheet; resume at P35-BLIND-01 score validation
-last_updated: "2026-07-29T00:53:51+08:00"
+milestone: v6.0
+milestone_name: Window-PPTX Template-Intelligence Quality Reset
+current_phase: 36
+current_phase_name: v6 Contracts and Realistic Corpus
+status: in_progress
+stopped_at: Phase 36 Task 36.1 private-asset safety tracer
+last_updated: "2026-07-29T17:58:00+08:00"
 last_activity: 2026-07-29
 progress:
-  total_phases: 37
+  total_phases: 43
   completed_phases: 33
-  total_plans: 34
+  total_plans: 41
   completed_plans: 36
-  percent: 94
+  percent: 77
 ---
 
 # Project State
@@ -26,43 +26,30 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v5.1 Phase 35 has four reference-method generated candidates
-passing portable engineering, Quality v3, and hash-bound direct Agnes review.
-The current-code ordinary-model matrix is frozen at
-`.planning/evidence/phase35-ordinary-current-final-r1/summary.json`: all four
-required DeepSeek scenarios and both available Nemotron scenarios pass
-portable and direct Agnes gates. The refreshed anonymized reviewer packet is
-`benchmark-reviewer-package-current-r2` and is hash-complete. The milestone
-remains `NO_GO` until an independent human completes that packet and a fresh
-post-review OpenCode/Agnes audit returns `GO`. PowerPoint COM is optional
-sampled certification, not a portable-delivery dependency.
+**Current focus:** v6.0 Phase 36 replaces the rejected shallow benchmark with
+ProjectBriefPack v1, three complete realistic flagship briefs, twelve locked
+scenario skeletons, and a private-asset safety boundary. Codex GPT-5.5 medium
+is the quality-first authoring model; weak-model distillation is deferred to
+v6.1.
 
-The release gate is now executable through
-`scripts/validate_window_pptx_blind_review.py`: it strictly reloads the frozen
-packet, rehashes and opens every staged PPTX/PNG, validates all human scores,
-and emits deterministic `PASS`/`FAIL`/`NOT_RUN` evidence against the locked
-4.2 overall / 4.0 per-dimension floor. Focused gate coverage passes 4/4 and
-the complete weak-model benchmark test file passes 42/42. Running it against
-the current all-null template produced
-`blind-review-gate.current.json = NOT_RUN`, as required.
-The validator deliberately labels its result `P35-BLIND-01-SCORE-FLOOR` and
-keeps `human_provenance_status=EXTERNAL_CONFIRMATION_REQUIRED`: an `R-*`
-pseudonym is not proof that the reviewer is human, so code cannot promote the
-full milestone gate without the actual independent-human handoff.
-OpenCode DeepSeek review session `ses_0566bf981ffen4mK0X3d4T6QYK` was stopped
-after repeated provider 500s. Agnes review session
-`ses_056667320ffenCP7JD5nZawqVP` initially made the incorrect inference that
-an `R-*` regex proves a human source; the controller rejected that claim,
-amended the provenance contract, and the same session's focused re-review
-found no Blocker or Important issue in the corrected score-floor validator.
-This is a local code review only, not the final P35-AUDIT-01 completion audit.
+The v5.1 work is preserved at archive commit
+`e4ed78c7b31beebdb94f0f37c6c412012dfec085` and annotated tag
+`window-pptx-v5.1-no-go-20260729`. The original `feat/window-pptx-v5` and its
+remote remain at `70d1b6762acdbe0732a502e8d1e151f3957323eb`. The fresh archive
+baseline collects 792 Python tests: 789 pass and three fail. Vitest 108/108,
+typecheck, build, formatter, and diff checks pass.
+
+Phase 29 never started and is cancelled/replaced, not completed. Phase 35 is
+`NO_GO` and superseded, not completed. The former human-review rule remains
+historical evidence only; the latest explicit user decision requires three
+fully independent AI blind-review contexts for v6 acceptance.
 
 ## Current Position
 
-Milestone: v5.1 Window-PPTX Reference-Grade Visual Engine
-Current Phase: 35
-Current Phase Name: Weak-Model Benchmark and Milestone Closure
-Status: Machine gates passed / blocked on independent human blind review / NO_GO
+Milestone: v6.0 Window-PPTX Template-Intelligence Quality Reset
+Current Phase: 36
+Current Phase Name: v6 Contracts and Realistic Corpus
+Status: In progress — safety tracer and locked corpus contracts
 Last Activity: 2026-07-29
 
 Foundation completed:
@@ -177,46 +164,50 @@ Active v5 foundation:
   secondary trials remain `UNAVAILABLE`, never imputed as success.
 - [Phase 35]: Human blind review is a non-delegable release gate. AI review,
   automatic scores, and reference similarity cannot replace it.
+- [v6 transition]: The Phase 35 human-review rule is historical and applies
+  only to the unshipped v5.1 milestone. The user's latest explicit decision
+  replaces it with a three-context AI-only v6 acceptance contract.
+- [v6 transition]: Phase 29 never started; it is cancelled and replaced, not
+  completed. Its intent is remapped to V6-PORT/EVID/DOC/AUDIT/REL.
+- [Phase 36]: Codex GPT-5.5 medium is the v6.0 quality-first authoring model.
+  DeepSeek and other ordinary-model distillation are deferred to v6.1.
+- [Phase 36]: Formal generation requires a discussion-complete `Locked`
+  ProjectBriefPack. Draft and unresolved briefs may emit questions only.
+- [Phase 36]: Private template bytes and credentials live only under the
+  ignored `.private/` tree and are never committed, logged, or passed on a
+  command line.
+- [Phase 36]: Complete works are visual spines. Supplemental templates must
+  pass deck-family/style-cluster and dependency-closure certification.
+- [Phase 36]: COM is optional diagnostics only. Portable native-editable PPTX,
+  isolated rendering, OOXML inspection, and AI visual evidence own v6 GO.
 
 ## Next Actions
 
-1. Have an independent human reviewer complete
-   `.planning/evidence/phase35-human-blind-review/benchmark-reviewer-package-current-r2/score-sheet.template.json`
-   using the frozen anonymized PPTX/PNG packet.
-2. Save the returned copy as `score-sheet.completed.json`, then run
-   `scripts/validate_window_pptx_blind_review.py` against the frozen
-   `packet.json`. The validator rechecks every PPTX/PNG hash and readability,
-   emits `PASS`/`FAIL`/`NOT_RUN`, and requires overall mean `>=4.2` plus every
-   rubric dimension aggregate `>=4.0`. The current all-null template is
-   deterministically recorded as `blind-review-gate.current.json` with
-   `NOT_RUN`.
-3. If the human gate passes, rerun the fresh OpenCode/Agnes read-only audit.
-   Merge, release, commit, and push only after that audit returns `GO` with no
-   Blocker or Important issue.
+1. Complete Task 36.1: private-asset ignore, staged-secret/binary guard, tests,
+   and first v6 safety checkpoint.
+2. Implement ProjectBriefPack v1 and its Draft/NeedsDiscussion/Locked gate.
+3. Materialize and lock the three complete flagship briefs plus twelve
+   scenario skeletons from the accepted facts and sources.
+4. Repair the three archived regressions, run Phase 36 verification, and
+   dispatch independent specification, quality, verification, and Agnes phase
+   audits.
 
 ## Blockers / Concerns
 
-- The only mandatory external gate still open is the independent human blind
-  review. It is `NOT_RUN`, so the milestone and default-branch merge remain
-  `NO_GO` even though all current machine gates pass.
-- Nemotron was available for product-launch and data-analysis but unavailable
-  for business-report and project-proposal. Phase 35 records those two trials
-  explicitly as `UNAVAILABLE`, as required by the locked specification.
+- Three archived Python regressions must be repaired in Phase 36:
+  unfilled CTA slots, trend-label expectation drift, and one failed
+  training/e-commerce calibration packet.
+- Authenticated commercial-template acquisition is `NEEDS_AUTH` until the
+  user confirms the old chat-only session is revoked and supplies a new
+  short-lived cookie through the ignored private path. Non-authenticated work
+  continues.
+- v6 release requires one legally usable complete-work visual spine for each
+  flagship. Missing campus or academic spines block their release claim but do
+  not block Phase 36 or the work-report tracer.
 - Microsoft `MSPPT.OLB` late binding works, but early-bound pywin32
   `_Application.QueryInterface` can fail with `TYPE_E_CANTLOADLIBRARY` because
   the interface registry points to a stale missing WPS TypeLib. COM remains
   optional certification and does not block portable delivery.
-- The six-trial current replay is the locked Phase 35 representative matrix,
-  not a claim that the historical formal 180-trial contract was rerun.
-- Final current-code verification passed in four Python shards: 189, 337,
-  81, and 167 tests. Three stale expectations exposed by intentional metric,
-  title-capacity, and proposal-recipe improvements were updated and their
-  focused regressions pass. Root Vitest passes 108/108; TypeScript typecheck,
-  build, PptxGenJS doctor, compileall, `git diff --check`, and Skillbird
-  formatting also pass.
-- OpenCode/Agnes pre-human readiness session
-  `ses_0568c5c11ffeGNfS6nR6VN150H` reports P35-BENCH-01/02,
-  P35-VISUAL-01, and P35-XENGINE-01 PASS with zero Blocker or Important
-  findings; it correctly keeps P35-BLIND-01 and the final post-review
-  P35-AUDIT-01 at `NOT_RUN`. This readiness check is not the final completion
-  audit and does not authorize GO.
+- Full Window-PPTX tests must run in shards on this Windows-mounted filesystem;
+  the benchmark file alone takes about twelve minutes. A monolithic
+  five-minute command timeout is not a valid regression verdict.
