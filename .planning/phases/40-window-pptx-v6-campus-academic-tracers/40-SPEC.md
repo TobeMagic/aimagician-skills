@@ -94,15 +94,15 @@ visual-review evidence.
 
 ## Acceptance Criteria
 
-- [ ] Both exact anatomy contracts and locked fact lineages pass.
-- [ ] Scenario-specific maps, product visuals, experiment diagrams, charts,
+- [x] Both exact anatomy contracts and locked fact lineages pass.
+- [x] Scenario-specific maps, product visuals, experiment diagrams, charts,
       tables, appendices, and closes are present and editable.
-- [ ] Isolated portable rendering produces 32 valid pages for each deck.
-- [ ] No unsupported commercial, scientific, award, patent, or causal claim
+- [x] Isolated portable rendering produces 32 valid pages for each deck.
+- [x] No unsupported commercial, scientific, award, patent, or causal claim
       is present.
-- [ ] Anonymous visual acceptance reaches all Phase 41 floors with no
+- [x] Anonymous visual acceptance reaches all Phase 41 floors with no
       consensus Blocker or Important finding.
-- [ ] Workflow, regression, private-asset, and diff gates pass.
+- [x] Workflow, regression, private-asset, and diff gates pass.
 
 ## Blocking Questions
 

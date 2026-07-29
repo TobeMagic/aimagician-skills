@@ -17,7 +17,7 @@
 | Check | Result |
 |---|---|
 | Flagship generator tests | 4/4 PASS |
-| Complete Window-PPTX regression | 870/870 PASS in two filesystem-safe shards |
+| Complete Window-PPTX regression | 871/871 PASS in two filesystem-safe shards |
 | Campus anatomy | PASS, 22+4+6 |
 | Academic anatomy | PASS, 26+6 |
 | Native-object, notes, lineage, claim guards | PASS |

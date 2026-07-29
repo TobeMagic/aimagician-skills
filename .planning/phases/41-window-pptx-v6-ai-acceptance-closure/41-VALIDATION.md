@@ -35,9 +35,9 @@
 
 ## Deterministic Gates
 
-- Window-PPTX non-benchmark shard: 828/828 PASS.
+- Window-PPTX non-benchmark shard: 829/829 PASS.
 - Weak-model benchmark shard: 42/42 PASS.
-- Combined Window-PPTX regression: 870/870 PASS.
+- Combined Window-PPTX regression: 871/871 PASS.
 - Vitest: 108/108 PASS.
 - TypeScript typecheck and production build: PASS.
 - Skillbird formatter: 23 checked, no changes or issues.

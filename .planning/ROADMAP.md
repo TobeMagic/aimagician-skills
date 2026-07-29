@@ -630,7 +630,7 @@ addressing, stable metadata, and a resumable queryable catalog.
 retrieval, and certified complete-work visual spines.
 **Depends on:** Phase 37 `SEED_READY`; full sync may continue
 **Requirements:** [V6-LIB-01, V6-DESIGN-01, V6-DECK-01]
-**Status:** In Progress
+**Status:** Complete — 2026-07-30
 
 ### Phase 39: Work-Report Flagship Tracer
 
@@ -639,7 +639,7 @@ GPT-5.5 medium and reference-grade editable output.
 **Depends on:** Phase 38
 **Requirements:** [V6-DESIGN-01, V6-DECK-01, V6-PORT-01, V6-QA-01,
 V6-EVID-01]
-**Status:** Planned
+**Status:** Complete — 2026-07-30
 
 ### Phase 40: Campus and Academic Flagship Tracers
 
@@ -647,7 +647,7 @@ V6-EVID-01]
 from locked facts and licensed visual spines.
 **Depends on:** Phase 39 and licensed flagship spines
 **Requirements:** [V6-PORT-01, V6-PORT-02, V6-QA-01, V6-EVID-01]
-**Status:** Planned
+**Status:** Complete — 2026-07-30
 
 ### Phase 41: AI-Only Acceptance and Closure
 
@@ -656,15 +656,15 @@ AI reviews, reference-parity thresholds, and a fresh Agnes completion audit.
 **Depends on:** Phases 39–40
 **Requirements:** [V6-PORT-02, V6-EVID-01, V6-DOC-01, V6-UAT-01,
 V6-AUDIT-01, V6-REL-01]
-**Status:** Planned
+**Status:** In Progress — blind UAT PASS; completion audit pending
 
 ## v6.0 Progress
 
 | Phase | Status | Completed |
 |-------|--------|-----------|
 | 36. Contracts and Realistic Corpus | Complete | 2026-07-29 |
-| 37. Secure Acquisition and Catalog | In Progress | — |
-| 38. Certified Template Intelligence | Planned | — |
-| 39. Work-Report Flagship | Planned | — |
-| 40. Campus and Academic Flagships | Planned | — |
-| 41. AI-Only Acceptance and Closure | Planned | — |
+| 37. Secure Acquisition and Catalog | Complete | 2026-07-29 |
+| 38. Certified Template Intelligence | Complete | 2026-07-30 |
+| 39. Work-Report Flagship | Complete | 2026-07-30 |
+| 40. Campus and Academic Flagships | Complete | 2026-07-30 |
+| 41. AI-Only Acceptance and Closure | In Progress | — |

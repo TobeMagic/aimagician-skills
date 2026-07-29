@@ -18,7 +18,7 @@
 | Check | Result |
 |---|---|
 | Flagship generator tests | 4/4 PASS |
-| Complete Window-PPTX regression | 870/870 PASS in two filesystem-safe shards |
+| Complete Window-PPTX regression | 871/871 PASS in two filesystem-safe shards |
 | Exact slide count and anatomy | PASS, 32 slides |
 | Native object / notes / lineage guards | PASS |
 | Whole-slide image / external relationship guards | PASS |

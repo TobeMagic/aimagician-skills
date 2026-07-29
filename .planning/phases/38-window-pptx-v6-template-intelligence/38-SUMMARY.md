@@ -21,7 +21,7 @@
 ## Verification
 
 - Template-intelligence focused tests: 14/14 PASS.
-- Combined v6 focused tests: 22/22 PASS.
+- Combined v6 focused tests: 23/23 PASS.
 - Phase 38 workflow spec/plan/execute gates: PASS/PASS/PASS.
 - Registry count, family coverage, deterministic ranking, forbidden-field,
   capacity, dependency, certification, legacy quarantine, and v1

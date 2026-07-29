@@ -309,18 +309,18 @@ sequence must validate.
 
 ## Acceptance Criteria
 
-- [ ] V6-LIB-01, V6-DESIGN-01, and V6-DECK-01 have concrete passing evidence.
-- [ ] TemplatePack v1 behavior and all existing registry loaders remain
+- [x] V6-LIB-01, V6-DESIGN-01, and V6-DECK-01 have concrete passing evidence.
+- [x] TemplatePack v1 behavior and all existing registry loaders remain
       compatible.
-- [ ] Registry v3 exposes exactly 84 certified pilot page candidates covering
+- [x] Registry v3 exposes exactly 84 certified pilot page candidates covering
       every registered family and required user taxonomy.
-- [ ] Three legal complete-work spines validate; the physical work-report
+- [x] Three legal complete-work spines validate; the physical work-report
       spine remains SHA-bound to the accepted reference.
-- [ ] A locked flagship brief produces a deterministic selection plan and
+- [x] A locked flagship brief produces a deterministic selection plan and
       slide blueprints; unsafe/unknown/over-capacity input fails closed.
-- [ ] Focused, affected, and full Window-PPTX tests pass.
-- [ ] Workflow, formatter, private guard, and diff gates pass.
-- [ ] Fresh independent specification, quality, verification, visual, and
+- [x] Focused, affected, and full Window-PPTX tests pass.
+- [x] Workflow, formatter, private guard, and diff gates pass.
+- [x] Fresh independent specification, quality, verification, visual, and
       completion reviews have no unresolved Blocker or Important finding.
 
 ## Blocking Questions

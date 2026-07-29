@@ -512,24 +512,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | V6-CORPUS-01 | Phase 36 | Complete |
 | V6-ASSET-01 | Phase 37 | Complete |
 | V6-LIB-01 | Phase 37 | Complete |
-| V6-DESIGN-01 | Phase 38 | Planned |
-| V6-DECK-01 | Phase 38 | Planned |
-| V6-PORT-01 | Phase 39 | Planned |
-| V6-PORT-02 | Phase 40 | Planned |
-| V6-QA-01 | Phase 39 | Planned |
-| V6-EVID-01 | Phase 39 | Planned |
+| V6-DESIGN-01 | Phase 38 | Complete |
+| V6-DECK-01 | Phase 38 | Complete |
+| V6-PORT-01 | Phase 39 | Complete |
+| V6-PORT-02 | Phase 40 | Complete |
+| V6-QA-01 | Phase 39 | Complete |
+| V6-EVID-01 | Phase 39 | Complete |
 | V6-DOC-01 | Phase 36 | Complete |
-| V6-UAT-01 | Phase 41 | Planned |
+| V6-UAT-01 | Phase 41 | Complete |
 | V6-AUDIT-01 | Phase 41 | Planned |
 | V6-REL-01 | Phase 41 | Planned |
 
 **V6 Coverage:**
 - v6 requirements: 14 total
 - Mapped to exactly one primary phase: 14
-- Complete: 3
-- Planned: 11
+- Complete: 12
+- Planned: 2
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-07-29 after locking v6.0 Window-PPTX requirements*
+*Last updated: 2026-07-30 after Phase 38–40 delivery and Phase 41 blind UAT*

@@ -104,15 +104,15 @@ review evidence.
 
 ## Acceptance Criteria
 
-- [ ] Exact slide count, full anatomy, case diversity, and fact-bound notes
+- [x] Exact slide count, full anatomy, case diversity, and fact-bound notes
       pass deterministic tests.
-- [ ] The PPTX opens in the isolated portable renderer with no missing page.
-- [ ] No slide picture, unsupported external relationship, or unsupported
+- [x] The PPTX opens in the isolated portable renderer with no missing page.
+- [x] No slide picture, unsupported external relationship, or unsupported
       factual claim exists.
-- [ ] Native chart/table floors and editable object expectations pass.
-- [ ] Anonymous visual acceptance reaches the frozen Phase 41 thresholds with
+- [x] Native chart/table floors and editable object expectations pass.
+- [x] Anonymous visual acceptance reaches the frozen Phase 41 thresholds with
       no consensus Blocker or Important finding.
-- [ ] Workflow, regression, private-asset, and diff gates pass.
+- [x] Workflow, regression, private-asset, and diff gates pass.
 
 ## Blocking Questions
 

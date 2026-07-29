@@ -17,8 +17,8 @@
 | Check | Result |
 |---|---|
 | `test_template_intelligence.py` | 14/14 PASS |
-| Combined v6 focused tests | 22/22 PASS |
-| Complete Window-PPTX regression | 870/870 PASS in two filesystem-safe shards |
+| Combined v6 focused tests | 23/23 PASS |
+| Complete Window-PPTX regression | 871/871 PASS in two filesystem-safe shards |
 | Phase 38 workflow spec/plan/execute | PASS/PASS/PASS |
 | Skillbird formatter | 23 checked; no changes or issues |
 | `git diff --check` | PASS |
