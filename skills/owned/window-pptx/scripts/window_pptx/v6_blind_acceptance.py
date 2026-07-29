@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import re
 from collections import defaultdict
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Mapping, Sequence
 
 
@@ -38,6 +39,19 @@ def _score(value: Any, path: str) -> float:
     ):
         raise ValueError(f"{path} must be a finite score from 1 to 5")
     return float(value)
+
+
+def _mean_matches_reported_precision(
+    reported_mean: float,
+    values: Sequence[float],
+) -> bool:
+    reported = Decimal(str(reported_mean))
+    precision = max(1, -reported.as_tuple().exponent)
+    quantum = Decimal(1).scaleb(-precision)
+    computed = sum((Decimal(str(value)) for value in values), Decimal(0)) / Decimal(
+        len(values)
+    )
+    return reported == computed.quantize(quantum, rounding=ROUND_HALF_UP)
 
 
 def aggregate_v6_blind_reviews(
@@ -92,8 +106,7 @@ def aggregate_v6_blind_reviews(
                 candidate.get("mean_score"),
                 f"{reviewer_id}.{blind_id}.mean_score",
             )
-            computed_mean = sum(values) / len(values)
-            if abs(reported_mean - computed_mean) > 0.11:
+            if not _mean_matches_reported_precision(reported_mean, values):
                 raise ValueError(f"{reviewer_id}.{blind_id}.mean_score is inconsistent")
             if not isinstance(candidate.get("reference_parity"), bool):
                 raise ValueError(f"{reviewer_id}.{blind_id}.reference_parity must be boolean")

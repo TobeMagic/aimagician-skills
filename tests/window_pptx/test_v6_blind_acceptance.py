@@ -86,3 +86,16 @@ def test_v6_blind_acceptance_accepts_raw_candidate_arrays() -> None:
         ]
 
     assert aggregate_v6_blind_reviews(reviews)["status"] == "PASS"
+
+
+def test_v6_blind_acceptance_requires_exact_decimal_rounding_for_reported_mean() -> None:
+    reviews = [report("art"), report("narrative"), report("production")]
+    scores = reviews[0]["candidates"]["B-001"]["scores"]
+    for index, dimension in enumerate(V6_REVIEW_DIMENSIONS):
+        scores[dimension] = 4.4 if index < 2 else 4.5
+    reviews[0]["candidates"]["B-001"]["mean_score"] = 4.5
+    assert aggregate_v6_blind_reviews(reviews)["status"] == "PASS"
+
+    reviews[0]["candidates"]["B-001"]["mean_score"] = 4.4
+    with pytest.raises(ValueError, match="mean_score is inconsistent"):
+        aggregate_v6_blind_reviews(reviews)
