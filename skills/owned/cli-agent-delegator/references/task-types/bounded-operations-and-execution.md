@@ -2,6 +2,8 @@
 
 Use this task family when OpenCode can perform a short, well-specified unit of mechanical engineering work while the main Agent retains design and final judgment.
 
+When the objective and acceptance are locked and the bounded-write gate below is satisfied, delegation is the default rather than an optional optimization. Read `quick-task-recipes.md` for ready-to-fill contracts.
+
 ## Suitable Tasks
 
 - inspect `git status`, a named diff, branch state, changed-file list, or commit metadata;
@@ -9,6 +11,7 @@ Use this task family when OpenCode can perform a short, well-specified unit of m
 - monitor a long-running check and return progress, failures, affected tests, and a concise report;
 - compare command output or artifacts with explicit acceptance criteria;
 - inspect pre-commit readiness and identify accidental scope or generated pollution;
+- make a localized documentation, configuration, formatting, or low-risk bug fix with named evidence;
 - make a short low-risk implementation in a clean isolated worktree when behavior, files, tests, and permissions are already locked.
 
 Do not delegate unresolved architecture, product behavior, broad refactors, production operations, secret handling, destructive cleanup, publishing, merging, or pushing as a “simple task.”
@@ -41,6 +44,8 @@ All conditions must hold:
 7. the worker must stop if correctness requires scope expansion.
 
 The worker reads required skills first, inspects local patterns, applies the smallest coherent change, runs the named checks, reviews its own diff, and returns changed paths plus evidence. It does not redesign the task while coding.
+
+Stop with `NEEDS_CONTEXT` when a correct fix requires a new behavior decision, architecture choice, migration, security acceptance, secret access, production mutation, destructive command, or path outside `WRITE_SCOPE`.
 
 ## Commit Policy
 

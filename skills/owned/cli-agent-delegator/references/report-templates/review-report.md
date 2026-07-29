@@ -6,7 +6,11 @@
 ## Review Contract
 
 - Role:
-- Provider / model / session:
+- Provider / session:
+- Primary model:
+- Final model:
+- Attempt chain:
+- Fallback reason:
 - Original request or PRD IDs:
 - Objective and accepted decisions:
 - Review point:

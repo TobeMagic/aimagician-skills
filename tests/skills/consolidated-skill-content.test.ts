@@ -111,7 +111,8 @@ describe("consolidated owned skill content", () => {
     const reviewTask = await readFile(join(skillRoot, "references", "task-types", "independent-review-and-audit.md"), "utf8");
 
     expect(skill).toContain("Delegation-First Trigger Gate");
-    expect(skill).toContain("Do not let the main Agent silently perform a multi-file or multi-source scan");
+    expect(skill).toContain("Do not let the main Agent silently perform mechanical work");
+    expect(skill).toContain("Default Short-Task Gate");
     expect(skill).toContain("strict-read-only");
     expect(skill).toContain("read-and-run");
     expect(skill).toContain("bounded-write");

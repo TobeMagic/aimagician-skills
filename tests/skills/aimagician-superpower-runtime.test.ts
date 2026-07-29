@@ -43,7 +43,7 @@ describe("aimagician-superpower workflow runtime", () => {
     expect((JSON.parse(rerun.stdout) as { skipped: string[] }).skipped).toContain(".planning/REQUIREMENTS.md");
   });
 
-  it("creates one lightweight task record and blocks completion without Agnes evidence", async () => {
+  it("creates one lightweight task record, blocks missing audit evidence, and accepts legacy Agnes records", async () => {
     const project = await makeProject();
     const apply = await runNode(workflowScript, [
       "init", "--project", project, "--task", "quick-fix", "--write", "--format", "json"
@@ -73,6 +73,32 @@ describe("aimagician-superpower workflow runtime", () => {
       task: "quick-fix",
       status: "passed"
     });
+  });
+
+  it("accepts model-neutral audits and rejects unsupported Agnes fallback claims", async () => {
+    const project = await makeProject();
+    await mkdir(join(project, ".planning", "tasks"), { recursive: true });
+    await writeFile(join(project, ".planning", "REQUESTS.md"), validRequests(), "utf8");
+    await writeFile(join(project, ".planning", "tasks", "quick-fix.md"), validNeutralTask(), "utf8");
+
+    const complete = await runNode(workflowScript, [
+      "validate", "--project", project, "--task", "quick-fix", "--gate", "complete", "--format", "json"
+    ]);
+    expect(complete.exitCode).toBe(0);
+
+    await writeFile(
+      join(project, ".planning", "tasks", "quick-fix.md"),
+      validNeutralTask()
+        .replaceAll("opencode/deepseek-v4-flash-free", "agnes/agnes-2.0-flash")
+        .replace("Fallback reason:** NONE", "Fallback reason:** generic provider failure"),
+      "utf8"
+    );
+    const invalidFallback = await runNode(workflowScript, [
+      "validate", "--project", project, "--task", "quick-fix", "--gate", "complete", "--format", "json"
+    ]);
+    expect(invalidFallback.exitCode).toBe(1);
+    expect((JSON.parse(invalidFallback.stdout) as { findings: Array<{ code: string }> }).findings)
+      .toContainEqual(expect.objectContaining({ code: "AUDIT_AGNES_FALLBACK_INVALID" }));
   });
 
   it("enforces specification scoring and reports stable finding codes", async () => {
@@ -514,7 +540,10 @@ function validAudit(): string {
 ## Auditor Run
 
 - **Provider:** OpenCode
-- **Model:** \`agnes/agnes-2.0-flash\`
+- **Primary model:** \`opencode/deepseek-v4-flash-free\`
+- **Model:** \`opencode/deepseek-v4-flash-free\`
+- **Attempt chain:** \`opencode/deepseek-v4-flash-free: success\`
+- **Fallback reason:** NONE
 - **Session:** ses_test_complete
 - **Run status:** DONE
 - **Review point:** test-fixture-head
@@ -570,6 +599,55 @@ Apply and verify a bounded quick fix.
 
 - **Provider:** OpenCode
 - **Model:** \`agnes/agnes-2.0-flash\`
+- **Session:** ses_task_complete
+- **Run status:** DONE
+- **Review point:** test-fixture-head
+- **Requirement matrix:** PASS
+- **Blocker:** 0
+- **Important:** 0
+- **Nitpick:** 0
+- **Controller spot-check:** PASS - focused evidence was inspected.
+
+## Final Decision
+
+**Status:** Complete
+**Reason:** Checklist, evidence, and audit passed.
+`;
+}
+
+function validNeutralTask(): string {
+  return `# Task: quick-fix
+
+**Task ID:** quick-fix
+**Status:** Complete
+**Source request:** USR-TEST-001
+**Review point:** test-fixture-head
+
+## Original Request
+
+Apply and verify a bounded quick fix.
+
+## Accepted Decisions
+
+- Keep the change inside the fixture.
+
+## Checklist
+
+- [x] TASK-REQ-001: Implement and verify the fix.
+
+## Evidence
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| TASK-REQ-001 | Focused test passed. | PASS |
+
+## Independent Completion Audit
+
+- **Provider:** OpenCode
+- **Primary model:** \`opencode/deepseek-v4-flash-free\`
+- **Model:** \`opencode/deepseek-v4-flash-free\`
+- **Attempt chain:** \`opencode/deepseek-v4-flash-free: success\`
+- **Fallback reason:** NONE
 - **Session:** ses_task_complete
 - **Run status:** DONE
 - **Review point:** test-fixture-head

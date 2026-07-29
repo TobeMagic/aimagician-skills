@@ -5,7 +5,10 @@
 ## Auditor Run
 
 - **Provider:** OpenCode
-- **Model:** `agnes/agnes-2.0-flash`
+- **Primary model:** NOT_RUN
+- **Model:** NOT_RUN
+- **Attempt chain:** NOT_RUN
+- **Fallback reason:** NOT_RUN
 - **Session:** NOT_RUN
 - **Run status:** NOT_RUN
 - **Review point:** NOT_RUN

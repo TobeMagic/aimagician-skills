@@ -486,12 +486,12 @@ describe("owned skill trigger contracts", () => {
     expect(pptxFrontmatter).toContain("deck");
   });
 
-  it("routes ordinary delegation to DeepSeek and completion audits directly to Agnes", async () => {
+  it("routes non-visual delegation and completion audits to DeepSeek first", async () => {
     const provider = await readFile(join(ownedRoot, "cli-agent-delegator", "references", "providers", "opencode.md"), "utf8");
     expect(provider.indexOf("opencode/deepseek-v4-flash-free")).toBeLessThan(provider.indexOf("agnes/agnes-2.0-flash"));
-    expect(provider).toContain("A provider rate limit is a model failure event");
-    expect(provider).toContain("For every task, phase, milestone, release, or delivery completion audit, use Agnes as the first and required model");
-    expect(provider).toContain("Do not try DeepSeek first for a completion audit");
+    expect(provider).toContain("For a non-visual task, phase, milestone, release, or delivery completion audit, use the normal DeepSeek-first route");
+    expect(provider).toContain("Automatically switch a failed non-visual run to Agnes only when logs identify an explicit usage, quota, rate-limit");
+    expect(provider).toContain("If DeepSeek is absent");
   });
 });
 

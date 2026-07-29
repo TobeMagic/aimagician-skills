@@ -9,7 +9,7 @@ Use this task family for broad context gathering that would otherwise consume th
 - **Cross-source comparison:** use one comparison frame and expose incompatible assumptions rather than flattening differences.
 - **Visual or image inspection:** use `agnes/agnes-2.0-flash`, attach the exact image with the supported OpenCode file option, and report observable evidence separately from interpretation.
 
-Use DeepSeek V4 Flash Free for ordinary non-visual discovery and research. Use Agnes when pixels must be understood or when DeepSeek is unavailable, rate-limited, or fails. Do not send an image task to a text-only fallback.
+Use DeepSeek V4 Flash Free for ordinary non-visual discovery and research. If DeepSeek is absent, return the live free candidates for controller selection. Use Agnes when pixels must be understood or after an explicit usage, quota, or rate-limit failure. Do not convert authentication, network, permission, syntax, or generic worker failures into an Agnes fallback. Do not send an image task to a text-only model.
 
 ## Discovery Questions
 

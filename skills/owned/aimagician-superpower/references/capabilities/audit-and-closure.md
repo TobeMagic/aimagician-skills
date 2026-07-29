@@ -18,7 +18,7 @@ Compare actual files, runtime behavior, and evidence with:
 
 Do not infer compliance from a completion summary. Spot-check or execute critical evidence and inspect the final diff.
 
-For every task, phase, milestone, release, or complete claim, load `cli-agent-delegator` and dispatch a fresh OpenCode auditor using `agnes/agnes-2.0-flash` against a frozen review point. Supply the original objective or PRD, `.planning/REQUESTS.md`, latest user decisions, specification or task record, non-goals, actual diff or artifacts, reviews, verification, installation state, required owned skills, and exclusions. A quick task may use one compact combined review; substantial work keeps staged independent reviews. The main Agent reconciles findings against primary evidence and retains the final completion decision.
+For every task, phase, milestone, release, or complete claim, load `cli-agent-delegator` and dispatch a fresh independent OpenCode auditor against a frozen review point. Non-visual audits use the DeepSeek-first route; visual deliverables add evidence from Agnes or another verified vision-capable worker; explicit quota events may fall back to Agnes. Supply the original objective or PRD, `.planning/REQUESTS.md`, latest user decisions, specification or task record, non-goals, actual diff or artifacts, reviews, verification, installation state, required owned skills, and exclusions. A quick task may use one compact combined review; substantial work keeps staged independent reviews. The main Agent reconciles findings against primary evidence and retains the final completion decision.
 
 ## Gap Classification
 
@@ -40,7 +40,7 @@ Closure requires:
 - all required evidence `PASS`;
 - user-facing UAT complete when applicable;
 - no unresolved blocking review finding;
-- OpenCode provider, Agnes model, fresh session, frozen review point, requirement matrix, finding counts, and controller spot-check recorded;
+- OpenCode provider, primary/final model, attempt chain, fallback reason, fresh session, frozen review point, requirement matrix, finding counts, and controller spot-check recorded;
 - no stale placeholder or accidental capability loss;
 - state and documentation updated;
 - temporary output handled intentionally;

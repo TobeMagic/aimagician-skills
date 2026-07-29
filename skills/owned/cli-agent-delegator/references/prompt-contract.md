@@ -7,6 +7,8 @@ Every CLI-agent invocation uses this contract. More detail in the prompt is chea
 ```text
 TASK_ID: <stable identifier>
 ROLE: <explorer | researcher | visual-inspector | operator | implementer | plan-reviewer | spec-reviewer | quality-reviewer | verifier | auditor>
+TASK_TYPE: <quick | discovery | research | review | audit>
+MODALITY: <text | vision>
 OBJECTIVE: <one measurable outcome>
 DELIVERABLE: <report, evidence table, patch, commit, or decision input>
 REVIEW_POINT: <exact commit, diff, worktree state, source snapshot, URLs, or artifact set>
@@ -37,6 +39,7 @@ WRITE_SCOPE: <exact paths, or NONE>
 ALLOWED_COMMANDS: <command classes and important exact commands>
 TESTS_AND_EVIDENCE: <checks to run or evidence to collect>
 GIT_POLICY: <inspect-only | no-commit | local-commit-after-review | other explicit policy>
+MODEL_POLICY: <DeepSeek default | controller-selected free model because DeepSeek is absent | Agnes visual | Agnes quota fallback>
 CHILD_AGENT_POLICY: <forbidden | explicitly bounded roles>
 
 STATUS_PROTOCOL: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
@@ -68,7 +71,7 @@ Name only skills relevant to the role. Typical routing:
 - parallel write lanes: add `parallel-worktree-pr-flow`.
 - system prompt or agent instruction design: add `system-prompt-engineering`.
 
-For a completion audit, `REQUIRED_SKILLS` always includes `cli-agent-delegator`, `aimagician-superpower`, and every domain skill used by the implementation. The output must include provider, model, session ID, frozen review point, one `PASS | FAIL | NOT_RUN` row per accepted requirement, finding counts, and evidence for controller spot-checks.
+For a completion audit, `REQUIRED_SKILLS` always includes `cli-agent-delegator`, `aimagician-superpower`, and every domain skill used by the implementation. The output must include provider, primary model, final model, attempt chain, fallback reason, session ID, frozen review point, one `PASS | FAIL | NOT_RUN` row per accepted requirement, finding counts, and evidence for controller spot-checks.
 
 ## Permission Semantics
 
@@ -122,6 +125,7 @@ Quiet output alone is not failure. While the process is alive and event state ad
 - Do not claim a test or file is absent without a scoped search.
 - Do not hide skipped or failing checks.
 - Do not replace original-request coverage with phase-generated requirements; verify that each accepted request is represented and implemented.
+- Treat any attempted command outside `ALLOWED_COMMANDS`, including `timeout`, `tee`, `pkill`, `kill`, process cleanup, or unapproved temporary-file writes, as a scope violation. Stop the worker, reject its completion claim, report the attempted command, and inspect possible side effects.
 
 ## Final Status Rules
 

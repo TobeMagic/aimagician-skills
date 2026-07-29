@@ -1,6 +1,6 @@
 ---
 name: aimagician-superpower
-description: Use when starting or resuming engineering work, understanding requirements, exploring a codebase, designing or implementing changes, debugging, refactoring, reviewing code, applying spec-driven development, coordinating agents, or claiming any task, phase, milestone, or delivery complete. Requires original-request traceability, verified evidence, a fresh OpenCode Agnes completion audit, and a durable handoff.
+description: Use when starting or resuming engineering work, understanding requirements, exploring a codebase, designing or implementing changes, debugging, refactoring, reviewing code, applying spec-driven development, coordinating agents, delegating eligible short execution tasks, or claiming any task, phase, milestone, or delivery complete. Requires original-request traceability, verified evidence, a fresh independent OpenCode completion audit, and a durable handoff.
 category: build
 subcategory: workflow
 tags:
@@ -118,7 +118,7 @@ A lightweight inline target is allowed only when all are true:
 
 If any condition fails, read `references/capabilities/spec-driven-development.md` and create or update the phase specification before planning.
 
-Every lightweight task that will end in a completion claim uses one `.planning/tasks/<id>.md` record. Preserve or link the original request, accepted decisions, requirement checklist, evidence, fresh Agnes audit, finding disposition, and final decision in that file. Pure discussion or clarification without a completion claim does not create a task record.
+Every lightweight task that will end in a completion claim uses one `.planning/tasks/<id>.md` record. Preserve or link the original request, accepted decisions, requirement checklist, evidence, fresh independent OpenCode audit, model attempt provenance, finding disposition, and final decision in that file. Pure discussion or clarification without a completion claim does not create a task record.
 
 ## Canonical Delivery Loop
 
@@ -148,7 +148,7 @@ Define the behavior contract, durable domain vocabulary, invariants, interfaces,
 
 ### 7. Execute And Checkpoint
 
-Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Deliver one end-to-end tracer slice before broadening. Agree the most public practical test seam, make the first check fail for the intended behavioral reason, then complete one red-green-refactor slice before the next. Reject tautological tests, tests that only replay mocked returns, and horizontal tests disconnected from observable behavior. Use expand-contract for wide refactors and reversible prototypes for uncertain architecture. Give each bounded implementation slice a clean context and finish it with fresh evidence plus a durable handoff; do not rely on lossy mid-slice compaction. OpenCode may handle a short locked task, test run, git check, or report through `cli-agent-delegator`; write work must use an exact scope in an isolated worktree. A bounded quick write gets one combined pre-commit review. Substantial delegated implementation gets a fresh implementer context, independent specification review, then quality review. Fix and re-review before advancing.
+Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Deliver one end-to-end tracer slice before broadening. Agree the most public practical test seam, make the first check fail for the intended behavioral reason, then complete one red-green-refactor slice before the next. Reject tautological tests, tests that only replay mocked returns, and horizontal tests disconnected from observable behavior. Use expand-contract for wide refactors and reversible prototypes for uncertain architecture. Give each bounded implementation slice a clean context and finish it with fresh evidence plus a durable handoff; do not rely on lossy mid-slice compaction. Before the controller performs a simple short execution task, apply the `cli-agent-delegator` short-task gate. Eligible test runs, Git checks, reports, localized fixes, scoped research, and visual inspection are delegated by default. Write work must use an exact scope in an isolated worktree. A bounded quick write gets one combined pre-commit review. Substantial delegated implementation gets a fresh implementer context, independent specification review, then quality review. Fix and re-review before advancing.
 
 ### 8. Verify And UAT
 
@@ -158,7 +158,7 @@ Run narrow checks first, then the broader suite justified by blast radius. Trace
 
 Compare the result with the locked specification, original request, non-goals, plan, and evidence. Check integration wiring, regression risk, capability preservation, stale placeholders, security, cleanup, documentation, and installation state. Use a fresh OpenCode reviewer through `cli-agent-delegator` for phase audit and for milestone or complete closure. Reconcile its findings against primary evidence and classify every gap.
 
-Every completion claim, including a bounded quick task, must use a fresh OpenCode session with `agnes/agnes-2.0-flash` as the primary completion auditor. The audit freezes the reviewed commit or diff and maps `USR-* -> REQ-* -> implementation -> evidence -> audit decision`. Record provider, model, session, run status, review point, requirement matrix, Blocker/Important/Nitpick counts, and main-Agent spot-check evidence. Tests passing alone never satisfies this gate.
+Every completion claim, including a bounded quick task, must use a fresh independent OpenCode session. Non-visual audit reasoning follows the DeepSeek-first route; visual evidence uses Agnes or another verified vision-capable model; automatic Agnes fallback is limited to explicit usage, quota, or rate-limit events. The audit freezes the reviewed commit or diff and maps `USR-* -> REQ-* -> implementation -> evidence -> audit decision`. Record provider, primary model, final model, attempt chain, fallback reason, session, run status, review point, requirement matrix, Blocker/Important/Nitpick counts, and main-Agent spot-check evidence. Tests passing alone never satisfies this gate.
 
 Any `FAIL`, `NOT_RUN`, unresolved `Blocker`, or unresolved `Important` keeps the checklist open. Continue implementing and re-auditing while feasible. Defer an Important finding only through an explicit user decision. Stop as blocked only for a genuine external inability, not because the remaining work is inconvenient.
 
@@ -185,7 +185,7 @@ node scripts/engineering-route.mjs --kind discovery --risk high --format json
 node scripts/engineering-route.mjs --kind prototype --risk medium
 ```
 
-`spec` checks locked requirements, USR source mapping, and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires completed research, discussion, context, and accepted plans. `complete` requires passing evidence, a recorded Agnes audit with no unresolved Blocker or Important, summary, and UAT when user-facing. Task mode supports one-file lightweight completion records and only the complete gate. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the minimum engineering stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
+`spec` checks locked requirements, USR source mapping, and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires completed research, discussion, context, and accepted plans. `complete` requires passing evidence, a recorded independent OpenCode audit with no unresolved Blocker or Important, summary, and UAT when user-facing. Task mode supports one-file lightweight completion records and only the complete gate. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the minimum engineering stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
 
 ## Companion Routing
 

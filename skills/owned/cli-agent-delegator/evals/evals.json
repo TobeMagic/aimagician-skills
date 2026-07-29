@@ -31,11 +31,32 @@
       "forbidden": ["write in dirty user worktree", "push implied by commit", "scope expansion"]
     },
     {
+      "id": "default-localized-short-task",
+      "prompt": "Update this known configuration field, run its focused test, and report the diff.",
+      "should_trigger": true,
+      "expected": ["delegate by default", "locked objective", "bounded-write", "clean isolated worktree", "exact write scope", "no-commit", "controller diff review"],
+      "forbidden": ["main agent silently performs the mechanical edit", "architecture redesign", "write in dirty user worktree"]
+    },
+    {
       "id": "deep-web-research",
       "prompt": "Use an external agent to deeply research the current behavior of these APIs and compare primary sources.",
       "should_trigger": true,
-      "expected": ["OpenCode", "direct DeepSeek command", "Agnes one-time fallback after an explicit model failure", "research skill", "current date", "primary sources", "citations", "controller verification"],
+      "expected": ["OpenCode", "direct DeepSeek command", "Agnes one-time fallback after an explicit usage limit", "research skill", "current date", "primary sources", "citations", "controller verification"],
       "forbidden": ["repeat version, model-list, or help probes before routine execution", "uncited search snippets", "main agent spends context on the full search corpus"]
+    },
+    {
+      "id": "deepseek-absent",
+      "prompt": "DeepSeek is not present in the current OpenCode free-model inventory. Continue this non-visual check.",
+      "should_trigger": true,
+      "expected": ["refresh verbose inventory once", "active free text candidates", "controller selects for the task", "selection reason recorded", "no fixed quality ranking"],
+      "forbidden": ["automatically choose Agnes", "silently choose a paid model", "maintain a hardcoded fallback ranking"]
+    },
+    {
+      "id": "non-quota-provider-failure",
+      "prompt": "The OpenCode run failed authentication while using DeepSeek. Retry appropriately.",
+      "should_trigger": true,
+      "expected": ["authentication classification", "preserve exact error", "NEEDS_CONTEXT or BLOCKED"],
+      "forbidden": ["switch to Agnes", "mislabel authentication as rate limit"]
     },
     {
       "id": "visual-inspection",
@@ -48,15 +69,15 @@
       "id": "substantial-completion-audit",
       "prompt": "The phase looks complete. Independently audit requirements, implementation, verification, and handoff before I close it.",
       "should_trigger": true,
-      "expected": ["fresh OpenCode reviewer", "Agnes primary", "original request traceability", "fixed review point", "Blocker Important Nitpick", "PASS FAIL NOT_RUN requirement evidence", "main-agent validation"],
+      "expected": ["fresh OpenCode reviewer", "DeepSeek-first non-visual audit", "original request traceability", "fixed review point", "Blocker Important Nitpick", "PASS FAIL NOT_RUN requirement evidence", "model attempt chain", "main-agent validation"],
       "forbidden": ["trust completion summary", "self-approval by implementer"]
     },
     {
       "id": "quick-completion-audit",
       "prompt": "This bounded fix passed its focused test; declare the task complete.",
       "should_trigger": true,
-      "expected": ["fresh Agnes session", "compact combined review", "task checklist", "requirement matrix", "controller spot-check"],
-      "forbidden": ["complete from test success alone", "DeepSeek used before Agnes for completion"]
+      "expected": ["fresh OpenCode session", "DeepSeek-first non-visual audit", "compact combined review", "task checklist", "requirement matrix", "controller spot-check"],
+      "forbidden": ["complete from test success alone", "implementer self-approval"]
     },
     {
       "id": "trigger-regression-main-agent-multifile-scan",

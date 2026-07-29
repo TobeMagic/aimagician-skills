@@ -65,10 +65,10 @@ Skillbird keeps one risk-scaled workflow model:
 5. Re-discuss changed boundaries and assumptions; lock falsifiable requirements only after ambiguity passes.
 6. Plan atomic requirement-backed tasks and independently review substantial plans.
 7. Execute with test-first slices, checkpoints, and bounded Agent roles.
-8. Delegate broad discovery, deep research, bounded checks, and fresh independent reviews to OpenCode while the main Agent keeps macro decisions.
+8. Delegate broad discovery, deep research, eligible simple short execution tasks, bounded checks, and fresh independent reviews to OpenCode while the main Agent keeps macro decisions.
 9. Review specification compliance before code quality.
 10. Verify requirement-to-plan-to-evidence traceability and run user-facing UAT.
-11. Run a fresh OpenCode Agnes completion audit against the original request, implementation, and evidence.
+11. Run a fresh independent OpenCode completion audit against the original request, implementation, and evidence.
 12. Hand off and close only when every accepted requirement passes and no `Blocker` or unresolved `Important` remains.
 
 The workflow stays light for a reversible one- or two-file edit. Public APIs, schema/data changes, security, integrations, UI/AI contracts, production state, cross-module work, and multi-Agent execution use a formal `SPEC.md` with an ambiguity gate.
@@ -85,7 +85,17 @@ node scripts/workflow.mjs init --project <path> --task <task-id> --write
 node scripts/workflow.mjs validate --project <path> --task <task-id> --gate complete
 ```
 
-The `execute` gate requires completed research, renewed discussion, implementation context, requirement-mapped plans, and explicit plan acceptance. Lightweight work uses `.planning/tasks/<task-id>.md`; phase and task completion both require original-request traceability, passing evidence, a frozen OpenCode review point, `agnes/agnes-2.0-flash`, and a main-Agent spot-check. `init` previews project, phase, or task artifacts and writes only with `--write`; it never overwrites existing files or follows a planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
+The `execute` gate requires completed research, renewed discussion, implementation context, requirement-mapped plans, and explicit plan acceptance. Lightweight work uses `.planning/tasks/<task-id>.md`; phase and task completion both require original-request traceability, passing evidence, a frozen independent OpenCode review point, model attempt provenance, and a main-Agent spot-check. Non-visual OpenCode work defaults to DeepSeek, visual work defaults to Agnes, and only an explicit usage, quota, or rate-limit event automatically falls back to Agnes. `init` previews project, phase, or task artifacts and writes only with `--write`; it never overwrites existing files or follows a planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
+
+The delegated runtime caches `opencode models --verbose`, uses the current positional prompt syntax, streams progress until the worker exits, and returns free candidates for controller judgment when DeepSeek is absent:
+
+```bash
+node skills/owned/cli-agent-delegator/scripts/opencode-run.mjs \
+  --dir <project> \
+  --task-type quick \
+  --modality text \
+  --prompt-file <prompt-file>
+```
 
 Engineering work also has a deterministic advisor for codebase analysis, progressive discovery, bounded prototypes, feature delivery, root-cause repair, refactoring, performance, and architecture changes:
 
@@ -104,7 +114,7 @@ The central owned skill is:
 | Skill | Role |
 |---|---|
 | `aimagician-superpower` | Risk-scaled SDD plus codebase exploration, progressive discovery, prototypes, engineering design, vertical delivery, root-cause debugging, technical review, traceable verification, audit, and handoff |
-| `cli-agent-delegator` | OpenCode delegation for broad discovery, deep research, image inspection, bounded git/test/write tasks, and independent plan/spec/quality/verification/closure review |
+| `cli-agent-delegator` | OpenCode delegation for broad discovery, deep research, image inspection, default short-task execution, bounded git/test/write work, dynamic free-model routing, and independent plan/spec/quality/verification/closure review |
 | `interface-design` | HTML/CSS/JS design, prototypes, UI, dashboards, repository branding, covers, posters, product demo video, creative coding, data visualization, HTML presentations, responsive browser QA, and brand routing |
 | `github-readme-highstar` | README information architecture, quick-start clarity, repository visual collaboration, static hero and supplemental demo integration |
 | `system-prompt-engineering` | System-prompt requirements, composition, identity, tools, delegation, safety, memory, search, channel adaptation, code-agent behavior, and evaluation |

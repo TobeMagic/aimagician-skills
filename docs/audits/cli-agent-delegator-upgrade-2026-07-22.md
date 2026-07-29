@@ -4,6 +4,8 @@
 **Canonical skill:** `cli-agent-delegator`
 **Category:** `operate / agent-orchestration`
 
+> Historical audit note: the 2026-07-22 model row records the policy accepted at that review point. `USR-20260729-001` supersedes its failure and completion-audit routing: DeepSeek remains the non-visual default, visual work uses Agnes or another verified vision model, automatic Agnes fallback is quota-only, and completion audits are model-neutral.
+
 The recommended scope is global because the delegation policy must be available before work begins in any repository; each invocation still narrows access through its project path, source-of-truth set, and permission envelope.
 
 ## Objective

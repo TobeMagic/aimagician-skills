@@ -6,7 +6,19 @@ OpenCode is the current CLI worker for discovery, research, visual inspection, b
 
 The managed environment is validated against OpenCode 1.17.x. Its `run` command accepts the prompt as the trailing positional message, not `--prompt`. For routine delegation, do not rediscover the binary, version, model list, or help text before every run.
 
-Use this primary command directly for ordinary non-visual work:
+Prefer the owned runtime because it caches model metadata, enforces the route, streams logs, and records the attempt chain:
+
+```bash
+node scripts/opencode-run.mjs \
+  --dir "<source_path>" \
+  --task-type "<quick|discovery|research|review|audit>" \
+  --modality text \
+  --prompt-file "<prompt_file>"
+```
+
+Use `--dry-run` to inspect the route without starting a worker and `--refresh-models` only after a model/config change, an unavailable-model result, or an explicit request. The runtime reads `opencode models --verbose`; it does not probe version, help, and model commands before every task.
+
+The equivalent direct command for ordinary non-visual work is:
 
 ```bash
 opencode run --dir "<source_path>" \
@@ -15,7 +27,7 @@ opencode run --dir "<source_path>" \
   "<detailed_prompt>"
 ```
 
-If that run ends with an explicit rate limit, provider rejection, unavailable-model error, or other model failure, preserve the error and rerun the exact same prompt once with Agnes:
+If that run produces an explicit usage, quota, or rate-limit event, preserve the error, stop the failed process, wait for its exit, and rerun the exact same prompt once with Agnes:
 
 ```bash
 opencode run --dir "<source_path>" \
@@ -24,9 +36,11 @@ opencode run --dir "<source_path>" \
   "<same_detailed_prompt>"
 ```
 
-Do not run environment probes between the primary and fallback commands. Confirm that the DeepSeek process has exited before starting Agnes. Do not switch models merely because a progressing run is slow or temporarily quiet.
+Do not switch to Agnes for model absence, authentication, permission, command syntax, network, generic provider, or worker-quality failures. If DeepSeek is absent or unavailable, refresh the free-model inventory once, return the candidates, and let the controller choose a task-appropriate model. Do not maintain a fixed quality ranking.
 
-For visual input, use Agnes as the first command:
+Do not run environment probes between a confirmed quota failure and the Agnes fallback. Confirm that the DeepSeek process has exited before starting Agnes. Do not switch models merely because a progressing run is slow or temporarily quiet.
+
+For visual input, use Agnes as the default first command:
 
 ```bash
 opencode run --dir "<source_path>" \
@@ -36,16 +50,18 @@ opencode run --dir "<source_path>" \
   "<detailed_prompt>"
 ```
 
-For every task, phase, milestone, release, or delivery completion audit, use Agnes as the first and required model:
+If Agnes is unavailable for visual work, inspect the live metadata plus verified capability overrides and let the controller choose another free image-input model. Never infer image support from a model name.
+
+For a non-visual task, phase, milestone, release, or delivery completion audit, use the normal DeepSeek-first route:
 
 ```bash
 opencode run --dir "<source_path>" \
-  -m "agnes/agnes-2.0-flash" \
+  -m "opencode/deepseek-v4-flash-free" \
   --print-logs --log-level INFO \
   "<completion_audit_prompt>"
 ```
 
-Do not try DeepSeek first for a completion audit. If Agnes fails, report the audit as unavailable and do not claim completion; do not substitute an implementer or controller self-review.
+The audit must still use a fresh independent session, frozen review point, original-request traceability, requirement matrix, finding severities, and controller spot-check. Model neutrality does not permit implementer self-approval or controller self-review. For visual deliverables, collect observable evidence with a vision-capable worker and include it in the final independent audit.
 
 ## Diagnostic Preflight
 
@@ -112,15 +128,19 @@ Agnes may be configured as a provider with model `agnes/agnes-2.0-flash`. Read i
 
 Use this route:
 
-1. `opencode/deepseek-v4-flash-free` for ordinary non-visual discovery, web research, tests, git inspection, bounded implementation, and review.
-2. `agnes/agnes-2.0-flash` when the task requires image understanding.
-3. `agnes/agnes-2.0-flash` when DeepSeek is unavailable, rate-limited, rejects the request, or otherwise fails.
-4. If neither model is usable, report the available model list and request a decision instead of silently choosing a paid or unknown model.
-5. `agnes/agnes-2.0-flash` is mandatory and primary for completion audits, independent of the ordinary-task route above.
+1. `opencode/deepseek-v4-flash-free` for every non-visual discovery, research, test, Git, bounded implementation, review, verification, and completion-audit task.
+2. `agnes/agnes-2.0-flash` as the default for work that must directly understand images.
+3. If DeepSeek is absent, list the currently active free text-input candidates and let the controller select for the task. Do not assign a persistent quality rank.
+4. If Agnes is absent for visual work, list the currently active free image-input candidates and let the controller select.
+5. Automatically switch a failed non-visual run to Agnes only when logs identify an explicit usage, quota, rate-limit, HTTP 429, or resource-exhausted event.
+6. Preserve authentication, permission, command-syntax, network, model-unavailable, generic provider, and worker-quality failures as distinct classifications.
+7. If no suitable free model is usable, return `NEEDS_CONTEXT` or `BLOCKED`; never silently select a paid or unknown model.
 
 A provider rate limit is a model failure event, not an inactivity timeout. Do not wait forever on a clear rate-limit error, and do not misclassify a progressing long run as rate-limited.
 
-For visual work, Agnes is primary rather than fallback. Attach the exact image using the syntax supported by `opencode run --help` (commonly `-f <path>`). If the image cannot be loaded, return `NEEDS_CONTEXT`; do not fall back to a non-visual model and guess.
+For visual work, Agnes is the default primary rather than a text fallback. Attach the exact image using the supported `-f <path>` syntax. If the image cannot be loaded, return `NEEDS_CONTEXT`; do not fall back to a text-only model and guess.
+
+`opencode models --verbose` supplies live status, cost, context, and declared input capabilities. Custom-provider metadata may be incomplete: the owned runtime carries only a narrow verified override for Agnes image input. The override is capability evidence, not a model quality ranking.
 
 ## Execution Syntax
 
@@ -143,7 +163,7 @@ Rules:
 - use non-interactive mode, not the TUI;
 - pass the complete prompt contract from `../prompt-contract.md`;
 - do not use auto-approval flags as a substitute for bounded permissions;
-- capture command shape, stdout/stderr, exit status, model, and final run health;
+- capture command shape, stdout/stderr, exit status, primary model, final model, attempt chain, fallback reason, session, and final run health;
 - keep the process attached until natural completion or a valid stop condition.
 
 ## Event-Based Waiting
@@ -164,9 +184,9 @@ Rules:
 1. While the process is alive and events continue, keep waiting until it exits naturally.
 2. A quiet interval is not failure. Poll process and session health and remain attached.
 3. Confirm stale state only when neither process/provider health nor session/event state is advancing. Record the last event and the evidence used to classify it.
-4. Stop on process exit, clear CLI error, provider rejection or rate limit, permission/config failure, user cancellation, or confirmed stale state.
+4. Stop on process exit, clear CLI error, provider rejection or rate limit, permission/config failure, user cancellation, or confirmed stale state. A terminal quota event may stop the failed process immediately; fallback still waits for process exit.
 5. Never start the fallback model while the original process is still alive.
-6. After a provider/model failure, preserve the error and retry once with the routed fallback using the exact same prompt and task contract; do not repeat preflight probes.
+6. After an explicit usage, quota, or rate-limit event, preserve the error and retry once with Agnes using the exact same prompt and task contract; do not repeat preflight probes.
 7. Do not fabricate a final result when a run fails or is stopped.
 
 The controller may poll at any convenient interval, but an interval is only an observation cadence, not a deadline.
@@ -192,7 +212,9 @@ If the installed version uses `opencode session` instead of `session list`, adap
 
 - **Command/environment:** missing binary, invalid path or syntax, executable problem. Correct only within scope; otherwise return `NEEDS_CONTEXT` or `BLOCKED`.
 - **Permission/config:** required access or safe merge unavailable. Stop; do not broaden permission silently.
-- **Model/provider:** unavailable model, rate limit, provider error, rejected request. Preserve evidence and follow the model route.
+- **Usage/quota/rate-limit:** preserve evidence and retry the same contract once with Agnes after the original process exits.
+- **Model unavailable:** refresh the inventory once, exclude the failed default, and return free candidates for controller selection.
+- **Authentication, network, or generic provider:** preserve the exact classification; do not convert it into an Agnes quota fallback.
 - **Task contract:** missing skill, source, decision, scope, or write path. Return `NEEDS_CONTEXT`.
 - **Confirmed stale:** process/session no longer advances without a terminal result. Report last activity and health evidence; retry only after the original process has ended or been explicitly stopped.
 - **Worker result quality:** incomplete or unsupported report. Use one narrower follow-up prompt; do not rerun the same vague request.

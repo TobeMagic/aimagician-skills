@@ -9,7 +9,12 @@
 - Role:
 - Objective:
 - Deliverable:
-- Provider / model:
+- Provider:
+- Primary model:
+- Final model:
+- Model selection reason:
+- Attempt chain:
+- Fallback reason:
 - Permission mode:
 - Review point:
 - Source of truth:
@@ -26,6 +31,7 @@
 - Config changes:
 - Activity events and last event:
 - Quiet or stale classification:
+- Failure classification:
 - Retry / fallback:
 - Exit status:
 - Session export:

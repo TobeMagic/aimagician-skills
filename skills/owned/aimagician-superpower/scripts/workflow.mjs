@@ -736,20 +736,65 @@ function normalizeScalar(value) {
   return value?.replaceAll("`", "").trim();
 }
 
-function validateAgnesRun(content, artifact) {
+function validateOpenCodeAudit(content, artifact) {
   const findings = [];
   const provider = normalizeScalar(extractScalar(content, "Provider"))?.toLowerCase();
+  const primaryModel = normalizeScalar(extractScalar(content, "Primary model"))?.toLowerCase();
   const model = normalizeScalar(extractScalar(content, "Model"))?.toLowerCase();
+  const attemptChain = normalizeScalar(extractScalar(content, "Attempt chain"));
+  const fallbackReason = normalizeScalar(extractScalar(content, "Fallback reason"));
   const session = normalizeScalar(extractScalar(content, "Session"));
   const runStatus = normalizeScalar(extractScalar(content, "Run status"))?.toLowerCase();
   const reviewPoint = normalizeScalar(extractScalar(content, "Review point"));
   const spotCheck = normalizeScalar(extractScalar(content, "Controller spot-check"));
+  const legacyAgnesRecord = model === "agnes/agnes-2.0-flash"
+    && !primaryModel
+    && !attemptChain
+    && !fallbackReason;
 
   if (provider !== "opencode") {
     findings.push(finding("AUDIT_PROVIDER_INVALID", "Completion audit provider must be OpenCode", artifact));
   }
-  if (model !== "agnes/agnes-2.0-flash") {
-    findings.push(finding("AUDIT_MODEL_INVALID", "Completion audit model must be agnes/agnes-2.0-flash", artifact));
+  if (!model || /NOT_RUN|TBD/i.test(model)) {
+    findings.push(finding("AUDIT_MODEL_MISSING", "Completion audit requires a recorded final model", artifact));
+  }
+  if (!legacyAgnesRecord) {
+    if (!primaryModel || /NOT_RUN|TBD/i.test(primaryModel)) {
+      findings.push(finding("AUDIT_PRIMARY_MODEL_MISSING", "New completion audits require a recorded primary model", artifact));
+    }
+    if (!attemptChain || /NOT_RUN|TBD/i.test(attemptChain)) {
+      findings.push(finding("AUDIT_ATTEMPT_CHAIN_MISSING", "New completion audits require a model attempt chain", artifact));
+    } else {
+      if (primaryModel && !attemptChain.toLowerCase().includes(primaryModel)) {
+        findings.push(finding("AUDIT_ATTEMPT_CHAIN_PRIMARY_MISSING", "Audit attempt chain must include the primary model", artifact));
+      }
+      if (model && !attemptChain.toLowerCase().includes(model)) {
+        findings.push(finding("AUDIT_ATTEMPT_CHAIN_FINAL_MISSING", "Audit attempt chain must include the final model", artifact));
+      }
+    }
+    if (!fallbackReason || /NOT_RUN|TBD/i.test(fallbackReason)) {
+      findings.push(finding("AUDIT_FALLBACK_REASON_MISSING", "New completion audits require a fallback reason or NONE", artifact));
+    }
+
+    if (model === "agnes/agnes-2.0-flash") {
+      const quotaEvidence = `${fallbackReason ?? ""} ${attemptChain ?? ""}`;
+      if (primaryModel !== "opencode/deepseek-v4-flash-free" || !/(?:usage|quota|rate[ -]?limit|429|resource[_ ]exhausted)/i.test(quotaEvidence)) {
+        findings.push(finding(
+          "AUDIT_AGNES_FALLBACK_INVALID",
+          "A new non-visual completion audit may end with Agnes only after an explicit DeepSeek usage, quota, or rate-limit failure",
+          artifact
+        ));
+      }
+    } else if (model && model !== "opencode/deepseek-v4-flash-free") {
+      const selectionEvidence = `${fallbackReason ?? ""} ${attemptChain ?? ""}`;
+      if (!/(?:deepseek[^.\n]*(?:absent|missing|unavailable|not available)|controller[^.\n]*(?:select|choice|chosen))/i.test(selectionEvidence)) {
+        findings.push(finding(
+          "AUDIT_ALTERNATE_MODEL_REASON_MISSING",
+          "A non-default audit model requires evidence that DeepSeek was absent and the controller selected the alternative",
+          artifact
+        ));
+      }
+    }
   }
   if (!session || /NOT_RUN|TBD/i.test(session)) {
     findings.push(finding("AUDIT_SESSION_MISSING", "Completion audit requires a recorded OpenCode session", artifact));
@@ -796,12 +841,12 @@ function auditCoversRequirement(content, requirementId) {
 function validatePhaseAudit(loaded, requirements) {
   const content = loaded.contents.audit.content;
   const artifact = relative(loaded.project, loaded.contents.audit.path);
-  const findings = validateAgnesRun(content, artifact);
+  const findings = validateOpenCodeAudit(content, artifact);
   for (const requirement of requirements) {
     if (!auditCoversRequirement(content, requirement.id)) {
       findings.push(finding(
         "AUDIT_REQUIREMENT_NOT_PASSED",
-        `${requirement.id} requires passing evidence and an Agnes PASS decision in the audit matrix`,
+        `${requirement.id} requires passing evidence and an independent audit PASS decision in the audit matrix`,
         artifact,
         requirement.id
       ));
@@ -869,10 +914,17 @@ function validateTaskComplete(loaded) {
   const content = loaded.content;
   const findings = [];
 
-  for (const section of ["Original Request", "Accepted Decisions", "Checklist", "Evidence", "Agnes Completion Audit", "Final Decision"]) {
+  for (const section of ["Original Request", "Accepted Decisions", "Checklist", "Evidence", "Final Decision"]) {
     if (!getSection(content, section)) {
       findings.push(finding("TASK_SECTION_MISSING", `Task record is missing section: ${section}`, artifact));
     }
+  }
+  if (!getSection(content, "Independent Completion Audit") && !getSection(content, "Agnes Completion Audit")) {
+    findings.push(finding(
+      "TASK_SECTION_MISSING",
+      "Task record is missing section: Independent Completion Audit (legacy Agnes Completion Audit is also accepted)",
+      artifact
+    ));
   }
   if (hasPlaceholder(content)) {
     findings.push(finding("TASK_PLACEHOLDER", "Task record contains unresolved placeholders", artifact));
@@ -909,9 +961,9 @@ function validateTaskComplete(loaded) {
     }
   }
 
-  findings.push(...validateAgnesRun(content, artifact));
+  findings.push(...validateOpenCodeAudit(content, artifact));
   if (normalizeScalar(extractScalar(content, "Requirement matrix"))?.toUpperCase() !== "PASS") {
-    findings.push(finding("TASK_AUDIT_MATRIX_NOT_PASSED", "Agnes requirement matrix must be PASS", artifact));
+    findings.push(finding("TASK_AUDIT_MATRIX_NOT_PASSED", "Independent audit requirement matrix must be PASS", artifact));
   }
 
   return { findings, items };
@@ -998,7 +1050,7 @@ async function determineStatus(options) {
       status: result.findings.length === 0 ? "complete" : "in-progress",
       nextAction: result.findings.length === 0
         ? "No workflow action remains for this task."
-        : "Close checklist, evidence, and Agnes audit findings before completion.",
+        : "Close checklist, evidence, and independent audit findings before completion.",
       findings: result.findings
     };
   }

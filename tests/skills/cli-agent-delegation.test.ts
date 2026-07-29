@@ -21,22 +21,25 @@ describe("cli-agent-delegator capability contract", () => {
     const skill = await readFile(join(delegatorRoot, "SKILL.md"), "utf8");
     const description = frontmatterDescription(skill);
 
-    expect(description).toMatch(/^MANDATORY CLI delegation and completion-audit gate\./);
+    expect(description).toMatch(/^MANDATORY CLI delegation and independent completion-audit gate\./);
     for (const trigger of [
       "broad or multi-source exploration",
       "deep web research",
       "image inspection",
       "bounded git/test/report/write work",
+      "whenever a locked simple short execution task can be offloaded",
       "independent plan/code/spec/verification review",
       "before any task, phase, milestone, or delivery is declared complete"
     ]) {
       expect(description).toContain(trigger);
     }
 
-    expect(description).toContain("Agnes as the primary completion auditor");
+    expect(description).toContain("independent completion-audit gate");
     expect(skill).toContain("read-only one- or two-file lookup: no forced delegation");
     expect(skill).toContain("Before the main Agent starts a broad scan or mechanical verification");
     expect(skill).toContain("This gate applies even when the user says only");
+    expect(skill).toContain("Default Short-Task Gate");
+    expect(skill).toContain("Delegate a simple short task by default when all of these are true");
     expect(skill).toContain("Worker-Side Loading Gate");
     expect(skill).toContain("Do not rely on worker self-selection from task wording");
     expect(skill).toContain("the controller must put `cli-agent-delegator` and every domain skill in `REQUIRED_SKILLS`");
@@ -47,6 +50,8 @@ describe("cli-agent-delegator capability contract", () => {
     const prompt = await readFile(join(delegatorRoot, "references", "prompt-contract.md"), "utf8");
 
     for (const field of [
+      "TASK_TYPE",
+      "MODALITY",
       "SOURCE_OF_TRUTH",
       "ORIGINAL_REQUESTS",
       "ACCEPTED_DECISIONS",
@@ -57,6 +62,7 @@ describe("cli-agent-delegator capability contract", () => {
       "PERMISSION_MODE",
       "WRITE_SCOPE",
       "GIT_POLICY",
+      "MODEL_POLICY",
       "CHILD_AGENT_POLICY",
       "STOP_AND_ESCALATE_WHEN"
     ]) {
@@ -69,22 +75,27 @@ describe("cli-agent-delegator capability contract", () => {
     expect(prompt).toContain("full-repository diffs");
   });
 
-  it("routes ordinary work to DeepSeek and makes Agnes primary for completion audits", async () => {
+  it("routes text to DeepSeek, vision to Agnes, and only quota failures to Agnes fallback", async () => {
     const provider = await readFile(join(delegatorRoot, "references", "providers", "opencode.md"), "utf8");
+    const runner = await readFile(join(delegatorRoot, "scripts", "opencode-run.mjs"), "utf8");
 
     expect(provider).toContain("Known-Good Fast Path");
-    expect(provider).toMatch(/1\. `opencode\/deepseek-v4-flash-free`[\s\S]*2\. `agnes\/agnes-2\.0-flash`/);
-    expect(provider).toContain("when the task requires image understanding");
-    expect(provider).toContain("when DeepSeek is unavailable, rate-limited, rejects the request, or otherwise fails");
-    expect(provider).toContain("A provider rate limit is a model failure event");
+    expect(provider).toContain("for every non-visual discovery, research, test, Git, bounded implementation, review, verification, and completion-audit task");
+    expect(provider).toContain("default for work that must directly understand images");
+    expect(provider).toContain("If DeepSeek is absent");
+    expect(provider).toContain("let the controller select for the task");
+    expect(provider).toContain("only when logs identify an explicit usage, quota, rate-limit");
+    expect(provider).toContain("Authentication, network, or generic provider");
     expect(provider).toContain('-m "opencode/deepseek-v4-flash-free"');
     expect(provider).toContain('-m "agnes/agnes-2.0-flash"');
     expect(provider).toContain('"<same_detailed_prompt>"');
     expect(provider).toContain('"<completion_audit_prompt>"');
-    expect(provider).toContain("Do not try DeepSeek first for a completion audit");
-    expect(provider).toContain("If Agnes fails, report the audit as unavailable and do not claim completion");
     expect(provider).not.toMatch(/opencode run[^\n]*--prompt/);
     expect(provider).toContain("prompt as the trailing positional message");
+    expect(runner).toContain('execFileAsync("opencode", ["models", "--verbose"]');
+    expect(runner).toContain('fallbackReason = "explicit-usage-limit"');
+    expect(runner).toContain('"selection-required"');
+    expect(runner).not.toContain("setTimeout(");
   });
 
   it("uses direct commands by default and limits environment probes to diagnostics", async () => {
@@ -92,13 +103,13 @@ describe("cli-agent-delegator capability contract", () => {
     const skill = await readFile(join(delegatorRoot, "SKILL.md"), "utf8");
 
     expect(provider).toContain("do not rediscover the binary, version, model list, or help text before every run");
-    expect(provider).toContain("Do not run environment probes between the primary and fallback commands");
+    expect(provider).toContain("Do not run environment probes between a confirmed quota failure and the Agnes fallback");
     expect(provider).toContain("Diagnostic Preflight");
     expect(provider).toContain("Do not execute this whole bundle as routine ceremony");
     expect(provider).toContain("Run diagnostics only for first-time setup in a new environment");
     expect(skill).toContain("Use the known-good fast path");
     expect(skill).toContain("Do not repeat binary, version, model-list, or help probes");
-    expect(skill).toContain("retry the exact same prompt once with the ready-to-use Agnes command");
+    expect(skill).toContain("Automatic Agnes fallback is allowed only for a verified usage, quota, or rate-limit event");
   });
 
   it("waits on activity events instead of elapsed-time limits", async () => {
@@ -127,7 +138,7 @@ describe("cli-agent-delegator capability contract", () => {
     const qualityReviewer = await readFile(join(superpowerRoot, "references", "roles", "quality-reviewer.md"), "utf8");
 
     expect(review).toContain("One- or two-file read-only lookup");
-    expect(review).toContain("One combined pre-commit specification, quality, verification, and Agnes completion review");
+    expect(review).toContain("One combined pre-commit specification, quality, verification, and completion review");
     expect(review).toContain("Plan review before execution; specification review; quality review; verifier");
     expect(review).toContain("Fresh whole-result auditor");
     expect(review).toContain("original-request traceability");
@@ -150,7 +161,7 @@ describe("cli-agent-delegator capability contract", () => {
     expect(scenario?.expected).toContain("delegate the multi-file audit first");
     expect(scenario?.forbidden).toContain("main agent performs the whole multi-file scan itself");
     expect(researchScenario?.expected).toContain("direct DeepSeek command");
-    expect(researchScenario?.expected).toContain("Agnes one-time fallback after an explicit model failure");
+    expect(researchScenario?.expected).toContain("Agnes one-time fallback after an explicit usage limit");
     expect(researchScenario?.forbidden).toContain("repeat version, model-list, or help probes before routine execution");
   });
 });

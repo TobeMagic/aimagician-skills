@@ -57,7 +57,7 @@ Findings use `Blocker`, `Important`, or `Nitpick`. A Blocker stops progression. 
 
 ## Provider And Model Selection
 
-Use `cli-agent-delegator` for provider preflight and execution. Use DeepSeek V4 Flash Free for ordinary non-visual work and Agnes for visual input or when DeepSeek is unavailable, rate-limited, or fails. Escalate model capability when a role reports reasoning limits; do not retry the same insufficient context unchanged.
+Use `cli-agent-delegator` for provider preflight and execution. Delegate eligible simple short execution tasks by default after requirements and evidence are locked. Use DeepSeek V4 Flash Free for every ordinary non-visual role, including completion audit. Use Agnes for visual input and as the automatic fallback only after an explicit usage, quota, or rate-limit event. If DeepSeek is absent, the controller selects from the live free candidates for the task without a maintained ranking. Escalate model capability when a role reports reasoning limits; do not retry the same insufficient context unchanged.
 
 For long-running CLI agents, monitor activity events and wait while progress continues. Do not impose a fixed wall-clock stop on an active run. Classify stale, permission, model, command, and provider failures explicitly.
 

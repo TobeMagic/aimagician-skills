@@ -7,7 +7,7 @@ Use this task family to create a fresh evidence-based challenge to a plan, imple
 | Work class | Required independent gate |
 |---|---|
 | One- or two-file read-only lookup | None |
-| Bounded quick write | One combined pre-commit specification, quality, verification, and Agnes completion review |
+| Bounded quick write | One combined pre-commit specification, quality, verification, and completion review |
 | Substantial implementation | Plan review before execution; specification review; quality review; verifier |
 | Phase closure | Phase auditor after verification |
 | Milestone, release, or complete claim | Fresh whole-result auditor |
@@ -15,7 +15,7 @@ Use this task family to create a fresh evidence-based challenge to a plan, imple
 
 Use a fresh OpenCode session or context for each logically independent review pass. Do not ask the implementer to approve its own work.
 
-Any row that ends with a completion claim uses Agnes as the primary model and includes original-request traceability. Passing tests without a requirement-by-requirement audit is not completion evidence.
+Any row that ends with a completion claim uses a fresh OpenCode session, the normal DeepSeek-first non-visual route, and original-request traceability. Visual evidence comes from a vision-capable worker. Passing tests without a requirement-by-requirement audit is not completion evidence.
 
 ## Freeze The Review Point
 
