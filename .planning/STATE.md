@@ -4,9 +4,9 @@ milestone: v6.0
 milestone_name: Window-PPTX Template-Intelligence Quality Reset
 current_phase: 36
 current_phase_name: v6 Contracts and Realistic Corpus
-status: in_progress
-stopped_at: Phase 36 Task 36.1 private-asset safety tracer
-last_updated: "2026-07-29T17:58:00+08:00"
+status: verification_complete_pending_audit
+stopped_at: Phase 36 fresh completion audit after verification
+last_updated: "2026-07-29T20:18:00+08:00"
 last_activity: 2026-07-29
 progress:
   total_phases: 43
@@ -49,7 +49,7 @@ fully independent AI blind-review contexts for v6 acceptance.
 Milestone: v6.0 Window-PPTX Template-Intelligence Quality Reset
 Current Phase: 36
 Current Phase Name: v6 Contracts and Realistic Corpus
-Status: In progress — safety tracer and locked corpus contracts
+Status: Verification complete — pending fresh completion audit
 Last Activity: 2026-07-29
 
 Foundation completed:
@@ -183,11 +183,11 @@ Active v5 foundation:
 
 ## Next Actions
 
-1. Document the quality-first v6 brief and corpus route in the Skill entrypoint
-   and linked reference.
-2. Run Phase 36 engineering verification in shards and record exact evidence.
-3. Dispatch fresh specification, quality, verification, and Agnes phase
-   reviews; keep Phase 36 open on any unresolved Blocker or Important.
+1. Re-run the focused Skill contract after correcting the invalid Python
+   `--doctor` documentation path found by independent quality review.
+2. Obtain fresh post-fix quality and Agnes completion reviews.
+3. Close Phase 36 and advance to Phase 37 only when every independent review
+   has no unresolved Blocker or Important.
 
 ## Blockers / Concerns
 

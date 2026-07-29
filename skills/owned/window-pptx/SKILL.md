@@ -21,9 +21,10 @@ description: >
   governed art direction, semantic layouts, and automatic quality gates.
 
 
-  This skill has a discuss gate: before executing real deck edits, confirm or
-  read from REQUEST.md the project folder, source/template deck, output policy,
-  macro/add-in policy, and acceptance check.
+  This skill has a strict discuss gate: formal planning and deck generation
+  require a complete Locked ProjectBriefPack with routing, facts, sources,
+  assets/rights, audience, decision, timing, anatomy, prohibitions, and
+  acceptance rubric. Draft or unresolved inputs return questions only.
 compatibility:
   tools:
     - python
@@ -44,16 +45,21 @@ tags:
 
 # Window PPTX Governed Generation
 
-This skill turns governed content plans into professional, native-editable PPTX. Its default delivery path does not require PowerPoint COM:
+This skill turns discussion-locked, source-bound project briefs into
+professional, native-editable PPTX. The v6.0 quality-first route uses a capable
+authoring model for narrative and registered visual selection, while the Skill
+retains authority over facts, templates, geometry, implementation, QA, and
+release. Its default delivery path does not require PowerPoint COM:
 
 ```text
-FactStore -> BriefPlan -> NarrativePlan
+RawIntakeManifest -> ProjectBriefPack (Draft -> NeedsDiscussion -> Locked)
+-> FactStore -> constrained NarrativePlan
 -> DesignPack -> VisualPlan + AssetPlan -> CompositionPlan
 -> DeckPlan -> RenderPlan
 -> PptxGenJS or authorized TemplatePack candidate
 -> deterministic OOXML -> semantic + reference-complexity hard gates
 -> isolated LibreOffice PDF -> Poppler/Ghostscript PNG -> QualityReport v2
--> QualityReport v3 + direct Agnes visual review
+-> QualityReport v3 + three-context AI-only blind reference review
 -> atomic PPTX promotion
 ```
 
@@ -70,7 +76,9 @@ Never silently fall back from PptxGenJS to COM, drop a requested feature, or ras
 
 ## Required Discuss Gate
 
-Do not start real PPT editing until these five items are confirmed in chat or present in `REQUEST.md`:
+Do not start formal planning or real PPT editing until a ProjectBriefPack v1 is
+`Locked`. These five routing items must first be confirmed in chat or present
+in `REQUEST.md`:
 
 1. Project folder path
 2. Whether this is a fresh portable deck or requires physical template/source-deck import
@@ -78,7 +86,119 @@ Do not start real PPT editing until these five items are confirmed in chat or pr
 4. Macro/add-in policy
 5. Acceptance check
 
-If the user says to proceed autonomously and `REQUEST.md` already contains enough information, continue using those written assumptions. If anything is missing, ask only the missing items.
+The pack must also bind the raw request, facts, sources, assets and rights,
+audience, decision, success outcomes, timing, brand constraints, main/appendix
+slide budget, required deck anatomy, prohibitions, acceptance rubric, and
+unresolved questions. `Draft` and `NeedsDiscussion` may emit structured
+questions only: they must not create a NarrativePlan, candidate PPTX, or
+formal-looking placeholder deck.
+
+The machine-readable contract is
+`schemas/project-brief-pack.v1.schema.json`; implementations must validate
+against it instead of treating the prose description as the schema.
+
+If the user says to proceed autonomously and the source material already
+answers every field, normalize it into a complete pack and lock it. Do not
+invent a decision, fact, source, permission, result, or material merely to
+clear the gate.
+
+Validate and lock with the bundled CLI:
+
+```bash
+python skills/owned/window-pptx/scripts/manage_window_pptx_project_brief.py \
+  validate --input project-brief.json
+python skills/owned/window-pptx/scripts/manage_window_pptx_project_brief.py \
+  lock --input project-brief.json --output project-brief.locked.json
+python skills/owned/window-pptx/scripts/manage_window_pptx_project_brief.py \
+  formal-check --input project-brief.locked.json
+```
+
+`validate` returns `NEEDS_DISCUSSION` and exit `1` when questions remain.
+`lock` fails with exit `2` unless every authority and rights field is complete.
+Any authoritative change after lock invalidates the SHA-256 and blocks formal
+generation.
+
+## v6.0 Quality-First Authoring Contract
+
+The default v6.0 author is Codex GPT-5.5 medium or an explicitly equivalent
+capable model. This is deliberate: first prove that the Skill can reproduce a
+senior art director's result from a complete brief; only then distill the
+bounded decisions to ordinary models in v6.1.
+
+The authoring model may:
+
+- organize only locked facts and source-bound copy into a commercial narrative;
+- choose registered page roles, semantic forms, certified template candidates,
+  components, and normalized grid relationships;
+- request one bounded replan when deterministic QA rejects a candidate.
+
+It may not:
+
+- add facts, results, citations, customer names, rights, or claims;
+- output raw coordinates, arbitrary fonts/colors, OOXML, HTML, CSS, code,
+  macros, or COM calls;
+- select uncertified private templates or bypass capacity and editability
+  gates;
+- promote, score, or approve its own final deck.
+
+Required complete-deck anatomy is cover, directory, section dividers, evidence
+body, decision/conclusion, closing, and appendix. Page count and section count
+come from the locked pack, not from a generic ten-slide default. Continuous
+body pages must vary composition and energy while preserving the selected
+complete-work visual spine, theme, grid, typography, motif, imagery language,
+and chart/table system.
+
+Until the constrained v6 NarrativePlan/TemplateSelectionPlan/SlideBlueprint
+schemas and certified TemplatePack v2 route are available, stop after
+ProjectBriefPack lock for reference-grade v6 delivery. The legacy BriefPlan
+compiler remains runnable for regression and compatibility work, but it is not
+evidence that the new quality-first route or the v6 milestone has passed.
+
+Read [quality-first-v6-workflow.md](./references/quality-first-v6-workflow.md)
+for the state machine, corpus, private-library boundary, model authority,
+deck-anatomy rules, repair budget, and AI-only acceptance contract.
+
+## Realistic Brief Corpus
+
+The bundled corpus contains exactly fifteen locked scenarios: three complete
+flagships (annual work report, campus competition defense, academic thesis
+defense) plus twelve realistic business skeletons. Skeleton means visual/copy
+work remains to be authored; it does not mean a shallow prompt. Every pack has
+at least eight quantitative facts, three required material roles, a real
+meeting decision, timing, slide budget, anatomy, prohibitions, and rubric.
+
+Export reviewable JSON files outside the tracked source:
+
+```bash
+python skills/owned/window-pptx/scripts/export_window_pptx_brief_corpus.py \
+  --output-dir /tmp/window-pptx-v6-briefs
+```
+
+All business and campus data are labeled standardized synthetic evaluation
+data. Academic dataset metadata cites the public DCRNN source; all MDGFormer
+results remain explicitly synthetic experiment-log values and must never be
+presented as published results.
+
+## Private Template-Library Boundary
+
+Commercial template originals and credentials belong only under
+`skills/owned/window-pptx/.private/`, which is ignored. Never paste a cookie
+into chat, a command argument, a report, or a commit. The previously exposed
+session must be treated as compromised; authenticated acquisition remains
+`NEEDS_AUTH` until the user confirms rotation and provides a new short-lived
+credential through the private path.
+
+Before every commit touching Window-PPTX, run:
+
+```bash
+python skills/owned/window-pptx/scripts/check_window_pptx_private_assets.py \
+  --staged --repo-root .
+```
+
+The guard rejects private/credential paths, secret signatures, private keys,
+and unapproved binary payloads without printing matched values. A commercial
+template may be analyzed locally only when entitlement and intended use are
+recorded; original bytes are never redistributed or committed by default.
 
 ## Project Folder Contract
 
@@ -427,9 +547,12 @@ python ~/.codex/skills/window-pptx/scripts/window_pptx_automation.py `
 
 For a real one-to-one physical-template edit, generate a project-specific Python COM script under `.window-pptx/`, select `--backend com`, and use the helper as the base for ownership, macro security, open/save/export, and cleanup.
 
-## Governed BriefPlan Mode (Default for New Weak-Model Decks)
+## Governed BriefPlan Mode (Legacy and v6.1 Distillation Compatibility)
 
-For a new deck, default to the strict authority chain:
+This additive v5 compiler remains available for regression, expert
+compatibility, and future v6.1 weak-model distillation. Do not treat it as the
+default v6.0 reference-grade authoring route. When it is explicitly selected,
+use the strict authority chain:
 
 ```text
 trusted materials -> FactStore -> BriefPlan -> NarrativePlan -> DeckPlan
@@ -630,58 +753,63 @@ Read [template-library-recommendation-workflow.md](./references/template-library
 ## Execution Workflow
 
 1. Read `REQUEST.md`.
-2. Confirm missing discuss-gate items.
-3. Inventory and hash trusted source material; build FactStore for new generated decks.
-4. Read or create `MODULES.md` and `SLIDE-MAP.md` when manual/template editing is required. For governed generation, NarrativePlan and compiled DeckPlan are the machine-readable equivalents.
-5. For template recommendation requests, consult `templates/template-library/template-library-review.xlsx` before designing from scratch.
-6. Use BriefPlan mode for ordinary models; use direct DeckPlan only for an expert/replay compatibility route.
-7. Select DesignPack and art direction, compile VisualPlan + AssetPlan, and
+2. Normalize the raw request into ProjectBriefPack v1. Return only structured
+   questions while it is `Draft` or `NeedsDiscussion`; run `formal-check`
+   before any formal plan or PPTX.
+3. Inventory and hash trusted source material; bind every fact, source,
+   material role, permission, decision, limitation, and rubric into the locked
+   pack and its FactStore.
+4. Select the project archetype and required full-deck anatomy. Respect the
+   locked main/appendix/backup page budgets; never collapse a real project into
+   a generic short deck.
+5. Read or create `MODULES.md` and `SLIDE-MAP.md` when manual/template editing
+   is required. For governed generation, NarrativePlan and compiled DeckPlan
+   are the machine-readable equivalents.
+6. For template work, query only certified, rights-compatible candidates.
+   Keep commercial originals under `.private/`; never select a legacy or
+   uncertified item merely because its filename resembles the request.
+7. Use the v6.0 capable authoring model for constrained narrative and
+   registered visual selection. BriefPlan is a regression/v6.1 compatibility
+   path; direct DeckPlan is expert/replay compatibility only.
+8. Select DesignPack and art direction, compile VisualPlan + AssetPlan, and
    compile CompositionPlan; validate BrandSpec/assets before layout resolution.
-8. Search/download required local assets first, including Iconify icons when the design calls for semantic labels, process nodes, flow arrows, UI symbols, or pictograms.
-9. Compile and inspect narrative coverage, direction decision, semantic forms, splits, findings, and required backend capabilities.
-10. Select registered TemplatePack for authorized reference-grade adaptation;
+9. Search/download required local assets first, including Iconify icons when the design calls for semantic labels, process nodes, flow arrows, UI symbols, or pictograms.
+10. Compile and inspect narrative coverage, direction decision, semantic forms, splits, findings, and required backend capabilities.
+11. Select registered TemplatePack for authorized reference-grade adaptation;
     select `auto`/PptxGenJS for compatible fresh `.pptx` work. Select `com`
     explicitly only when the request requires a declared COM-only capability;
     never silently switch.
-11. Run add-in discovery only if the request mentions plugins or asks whether iSlide/OKPlus can be used.
-12. If plugin use is desired, run `--probe-plugin-apis` and inspect:
+12. Run add-in discovery only if the request mentions plugins or asks whether iSlide/OKPlus can be used.
+13. If plugin use is desired, run `--probe-plugin-apis` and inspect:
    - 32-bit and 64-bit Office add-in registry values
    - ProgID / CLSID registration
    - load behavior and VSTO manifest metadata when registered
-13. Treat live dispatch and `COMAddIn.Object` as unavailable in the default safe route. Use a plugin only from vendor documentation or a separately approved interactive investigation.
-14. Generate only to an ASCII-safe candidate path; normalize the package deterministically.
-15. Run OOXML semantic checks before any external proof renderer.
-16. Render a candidate copy through an isolated LibreOffice profile, convert
+14. Treat live dispatch and `COMAddIn.Object` as unavailable in the default safe route. Use a plugin only from vendor documentation or a separately approved interactive investigation.
+15. Generate only to an ASCII-safe candidate path; normalize the package deterministically.
+16. Run OOXML semantic checks before any external proof renderer.
+17. Render a candidate copy through an isolated LibreOffice profile, convert
     the PDF through Poppler or the explicit Ghostscript fallback, and run
     QualityReport v2 on those real PNGs.
-17. Apply bounded deterministic pre-render/post-render repair where registered;
+18. Apply bounded deterministic pre-render/post-render repair where registered;
     reference profiles may add at most two monotonic CompositionPlan
     recompilations and must roll back repeated, non-improving, or
     content-changing candidates.
-18. Promote the PPTX/PDF/reports/proofs as one rollback-capable bundle only after all portable hard gates pass. Write reports, proofs, and hashes under `.window-pptx/audits/`.
-19. Run optional PowerPoint certification only after portable PASS and only when `Application.HWND` binds to the one newly created process. Certify an exact-hash temporary copy, never save the deck, and never terminate a pre-existing process.
-20. For benchmark blind review, stage hash-verified OOXML PPTX plus readable
-    PNGs under anonymized `B-*` paths; never accept a score sheet from
-    JSON-only evidence. Preserve the template, collect scores in
-    `score-sheet.completed.json`, then run
-    `scripts/validate_window_pptx_blind_review.py --packet <packet.json>
-    --score-sheet <score-sheet.completed.json> --output <blind-review-gate.json>`.
-    Exit `0`/`1`/`2` means `PASS`/`FAIL`/`NOT_RUN`; only independent-human
-    scores with overall mean `>=4.2` and every dimension mean `>=4.0` satisfy
-    the v5.1 release gate. The command validates the score floor but cannot
-    prove that a reviewer is human: it must emit
-    `human_provenance_status=EXTERNAL_CONFIRMATION_REQUIRED`, and the
-    controller must keep P35-BLIND-01 `NOT_RUN` until an independent human
-    actually returns the sheet.
-21. Route pixel-level visual UAT through the direct
-    `agnes-direct/agnes-2.0-flash` adapter. Enable Data URI only after its
-    session-bound challenge probe; review high-resolution pages in batches of
-    at most four plus one deck contact sheet, and persist strict JSON/cache
-    hashes. If the probe is missing, unknown, or rejected, keep the visual
-    verdict `NOT_RUN`. Never use
-    `opencode/deepseek-v4-flash-free` as a pixel-review fallback; reserve it for
-    code, rule, schema, and contract audits.
-22. Report generated files, evidence gaps, unresolved ambiguities, unsupported capabilities, and certification status (`PASS`, `FAIL`, or `NOT_RUN`).
+19. Promote the PPTX/PDF/reports/proofs as one rollback-capable bundle only after all portable hard gates pass. Write reports, proofs, and hashes under `.window-pptx/audits/`.
+20. Run optional PowerPoint certification only after portable PASS and only when `Application.HWND` binds to the one newly created process. Certify an exact-hash temporary copy, never save the deck, and never terminate a pre-existing process.
+21. Build an anonymous, hash-bound review packet containing the reference,
+    generated PPTX, full-resolution slide PNGs, contact sheet, rubric, and no
+    generator trace or other reviewer score. Three fresh visual-capable AI
+    contexts must independently load the images and review the packet. An
+    unavailable or image-incapable reviewer makes the round `NOT_RUN`; there
+    is no two-reviewer fallback or human override.
+22. Release only when at least two of three reviewers return reference parity,
+    overall mean is `>=4.3`, every dimension aggregate is `>=4.1`, every
+    flagship is `>=4.2`, and no two reviewers agree on a same-slide,
+    same-issue Blocker or Important finding. DeepSeek code-only review never
+    substitutes for pixel review. Until the v6 AI-only validator is
+    implemented and produces fresh evidence, the v6 release verdict is
+    `NOT_RUN`.
+23. Report generated files, evidence gaps, unresolved ambiguities, unsupported capabilities, and certification status (`PASS`, `FAIL`, or `NOT_RUN`).
 
 ## Advanced Production References
 
@@ -840,7 +968,9 @@ If Node.js, npm, PptxGenJS `4.0.1`, or LibreOffice is missing or version-drifted
 or neither Poppler nor Ghostscript is available:
 
 - fail before promoting any candidate
-- run `python -m window_pptx.cli --doctor` and restore the pinned runtime from `scripts/node/package-lock.json`
+- run
+  `node skills/owned/window-pptx/scripts/node/window_pptx_worker.mjs --doctor`
+  and restore the pinned runtime from `scripts/node/package-lock.json`
 - never substitute a different package version, skip the proof stage, or silently switch to COM
 
 If PowerPoint is not installed:

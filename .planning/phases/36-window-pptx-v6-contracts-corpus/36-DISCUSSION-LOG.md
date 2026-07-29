@@ -68,3 +68,16 @@
 - All three archived failures pass. Their owning composition,
   asset-materialization, and core-renderer modules pass `80/80`; the complete
   portable calibration module passes `11/11`.
+
+### 2026-07-29 — Phase verification checkpoint
+
+- The complete Window-PPTX Python regression passes `813/813` in three
+  deterministic shards: `491 + 146 + 134`, including the `42/42` weak-model
+  benchmark.
+- The final v6 contract/safety/brief/corpus slice passes `22/22`.
+- Root Vitest passes `108/108`; typecheck, build, Skillbird formatting,
+  behavior-eval JSON parsing, workflow spec/plan/execute gates, and diff checks
+  pass.
+- This is Phase 36 engineering evidence only. Private acquisition,
+  TemplatePack v2, flagship PPTX generation, and three-context visual UAT
+  remain later-phase work and are not inferred as complete.
