@@ -32,7 +32,13 @@ def test_v6_skill_links_executable_contract_files() -> None:
         "scripts/manage_window_pptx_project_brief.py",
         "scripts/export_window_pptx_brief_corpus.py",
         "scripts/check_window_pptx_private_assets.py",
+        "scripts/manage_window_pptx_library.py",
         "schemas/project-brief-pack.v1.schema.json",
+        "schemas/acquisition-manifest.v1.schema.json",
+        "schemas/quarantine-report.v1.schema.json",
+        "schemas/rights-record.v1.schema.json",
+        "schemas/catalog.v3.schema.json",
+        "registries/catalog-v3.json",
     )
 
     for relative in linked:
@@ -52,6 +58,7 @@ def test_v6_behavior_eval_cases_cover_new_failure_boundaries() -> None:
         "private-commercial-template-cookie",
         "v6-blind-review-unavailable",
         "weak-model-distillation-request",
+        "private-library-dry-run-query",
     } <= set(scenarios)
     assert "no PPTX" in scenarios["unresolved-real-client-brief"]["expected"]
     assert "GO from two reviewers" in scenarios["v6-blind-review-unavailable"][
@@ -60,3 +67,4 @@ def test_v6_behavior_eval_cases_cover_new_failure_boundaries() -> None:
     assert "cookie in command argument" in scenarios[
         "private-commercial-template-cookie"
     ]["forbidden"]
+    assert "cookie in argv" in scenarios["private-library-dry-run-query"]["forbidden"]

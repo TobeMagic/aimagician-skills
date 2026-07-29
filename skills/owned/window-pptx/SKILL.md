@@ -200,6 +200,35 @@ and unapproved binary payloads without printing matched values. A commercial
 template may be analyzed locally only when entitlement and intended use are
 recorded; original bytes are never redistributed or committed by default.
 
+Use the dedicated library manager for metadata-only discovery, sync planning,
+passive ingest inspection, certification planning, and certified retrieval:
+
+```bash
+python skills/owned/window-pptx/scripts/manage_window_pptx_library.py query \
+  --private-root skills/owned/window-pptx/.private \
+  --scenario annual-work-report
+```
+
+The commands are `discover`, `sync`, `ingest`, `certify`, and `query`. They
+emit one JSON manifest and are read-only by default. `--apply` may write only
+resumable state below `.private/`. `sync` without a private credential path
+returns `NEEDS_AUTH`; never pass a credential value. Packages are inspected
+without extraction, and unsafe active content, external relationships,
+traversal paths, encrypted entries, or expansion-limit violations are
+quarantined. Catalog queries are certified-and-rights-allowed only by default;
+legacy-unverified entries remain queryable metadata but never auto-select.
+Certification requires both an `ACCEPT` quarantine report and an allowed
+RightsRecord whose source/item identity matches the target. The public seed is
+deliberately `unverified`: use `--include-uncertified` only for explicit
+metadata inventory, never for automatic generation selection.
+For a public metadata-only source, pass `--public-metadata-only`; this proves
+the no-auth tracer without weakening authenticated-source failure semantics.
+The executable contracts are
+`schemas/acquisition-manifest.v1.schema.json`,
+`schemas/quarantine-report.v1.schema.json`,
+`schemas/rights-record.v1.schema.json`, and `schemas/catalog.v3.schema.json`;
+the reproducible metadata-only seed is `registries/catalog-v3.json`.
+
 ## Project Folder Contract
 
 Default folder shape:

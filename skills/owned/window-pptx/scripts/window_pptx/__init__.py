@@ -1,5 +1,12 @@
 """Governed portable and PowerPoint presentation-generation primitives."""
 
+from .acquisition import (
+    AcquisitionError,
+    authorization_scope,
+    build_acquisition_manifest,
+    validate_private_credential_file,
+    write_resume_state,
+)
 from .assets import (
     AssetChoice,
     AssetIntent,
@@ -49,6 +56,14 @@ from .com_diagnostics import (
 )
 from .cli import build_dry_run_result, collect_requested_actions, emit_result, parse_args
 from .capacity import split_slide
+from .catalog import (
+    CatalogError,
+    catalog_id,
+    dependency_closure,
+    load_catalog,
+    load_legacy_catalog,
+    query_catalog,
+)
 from .composition_grammar import (
     CompositionGrammar,
     CompositionGrammarError,
@@ -177,6 +192,14 @@ from .portable_renderer import (
     BackendRenderResult,
     PortableRenderError,
     PptxGenJSRenderer,
+)
+from .quarantine import inspect_package_bytes, validate_quarantine_report
+from .rights import (
+    RightsError,
+    canonical_digest,
+    certification_evidence,
+    load_rights_record,
+    validate_rights_record,
 )
 from .portable_runner import (
     PortablePipelineResult,
@@ -493,6 +516,24 @@ __all__ = [
     "discover_installed_fonts",
     "emit_result",
     "finalize_quality_report",
+    "AcquisitionError",
+    "authorization_scope",
+    "build_acquisition_manifest",
+    "validate_private_credential_file",
+    "write_resume_state",
+    "CatalogError",
+    "catalog_id",
+    "dependency_closure",
+    "load_catalog",
+    "load_legacy_catalog",
+    "query_catalog",
+    "inspect_package_bytes",
+    "validate_quarantine_report",
+    "RightsError",
+    "canonical_digest",
+    "certification_evidence",
+    "load_rights_record",
+    "validate_rights_record",
     "execute_render_plan",
     "execute_portable_render_plan",
     "execute_two_stage_repair",

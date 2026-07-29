@@ -178,6 +178,25 @@ Run the staged guard before every commit:
 python scripts/check_window_pptx_private_assets.py --staged --repo-root .
 ```
 
+The Phase 37 manager is dry-run-first:
+
+```bash
+python scripts/manage_window_pptx_library.py query \
+  --private-root .private \
+  --scenario annual-work-report
+```
+
+`discover|sync|ingest|certify|query` return versioned JSON manifests.
+Credential input is a path below `.private/`, never a raw value. Cross-host
+redirects strip authorization before following; non-allowlisted hosts are
+rejected. Passive ingest never extracts or executes a package. Catalog v3
+deduplicates by SHA-256, closes certified dependencies, preserves legacy
+quarantine, and fails closed on missing rights or unsafe content.
+Certification requires an `ACCEPT` quarantine report plus a matching allowed
+RightsRecord, with both recorded as evidence digests. The public metadata seed
+stays `unverified`; explicit inventory may include it, but automatic generation
+selection may not.
+
 ## Native output and backend boundary
 
 Portable native-editable PPTX is canonical. Text, shapes, charts, tables,

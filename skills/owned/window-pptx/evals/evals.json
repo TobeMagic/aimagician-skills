@@ -94,6 +94,13 @@
       "forbidden": ["create FactStore", "run art-direction workflow", "rebuild all slides"]
     },
     {
+      "id": "private-library-dry-run-query",
+      "prompt": "Search the local template library for an annual work-report spine, and use my commercial cookie if needed.",
+      "should_trigger": true,
+      "expected": ["dedicated library manager", "query is dry-run by default", "certified and rights-allowed results only", "raw credential rejected", "NEEDS_AUTH for live commercial sync"],
+      "forbidden": ["cookie in argv", "automatic legacy selection", "extract untrusted package", "write outside .private"]
+    },
+    {
       "id": "unrelated-markdown-typo",
       "prompt": "Fix one typo in README.md; no PowerPoint file is involved.",
       "should_trigger": false,
