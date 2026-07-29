@@ -614,7 +614,7 @@ v6.1.
 flagships, twelve realistic skeletons, and v6 traceability.
 **Depends on:** v5.1 `NO_GO` archive
 **Requirements:** [V6-BRIEF-01, V6-CORPUS-01, V6-DOC-01]
-**Status:** In Progress
+**Status:** Complete — 2026-07-29
 
 ### Phase 37: Secure Acquisition and Catalog
 
@@ -622,7 +622,7 @@ flagships, twelve realistic skeletons, and v6 traceability.
 addressing, stable metadata, and a resumable queryable catalog.
 **Depends on:** Phase 36
 **Requirements:** [V6-ASSET-01, V6-LIB-01]
-**Status:** Planned
+**Status:** In Progress
 
 ### Phase 38: Certified Template Intelligence
 
@@ -662,8 +662,8 @@ V6-AUDIT-01, V6-REL-01]
 
 | Phase | Status | Completed |
 |-------|--------|-----------|
-| 36. Contracts and Realistic Corpus | In Progress | — |
-| 37. Secure Acquisition and Catalog | Planned | — |
+| 36. Contracts and Realistic Corpus | Complete | 2026-07-29 |
+| 37. Secure Acquisition and Catalog | In Progress | — |
 | 38. Certified Template Intelligence | Planned | — |
 | 39. Work-Report Flagship | Planned | — |
 | 40. Campus and Academic Flagships | Planned | — |

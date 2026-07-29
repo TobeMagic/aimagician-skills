@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Window-PPTX Template-Intelligence Quality Reset
-current_phase: 36
-current_phase_name: v6 Contracts and Realistic Corpus
-status: verification_complete_pending_audit
-stopped_at: Phase 36 fresh completion audit after verification
-last_updated: "2026-07-29T20:18:00+08:00"
+current_phase: 37
+current_phase_name: Secure Acquisition and Catalog
+status: in_progress
+stopped_at: Phase 37 non-auth acquisition and catalog tracer; authenticated sync NEEDS_AUTH
+last_updated: "2026-07-29T21:12:00+08:00"
 last_activity: 2026-07-29
 progress:
   total_phases: 43
-  completed_phases: 33
+  completed_phases: 34
   total_plans: 41
-  completed_plans: 36
-  percent: 77
+  completed_plans: 37
+  percent: 79
 ---
 
 # Project State
@@ -26,11 +26,10 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v6.0 Phase 36 replaces the rejected shallow benchmark with
-ProjectBriefPack v1, three complete realistic flagship briefs, twelve locked
-scenario skeletons, and a private-asset safety boundary. Codex GPT-5.5 medium
-is the quality-first authoring model; weak-model distillation is deferred to
-v6.1.
+**Current focus:** v6.0 Phase 37 builds the entitlement-aware private
+acquisition boundary, quarantine, content-addressed catalog, and stable
+TemplatePack discovery metadata. Authenticated sync remains `NEEDS_AUTH`;
+non-authenticated contract and catalog work continues.
 
 The v5.1 work is preserved at archive commit
 `e4ed78c7b31beebdb94f0f37c6c412012dfec085` and annotated tag
@@ -47,9 +46,9 @@ fully independent AI blind-review contexts for v6 acceptance.
 ## Current Position
 
 Milestone: v6.0 Window-PPTX Template-Intelligence Quality Reset
-Current Phase: 36
-Current Phase Name: v6 Contracts and Realistic Corpus
-Status: Verification complete — pending fresh completion audit
+Current Phase: 37
+Current Phase Name: Secure Acquisition and Catalog
+Status: In progress — non-auth acquisition and catalog tracer
 Last Activity: 2026-07-29
 
 Foundation completed:
@@ -70,6 +69,15 @@ Foundation completed:
   - `webapp-testing`
 - document skills `docx`, `pdf`, `pptx`, `xlsx` are owned and categorized;
 - README and planning docs updated for the new workflow.
+- Phase 36 is complete:
+  - ProjectBriefPack v1 enforces Draft → NeedsDiscussion → Locked before formal
+    planning;
+  - three complete flagships plus twelve realistic scenario skeletons validate
+    with source, asset, anatomy, decision, and rubric contracts;
+  - the private staged-index guard, v6 Skill workflow, and three archived
+    regression repairs pass;
+  - independent specification, post-fix quality, committed verification, and
+    fresh Agnes completion audits return PASS with no Blocker or Important.
 - Phase 19 deep merge audit completed:
   - GSD state machine remains canonical;
   - Superpowers planning/writing quality gates are folded into `aimagician-superpower`;
@@ -183,11 +191,12 @@ Active v5 foundation:
 
 ## Next Actions
 
-1. Re-run the focused Skill contract after correcting the invalid Python
-   `--doctor` documentation path found by independent quality review.
-2. Obtain fresh post-fix quality and Agnes completion reviews.
-3. Close Phase 36 and advance to Phase 37 only when every independent review
-   has no unresolved Blocker or Important.
+1. Implement Phase 37 acquisition schemas, quarantine rules, resumable state,
+   rights records, and a dry-run/no-auth test seam.
+2. Build stable content-addressed catalog IDs, dedupe, dependency closure, and
+   compatibility-safe query boundaries without requiring private bytes.
+3. Keep authenticated commercial sync `NEEDS_AUTH` until credential rotation
+   is confirmed and a short-lived credential is supplied under `.private/`.
 
 ## Blockers / Concerns
 

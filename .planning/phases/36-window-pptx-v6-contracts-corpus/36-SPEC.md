@@ -126,12 +126,12 @@ spines. Weak-model distillation is deferred to v6.1.
 
 ## Acceptance Criteria
 
-- [ ] V6-BRIEF-01 has concrete passing evidence.
-- [ ] V6-CORPUS-01 has concrete passing evidence.
-- [ ] V6-DOC-01 has concrete passing evidence.
-- [ ] The staged-secret guard passes its focused and staged-index tests.
-- [ ] The three archived regression tests pass without weakening Quality v3.
-- [ ] All Window-PPTX tests, Vitest, typecheck, build, formatter, and diff
+- [x] V6-BRIEF-01 has concrete passing evidence.
+- [x] V6-CORPUS-01 has concrete passing evidence.
+- [x] V6-DOC-01 has concrete passing evidence.
+- [x] The staged-secret guard passes its focused and staged-index tests.
+- [x] The three archived regression tests pass without weakening Quality v3.
+- [x] All Window-PPTX tests, Vitest, typecheck, build, formatter, and diff
       checks pass.
 
 ## Blocking Questions
