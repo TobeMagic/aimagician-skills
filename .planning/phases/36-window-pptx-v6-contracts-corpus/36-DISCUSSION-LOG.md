@@ -35,3 +35,22 @@
 
 - Weak-model distillation and trace-specific training infrastructure move to
   v6.1 after v6.0 GO.
+
+## Implementation Checkpoints
+
+### 2026-07-29 — Brief lock and corpus tracer
+
+- Commit `072e8a7` established the v6 planning contract, ignored private root,
+  staged secret/binary guard, ProjectBriefPack v1 schema/state/digest boundary,
+  and atomic management CLI.
+- The corpus implementation now builds exactly fifteen locked packs: three
+  full flagships and twelve realistic scenario skeletons. Every pack has at
+  least eight quantitative facts, three material roles, a decision, timing,
+  slide budget, mandatory cover/directory/section/closing/appendix anatomy,
+  prohibitions, rubric, and stable lock.
+- Academic dataset metadata cites the public DCRNN paper; every MDGFormer
+  comparison, variance, ablation, robustness, and efficiency value is labeled
+  as standardized synthetic experiment evidence.
+- Focused evidence: ProjectBriefPack, corpus, and safety tests pass `17/17`;
+  all fifteen packs also pass the Draft 2020-12 JSON Schema and formal-lock
+  validation.

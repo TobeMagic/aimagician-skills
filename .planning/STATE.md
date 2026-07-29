@@ -183,14 +183,13 @@ Active v5 foundation:
 
 ## Next Actions
 
-1. Complete Task 36.1: private-asset ignore, staged-secret/binary guard, tests,
-   and first v6 safety checkpoint.
-2. Implement ProjectBriefPack v1 and its Draft/NeedsDiscussion/Locked gate.
-3. Materialize and lock the three complete flagship briefs plus twelve
-   scenario skeletons from the accepted facts and sources.
-4. Repair the three archived regressions, run Phase 36 verification, and
-   dispatch independent specification, quality, verification, and Agnes phase
-   audits.
+1. Repair the three archived deterministic regressions without weakening
+   Quality v3.
+2. Document the quality-first v6 brief and corpus route in the Skill entrypoint
+   and linked reference.
+3. Run Phase 36 engineering verification in shards and record exact evidence.
+4. Dispatch fresh specification, quality, verification, and Agnes phase
+   reviews; keep Phase 36 open on any unresolved Blocker or Important.
 
 ## Blockers / Concerns
 

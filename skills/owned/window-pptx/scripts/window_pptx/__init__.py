@@ -132,6 +132,11 @@ from .project_brief import (
     project_brief_digest,
     validate_project_brief_pack,
 )
+from .project_brief_corpus import (
+    FLAGSHIP_SCENARIO_IDS,
+    REQUIRED_SCENARIO_IDS,
+    load_project_brief_corpus,
+)
 from .fingerprints import (
     PINNED_PPTXGENJS_VERSION,
     PORTABLE_FINGERPRINT_COMPONENT_FIELDS,
@@ -396,6 +401,7 @@ __all__ = [
     "QUALITY_LAYERS",
     "ProjectIntent",
     "ProjectBriefPack",
+    "REQUIRED_SCENARIO_IDS",
     "RegistryError",
     "RecordingCall",
     "RecordingPresentation",
@@ -424,6 +430,7 @@ __all__ = [
     "ResolvedTheme",
     "SafeFallback",
     "FactStore",
+    "FLAGSHIP_SCENARIO_IDS",
     "NarrativePlan",
     "SlideIntent",
     "SlideSize",
@@ -507,6 +514,7 @@ __all__ = [
     "load_design_packs",
     "load_components",
     "load_composition_grammars",
+    "load_project_brief_corpus",
     "lock_project_brief_pack",
     "load_deck_plan",
     "load_brand_spec",

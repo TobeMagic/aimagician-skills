@@ -234,7 +234,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     try:
         report = inspect_staged_repository(args.repo_root)
-    except (OSError, RuntimeError) as exc:
+    except (OSError, RuntimeError):
         report = {
             "schema_version": "1.0",
             "status": "ERROR",
@@ -243,7 +243,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 {
                     "code": "GUARD_ERROR",
                     "path": ".",
-                    "detail": str(exc),
+                    "detail": "staged-index inspection failed closed",
                 }
             ],
         }

@@ -123,6 +123,34 @@ def test_staged_guard_fails_closed_without_printing_cookie(tmp_path: Path) -> No
     assert completed.returncode == 1
     assert json.loads(completed.stdout)["status"] == "FAIL"
     assert fixture_value not in completed.stdout
+    assert fixture_value not in completed.stderr
+
+
+def test_guard_error_output_does_not_echo_repository_details(
+    tmp_path: Path,
+) -> None:
+    sensitive_fragment = "private-value-that-must-not-echo"
+    missing = tmp_path / sensitive_fragment
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--staged",
+            "--repo-root",
+            str(missing),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 2
+    report = json.loads(completed.stdout)
+    assert report["status"] == "ERROR"
+    assert report["findings"][0]["detail"] == "staged-index inspection failed closed"
+    assert sensitive_fragment not in completed.stdout
+    assert sensitive_fragment not in completed.stderr
 
 
 def test_staged_guard_passes_for_safe_text_change(tmp_path: Path) -> None:
