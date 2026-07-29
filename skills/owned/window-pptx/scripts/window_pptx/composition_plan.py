@@ -194,23 +194,31 @@ _IMAGE_LED_LAYOUTS = {
     "closing": "cta.full-visual-stage",
 }
 
-_DESIGN_PACK_IMAGE_LED_LAYOUTS = {
-    # Proposal closes should summarize the approval envelope beside the visual
-    # rather than obscure the hero image with stacked full-bleed overlays.
+_DESIGN_PACK_NATIVE_BOOKENDS = {
+    # When no raster resolves, retain a deliberate native editorial system
+    # instead of collapsing to a generic hero or top-band layout.
     "consulting-executive": {
         "cover": "cover.editorial",
         "closing": "cta.decision-three",
     },
-    # Product decks use a dark stage throughout.  A split image stage keeps
-    # generated product imagery subordinate to the message and prevents a
-    # light raster from turning the two bookends into a different brand.
+    "data-research-editorial": {
+        "cover": "cover.editorial",
+        "closing": "cta.decision-three",
+    },
+}
+
+_DESIGN_PACK_IMAGE_LED_LAYOUTS = {
+    # Resolved proposal bookend imagery must be rendered, not merely generated.
+    # Poster layouts preserve the proof line and the three approval chips.
+    "consulting-executive": {
+        "cover": "cover.poster-editorial",
+        "closing": "cta.poster-editorial",
+    },
+    # Product decks keep their dark split stage.
     "product-launch-stage": {
         "cover": "cover.image-stage",
         "closing": "cta.image-stage",
     },
-    # Research decks benefit from an editorial full-visual opener, but the
-    # decision close must return to the light evidence system used by the
-    # analytical pages instead of placing dark cards over a decorative image.
     "data-research-editorial": {
         "cover": "cover.editorial",
         "closing": "cta.decision-three",
@@ -232,8 +240,11 @@ def _layout_id(
     # no raster asset resolves.  Keeping this outside the image-only branch
     # prevents safe asset fallback from silently collapsing the intended
     # cover/decision system back to generic hero or top-band layouts.
-    if design_pack_id in {"consulting-executive", "data-research-editorial"}:
-        native_bookend = _DESIGN_PACK_IMAGE_LED_LAYOUTS.get(
+    if (
+        not has_raster_asset
+        and design_pack_id in {"consulting-executive", "data-research-editorial"}
+    ):
+        native_bookend = _DESIGN_PACK_NATIVE_BOOKENDS.get(
             design_pack_id, {}
         ).get(role)
         if (

@@ -24,6 +24,7 @@ from window_pptx.layouts import ResolvedSlot, SlideSize  # noqa: E402
 from window_pptx.render_plan import (  # noqa: E402
     AssetBinding,
     RenderPlanError,
+    _decision_three_slot_texts,
     _font_size,
     _poster_closing_slot_texts,
     _poster_title_text,
@@ -160,6 +161,21 @@ def test_poster_closing_splits_evidence_and_three_decision_chips() -> None:
         "decision-one": "试点范围",
         "decision-two": "业务负责人",
         "decision-three": "启动日期",
+    }
+
+
+def test_decision_three_close_preserves_proof_and_all_three_decisions() -> None:
+    assert _decision_three_slot_texts(
+        "统一知识入口 · 审批周期 10 → 5 天 · 建立运营闭环\n\n"
+        "决策：试点范围｜业务负责人｜启动日期",
+        scenario="project-proposal",
+    ) == {
+        "one": (
+            "01 · APPROVE\n试点范围\n"
+            "统一知识入口 · 审批周期 10 → 5 天\n建立运营闭环"
+        ),
+        "two": "02 · OWNER\n业务负责人",
+        "three": "03 · START\n启动日期",
     }
 
 

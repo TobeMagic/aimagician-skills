@@ -136,7 +136,7 @@ def test_composition_plan_rejects_slide_identity_drift() -> None:
     (
         ("product-launch", "cover.image-stage", "cta.image-stage"),
         ("data-analysis", "cover.editorial", "cta.decision-three"),
-        ("project-proposal", "cover.editorial", "cta.decision-three"),
+        ("project-proposal", "cover.poster-editorial", "cta.poster-editorial"),
     ),
 )
 def test_image_led_bookends_follow_design_pack_surface_system(

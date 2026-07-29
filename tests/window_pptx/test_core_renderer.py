@@ -299,6 +299,61 @@ def test_core_renderer_is_exposed_from_the_public_package() -> None:
     assert window_pptx.run_render_pipeline is run_render_pipeline
 
 
+def test_three_decision_layout_falls_back_for_one_grounded_action() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "closing",
+            "role": "closing",
+            "title": "Next action",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "closing.action",
+                    "kind": "recommendation",
+                    "text": (
+                        "Enable managers to communicate a service incident "
+                        "accurately and calmly."
+                    ),
+                }
+            ],
+        }
+    ]
+    composition = {
+        "composition_id": "training.close",
+        "variant_id": "contact-close",
+        "layout_id": "cta.decision-three",
+        "background_mode": "navy-stage",
+        "emphasis": "hero",
+        "density": "sparse",
+        "energy": "peak",
+        "fact_refs": [],
+        "slot_bindings": [],
+        "asset_bindings": [],
+        "motif": {"motif_id": "evidence-margin"},
+        "repair_variant_ids": ["cta.top-band"],
+        "decision_trace": {},
+    }
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        composition_by_slide={"closing": composition},
+    )
+
+    assert plan.slides[0].layout_id == "cta.top-band"
+    assert any(
+        finding.code == "DECISION_CTA_SEMANTIC_FALLBACK"
+        for finding in plan.findings
+    )
+    assert any(
+        item.text
+        == "Enable managers to communicate a service incident accurately and calmly."
+        for item in plan.slides[0].objects
+    )
+
+
 @pytest.mark.parametrize(
     "size",
     [

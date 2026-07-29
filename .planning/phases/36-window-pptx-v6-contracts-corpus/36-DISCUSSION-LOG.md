@@ -54,3 +54,17 @@
 - Focused evidence: ProjectBriefPack, corpus, and safety tests pass `17/17`;
   all fifteen packs also pass the Draft 2020-12 JSON Schema and formal-lock
   validation.
+
+### 2026-07-29 — Archived regression repair
+
+- Required generated proposal bookend imagery now selects registered
+  `cover.poster-editorial` / `cta.poster-editorial` layouts instead of being
+  materialized and then reported as unused.
+- `cta.decision-three` parses one proof line plus exactly three decision chips
+  without losing source text. A single grounded action falls back to
+  `cta.top-band` or an image-led single CTA; it never fabricates empty cards.
+- Prose-only directional motifs use `BASELINE` consistently and still remain
+  native editable without invented chart series.
+- All three archived failures pass. Their owning composition,
+  asset-materialization, and core-renderer modules pass `80/80`; the complete
+  portable calibration module passes `11/11`.

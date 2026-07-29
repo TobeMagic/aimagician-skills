@@ -1174,7 +1174,15 @@ def _complete_slot_texts(
         if layout.id == "cta.poster-editorial"
         else None
     )
-    result = poster_close or _slot_texts(layout.slots, fragments)
+    decision_close = (
+        _decision_three_slot_texts(
+            "\n\n".join(fragments),
+            scenario=str(project.get("scenario", "")),
+        )
+        if layout.id == "cta.decision-three"
+        else None
+    )
+    result = poster_close or decision_close or _slot_texts(layout.slots, fragments)
     if layout.id == "cta.decision-three":
         scenario = str(project.get("scenario", "")).casefold()
         labels = (
@@ -1182,9 +1190,10 @@ def _complete_slot_texts(
             if scenario == "data-analysis"
             else ("01 · APPROVE", "02 · OPEN RISK", "03 · CEILING")
         )
-        for slot_id, label in zip(("one", "two", "three"), labels, strict=True):
-            if result.get(slot_id):
-                result[slot_id] = f"{label}\n{result[slot_id]}"
+        if decision_close is None:
+            for slot_id, label in zip(("one", "two", "three"), labels, strict=True):
+                if result.get(slot_id):
+                    result[slot_id] = f"{label}\n{result[slot_id]}"
     empty = tuple(
         slot for slot in _governed_text_slots(layout) if not result.get(slot.id)
     )
@@ -1195,6 +1204,31 @@ def _complete_slot_texts(
     if empty:
         result[empty[0].id] = _supporting_slot_text(slide, project)
     return result
+
+
+def _decision_three_slot_texts(
+    text: str,
+    *,
+    scenario: str,
+) -> dict[str, str] | None:
+    """Preserve a proof line plus three explicit decisions in three CTA cards."""
+
+    parsed = _poster_closing_slot_texts(text)
+    if parsed is None:
+        return None
+    labels = (
+        ("01 · DECIDE", "02 · EVIDENCE", "03 · NEXT TEST")
+        if scenario.casefold() == "data-analysis"
+        else ("01 · APPROVE", "02 · OWNER", "03 · START")
+    )
+    return {
+        "one": (
+            f"{labels[0]}\n{parsed['decision-one']}\n"
+            f"{parsed['primary']}"
+        ),
+        "two": f"{labels[1]}\n{parsed['decision-two']}",
+        "three": f"{labels[2]}\n{parsed['decision-three']}",
+    }
 
 
 def _poster_closing_slot_texts(text: str) -> dict[str, str] | None:
@@ -2720,7 +2754,7 @@ def _art_direction_objects(
                     4.38,
                     1.76,
                     0.32,
-                    "JAN · START",
+                    "JAN · BASELINE",
                 ),
                 (
                     "trend-end-label",
@@ -2728,7 +2762,7 @@ def _art_direction_objects(
                     4.38,
                     2.62,
                     0.32,
-                    "JUN · START −4 PP",
+                    "JUN · BASELINE −4 PP",
                 ),
             ]
         )
@@ -4089,6 +4123,41 @@ def _build_render_plan_from_compiled(
                         f"{poster_layout.id} requires one proof line and exactly "
                         f"three decision chips; using {layout.id} for the "
                         "source-preserving single-action close"
+                    ),
+                )
+            )
+        if (
+            layout.id == "cta.decision-three"
+            and _decision_three_slot_texts(
+                "\n\n".join(fragments),
+                scenario=str(project.get("scenario", "")),
+            )
+            is None
+        ):
+            decision_layout = layout
+            fallback_id = (
+                "cta.full-visual-stage"
+                if valid_image_sources
+                else "cta.top-band"
+            )
+            layout = resolve_layout(
+                fallback_id,
+                slide_size,
+                previous_layouts,
+                item_count=item_count,
+                density=density,
+                variant_seed=slide_variant_seed,
+                forbidden_components=forbidden_components,
+                component_limits=component_limits,
+            )
+            findings.append(
+                RenderFinding(
+                    "DECISION_CTA_SEMANTIC_FALLBACK",
+                    f"slides.{slide['id']}",
+                    (
+                        f"{decision_layout.id} requires exactly three explicit "
+                        f"decision chips; using {layout.id} to preserve the "
+                        "single evidence-backed action"
                     ),
                 )
             )

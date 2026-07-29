@@ -183,19 +183,14 @@ Active v5 foundation:
 
 ## Next Actions
 
-1. Repair the three archived deterministic regressions without weakening
-   Quality v3.
-2. Document the quality-first v6 brief and corpus route in the Skill entrypoint
+1. Document the quality-first v6 brief and corpus route in the Skill entrypoint
    and linked reference.
-3. Run Phase 36 engineering verification in shards and record exact evidence.
-4. Dispatch fresh specification, quality, verification, and Agnes phase
+2. Run Phase 36 engineering verification in shards and record exact evidence.
+3. Dispatch fresh specification, quality, verification, and Agnes phase
    reviews; keep Phase 36 open on any unresolved Blocker or Important.
 
 ## Blockers / Concerns
 
-- Three archived Python regressions must be repaired in Phase 36:
-  unfilled CTA slots, trend-label expectation drift, and one failed
-  training/e-commerce calibration packet.
 - Authenticated commercial-template acquisition is `NEEDS_AUTH` until the
   user confirms the old chat-only session is revoked and supplies a new
   short-lived cookie through the ignored private path. Non-authenticated work
