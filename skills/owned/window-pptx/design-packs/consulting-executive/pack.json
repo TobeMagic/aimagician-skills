@@ -7,12 +7,12 @@
   "theme": {
     "mode": "light",
     "primary": "12213A",
-    "accent": "C69B52",
+    "accent": "8A5C16",
     "background": "F4F0E7",
     "heading_font": ["Aptos Display", "Arial", "Noto Sans CJK SC"],
     "body_font": ["Aptos", "Arial", "Noto Sans CJK SC"]
   },
-  "page_families": ["cover", "executive-summary", "issue-tree", "big-number", "comparison", "process", "timeline", "matrix", "quadrant", "chart-story", "table", "case-study", "risk-actions", "recommendation", "closing"],
+  "page_families": ["cover", "section", "executive-summary", "issue-tree", "big-number", "comparison", "process", "timeline", "matrix", "quadrant", "chart-story", "table", "case-study", "risk-actions", "recommendation", "closing"],
   "pacing": {
     "max_same_family_run": 2,
     "hero_interval": 5,
@@ -33,7 +33,7 @@
       "canvas": "F4F0E7",
       "ink": "12213A",
       "teal": "197C78",
-      "gold": "C69B52",
+      "gold": "8A5C16",
       "surface": "FBF8F1",
       "muted": "6E746F"
     },

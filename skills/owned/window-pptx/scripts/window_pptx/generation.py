@@ -12,6 +12,7 @@ import hashlib
 import json
 import math
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Mapping
 
 from .assets import (
@@ -19,6 +20,11 @@ from .assets import (
     choose_asset,
     read_raster_dimensions,
     read_svg_aspect_ratio,
+)
+from .asset_materialization import (
+    AssetMaterialization,
+    ImageGenerator,
+    materialize_asset_plan,
 )
 from .brand import (
     BrandFinding,
@@ -73,6 +79,7 @@ class BriefGeneration:
     design_pack: DesignPack
     visual_plan: VisualPlan
     asset_plan: AssetPlan
+    asset_materialization: AssetMaterialization
     composition_plan: CompositionPlan
     effective_deck_plan: dict[str, Any]
     compiled_deck: dict[str, Any]
@@ -102,6 +109,7 @@ class BriefGeneration:
             "design_pack_id": self.design_pack.id,
             "visual_plan": self.visual_plan.to_dict(),
             "asset_plan": self.asset_plan.to_dict(),
+            "asset_materialization": self.asset_materialization.to_dict(),
             "composition_plan": self.composition_plan.to_dict(),
             "deck_plan": copy.deepcopy(self.effective_deck_plan),
             "compiled_deck": copy.deepcopy(self.compiled_deck),
@@ -337,6 +345,8 @@ def prepare_brief_generation(
     brand_spec_source: str | None = None,
     asset_bindings: Mapping[str, AssetBinding] | None = None,
     asset_manifest_source: str | None = None,
+    image_generator: ImageGenerator | None = None,
+    asset_output_dir: Path | str | None = None,
     direction_mode: str = "auto",
     direction_id: str | None = None,
     design_system_version: str = "art-direction-v1",
@@ -383,6 +393,28 @@ def prepare_brief_generation(
         compilation.narrative,
         design_pack=design_pack,
     )
+    family_by_slide = {
+        slide.slide_id: slide.family for slide in visual_plan.slides
+    }
+    required_asset_ids = frozenset(
+        asset.id
+        for asset in asset_plan.assets
+        if family_by_slide.get(asset.slide_id)
+        in design_pack.asset_strategy.required_for
+    )
+    asset_materialization = materialize_asset_plan(
+        asset_plan,
+        design_pack,
+        required_asset_ids=required_asset_ids,
+        provided_bindings=asset_bindings,
+        image_generator=image_generator,
+        output_dir=asset_output_dir,
+    )
+    asset_plan = asset_materialization.asset_plan
+    effective_asset_bindings = {
+        **dict(asset_bindings or {}),
+        **dict(asset_materialization.bindings),
+    }
     composition_plan = compile_composition_plan(
         compilation.narrative,
         visual_plan,
@@ -399,7 +431,9 @@ def prepare_brief_generation(
         for slide in visual_plan.slides
         if slide.recipe_id is not None
     }
-    bindings, asset_rejections = filter_usable_asset_bindings(asset_bindings)
+    bindings, asset_rejections = filter_usable_asset_bindings(
+        effective_asset_bindings
+    )
     asset_kinds = available_asset_kinds(bindings)
     font_inventory = set(installed_fonts or {"Arial"})
     resolved_brand = (
@@ -424,10 +458,10 @@ def prepare_brief_generation(
         "sha256": font_inventory_digest(font_names),
         "fonts": font_names,
     }
-    asset_content = _asset_manifest_content(asset_bindings)
+    asset_content = _asset_manifest_content(effective_asset_bindings)
     asset_manifest_evidence = {
         "source": "file" if asset_manifest_source else (
-            "inline" if asset_bindings else "none"
+            "inline" if effective_asset_bindings else "none"
         ),
         "path": asset_manifest_source,
         "sha256": _canonical_sha256(asset_content),
@@ -555,6 +589,7 @@ def prepare_brief_generation(
                 primary=f"#{design_pack.art_direction.palette_roles['ink']}",
                 accent=f"#{design_pack.art_direction.palette_roles['gold']}",
                 positive=f"#{design_pack.art_direction.palette_roles['teal']}",
+                warning=f"#{design_pack.art_direction.palette_roles['gold']}",
                 background=f"#{design_pack.art_direction.palette_roles['canvas']}",
             )
             if design_pack.art_direction is not None
@@ -645,6 +680,7 @@ def prepare_brief_generation(
         design_pack=design_pack,
         visual_plan=visual_plan,
         asset_plan=asset_plan,
+        asset_materialization=asset_materialization,
         composition_plan=composition_plan,
         effective_deck_plan=safe_deck,
         compiled_deck=compiled_deck,

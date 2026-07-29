@@ -154,6 +154,64 @@ def _parse_xml(payload: bytes, path: str) -> ET.Element:
         raise ReferenceQualityError(f"invalid XML part {path}: {exc}") from exc
 
 
+def _coarse_layout_signature(
+    root: ET.Element, counts: tuple[int, int, int, int, int]
+) -> str:
+    """Fingerprint composition geometry instead of object counts alone.
+
+    Two slides with the same number of text boxes can still use materially
+    different compositions.  The former count-only signature treated them as
+    identical and produced false layout-variation failures.  Coarse buckets
+    keep the signal stable across renderers while capturing position and size.
+    """
+
+    slide_width = 12_192_000
+    slide_height = 6_858_000
+    geometry: list[str] = []
+    object_paths = (
+        ("s", f".//{{{PML}}}sp"),
+        ("p", f".//{{{PML}}}pic"),
+        ("f", f".//{{{PML}}}graphicFrame"),
+        ("g", f".//{{{PML}}}grpSp"),
+        ("c", f".//{{{PML}}}cxnSp"),
+    )
+    for kind, path in object_paths:
+        for element in root.findall(path):
+            transform = element.find(f".//{{{AML}}}xfrm")
+            if transform is None:
+                transform = element.find(f".//{{{PML}}}xfrm")
+            if transform is None:
+                continue
+            offset = transform.find(f"{{{AML}}}off")
+            extent = transform.find(f"{{{AML}}}ext")
+            if offset is None or extent is None:
+                continue
+            try:
+                x = int(offset.attrib["x"])
+                y = int(offset.attrib["y"])
+                width = int(extent.attrib["cx"])
+                height = int(extent.attrib["cy"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            geometry.append(
+                ":".join(
+                    (
+                        kind,
+                        str(round(12 * x / slide_width)),
+                        str(round(7 * y / slide_height)),
+                        str(round(12 * width / slide_width)),
+                        str(round(7 * height / slide_height)),
+                    )
+                )
+            )
+    return "|".join(
+        (
+            ":".join(str(value) for value in counts),
+            ",".join(sorted(geometry)),
+        )
+    )
+
+
 def inspect_reference_complexity(pptx_path: Path | str) -> ReferenceComplexity:
     source = Path(pptx_path).resolve()
     if not source.is_file():
@@ -190,7 +248,7 @@ def inspect_reference_complexity(pptx_path: Path | str) -> ReferenceComplexity:
             connector_count += counts[4]
             gradient_count += len(root.findall(f".//{{{AML}}}gradFill"))
             crop_count += len(root.findall(f".//{{{AML}}}srcRect"))
-            signatures.append(":".join(str(value) for value in counts))
+            signatures.append(_coarse_layout_signature(root, counts))
             objects_per_slide.append(sum(counts))
         chart_count = sum(
             1 for name in names if re.fullmatch(r"ppt/charts/chart\d+\.xml", name)
@@ -247,6 +305,10 @@ def assess_generated_visual_quality(
     """
 
     complexity = inspect_reference_complexity(pptx_path)
+    layout_signature_floor = min(
+        profile.minimum_layout_signatures,
+        complexity.slide_count,
+    )
     rich_slide_count = sum(
         value >= profile.rich_slide_object_floor
         for value in complexity.objects_per_slide
@@ -262,7 +324,7 @@ def assess_generated_visual_quality(
         (
             "GENERATED_LAYOUT_VARIATION_FLOOR",
             complexity.layout_signature_count,
-            profile.minimum_layout_signatures,
+            layout_signature_floor,
             "distinct page-composition count against the generated-deck floor",
         ),
         (

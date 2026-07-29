@@ -338,7 +338,7 @@ def test_trusted_fact_beat_and_semantic_override_model_hints() -> None:
     )
 
 
-def test_trusted_metric_sentence_keeps_emphasis_without_extracting_value() -> None:
+def test_trusted_metric_sentence_extracts_only_source_present_values() -> None:
     payload = fact_store_payload()
     payload["facts"][0].pop("value")  # type: ignore[index]
     payload["facts"][0].pop("unit")  # type: ignore[index]
@@ -357,7 +357,19 @@ def test_trusted_metric_sentence_keeps_emphasis_without_extracting_value() -> No
     assert slide["blocks"][0]["text"] == (
         "Q2 revenue was 48.2 million dollars, 12 percent above Q1."
     )
-    assert "items" not in slide["blocks"][0]
+    assert slide["blocks"][0]["items"] == [
+        {
+            "label": "Q2 Revenue",
+            "value": 48.2,
+            "unit": "million dollars",
+            "category": "Q2",
+        },
+        {
+            "label": "Above Q1",
+            "value": 12,
+            "unit": "percent",
+        },
+    ]
     assert result.narrative.coverage["semantic_adjustments"] == [
         "insight-detail-1:EXPLICIT_NUMERIC_CHANGE_OVERRIDES_MODEL:metrics->comparison"
     ]

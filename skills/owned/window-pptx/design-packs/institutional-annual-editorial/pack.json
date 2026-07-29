@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "id": "institutional-annual-editorial",
   "name": "Institutional Annual Editorial",
   "runtime_theme_id": "public-enterprise",
@@ -7,7 +7,7 @@
   "theme": {
     "mode": "mixed",
     "primary": "26594F",
-    "accent": "D6B678",
+    "accent": "8A5C16",
     "background": "F3F0E8",
     "heading_font": ["Source Han Serif SC", "Noto Serif CJK SC", "Microsoft YaHei"],
     "body_font": ["Source Han Sans SC", "Noto Sans CJK SC", "Microsoft YaHei"]
@@ -27,5 +27,46 @@
     "max_body_chars": 180,
     "max_items": 5
   },
-  "template_pack": "institutional-work-summary-v1"
+  "template_pack": "institutional-work-summary-v1",
+  "art_direction": {
+    "id": "institutional-beacon",
+    "palette_roles": {
+      "canvas": "F3F0E8",
+      "ink": "173B35",
+      "teal": "268273",
+      "gold": "8A5C16",
+      "surface": "FBF9F4",
+      "muted": "6C7773"
+    },
+    "grid": {
+      "columns": 12,
+      "safe_margin_in": 0.6,
+      "spacing_scale_pt": [4, 8, 12, 16, 24, 32, 48]
+    },
+    "typography_scale_pt": {
+      "display": 52,
+      "title": 32,
+      "subtitle": 22,
+      "body": 16,
+      "caption": 11
+    },
+    "motif": {
+      "variants": ["beacon-ring", "ceremonial-band", "milestone-seal", "horizon-line"]
+    },
+    "image_crop": "editorial-center-with-title-safe-zone",
+    "icon_style": "outlined-institutional-consistent",
+    "surface": {
+      "corner_radius_pt": 6,
+      "stroke_pt": 1,
+      "shadow_mode": "soft-layered-paper"
+    },
+    "energy_pattern": ["peak", "pause", "flow", "flow"],
+    "quality_thresholds": {
+      "engineering": 100,
+      "visual": 80,
+      "art": 75,
+      "release": 84,
+      "axis_floor": 75
+    }
+  }
 }

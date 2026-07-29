@@ -17,6 +17,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
 BENCHMARK_ROOT = SKILL_ROOT / "benchmarks" / "v5"
 BENCHMARK_RUNNER = SKILL_ROOT / "scripts" / "run_window_pptx_benchmark.py"
+BLIND_REVIEW_VALIDATOR = (
+    SKILL_ROOT / "scripts" / "validate_window_pptx_blind_review.py"
+)
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 import run_window_pptx_benchmark as benchmark_runner  # noqa: E402
@@ -32,8 +35,10 @@ from window_pptx.benchmark import (  # noqa: E402
     digest_artifact,
     evaluate_trial_evidence,
     evaluate_trial_response,
+    evaluate_blind_review_gate,
     finalize_portable_trial_scorecard,
     load_benchmark_spec,
+    load_blind_review_packet,
     load_blind_review_score_sheet,
     parse_opencode_events,
     run_opencode_response,
@@ -1461,6 +1466,264 @@ def test_completed_blind_review_sheet_requires_every_exact_rubric_score(
     )
     jsonschema = pytest.importorskip("jsonschema")
     assert not list(jsonschema.Draft202012Validator(schema).iter_errors(sheet.to_dict()))
+
+
+def test_blind_review_gate_reloads_hash_verified_packet_and_passes_locked_floor(
+    tmp_path: Path,
+) -> None:
+    spec = load_benchmark_spec(BENCHMARK_ROOT)
+    scenario = spec.scenarios[0]
+    trial = next(
+        item
+        for item in build_trial_manifest(spec).trials
+        if item.scenario_id == scenario.id and item.arm_id == "full-v5"
+    )
+    score = review_ready_score(
+        evaluate_trial_response(spec, trial, valid_brief_response_for(scenario)),
+        tmp_path,
+    )
+    review_root = tmp_path / "blind-review"
+    packet, _mapping = build_blind_review_packet(
+        spec,
+        (score,),
+        artifact_root=tmp_path,
+        review_root=review_root,
+    )
+    reloaded = load_blind_review_packet(packet.to_dict(), review_root=review_root)
+    entry = reloaded.entries[0]
+    payload = {
+        "schema_version": "1.0",
+        "benchmark_id": reloaded.benchmark_id,
+        "packet_sha256": reloaded.packet_sha256,
+        "reviewer_id": "R-HUMAN-01",
+        "reviews": [
+            {
+                "blind_id": entry.blind_id,
+                "evidence_sha256": entry.evidence_sha256,
+                "scores": {
+                    rubric: (
+                        5
+                        if rubric
+                        in {"customer_delivery_readiness", "visual_hierarchy"}
+                        else 4
+                    )
+                    for rubric in entry.rubric
+                },
+                "notes": "Reviewed the editable deck and every PNG.",
+            }
+        ],
+    }
+    sheet = load_blind_review_score_sheet(reloaded, payload)
+
+    report = evaluate_blind_review_gate(reloaded, sheet)
+
+    assert report.status == "PASS"
+    assert report.overall_mean >= 4.2
+    assert dict(report.dimension_means)["customer_delivery_readiness"] == 5.0
+    assert report.failed_dimensions == ()
+    assert report.artifact_hash_coverage == 1.0
+
+
+def test_blind_review_gate_fails_when_one_dimension_is_below_locked_floor(
+    tmp_path: Path,
+) -> None:
+    spec = load_benchmark_spec(BENCHMARK_ROOT)
+    scenario = spec.scenarios[0]
+    trial = next(
+        item
+        for item in build_trial_manifest(spec).trials
+        if item.scenario_id == scenario.id and item.arm_id == "full-v5"
+    )
+    score = review_ready_score(
+        evaluate_trial_response(spec, trial, valid_brief_response_for(scenario)),
+        tmp_path,
+    )
+    review_root = tmp_path / "blind-review"
+    packet, _mapping = build_blind_review_packet(
+        spec,
+        (score,),
+        artifact_root=tmp_path,
+        review_root=review_root,
+    )
+    entry = packet.entries[0]
+    payload = {
+        "schema_version": "1.0",
+        "benchmark_id": packet.benchmark_id,
+        "packet_sha256": packet.packet_sha256,
+        "reviewer_id": "R-HUMAN-02",
+        "reviews": [
+            {
+                "blind_id": entry.blind_id,
+                "evidence_sha256": entry.evidence_sha256,
+                "scores": {
+                    rubric: (3 if rubric == "editability" else 5)
+                    for rubric in entry.rubric
+                },
+                "notes": None,
+            }
+        ],
+    }
+
+    report = evaluate_blind_review_gate(
+        packet, load_blind_review_score_sheet(packet, payload)
+    )
+
+    assert report.status == "FAIL"
+    assert report.overall_mean > 4.2
+    assert report.failed_dimensions == ("editability",)
+
+
+def test_blind_review_packet_reload_rejects_tampered_staged_artifact(
+    tmp_path: Path,
+) -> None:
+    spec = load_benchmark_spec(BENCHMARK_ROOT)
+    scenario = spec.scenarios[0]
+    trial = next(
+        item
+        for item in build_trial_manifest(spec).trials
+        if item.scenario_id == scenario.id and item.arm_id == "full-v5"
+    )
+    score = review_ready_score(
+        evaluate_trial_response(spec, trial, valid_brief_response_for(scenario)),
+        tmp_path,
+    )
+    review_root = tmp_path / "blind-review"
+    packet, _mapping = build_blind_review_packet(
+        spec,
+        (score,),
+        artifact_root=tmp_path,
+        review_root=review_root,
+    )
+    target = review_root / packet.entries[0].artifacts[0].review_path
+    target.write_bytes(target.read_bytes() + b"tampered")
+
+    with pytest.raises(ValueError, match="artifact hash mismatch"):
+        load_blind_review_packet(packet.to_dict(), review_root=review_root)
+
+
+def test_blind_review_validator_records_not_run_then_human_pass(
+    tmp_path: Path,
+) -> None:
+    spec = load_benchmark_spec(BENCHMARK_ROOT)
+    scenario = spec.scenarios[0]
+    trial = next(
+        item
+        for item in build_trial_manifest(spec).trials
+        if item.scenario_id == scenario.id and item.arm_id == "full-v5"
+    )
+    score = review_ready_score(
+        evaluate_trial_response(spec, trial, valid_brief_response_for(scenario)),
+        tmp_path,
+    )
+    review_root = tmp_path / "blind-review"
+    packet, _mapping = build_blind_review_packet(
+        spec,
+        (score,),
+        artifact_root=tmp_path,
+        review_root=review_root,
+    )
+    packet_path = review_root / "packet.json"
+    packet_path.write_text(
+        json.dumps(packet.to_dict(), ensure_ascii=False, sort_keys=True, indent=2)
+        + "\n",
+        encoding="utf-8",
+    )
+    entry = packet.entries[0]
+    template_path = review_root / "score-sheet.completed.json"
+    template_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "benchmark_id": packet.benchmark_id,
+                "packet_sha256": packet.packet_sha256,
+                "reviewer_id": "R-REPLACE-ME",
+                "reviews": [
+                    {
+                        "blind_id": entry.blind_id,
+                        "evidence_sha256": entry.evidence_sha256,
+                        "scores": {rubric: None for rubric in entry.rubric},
+                        "notes": None,
+                    }
+                ],
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    report_path = review_root / "blind-review-gate.json"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(BLIND_REVIEW_VALIDATOR),
+            "--packet",
+            str(packet_path),
+            "--score-sheet",
+            str(template_path),
+            "--output",
+            str(report_path),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 2
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["status"] == "NOT_RUN"
+    assert report["reason_code"] == "INCOMPLETE_OR_INVALID_SCORE_SHEET"
+    assert report["score_source"] == "submitted-score-sheet"
+    assert report["human_provenance_status"] == "EXTERNAL_CONFIRMATION_REQUIRED"
+    assert report["milestone_gate_status"] == "NOT_RUN"
+
+    completed_payload = json.loads(template_path.read_text(encoding="utf-8"))
+    completed_payload["reviewer_id"] = "R-HUMAN-03"
+    completed_payload["reviews"][0]["scores"] = {
+        rubric: (
+            5
+            if rubric in {"customer_delivery_readiness", "visual_hierarchy"}
+            else 4
+        )
+        for rubric in entry.rubric
+    }
+    template_path.write_text(
+        json.dumps(
+            completed_payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(BLIND_REVIEW_VALIDATOR),
+            "--packet",
+            str(packet_path),
+            "--score-sheet",
+            str(template_path),
+            "--output",
+            str(report_path),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["status"] == "PASS"
+    assert report["gate_id"] == "P35-BLIND-01-SCORE-FLOOR"
+    assert report["overall_mean"] >= 4.2
+    assert report["score_source"] == "submitted-score-sheet"
+    assert report["human_provenance_status"] == "EXTERNAL_CONFIRMATION_REQUIRED"
+    assert report["milestone_gate_status"] == "NOT_RUN"
 
 
 def test_blind_review_sheet_rejects_missing_entries_and_extra_rubrics(

@@ -1577,6 +1577,188 @@ class BlindReviewPacket:
         }
 
 
+def load_blind_review_packet(
+    value: Any,
+    *,
+    review_root: Path | str | None = None,
+) -> BlindReviewPacket:
+    """Reload a frozen blind packet and optionally re-verify every staged file."""
+
+    raw = _require_object(value, "blind_review_packet")
+    _require_exact_keys(
+        raw,
+        {
+            "schema_version",
+            "benchmark_id",
+            "packet_sha256",
+            "delivery_evidence_ready",
+            "entries",
+        },
+        "blind_review_packet",
+    )
+    if raw["schema_version"] != BENCHMARK_SCHEMA_VERSION:
+        raise ValueError("blind_review_packet.schema_version must equal 1.0")
+    benchmark_id = _require_string(
+        raw["benchmark_id"], "blind_review_packet.benchmark_id"
+    )
+    packet_sha256 = _require_string(
+        raw["packet_sha256"], "blind_review_packet.packet_sha256"
+    )
+    if SHA256_PATTERN.fullmatch(packet_sha256) is None:
+        raise ValueError("blind_review_packet.packet_sha256 must be SHA-256")
+    delivery_evidence_ready = raw["delivery_evidence_ready"]
+    if not isinstance(delivery_evidence_ready, bool):
+        raise ValueError(
+            "blind_review_packet.delivery_evidence_ready must be a boolean"
+        )
+    entries_raw = raw["entries"]
+    if not isinstance(entries_raw, list) or not entries_raw:
+        raise ValueError("blind_review_packet.entries must be a non-empty array")
+
+    entries: list[BlindReviewEntry] = []
+    blind_ids: set[str] = set()
+    review_paths: set[str] = set()
+    for entry_index, entry_value in enumerate(entries_raw):
+        entry_path = f"blind_review_packet.entries[{entry_index}]"
+        entry_raw = _require_object(entry_value, entry_path)
+        _require_exact_keys(
+            entry_raw,
+            {"blind_id", "scenario_id", "evidence_sha256", "rubric", "artifacts"},
+            entry_path,
+        )
+        blind_id = _require_string(entry_raw["blind_id"], f"{entry_path}.blind_id")
+        if re.fullmatch(r"B-\d{3}-[0-9a-f]{8}", blind_id) is None:
+            raise ValueError(f"{entry_path}.blind_id is invalid")
+        if blind_id in blind_ids:
+            raise ValueError("blind_review_packet blind_id values must be unique")
+        blind_ids.add(blind_id)
+        scenario_id = _require_string(
+            entry_raw["scenario_id"], f"{entry_path}.scenario_id"
+        )
+        evidence_sha256 = _require_string(
+            entry_raw["evidence_sha256"], f"{entry_path}.evidence_sha256"
+        )
+        if SHA256_PATTERN.fullmatch(evidence_sha256) is None:
+            raise ValueError(f"{entry_path}.evidence_sha256 must be SHA-256")
+        rubric = _require_strings(entry_raw["rubric"], f"{entry_path}.rubric")
+        artifacts_raw = entry_raw["artifacts"]
+        if not isinstance(artifacts_raw, list):
+            raise ValueError(f"{entry_path}.artifacts must be an array")
+        artifacts: list[BlindReviewArtifact] = []
+        for artifact_index, artifact_value in enumerate(artifacts_raw):
+            artifact_path = f"{entry_path}.artifacts[{artifact_index}]"
+            artifact_raw = _require_object(artifact_value, artifact_path)
+            _require_exact_keys(
+                artifact_raw,
+                {"kind", "review_path", "sha256", "size_bytes"},
+                artifact_path,
+            )
+            kind = _require_string(artifact_raw["kind"], f"{artifact_path}.kind")
+            if kind not in {"editable-pptx", "slide-preview"}:
+                raise ValueError(f"{artifact_path}.kind is invalid")
+            relative_path = _require_string(
+                artifact_raw["review_path"], f"{artifact_path}.review_path"
+            )
+            normalized = Path(relative_path)
+            if (
+                normalized.is_absolute()
+                or "\\" in relative_path
+                or normalized.as_posix() != relative_path
+                or ".." in normalized.parts
+                or normalized.parts[:1] != (blind_id,)
+            ):
+                raise ValueError(f"{artifact_path}.review_path is unsafe")
+            if relative_path in review_paths:
+                raise ValueError(
+                    "blind_review_packet artifact review_path values must be unique"
+                )
+            review_paths.add(relative_path)
+            sha256 = _require_string(
+                artifact_raw["sha256"], f"{artifact_path}.sha256"
+            )
+            if SHA256_PATTERN.fullmatch(sha256) is None:
+                raise ValueError(f"{artifact_path}.sha256 must be SHA-256")
+            size_bytes = artifact_raw["size_bytes"]
+            if (
+                isinstance(size_bytes, bool)
+                or not isinstance(size_bytes, int)
+                or size_bytes <= 0
+            ):
+                raise ValueError(f"{artifact_path}.size_bytes must be positive")
+            artifacts.append(
+                BlindReviewArtifact(
+                    kind=kind,
+                    review_path=relative_path,
+                    sha256=sha256,
+                    size_bytes=size_bytes,
+                )
+            )
+        pptx = [item for item in artifacts if item.kind == "editable-pptx"]
+        previews = [item for item in artifacts if item.kind == "slide-preview"]
+        expected_previews = [
+            f"{blind_id}/slide-{index:03d}.png"
+            for index in range(1, len(previews) + 1)
+        ]
+        if delivery_evidence_ready and (
+            len(pptx) != 1
+            or pptx[0].review_path != f"{blind_id}/delivery.pptx"
+            or [item.review_path for item in previews] != expected_previews
+        ):
+            raise ValueError(
+                f"{entry_path}.artifacts lacks one PPTX and contiguous PNG previews"
+            )
+        entries.append(
+            BlindReviewEntry(
+                blind_id=blind_id,
+                scenario_id=scenario_id,
+                evidence_sha256=evidence_sha256,
+                rubric=rubric,
+                artifacts=tuple(artifacts),
+            )
+        )
+
+    packet_basis = {
+        "schema_version": BENCHMARK_SCHEMA_VERSION,
+        "benchmark_id": benchmark_id,
+        "delivery_evidence_ready": delivery_evidence_ready,
+        "entries": [entry.to_dict() for entry in entries],
+    }
+    if canonical_sha256(packet_basis) != packet_sha256:
+        raise ValueError("blind_review_packet.packet_sha256 mismatch")
+    packet = BlindReviewPacket(
+        schema_version=BENCHMARK_SCHEMA_VERSION,
+        benchmark_id=benchmark_id,
+        packet_sha256=packet_sha256,
+        delivery_evidence_ready=delivery_evidence_ready,
+        entries=tuple(entries),
+    )
+
+    if review_root is not None:
+        root = Path(review_root).resolve()
+        for entry in packet.entries:
+            for artifact in entry.artifacts:
+                digest = ArtifactDigest(
+                    relative_path=artifact.review_path,
+                    sha256=artifact.sha256,
+                    size_bytes=artifact.size_bytes,
+                )
+                if not verify_artifact_digest(digest, root=root):
+                    raise ValueError(
+                        f"blind-review artifact hash mismatch: {artifact.review_path}"
+                    )
+                path = root / artifact.review_path
+                try:
+                    if artifact.kind == "editable-pptx":
+                        validate_ooxml_package(path)
+                    else:
+                        read_raster_dimensions(path)
+                except (OSError, ValueError, WindowPptxError) as exc:
+                    raise ValueError(
+                        f"blind-review artifact is unreadable: {artifact.review_path}"
+                    ) from exc
+    return packet
+
+
 def _verified_review_artifacts(
     score: TrialScorecard,
     *,
@@ -1789,6 +1971,46 @@ class BlindReviewScoreSheet:
         }
 
 
+@dataclass(frozen=True)
+class BlindReviewGateReport:
+    schema_version: str
+    benchmark_id: str
+    packet_sha256: str
+    score_sheet_sha256: str
+    reviewer_id: str
+    status: str
+    review_count: int
+    score_count: int
+    overall_mean: float
+    dimension_means: tuple[tuple[str, float], ...]
+    overall_threshold: float
+    dimension_threshold: float
+    failed_dimensions: tuple[str, ...]
+    artifact_hash_coverage: float
+    findings: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "benchmark_id": self.benchmark_id,
+            "packet_sha256": self.packet_sha256,
+            "score_sheet_sha256": self.score_sheet_sha256,
+            "reviewer_id": self.reviewer_id,
+            "status": self.status,
+            "review_count": self.review_count,
+            "score_count": self.score_count,
+            "overall_mean": self.overall_mean,
+            "dimension_means": dict(self.dimension_means),
+            "thresholds": {
+                "overall_mean": self.overall_threshold,
+                "dimension_mean": self.dimension_threshold,
+            },
+            "failed_dimensions": list(self.failed_dimensions),
+            "artifact_hash_coverage": self.artifact_hash_coverage,
+            "findings": list(self.findings),
+        }
+
+
 def load_blind_review_score_sheet(
     packet: BlindReviewPacket,
     value: Any,
@@ -1862,6 +2084,86 @@ def load_blind_review_score_sheet(
         packet_sha256=packet.packet_sha256,
         reviewer_id=reviewer_id,
         reviews=tuple(reviews),
+    )
+
+
+def evaluate_blind_review_gate(
+    packet: BlindReviewPacket,
+    sheet: BlindReviewScoreSheet,
+    *,
+    overall_threshold: float = 4.2,
+    dimension_threshold: float = 4.0,
+) -> BlindReviewGateReport:
+    """Evaluate the locked human gate without synthesizing or repairing scores."""
+
+    for label, threshold in (
+        ("overall_threshold", overall_threshold),
+        ("dimension_threshold", dimension_threshold),
+    ):
+        if (
+            isinstance(threshold, bool)
+            or not isinstance(threshold, (int, float))
+            or not math.isfinite(float(threshold))
+            or not 1.0 <= float(threshold) <= 5.0
+        ):
+            raise ValueError(f"{label} must be a finite number from 1 to 5")
+    if not packet.delivery_evidence_ready:
+        raise ValueError(
+            "blind review requires hash-verified editable PPTX and PNG evidence"
+        )
+    if (
+        sheet.benchmark_id != packet.benchmark_id
+        or sheet.packet_sha256 != packet.packet_sha256
+    ):
+        raise ValueError("blind review score sheet is not bound to the packet")
+    expected_ids = {entry.blind_id for entry in packet.entries}
+    if {review.blind_id for review in sheet.reviews} != expected_ids:
+        raise ValueError("blind review score sheet entries do not match the packet")
+
+    dimension_values: dict[str, list[int]] = {}
+    all_values: list[int] = []
+    for review in sheet.reviews:
+        for rubric, score in review.scores:
+            dimension_values.setdefault(rubric, []).append(score)
+            all_values.append(score)
+    if not all_values:
+        raise ValueError("blind review score sheet contains no scores")
+    dimension_means = tuple(
+        (rubric, round(sum(values) / len(values), 6))
+        for rubric, values in sorted(dimension_values.items())
+    )
+    overall_mean = round(sum(all_values) / len(all_values), 6)
+    failed_dimensions = tuple(
+        rubric
+        for rubric, mean in dimension_means
+        if mean < float(dimension_threshold)
+    )
+    findings: list[str] = []
+    if overall_mean < float(overall_threshold):
+        findings.append(
+            f"overall_mean {overall_mean:.3f} is below {float(overall_threshold):.3f}"
+        )
+    findings.extend(
+        f"{rubric} mean {mean:.3f} is below {float(dimension_threshold):.3f}"
+        for rubric, mean in dimension_means
+        if rubric in failed_dimensions
+    )
+    return BlindReviewGateReport(
+        schema_version=BENCHMARK_SCHEMA_VERSION,
+        benchmark_id=packet.benchmark_id,
+        packet_sha256=packet.packet_sha256,
+        score_sheet_sha256=canonical_sha256(sheet),
+        reviewer_id=sheet.reviewer_id,
+        status="PASS" if not findings else "FAIL",
+        review_count=len(sheet.reviews),
+        score_count=len(all_values),
+        overall_mean=overall_mean,
+        dimension_means=dimension_means,
+        overall_threshold=float(overall_threshold),
+        dimension_threshold=float(dimension_threshold),
+        failed_dimensions=failed_dimensions,
+        artifact_hash_coverage=1.0,
+        findings=tuple(findings),
     )
 
 
@@ -2549,6 +2851,7 @@ __all__ = [
     "BenchmarkTrial",
     "BlindReviewArtifact",
     "BlindReviewEntry",
+    "BlindReviewGateReport",
     "BlindReviewPacket",
     "BlindReviewScore",
     "BlindReviewScoreSheet",
@@ -2565,7 +2868,9 @@ __all__ = [
     "digest_artifact",
     "evaluate_trial_response",
     "evaluate_trial_evidence",
+    "evaluate_blind_review_gate",
     "load_benchmark_spec",
+    "load_blind_review_packet",
     "load_blind_review_score_sheet",
     "parse_opencode_events",
     "run_opencode_response",

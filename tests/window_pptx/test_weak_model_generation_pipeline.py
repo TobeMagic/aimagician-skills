@@ -20,10 +20,14 @@ if str(SCRIPTS) not in sys.path:
 from window_pptx.cli import build_dry_run_result, collect_requested_actions, parse_args  # noqa: E402
 from window_pptx.generation import GenerationGateError, prepare_brief_generation  # noqa: E402
 from window_pptx.design_quality import inspect_design_quality  # noqa: E402
-from window_pptx.layouts import SlideSize  # noqa: E402
+from window_pptx.layouts import ResolvedSlot, SlideSize  # noqa: E402
 from window_pptx.render_plan import (  # noqa: E402
     AssetBinding,
     RenderPlanError,
+    _font_size,
+    _poster_closing_slot_texts,
+    _poster_title_text,
+    _rich_text_runs,
     semantic_form_chart_type,
     validate_render_plan,
 )
@@ -36,12 +40,19 @@ from window_pptx.quality_v2 import (  # noqa: E402
     generation_quality_findings,
 )
 from window_pptx.weak_model import (  # noqa: E402
+    _exact_number_word,
     compile_brief_plan,
     compile_brief_with_retries,
     load_narrative_rules,
     normalize_brief_plan,
 )
 import window_pptx_automation as automation  # noqa: E402
+
+
+def test_bounded_number_word_normalization_supports_editable_metric_values() -> None:
+    assert _exact_number_word("Forty-one") == 41
+    assert _exact_number_word("one hundred and twenty") == 120
+    assert _exact_number_word("not a number") is None
 
 
 def test_shared_text_layout_counts_explicit_lines_before_character_capacity() -> None:
@@ -92,6 +103,119 @@ def test_shared_text_layout_does_not_reject_calibrated_latin_cover_title() -> No
     assert estimate.required_lines == 1
     assert estimate.available_lines == 1
     assert estimate.fits is True
+
+
+def test_long_closing_cta_uses_body_scale_instead_of_oversized_title_text() -> None:
+    slot = ResolvedSlot(
+        id="body",
+        component="cta",
+        x=5.7,
+        y=3.2,
+        width=6.05,
+        height=3.1,
+        allow_overlap=True,
+    )
+    typography = {
+        "display": 44,
+        "title": 32,
+        "subtitle": 22,
+        "body": 18,
+        "label": 12,
+        "footnote": 11,
+    }
+
+    assert (
+        _font_size(
+            "cta",
+            typography,
+            text=(
+                "统一知识入口 · 审批周期 10 → 5 天 · 建立运营闭环\n\n"
+                "决策：试点范围｜业务负责人｜启动日期"
+            ),
+            slot=slot,
+            role="closing",
+            family_id="cta",
+        )
+        == 18
+    )
+
+
+def test_poster_title_keeps_business_suffix_intact_and_avoids_orphan() -> None:
+    assert _poster_title_text(
+        "企业知识协同平台建设提案",
+        layout_id="cover.poster-editorial",
+    ) == "企业知识协同平台\n建设提案"
+    assert _poster_title_text(
+        "企业知识协同平台建设提案",
+        layout_id="cover.full-visual",
+    ) == "企业知识协同平台建设提案"
+
+
+def test_poster_closing_splits_evidence_and_three_decision_chips() -> None:
+    assert _poster_closing_slot_texts(
+        "统一知识入口 · 审批周期 10 → 5 天 · 建立运营闭环\n\n"
+        "决策：试点范围｜业务负责人｜启动日期"
+    ) == {
+        "primary": "统一知识入口 · 审批周期 10 → 5 天\n建立运营闭环",
+        "decision-one": "试点范围",
+        "decision-two": "业务负责人",
+        "decision-three": "启动日期",
+    }
+
+
+def test_closing_cta_promotes_arrow_metric_to_editable_rich_text() -> None:
+    runs = _rich_text_runs(
+        "cta",
+        "统一知识入口 · 审批周期 10 → 5 天\n建立运营闭环",
+        value_font_size_pt=32,
+        typography={
+            "display": 44,
+            "title": 32,
+            "subtitle": 22,
+            "body": 18,
+            "label": 12,
+            "footnote": 11,
+        },
+        colors={
+            "text": "#111827",
+            "muted_text": "#4B5563",
+            "primary": "#B45309",
+        },
+    )
+
+    assert runs is not None
+    assert [(run.text, run.font_size_pt, run.bold) for run in runs] == [
+        ("统一知识入口 · 审批周期 ", 18, False),
+        ("10 → 5", 32, True),
+        (" 天", 18, False),
+        ("建立运营闭环", 18, False),
+    ]
+
+
+def test_multiparagraph_cta_uses_plain_editable_text() -> None:
+    runs = _rich_text_runs(
+        "cta",
+        (
+            "统一知识入口 · 审批周期 10 → 5 天 · 建立运营闭环\n\n"
+            "决策：试点范围｜业务负责人｜启动日期"
+        ),
+        value_font_size_pt=32,
+        typography={
+            "display": 44,
+            "title": 32,
+            "subtitle": 22,
+            "body": 18,
+            "label": 12,
+            "footnote": 11,
+        },
+        colors={
+            "text": "#111827",
+            "muted_text": "#4B5563",
+            "primary": "#B45309",
+        },
+    )
+
+    assert runs is None
 
 
 def facts() -> dict[str, object]:
@@ -152,6 +276,16 @@ def test_common_role_like_semantic_alias_is_normalized_safely() -> None:
     assert "NORMALIZED_SEMANTIC_ALIAS" in trace.changes
     compilation = compile_brief_plan(facts(), normalized)
     assert compilation.brief_plan.groups[0].semantic_hint == "bullets"
+
+
+def test_product_showcase_role_alias_normalizes_to_image_semantic() -> None:
+    payload = brief(scenario="product-launch", beat="product-vision")
+    payload["groups"][0]["semantic_hint"] = "product-showcase"  # type: ignore[index]
+
+    normalized, trace = normalize_brief_plan(payload)
+
+    assert normalized["groups"][0]["semantic_hint"] == "image"
+    assert "NORMALIZED_SEMANTIC_ALIAS" in trace.changes
 
 
 @pytest.mark.parametrize(
@@ -315,6 +449,28 @@ def test_comma_grouped_measure_and_source_qualified_labels_remain_exact() -> Non
         if item.component == "kpi"
     )
 
+
+def test_precise_month_range_overrides_lossy_year_category() -> None:
+    metric_facts = copy.deepcopy(facts())
+    metric_facts["facts"][0].update(
+        {
+            "text": (
+                "The analysis covers 42,180 subscriptions from January "
+                "through June 2026."
+            ),
+            "value": 42180,
+            "unit": "subscriptions",
+            "claim_key": "sample",
+            "time_scope": "2026",
+        }
+    )
+
+    result = compile_brief_plan(metric_facts, brief())
+    slide = next(item for item in result.deck_plan["slides"] if item["id"] == "evidence")
+
+    assert slide["blocks"][0]["items"][0]["category"] == "January–June 2026"
+    metric_facts["facts"][0].pop("time_scope")
+
     metric_facts["facts"][0].update(
         {
             "text": (
@@ -327,12 +483,24 @@ def test_comma_grouped_measure_and_source_qualified_labels_remain_exact() -> Non
         }
     )
     segments = compile_brief_plan(metric_facts, brief())
+    assert (
+        "evidence:LONG_EVIDENCE_TITLE_ROLE_FALLBACK"
+        not in segments.narrative.coverage["semantic_adjustments"]
+    )
     segment_slide = next(
         item for item in segments.deck_plan["slides"] if item["id"] == "evidence"
     )
+    assert segment_slide["title"] == (
+        "Ninety-day retention is 81 percent for annual plans and "
+        "59 percent for monthly plans."
+    )
     assert segment_slide["blocks"][0]["items"] == [
         {"label": "Annual Plans", "value": 81, "unit": "percent"},
-        {"label": "Monthly Plans", "value": 59, "unit": "percent"},
+        {
+            "label": "Monthly Plans",
+            "value": 59,
+            "unit": "percent",
+        },
     ]
 
     metric_facts["facts"][0].update(
@@ -380,7 +548,8 @@ def test_exact_parallel_list_becomes_cards_without_model_authored_design() -> No
         "email summaries",
     ]
     assert result.narrative.coverage["semantic_adjustments"] == [
-        "evidence:EXACT_PARALLEL_LIST_OVERRIDES_MODEL:table->bullets"
+        "evidence:EXACT_PARALLEL_LIST_OVERRIDES_MODEL:table->bullets",
+        "evidence:LONG_EVIDENCE_TITLE_ROLE_FALLBACK",
     ]
 
 
@@ -537,6 +706,39 @@ def test_cli_requires_both_weak_model_contracts() -> None:
                 "--fact-store",
                 "facts.json",
                 "--compile-brief-plan",
+            ]
+        )
+
+
+def test_cli_scopes_direct_agnes_generation_to_brief_render_route() -> None:
+    args = parse_args(
+        [
+            "--project-dir",
+            "project",
+            "--fact-store",
+            "facts.json",
+            "--brief-plan",
+            "brief.json",
+            "--render-brief-plan",
+            "--generate-assets-with-agnes",
+            "--dry-run",
+        ]
+    )
+    result = build_dry_run_result(args, "project")
+
+    assert args.generate_assets_with_agnes is True
+    assert (
+        "project/.window-pptx/audits/asset-materialization.json"
+        in result["would_write"]
+    )
+    assert "project/.window-pptx/generated-assets" in result["would_write"]
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "--project-dir",
+                "project",
+                "--generate-assets-with-agnes",
+                "--dry-run",
             ]
         )
 

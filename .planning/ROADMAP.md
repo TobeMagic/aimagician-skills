@@ -522,7 +522,7 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 **Goal:** Prove portable production reliability across the complete benchmark, certify a frozen sample read-only in real PowerPoint, publish canonical evidence, and close only when every hard gate passes.
 **Depends on:** Phase 28
 **Requirements:** [V5-UAT-01, V5-UAT-02, V5-UAT-03, V5-UAT-04, V5-UAT-05, V5-UAT-06]
-**Status:** Planned
+**Status:** In progress — specification locked; independent plan review open
 **Success Criteria**:
   1. The portable matrix and ten-run reliability cases pass for paths, formats, ratios, fonts, locks, isolated LibreOffice profiles, source protection, and edit sentinels.
   2. All fifteen canonical portable outputs have exports, contact sheets, reports, hashes, and final human review evidence; a frozen 10% sample plus every high-risk capability sample passes read-only PowerPoint certification without repair prompts or process residue.
@@ -555,40 +555,50 @@ v5.1 supersedes the unshipped v5.0 visual architecture while retaining its porta
 **Goal:** Freeze the authorized reference, measurable visual floor, TemplatePack/DesignPack contracts, and failure examples.
 **Depends on:** v5.0 portable engineering foundation
 **Requirements:** [V51-REF-01, V51-DESIGN-01, V51-DESIGN-02, V51-QA-01, V51-QA-03]
-**Status:** In Progress
+**Status:** Complete
 
 ### Phase 31: Authorized TemplatePack and Portable OOXML Adapter
 
 **Goal:** Produce the first reference-grade 15-slide editable work-summary deck without COM.
 **Depends on:** Phase 30
 **Requirements:** [V51-TPL-01, V51-TPL-02, V51-TPL-03, V51-DESIGN-04]
-**Status:** Engineering complete; independent review gate open
+**Status:** Complete
 
 ### Phase 32: VisualPlan, DesignPack v2, and Renderer v2
 
 **Goal:** Compile narrative intent into real component compositions and editable native rendering.
 **Depends on:** Phase 31
 **Requirements:** [V51-DESIGN-01, V51-DESIGN-02, V51-DESIGN-03, V51-DESIGN-04]
-**Status:** Implementation complete / visual `NO_GO` — R6 engineering PASS,
-direct Agnes FAIL, Quality v3 `68.33`
+**Status:** Complete — superseded failing R6 with accepted Phase 33/34
+reference-method candidates
 
 ### Phase 33: Multi-Scenario DesignPacks and Asset System
 
 **Goal:** Complete four extensible DesignPacks and governed asset acquisition/fallback strategies for all fifteen scenarios.
 **Depends on:** Phase 32
 **Requirements:** [V51-DESIGN-01, V51-DESIGN-03, V51-DESIGN-04]
-**Status:** Planned
+**Status:** Complete — four DesignPack v2 systems and governed asset
+materialization implemented and verified
 
 ### Phase 34: Visual Regression, Auto-Repair, and Four-Scenario UAT
 
 **Goal:** Reject the old sparse floor, repair bounded visual defects, and pass four representative real-artifact scenarios.
 **Depends on:** Phase 33
 **Requirements:** [V51-QA-01, V51-QA-02, V51-QA-03, V51-BENCH-01]
-**Status:** Planned
+**Status:** Complete — four representative candidates pass portable,
+Quality v3, and direct Agnes gates
 
 ### Phase 35: Weak-Model Benchmark and Cross-Engine Closure
 
 **Goal:** Refreeze the benchmark, execute ordinary-model trials, complete blind review, and close only with fresh cross-engine evidence.
 **Depends on:** Phase 34
 **Requirements:** [V51-BENCH-01, V51-UAT-01]
-**Status:** Planned
+**Status:** In Progress — the final current-code six-trial ordinary-model
+matrix, portable gates, direct Agnes reviews, and sharded regression suite
+pass; refreshed blind packet `benchmark-reviewer-package-current-r2` is ready.
+The deterministic blind-review validator now rechecks frozen packet and
+artifact hashes, rejects incomplete templates as `NOT_RUN`, and enforces the
+locked `4.2` overall / `4.0` per-dimension score floor. It explicitly leaves
+human provenance for external confirmation rather than treating an `R-*`
+pseudonym as proof. Independent human scoring and the final post-review `GO`
+audit remain open.

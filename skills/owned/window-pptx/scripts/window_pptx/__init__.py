@@ -24,6 +24,12 @@ from .agnes_direct import (
     ProviderRouteError,
     require_direct_route,
 )
+from .asset_materialization import (
+    AssetMaterialization,
+    AssetMaterializationError,
+    MaterializedAsset,
+    materialize_asset_plan,
+)
 from .com_session import dispatch_powerpoint, macro_security
 from .backends import (
     BackendCapabilities,
@@ -207,6 +213,7 @@ from .quality_v2 import (
     generation_quality_findings,
 )
 from .quality_v3 import (
+    CompositionFloorReport,
     CompositionRepairPass,
     CompositionRepairResult,
     QualityAxisScores,
@@ -215,6 +222,7 @@ from .quality_v3 import (
     assess_evidence_bundle_v3,
     build_quality_report_v3,
     execute_composition_repairs,
+    inspect_composition_floor,
     inspect_generation_quality_v3,
 )
 from .preview_quality import inspect_preview_images

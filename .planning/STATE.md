@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: Window-PPTX Reference-Grade Visual Engine
-current_phase: 32
-current_phase_name: Composition Grammar and Generated Reference Floor
-status: in_progress
-stopped_at: Phase 32 implementation, full regression, independent review, and R6 proof complete; visual release remains NO_GO
-last_updated: "2026-07-28T18:45:00+08:00"
-last_activity: 2026-07-28
+current_phase: 35
+current_phase_name: Weak-Model Benchmark and Milestone Closure
+status: blocked
+stopped_at: Phase 35 blocked after three consecutive checks found no independent-human completed score sheet; resume at P35-BLIND-01 score validation
+last_updated: "2026-07-29T00:53:51+08:00"
+last_activity: 2026-07-29
 progress:
   total_phases: 37
-  completed_phases: 28
+  completed_phases: 33
   total_plans: 34
-  completed_plans: 31
-  percent: 76
+  completed_plans: 36
+  percent: 94
 ---
 
 # Project State
@@ -26,20 +26,44 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v5.1 Phase 32 now has CompositionPlan v1, consulting
-DesignPack v2, direct Agnes adapters, Quality v3, bounded composition repair,
-and a real 14-slide R6 artifact. R6 passes portable engineering and keeps
-editable fact coverage, but direct Agnes returns `FAIL` and external-capped
-Quality v3 is `68.33`; visual release remains `NO_GO`. PowerPoint is optional
-sampled certification, not a daily hard dependency.
+**Current focus:** v5.1 Phase 35 has four reference-method generated candidates
+passing portable engineering, Quality v3, and hash-bound direct Agnes review.
+The current-code ordinary-model matrix is frozen at
+`.planning/evidence/phase35-ordinary-current-final-r1/summary.json`: all four
+required DeepSeek scenarios and both available Nemotron scenarios pass
+portable and direct Agnes gates. The refreshed anonymized reviewer packet is
+`benchmark-reviewer-package-current-r2` and is hash-complete. The milestone
+remains `NO_GO` until an independent human completes that packet and a fresh
+post-review OpenCode/Agnes audit returns `GO`. PowerPoint COM is optional
+sampled certification, not a portable-delivery dependency.
+
+The release gate is now executable through
+`scripts/validate_window_pptx_blind_review.py`: it strictly reloads the frozen
+packet, rehashes and opens every staged PPTX/PNG, validates all human scores,
+and emits deterministic `PASS`/`FAIL`/`NOT_RUN` evidence against the locked
+4.2 overall / 4.0 per-dimension floor. Focused gate coverage passes 4/4 and
+the complete weak-model benchmark test file passes 42/42. Running it against
+the current all-null template produced
+`blind-review-gate.current.json = NOT_RUN`, as required.
+The validator deliberately labels its result `P35-BLIND-01-SCORE-FLOOR` and
+keeps `human_provenance_status=EXTERNAL_CONFIRMATION_REQUIRED`: an `R-*`
+pseudonym is not proof that the reviewer is human, so code cannot promote the
+full milestone gate without the actual independent-human handoff.
+OpenCode DeepSeek review session `ses_0566bf981ffen4mK0X3d4T6QYK` was stopped
+after repeated provider 500s. Agnes review session
+`ses_056667320ffenCP7JD5nZawqVP` initially made the incorrect inference that
+an `R-*` regex proves a human source; the controller rejected that claim,
+amended the provenance contract, and the same session's focused re-review
+found no Blocker or Important issue in the corrected score-floor validator.
+This is a local code review only, not the final P35-AUDIT-01 completion audit.
 
 ## Current Position
 
 Milestone: v5.1 Window-PPTX Reference-Grade Visual Engine
-Current Phase: 32
-Current Phase Name: Composition Grammar and Generated Reference Floor
-Status: Implementation complete / visual acceptance open / NO_GO
-Last Activity: 2026-07-28
+Current Phase: 35
+Current Phase Name: Weak-Model Benchmark and Milestone Closure
+Status: Machine gates passed / blocked on independent human blind review / NO_GO
+Last Activity: 2026-07-29
 
 Foundation completed:
 
@@ -143,37 +167,56 @@ Active v5 foundation:
   but never own facts, implementation, or release truth.
 - [Phase 32]: R6 engineering PASS is not a visual PASS. Agnes suggestions that
   require absent quantitative facts are recorded but cannot be auto-applied.
+- [Phase 33]: Generated Agnes imagery is a governed visual layer only; facts,
+  labels, charts, tables, and core diagrams remain native and editable.
+- [Phase 34]: Four-scenario UAT is accepted only from exact candidate hashes
+  that pass portable proof, Quality v3, and direct full-resolution Agnes
+  review with no Blocker or Important finding.
+- [Phase 35]: The current representative ordinary-model replay is reported
+  separately from the historical 180-trial contract. Provider-unavailable
+  secondary trials remain `UNAVAILABLE`, never imputed as success.
+- [Phase 35]: Human blind review is a non-delegable release gate. AI review,
+  automatic scores, and reference similarity cannot replace it.
 
 ## Next Actions
 
-1. Materialize licensed/user/Agnes/ModelScope visual anchors into the asset
-   pipeline and add image-led cover/section/data compositions.
-2. Calibrate Agnes against frozen reference/R2/R6 evidence and obtain blind
-   human review before accepting the consulting lane.
-3. Expand to Phase 33 only after the first generated lane reaches the visual
-   bar; then refreeze the two-model benchmark.
+1. Have an independent human reviewer complete
+   `.planning/evidence/phase35-human-blind-review/benchmark-reviewer-package-current-r2/score-sheet.template.json`
+   using the frozen anonymized PPTX/PNG packet.
+2. Save the returned copy as `score-sheet.completed.json`, then run
+   `scripts/validate_window_pptx_blind_review.py` against the frozen
+   `packet.json`. The validator rechecks every PPTX/PNG hash and readability,
+   emits `PASS`/`FAIL`/`NOT_RUN`, and requires overall mean `>=4.2` plus every
+   rubric dimension aggregate `>=4.0`. The current all-null template is
+   deterministically recorded as `blind-review-gate.current.json` with
+   `NOT_RUN`.
+3. If the human gate passes, rerun the fresh OpenCode/Agnes read-only audit.
+   Merge, release, commit, and push only after that audit returns `GO` with no
+   Blocker or Important issue.
 
 ## Blockers / Concerns
 
-- Actual live current-user CLI homes were not mutated during automated acceptance. The same global path logic was verified through an isolated `--home` after `install --dry-run`.
-- Phase 22 startup is slow on this host because installed PowerPoint add-ins load during real COM sessions; safety inspection therefore remains registry-only.
-- v5.0 is active and unshipped. Portable QA is complete, but manual customer visual acceptance failed; visual remediation, the formal benchmark, blind review, and final cross-engine UAT remain required.
-- Microsoft `MSPPT.OLB` and late-bound PowerPoint automation work, but early-bound pywin32 `_Application.QueryInterface` fails with `TYPE_E_CANTLOADLIBRARY` because the interface registry points to a stale, missing WPS TypeLib. This does not block portable delivery; it remains a sampled-certification concern.
-- OpenCode `opencode/deepseek-v4-flash-free` completed read-only session `ses_07d23c7d0ffetnEwNzbfy0zA2b`. Its findings were independently checked and some inaccurate capability claims were rejected; it is research evidence, not the final post-implementation `V5-UAT-04` audit.
-- Phase 27.2 OpenCode 1.17.6 re-audit session `ses_07c11cc8bffe8HmjcQX73B1We4` confirmed portable engineering PASS, customer visual FAIL, release NO_GO, reconciled planning state, 602/602 regression, and present V5-PORT-07 evidence. It remains Phase 27.2 review evidence; Phase 29 owns the final post-benchmark `V5-UAT-04` audit.
-- Phase 28 repair-focused OpenCode session `ses_07afb9f00ffecq2Y9LQJdzYPWC` on `opencode/deepseek-v4-flash-free` confirmed both targeted defects fixed and no Critical/Important code defect, while retaining `VISUAL=PARTIAL`, `PHASE28=NOT_COMPLETE`, and `V5=NO_GO`; it is diagnostic review, not the Phase 29 final audit.
-- The second frozen benchmark model remains unavailable/unreliable, so the complete 180-trial comparison and human blind review are still `NOT_RUN`.
-- Direct `agnes-direct/agnes-2.0-flash` passed a session-bound Data-URI probe
-  and reviewed R3, R4, and the final R6 contact sheet. R6 scored
-  `68/72/75/60/65/70` and returned `FAIL`; two contact-sheet-scale claims were
-  rejected after local pixel/fact verification, so Agnes remains advisory.
-- OpenCode Agnes session `ses_05b3687dcffe9ljse434fHSYOA` completed the final
-  read-only Phase 32 implementation review with 0 Critical, 0 Important, and
-  3 Minor tracer constraints. It authorizes committing the feature branch,
-  not reference-grade release or default-branch merge.
-- The Phase 31 post-implementation DeepSeek review was attempted again on
-  2026-07-27 and both title/main streams returned explicit rate-limit errors.
-  An earlier Agnes planning review loaded all required skills but looped
-  without a verdict. No independent approval is claimed.
-- Phase 28's three latest DeepSeek visual-floor diagnostics (business r12, product r8, data r9) are deliberately noncanonical: no clean component fingerprint exists, only one model and one full-v5 trial per scenario are represented, and automatic composites do not satisfy customer visual review.
-- Phase 29 sampled PowerPoint certification is `NOT_RUN`; the stale WPS TypeLib that breaks early-bound COM does not block portable daily delivery but remains relevant to that sample.
+- The only mandatory external gate still open is the independent human blind
+  review. It is `NOT_RUN`, so the milestone and default-branch merge remain
+  `NO_GO` even though all current machine gates pass.
+- Nemotron was available for product-launch and data-analysis but unavailable
+  for business-report and project-proposal. Phase 35 records those two trials
+  explicitly as `UNAVAILABLE`, as required by the locked specification.
+- Microsoft `MSPPT.OLB` late binding works, but early-bound pywin32
+  `_Application.QueryInterface` can fail with `TYPE_E_CANTLOADLIBRARY` because
+  the interface registry points to a stale missing WPS TypeLib. COM remains
+  optional certification and does not block portable delivery.
+- The six-trial current replay is the locked Phase 35 representative matrix,
+  not a claim that the historical formal 180-trial contract was rerun.
+- Final current-code verification passed in four Python shards: 189, 337,
+  81, and 167 tests. Three stale expectations exposed by intentional metric,
+  title-capacity, and proposal-recipe improvements were updated and their
+  focused regressions pass. Root Vitest passes 108/108; TypeScript typecheck,
+  build, PptxGenJS doctor, compileall, `git diff --check`, and Skillbird
+  formatting also pass.
+- OpenCode/Agnes pre-human readiness session
+  `ses_0568c5c11ffeGNfS6nR6VN150H` reports P35-BENCH-01/02,
+  P35-VISUAL-01, and P35-XENGINE-01 PASS with zero Blocker or Important
+  findings; it correctly keeps P35-BLIND-01 and the final post-review
+  P35-AUDIT-01 at `NOT_RUN`. This readiness check is not the final completion
+  audit and does not authorize GO.

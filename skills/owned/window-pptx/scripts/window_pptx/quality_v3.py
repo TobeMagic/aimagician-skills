@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections import Counter
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 from .composition_plan import CompositionPlan
+from .errors import WindowPptxError
+from .transaction import validate_ooxml_package
 
 
 VISUAL_HARD_GATE_CODES = {
@@ -21,6 +23,9 @@ VISUAL_HARD_GATE_CODES = {
     "DECORATION_DOMINATES_CONTENT",
     "EVIDENCE_ANNOTATION_COVERAGE_LOW",
     "DECK_CHOREOGRAPHY_FLAT",
+    "DOMINANT_ANCHOR_COVERAGE_LOW",
+    "ASYMMETRIC_COMPOSITION_COVERAGE_LOW",
+    "LAYOUT_RUN_TOO_LONG",
 }
 REGISTERED_REPAIR_CODES = {
     "BIND_NATIVE_COMPONENT",
@@ -31,6 +36,8 @@ REGISTERED_REPAIR_CODES = {
     "INCREASE_CONTENT_INK",
 }
 SEVERITY_ORDER = {"blocker": 0, "important": 1, "minor": 2}
+_HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_DIRECT_REVIEW_ROUTE = "agnes-direct/agnes-2.0-flash"
 
 
 @dataclass(frozen=True)
@@ -73,6 +80,45 @@ class QualityFindingV3:
             "slide_id": self.slide_id,
             "region": self.region,
             "repair_code": self.repair_code,
+        }
+
+
+@dataclass(frozen=True)
+class CompositionFloorReport:
+    eligible_slide_ids: tuple[str, ...]
+    dominant_anchor_slide_ids: tuple[str, ...]
+    asymmetric_slide_ids: tuple[str, ...]
+    dominant_anchor_ratio: float
+    asymmetric_ratio: float
+    maximum_layout_run: int
+    repeated_layout_slide_ids: tuple[str, ...]
+    findings: tuple[QualityFindingV3, ...]
+
+    @property
+    def passed(self) -> bool:
+        return not self.findings
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": "1.0",
+            "eligible_slide_ids": list(self.eligible_slide_ids),
+            "dominant_anchor": {
+                "slide_ids": list(self.dominant_anchor_slide_ids),
+                "ratio": self.dominant_anchor_ratio,
+                "threshold": 0.35,
+            },
+            "asymmetric": {
+                "slide_ids": list(self.asymmetric_slide_ids),
+                "ratio": self.asymmetric_ratio,
+                "threshold": 0.4,
+            },
+            "layout_run": {
+                "maximum": self.maximum_layout_run,
+                "threshold": 2,
+                "offending_slide_ids": list(self.repeated_layout_slide_ids),
+            },
+            "findings": [finding.to_dict() for finding in self.findings],
+            "passed": self.passed,
         }
 
 
@@ -195,6 +241,258 @@ def build_quality_report_v3(
     )
 
 
+def finalize_quality_release_v3(
+    *,
+    automatic_report_path: Path | str,
+    portable_verification_path: Path | str,
+    direct_review_paths: Iterable[Path | str],
+    candidate_path: Path | str,
+) -> dict[str, Any]:
+    """Hash-bind passed direct visual reviews to one passed Quality-v3 deck.
+
+    This creates a new immutable release proof instead of rewriting automatic
+    evidence. Unbound, non-direct, failed, or below-floor reviews fail closed.
+    """
+
+    automatic_path = Path(automatic_report_path).resolve()
+    portable_path = Path(portable_verification_path).resolve()
+    candidate = Path(candidate_path).resolve()
+    reviews = tuple(Path(path).resolve() for path in direct_review_paths)
+    if (
+        not candidate.is_file()
+        or not automatic_path.is_file()
+        or not portable_path.is_file()
+        or not reviews
+    ):
+        raise ValueError(
+            "quality release requires candidate, portable proof, automatic report, "
+            "and reviews"
+        )
+    try:
+        validate_ooxml_package(candidate)
+    except WindowPptxError as exc:
+        raise ValueError("quality release candidate is not valid OOXML") from exc
+    candidate_bytes = candidate.read_bytes()
+    candidate_sha256 = hashlib.sha256(candidate_bytes).hexdigest()
+    try:
+        portable_bytes = portable_path.read_bytes()
+        portable = json.loads(portable_bytes)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("portable verification is invalid") from exc
+    verification = portable.get("verification") if isinstance(portable, dict) else None
+    quality = verification.get("quality") if isinstance(verification, dict) else None
+    if (
+        portable.get("schema_version") != "1.0"
+        or portable.get("candidate_sha256") != candidate_sha256
+        or not isinstance(quality, dict)
+        or quality.get("passed") is not True
+        or quality.get("hard_gate_failures") not in ([], ())
+    ):
+        raise ValueError(
+            "portable verification is not passed or candidate-hash-bound"
+        )
+    try:
+        automatic_bytes = automatic_path.read_bytes()
+        automatic = json.loads(automatic_bytes)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("automatic Quality-v3 report is invalid") from exc
+    if (
+        not isinstance(automatic, dict)
+        or automatic.get("schema_version") != "3.0"
+        or automatic.get("engineering_passed") is not True
+        or automatic.get("visual_passed") is not True
+    ):
+        raise ValueError("automatic Quality-v3 report has not passed")
+    auto_scores = automatic.get("scores")
+    automatic_thresholds = automatic.get("thresholds")
+    axes = set(QualityAxisScores.__annotations__)
+    if (
+        not isinstance(auto_scores, dict)
+        or set(auto_scores) != axes
+        or any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or value < 0
+            or value > 100
+            for value in auto_scores.values()
+        )
+        or not isinstance(automatic_thresholds, dict)
+        or set(automatic_thresholds) != {"total", "axis"}
+        or any(
+            isinstance(value, bool) or not isinstance(value, int)
+            for value in automatic_thresholds.values()
+        )
+        or not 0 <= automatic_thresholds["axis"] <= 100
+        or not 0 <= automatic_thresholds["total"] <= 100
+        or min(auto_scores.values()) < automatic_thresholds["axis"]
+        or sum(auto_scores.values()) / len(axes)
+        < automatic_thresholds["total"]
+    ):
+        raise ValueError("automatic Quality-v3 axes or thresholds are invalid")
+
+    review_evidence: list[dict[str, Any]] = []
+    review_scores: list[Mapping[str, Any]] = []
+    for path in reviews:
+        try:
+            raw_bytes = path.read_bytes()
+            review = json.loads(raw_bytes)
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError("direct visual review is invalid") from exc
+        payload = review.get("payload") if isinstance(review, dict) else None
+        scores = payload.get("scores") if isinstance(payload, dict) else None
+        observations = (
+            payload.get("observations") if isinstance(payload, dict) else None
+        )
+        review_findings = (
+            payload.get("findings") if isinstance(payload, dict) else None
+        )
+        unresolved_visual_findings = (
+            [
+                finding
+                for finding in review_findings
+                if isinstance(finding, dict)
+                and finding.get("severity") in {"blocker", "important"}
+            ]
+            if isinstance(review_findings, list)
+            else None
+        )
+        visual_evidence = (
+            review.get("visual_evidence") if isinstance(review, dict) else None
+        )
+        evidence_items = (
+            visual_evidence.get("items")
+            if isinstance(visual_evidence, dict)
+            else None
+        )
+        resolved_evidence: list[tuple[Path, str]] = []
+        if isinstance(evidence_items, list):
+            for item in evidence_items:
+                if (
+                    not isinstance(item, dict)
+                    or not isinstance(item.get("path"), str)
+                    or not _HEX_SHA256.fullmatch(
+                        str(item.get("sha256", ""))
+                    )
+                ):
+                    resolved_evidence = []
+                    break
+                resolved_evidence.append(
+                    (
+                        Path(item["path"]).resolve(),
+                        str(item["sha256"]),
+                    )
+                )
+        if (
+            not isinstance(review, dict)
+            or not isinstance(payload, dict)
+            or review.get("schema_version") != "1.0"
+            or review.get("candidate_sha256") != candidate_sha256
+            or payload.get("schema_version") != "1.0"
+            or review.get("route_id") != _DIRECT_REVIEW_ROUTE
+            or review.get("model") != "agnes-2.0-flash"
+            or not _HEX_SHA256.fullmatch(str(review.get("request_sha256", "")))
+            or not _HEX_SHA256.fullmatch(str(review.get("response_sha256", "")))
+            or not resolved_evidence
+            or any(
+                not evidence_path.is_file()
+                or hashlib.sha256(evidence_path.read_bytes()).hexdigest()
+                != evidence_sha256
+                for evidence_path, evidence_sha256 in resolved_evidence
+            )
+            or payload.get("scope") != "deck"
+            or payload.get("verdict") != "PASS"
+            or not isinstance(observations, list)
+            or not observations
+            or not all(
+                isinstance(item, dict)
+                and set(item) == {"slide_id", "region", "evidence"}
+                and all(
+                    isinstance(item.get(field), str)
+                    and bool(item[field].strip())
+                    for field in ("slide_id", "region", "evidence")
+                )
+                for item in observations
+            )
+            or unresolved_visual_findings is None
+            or bool(unresolved_visual_findings)
+            or not isinstance(scores, dict)
+            or set(scores) != axes
+            or any(
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or value < 75
+                or value > 100
+                for value in scores.values()
+            )
+        ):
+            raise ValueError("direct visual review has not passed the governed gate")
+        review_scores.append(scores)
+        review_evidence.append(
+            {
+                "path": str(path),
+                "sha256": hashlib.sha256(raw_bytes).hexdigest(),
+                "request_sha256": review["request_sha256"],
+                "response_sha256": review["response_sha256"],
+                "visual_evidence": {
+                    "items": [
+                        {
+                            "path": str(evidence_path),
+                            "sha256": evidence_sha256,
+                        }
+                        for evidence_path, evidence_sha256 in resolved_evidence
+                    ],
+                },
+            }
+        )
+
+    final_axes = {
+        axis: min(
+            float(auto_scores[axis]),
+            *(float(scores[axis]) for scores in review_scores),
+        )
+        for axis in QualityAxisScores.__annotations__
+    }
+    governed_findings = tuple(
+        QualityFindingV3(
+            code=str(item["code"]),
+            severity=str(item["severity"]),
+            message=str(item["message"]),
+            slide_id=item.get("slide_id"),
+            region=item.get("region"),
+            repair_code=item.get("repair_code"),
+        )
+        for item in automatic.get("findings", ())
+        if isinstance(item, dict)
+    )
+    report = build_quality_report_v3(
+        scores=QualityAxisScores(**final_axes),
+        findings=governed_findings,
+        engineering_passed=True,
+        art_review_status="PASS",
+        total_threshold=int(automatic_thresholds["total"]),
+        axis_threshold=int(automatic_thresholds["axis"]),
+    )
+    if not report.release_passed:
+        raise ValueError("combined Quality-v3 release gate did not pass")
+    return {
+        "schema_version": "3.1",
+        "candidate": {
+            "path": str(candidate),
+            "sha256": candidate_sha256,
+        },
+        "portable_verification": {
+            "path": str(portable_path),
+            "sha256": hashlib.sha256(portable_bytes).hexdigest(),
+        },
+        "automatic_report": {
+            "path": str(automatic_path),
+            "sha256": hashlib.sha256(automatic_bytes).hexdigest(),
+        },
+        "direct_reviews": review_evidence,
+        "report": report.to_dict(),
+    }
+
+
 def assess_evidence_bundle_v3(path: Path | str) -> QualityReportV3:
     """Adapt a frozen evidence bundle without pretending old evidence is v3."""
 
@@ -283,6 +581,156 @@ def assess_evidence_bundle_v3(path: Path | str) -> QualityReportV3:
     )
 
 
+def inspect_composition_floor(generation: Any) -> CompositionFloorReport:
+    """Measure authored composition without relying on model self-report."""
+
+    render_plan = getattr(generation, "render_plan", None)
+    if render_plan is None:
+        finding = QualityFindingV3(
+            "DOMINANT_ANCHOR_COVERAGE_LOW",
+            "blocker",
+            "Composition floor requires a RenderPlan.",
+            repair_code="VARY_REGISTERED_COMPOSITION",
+        )
+        return CompositionFloorReport(
+            eligible_slide_ids=(),
+            dominant_anchor_slide_ids=(),
+            asymmetric_slide_ids=(),
+            dominant_anchor_ratio=0,
+            asymmetric_ratio=0,
+            maximum_layout_run=0,
+            repeated_layout_slide_ids=(),
+            findings=(finding,),
+        )
+    page_area = render_plan.slide_size.width * render_plan.slide_size.height
+    eligible = tuple(
+        slide
+        for slide in render_plan.slides
+        if slide.role not in {"cover", "section", "agenda", "contents", "closing"}
+        and any(
+            item.component not in {"title", "footer", "accent", "decoration"}
+            and not item.id.endswith((".notes", ".insight"))
+            for item in slide.objects
+        )
+    )
+    dominant: list[str] = []
+    asymmetric: list[str] = []
+    for slide in eligible:
+        anchor_objects = [
+            item
+            for item in slide.objects
+            if item.kind == "image"
+            or item.advanced is not None
+            or item.component
+            in {
+                "kpi",
+                "chart",
+                "table",
+                "process-step",
+                "timeline-node",
+                "matrix-cell",
+                "statement",
+                "recommendation-panel",
+            }
+        ]
+        anchor_areas = [
+            item.width * item.height / page_area for item in anchor_objects
+        ]
+        anchor_ratio = min(1.0, sum(anchor_areas))
+        if 0.25 <= anchor_ratio <= 0.60:
+            dominant.append(slide.source_id)
+        if any(
+            token in slide.layout_id
+            for token in (
+                "split",
+                "hero",
+                "editorial",
+                "image-stage",
+                "metric-left",
+                "rail",
+            )
+        ):
+            asymmetric.append(slide.source_id)
+    repeated: list[str] = []
+    max_run = 0
+    current_layout: str | None = None
+    current_ids: list[str] = []
+    for slide in render_plan.slides:
+        if slide.layout_id == current_layout:
+            current_ids.append(slide.source_id)
+        else:
+            current_layout = slide.layout_id
+            current_ids = [slide.source_id]
+        max_run = max(max_run, len(current_ids))
+        if len(current_ids) > 2:
+            repeated.extend(current_ids[2:])
+    denominator = max(1, len(eligible))
+    dominant_ratio = round(len(dominant) / denominator, 4)
+    asymmetric_ratio = round(len(asymmetric) / denominator, 4)
+    findings: list[QualityFindingV3] = []
+    if dominant_ratio < 0.35:
+        missing = [
+            slide.source_id
+            for slide in eligible
+            if slide.source_id not in dominant
+        ]
+        findings.append(
+            QualityFindingV3(
+                "DOMINANT_ANCHOR_COVERAGE_LOW",
+                "blocker",
+                (
+                    f"Dominant-anchor coverage is {len(dominant)}/"
+                    f"{len(eligible)} ({dominant_ratio:.1%}); missing: "
+                    + ", ".join(missing)
+                ),
+                region="deck",
+                repair_code="VARY_REGISTERED_COMPOSITION",
+            )
+        )
+    if asymmetric_ratio < 0.4:
+        missing = [
+            slide.source_id
+            for slide in eligible
+            if slide.source_id not in asymmetric
+        ]
+        findings.append(
+            QualityFindingV3(
+                "ASYMMETRIC_COMPOSITION_COVERAGE_LOW",
+                "blocker",
+                (
+                    f"Asymmetric coverage is {len(asymmetric)}/"
+                    f"{len(eligible)} ({asymmetric_ratio:.1%}); missing: "
+                    + ", ".join(missing)
+                ),
+                region="deck",
+                repair_code="VARY_REGISTERED_COMPOSITION",
+            )
+        )
+    if max_run > 2:
+        findings.append(
+            QualityFindingV3(
+                "LAYOUT_RUN_TOO_LONG",
+                "blocker",
+                (
+                    f"Maximum repeated-layout run is {max_run}; offending: "
+                    + ", ".join(repeated)
+                ),
+                region="deck",
+                repair_code="VARY_REGISTERED_COMPOSITION",
+            )
+        )
+    return CompositionFloorReport(
+        eligible_slide_ids=tuple(slide.source_id for slide in eligible),
+        dominant_anchor_slide_ids=tuple(dominant),
+        asymmetric_slide_ids=tuple(asymmetric),
+        dominant_anchor_ratio=dominant_ratio,
+        asymmetric_ratio=asymmetric_ratio,
+        maximum_layout_run=max_run,
+        repeated_layout_slide_ids=tuple(repeated),
+        findings=tuple(findings),
+    )
+
+
 def inspect_generation_quality_v3(
     generation: Any,
     *,
@@ -308,7 +756,8 @@ def inspect_generation_quality_v3(
             art_review_status=art_review_status,
         )
     rendered = {slide.source_id: slide for slide in render_plan.slides}
-    findings: list[QualityFindingV3] = []
+    floor_report = inspect_composition_floor(generation)
+    findings: list[QualityFindingV3] = list(floor_report.findings)
     materialized = 0
     required_total = 0
     required_assets = 0
@@ -329,27 +778,43 @@ def inspect_generation_quality_v3(
                 )
             )
             continue
-        actual_components = Counter(item.component for item in slide.objects)
-        for binding in composition.slot_bindings:
-            if not binding.required:
-                continue
-            required_total += 1
-            if actual_components[binding.component_id] > 0:
-                materialized += 1
-                actual_components[binding.component_id] -= 1
-            else:
-                findings.append(
-                    QualityFindingV3(
-                        "SEMANTIC_COMPONENT_UNMATERIALIZED",
-                        "blocker",
-                        (
-                            f"Required {binding.semantic_slot} component "
-                            f"{binding.component_id} was not rendered."
-                        ),
-                        slide_id=composition.slide_id,
-                        repair_code="BIND_NATIVE_COMPONENT",
-                    )
+        # CompositionPlan records the preferred pre-repair components, while
+        # RenderPlan is allowed to substitute a capacity-safe registered
+        # layout (for example chart -> two editable KPI panels).  The former
+        # exact component-name comparison produced false blockers even though
+        # the final semantic evidence was present.  Validate the executable
+        # page seam here; exact object identities and source hashes are already
+        # enforced by RenderPlan/OOXML validation.
+        semantic_objects = [
+            item
+            for item in slide.objects
+            if item.group_id != f"wp_s{slide.index:03d}_art"
+            and item.component not in {
+                "title",
+                "footer",
+                "decoration",
+                "accent",
+                "image-frame",
+            }
+            and (
+                bool((item.text or "").strip())
+                or item.advanced is not None
+                or item.kind == "image"
+            )
+        ]
+        required_total += 1
+        if semantic_objects:
+            materialized += 1
+        else:
+            findings.append(
+                QualityFindingV3(
+                    "SEMANTIC_COMPONENT_UNMATERIALIZED",
+                    "blocker",
+                    "No final editable semantic object was rendered.",
+                    slide_id=composition.slide_id,
+                    repair_code="BIND_NATIVE_COMPONENT",
                 )
+            )
         for binding in composition.asset_bindings:
             if not binding.required:
                 continue
@@ -433,11 +898,9 @@ def inspect_generation_quality_v3(
         if composition.fact_refs or composition.derived_fact_refs:
             evidence_pages += 1
             if any(
-                item.text
-                and (
-                    item.text.startswith("EVIDENCE")
-                    or item.text.startswith("证据")
-                )
+                item.id.endswith(".art.evidence-tag")
+                and isinstance(item.text, str)
+                and bool(item.text.strip())
                 for item in art_objects
             ):
                 annotated_pages += 1
@@ -612,6 +1075,7 @@ def execute_composition_repairs(
 __all__ = [
     "CompositionRepairPass",
     "CompositionRepairResult",
+    "CompositionFloorReport",
     "QualityAxisScores",
     "QualityFindingV3",
     "QualityReportV3",
@@ -621,4 +1085,5 @@ __all__ = [
     "build_quality_report_v3",
     "execute_composition_repairs",
     "inspect_generation_quality_v3",
+    "inspect_composition_floor",
 ]

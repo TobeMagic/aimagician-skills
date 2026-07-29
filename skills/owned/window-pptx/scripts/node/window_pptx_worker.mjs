@@ -164,6 +164,7 @@ function validateRequest(request) {
       "requested_density", "resolved_density", "background_color", "objects", "speaker_notes", "motion",
       "composition_id", "variant_id", "emphasis", "energy", "fact_refs",
       "component_intents", "asset_intents", "motif_id", "motif_variant", "motif_intensity",
+      "direction_annotation",
     ]), slideLabel);
     assertString(slide.source_id, `${slideLabel}.source_id`);
     if (slideIds.has(slide.source_id)) fail(`${slideLabel}.source_id is duplicated`);
@@ -177,6 +178,11 @@ function validateRequest(request) {
     ["composition_id", "variant_id", "motif_id", "motif_variant", "motif_intensity"].forEach(
       (key) => assertString(slide[key], `${slideLabel}.${key}`, { nullable: true, nonempty: false }),
     );
+    if (slide.direction_annotation !== null) {
+      assertArray(slide.direction_annotation, `${slideLabel}.direction_annotation`);
+      if (slide.direction_annotation.length !== 2) fail(`${slideLabel}.direction_annotation must contain two labels`);
+      slide.direction_annotation.forEach((value, index) => assertString(value, `${slideLabel}.direction_annotation[${index}]`));
+    }
     if (!["quiet", "standard", "hero"].includes(slide.emphasis)) fail(`${slideLabel}.emphasis is invalid`);
     if (!["pause", "flow", "peak"].includes(slide.energy)) fail(`${slideLabel}.energy is invalid`);
     ["fact_refs", "component_intents", "asset_intents"].forEach((key) => {
@@ -354,7 +360,12 @@ function addShape(slide, pptx, item, planSlide) {
   const strongDecoration = decoration
     && /(?:top_rule|bottom_rule|section_rule|closing_rule|wayfinding_path|content_rail|matrix_axis)/.test(artName);
   const strongAccent = accent && Boolean(artName);
+  const titleFieldAccent = strongAccent && /title_field/.test(artName);
   const elevated = ROUND_COMPONENTS.has(item.component) && !decoration && !accent;
+  const editorialHeroCard = planSlide.layout_id.endsWith(".editorial-three")
+    && item.name.endsWith("_one");
+  const splitHeroPanel = new Set(["comparison.split"]).has(planSlide.layout_id)
+    && item.name.endsWith("_primary");
   const options = {
     ...objectOptions(item),
     fontFace: item.font_name,
@@ -362,7 +373,9 @@ function addShape(slide, pptx, item, planSlide) {
     color: color(item.text_color),
     bold: Array.isArray(item.text_runs) ? false : EMPHASIS_COMPONENTS.has(item.component),
     italic: Array.isArray(item.text_runs) ? false : item.component === "quote",
-    margin: decoration || accent ? 0 : [7, 9, 7, 9],
+    margin: decoration || accent ? 0 : editorialHeroCard || splitHeroPanel
+      ? [14, 16, 14, 16]
+      : [9, 11, 9, 11],
     valign: "mid",
     align: (item.component === "kpi"
         && planSlide.layout_id.endsWith(".centered")
@@ -376,7 +389,7 @@ function addShape(slide, pptx, item, planSlide) {
       transparency: strongDecoration
         ? 20
         : strongAccent
-        ? 15
+        ? titleFieldAccent ? 0 : 15
         : decoration
         ? 88
         : accent
@@ -705,7 +718,12 @@ function diagramGeometry(item, nodeCount, index) {
     }
     const cellW = (w - gap * (nodeCount - 1)) / nodeCount;
     const cellH = h * 0.55;
-    return { x: x + index * (cellW + gap), y: y + (index % 2 === 0 ? 0 : h - cellH), w: cellW, h: cellH };
+    return {
+      x: x + index * (cellW + gap),
+      y: y + (h - cellH) / 2,
+      w: cellW,
+      h: cellH,
+    };
   }
   if (type === "roadmap") {
     if (nodeCount === 1) {
@@ -751,20 +769,35 @@ function addDiagram(slide, pptx, item) {
       group: item.group_id ?? item.id,
     });
     const text = node.detail ? `${node.label}\n${node.detail}` : node.label;
+    const highlightFirstMatrixNode = index === 0
+      && new Set(["matrix", "quadrant"]).has(item.advanced.diagram_type);
+    const nodeFill = highlightFirstMatrixNode
+      ? color(item.line_color)
+      : color(item.fill_color);
+    const nodeText = highlightFirstMatrixNode
+      ? contrastText(item.line_color)
+      : color(item.text_color);
     slide.addText(text, {
       ...bounds,
       objectName: childName,
       altText: childSentinel,
       shape: singleMilestone ? pptx.ShapeType.rect : pptx.ShapeType.roundRect,
       fontFace: item.font_name,
-      fontSize: Math.max(9, item.font_size_pt - 1),
-      color: color(item.text_color),
+      fontSize: item.advanced.diagram_type === "timeline"
+        ? Math.max(18, item.font_size_pt)
+        : Math.max(9, item.font_size_pt - 1),
+      color: nodeText,
       bold: true,
       align: singleMilestone ? "left" : "center",
       valign: "mid",
       margin: singleMilestone ? [8, 12, 8, 12] : 4,
-      fill: { color: color(item.fill_color) },
-      line: { color: color(item.line_color), width: 1 },
+      fill: { color: nodeFill },
+      line: {
+        color: color(item.line_color),
+        width: new Set(["matrix", "quadrant"]).has(item.advanced.diagram_type)
+          ? 1.5
+          : 1,
+      },
     });
   });
   return nodes.length;

@@ -22,7 +22,18 @@
           "priority": {"type": "array", "items": {"enum": ["user", "template", "licensed", "generated", "native"]}},
           "fallback": {"type": "string"},
           "editable": {"type": "boolean"},
-          "status": {"enum": ["planned", "bound", "fallback", "missing"]}
+          "status": {
+            "enum": [
+              "planned",
+              "bound",
+              "resolved",
+              "generated",
+              "native-materialized",
+              "fallback",
+              "missing",
+              "rejected"
+            ]
+          }
         }
       }
     }

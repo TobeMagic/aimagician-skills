@@ -660,7 +660,19 @@ Read [template-library-recommendation-workflow.md](./references/template-library
     content-changing candidates.
 18. Promote the PPTX/PDF/reports/proofs as one rollback-capable bundle only after all portable hard gates pass. Write reports, proofs, and hashes under `.window-pptx/audits/`.
 19. Run optional PowerPoint certification only after portable PASS and only when `Application.HWND` binds to the one newly created process. Certify an exact-hash temporary copy, never save the deck, and never terminate a pre-existing process.
-20. For benchmark blind review, stage hash-verified OOXML PPTX plus readable PNGs under anonymized `B-*` paths; never accept a score sheet from JSON-only evidence.
+20. For benchmark blind review, stage hash-verified OOXML PPTX plus readable
+    PNGs under anonymized `B-*` paths; never accept a score sheet from
+    JSON-only evidence. Preserve the template, collect scores in
+    `score-sheet.completed.json`, then run
+    `scripts/validate_window_pptx_blind_review.py --packet <packet.json>
+    --score-sheet <score-sheet.completed.json> --output <blind-review-gate.json>`.
+    Exit `0`/`1`/`2` means `PASS`/`FAIL`/`NOT_RUN`; only independent-human
+    scores with overall mean `>=4.2` and every dimension mean `>=4.0` satisfy
+    the v5.1 release gate. The command validates the score floor but cannot
+    prove that a reviewer is human: it must emit
+    `human_provenance_status=EXTERNAL_CONFIRMATION_REQUIRED`, and the
+    controller must keep P35-BLIND-01 `NOT_RUN` until an independent human
+    actually returns the sheet.
 21. Route pixel-level visual UAT through the direct
     `agnes-direct/agnes-2.0-flash` adapter. Enable Data URI only after its
     session-bound challenge probe; review high-resolution pages in batches of

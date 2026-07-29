@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "id": "product-launch-stage",
   "name": "Product Launch Stage",
   "runtime_theme_id": "technology",
@@ -26,5 +26,46 @@
     "family": "stage-hero-with-proof-strip",
     "max_body_chars": 120,
     "max_items": 4
+  },
+  "art_direction": {
+    "id": "luminous-product-stage",
+    "palette_roles": {
+      "canvas": "090B10",
+      "ink": "F7F4FF",
+      "teal": "18B6A4",
+      "gold": "A78BFA",
+      "surface": "151A24",
+      "muted": "9CA3AF"
+    },
+    "grid": {
+      "columns": 12,
+      "safe_margin_in": 0.58,
+      "spacing_scale_pt": [4, 8, 12, 16, 24, 36, 52]
+    },
+    "typography_scale_pt": {
+      "display": 56,
+      "title": 34,
+      "subtitle": 22,
+      "body": 16,
+      "caption": 11
+    },
+    "motif": {
+      "variants": ["stage-arc", "orbit", "device-glow", "beam"]
+    },
+    "image_crop": "cover-with-subject-safe-zone",
+    "icon_style": "solid-rounded-duotone",
+    "surface": {
+      "corner_radius_pt": 12,
+      "stroke_pt": 1,
+      "shadow_mode": "high-contrast-stage"
+    },
+    "energy_pattern": ["peak", "flow", "peak", "pause"],
+    "quality_thresholds": {
+      "engineering": 100,
+      "visual": 80,
+      "art": 75,
+      "release": 84,
+      "axis_floor": 75
+    }
   }
 }

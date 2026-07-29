@@ -155,17 +155,29 @@ class CompositionPlan:
 
 _CONSULTING_LAYOUTS = {
     "proposal.cover": "cover.editorial",
-    "proposal.executive-summary": "cards.compact-three",
+    "proposal.executive-summary": "cards.editorial-three",
+    "proposal.problem-metric": "big-number.metric-left",
     "proposal.problem": "comparison.split",
-    "proposal.outcomes": "big-number.three-column",
-    "proposal.approach": "process.focus",
-    "proposal.workstreams": "matrix.grid",
-    "proposal.timeline": "timeline.focus",
-    "proposal.governance": "process.focus",
+    "proposal.solution": "process.horizontal",
+    "proposal.outcomes": "big-number.editorial-three",
+    "proposal.approach": "process.editorial",
+    "proposal.workstreams": "matrix.editorial",
+    "proposal.timeline": "timeline.editorial",
+    "proposal.governance": "process.editorial",
+    "proposal.risk-metric": "big-number.metric-left",
     "proposal.risks": "risk-recommendation.split",
     "proposal.next-step": "recommendation.columns",
     "proposal.close": "cta.top-band",
     "proposal.safe-evidence": "executive-summary.top-band",
+}
+
+_DATA_RESEARCH_LAYOUTS = {
+    "data-scope": "big-number.editorial-left",
+    "key-metrics": "big-number.centered",
+    "trends": "focal-statement.editorial-left",
+    "segments": "data-chart.focus",
+    "drivers": "big-number.split",
+    "recommendations": "recommendation.focus",
 }
 
 
@@ -174,11 +186,111 @@ def _stable_index(value: str, length: int) -> int:
     return int.from_bytes(digest[:4], "big") % length
 
 
-def _layout_id(slide: VisualSlide, role: str) -> str:
+_IMAGE_LED_LAYOUTS = {
+    "cover": "cover.full-visual",
+    "section": "section.full-visual",
+    "executive-summary": "executive-summary.split-left",
+    "case-study": "case-study.split",
+    "closing": "cta.full-visual-stage",
+}
+
+_DESIGN_PACK_IMAGE_LED_LAYOUTS = {
+    # Proposal closes should summarize the approval envelope beside the visual
+    # rather than obscure the hero image with stacked full-bleed overlays.
+    "consulting-executive": {
+        "cover": "cover.editorial",
+        "closing": "cta.decision-three",
+    },
+    # Product decks use a dark stage throughout.  A split image stage keeps
+    # generated product imagery subordinate to the message and prevents a
+    # light raster from turning the two bookends into a different brand.
+    "product-launch-stage": {
+        "cover": "cover.image-stage",
+        "closing": "cta.image-stage",
+    },
+    # Research decks benefit from an editorial full-visual opener, but the
+    # decision close must return to the light evidence system used by the
+    # analytical pages instead of placing dark cards over a decorative image.
+    "data-research-editorial": {
+        "cover": "cover.editorial",
+        "closing": "cta.decision-three",
+    },
+}
+
+
+def _layout_id(
+    slide: VisualSlide,
+    role: str,
+    *,
+    has_raster_asset: bool = False,
+    design_pack_id: str | None = None,
+    fact_ref_count: int = 0,
+    structural: bool = False,
+) -> str:
     registry = load_layout_registry()
-    if role in {"section", "agenda"}:
-        return "executive-summary.top-band"
+    # Consulting and analytical packs use native editorial bookends even when
+    # no raster asset resolves.  Keeping this outside the image-only branch
+    # prevents safe asset fallback from silently collapsing the intended
+    # cover/decision system back to generic hero or top-band layouts.
+    if design_pack_id in {"consulting-executive", "data-research-editorial"}:
+        native_bookend = _DESIGN_PACK_IMAGE_LED_LAYOUTS.get(
+            design_pack_id, {}
+        ).get(role)
+        if (
+            native_bookend is not None
+            and native_bookend in registry.variants
+            and (
+                role != "closing"
+                or (
+                    slide.slide_id == "closing"
+                    and fact_ref_count >= 2
+                    and structural
+                )
+            )
+        ):
+            return native_bookend
+    if has_raster_asset:
+        pack_override = _DESIGN_PACK_IMAGE_LED_LAYOUTS.get(
+            design_pack_id or "", {}
+        ).get(role)
+        image_layout = pack_override or (
+            "cover.poster-editorial"
+            if slide.recipe_id == "proposal.cover"
+            else "cta.poster-editorial"
+            if slide.recipe_id == "proposal.close"
+            else _IMAGE_LED_LAYOUTS.get(role)
+        )
+        if image_layout is None and slide.family in {"case-study", "social-proof"}:
+            image_layout = "case-study.split"
+        if image_layout is not None and image_layout in registry.variants:
+            return image_layout
+    if role == "section":
+        return "section.centered"
+    if role == "agenda":
+        return "agenda.grid-four"
+    if design_pack_id == "data-research-editorial":
+        if role == "data-scope" and slide.slide_id.endswith("detail-2"):
+            return "big-number.metric-left"
+        data_layout = _DATA_RESEARCH_LAYOUTS.get(role)
+        if data_layout is not None and data_layout in registry.variants:
+            return data_layout
     preferred = _CONSULTING_LAYOUTS.get(slide.recipe_id or "")
+    if (
+        design_pack_id == "consulting-executive"
+        and slide.recipe_id == "proposal.solution"
+    ):
+        preferred = "process.cards"
+    elif (
+        design_pack_id == "consulting-executive"
+        and slide.recipe_id == "proposal.problem-metric"
+        and slide.slide_id.endswith("detail-1")
+    ):
+        preferred = "big-number.editorial-left"
+    elif (
+        design_pack_id == "consulting-executive"
+        and slide.slide_id == "budget-investment"
+    ):
+        preferred = "big-number.split"
     if preferred is not None and preferred in registry.variants:
         return preferred
     family_id = governed_runtime_family(slide.family)
@@ -203,7 +315,7 @@ def _layout_slot_bindings(layout_id: str) -> tuple[SlotBinding, ...]:
         SlotBinding(
             semantic_slot=slot.id,
             component_id=overrides.get(slot.id, slot.component),
-            required=True,
+            required=slot.id not in {"notes", "insight"},
         )
         for slot in registry.recipes[variant.recipe_id]
     )
@@ -252,7 +364,27 @@ def compile_composition_plan(
     for index, (narrative_slide, visual_slide) in enumerate(
         zip(narrative.slides, visual_plan.slides, strict=True)
     ):
-        layout_id = _layout_id(visual_slide, narrative_slide.role)
+        asset_bindings = tuple(
+            AssetIntentBinding(
+                asset_id=asset.id,
+                status=asset.status,
+                fallback=asset.fallback,
+                required=visual_slide.family in design_pack.asset_strategy.required_for,
+            )
+            for asset in assets_by_slide.get(narrative_slide.id, ())
+        )
+        has_raster_asset = any(
+            binding.status in {"resolved", "generated"}
+            for binding in asset_bindings
+        )
+        layout_id = _layout_id(
+            visual_slide,
+            narrative_slide.role,
+            has_raster_asset=has_raster_asset,
+            design_pack_id=design_pack.id,
+            fact_ref_count=len(narrative_slide.fact_refs),
+            structural=narrative_slide.structural,
+        )
         bindings = _layout_slot_bindings(layout_id)
         unknown = sorted(
             {
@@ -266,19 +398,6 @@ def compile_composition_plan(
                 "CompositionPlan contains unregistered components: "
                 + ", ".join(unknown)
             )
-        asset_bindings = tuple(
-            AssetIntentBinding(
-                asset_id=asset.id,
-                status=(
-                    "native-materialized"
-                    if asset.status == "planned" and asset.fallback
-                    else asset.status
-                ),
-                fallback=asset.fallback,
-                required=visual_slide.family in design_pack.asset_strategy.required_for,
-            )
-            for asset in assets_by_slide.get(narrative_slide.id, ())
-        )
         intensity = (
             "strong"
             if visual_slide.emphasis == "hero"
@@ -325,7 +444,7 @@ def compile_composition_plan(
                 density=visual_slide.density,
                 energy=(
                     "peak"
-                    if visual_slide.emphasis == "hero"
+                    if narrative_slide.role in {"cover", "closing"}
                     else "pause"
                     if narrative_slide.structural
                     else energy_pattern[index % len(energy_pattern)]

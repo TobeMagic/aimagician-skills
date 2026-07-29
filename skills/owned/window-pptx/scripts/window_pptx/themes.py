@@ -106,6 +106,24 @@ def _on_color(background: str) -> str:
     return max(candidates, key=lambda color: contrast_ratio(color, background))
 
 
+def mix_color(first: str, second: str, ratio: float) -> str:
+    """Blend two validated theme colors with one shared deterministic rule."""
+
+    if isinstance(ratio, bool) or not isinstance(ratio, (int, float)):
+        raise ValueError("color mix ratio must be numeric")
+    if not 0 <= ratio <= 1:
+        raise ValueError("color mix ratio must be between 0 and 1")
+    for value in (first, second):
+        if HEX_COLOR.fullmatch(value) is None:
+            raise ValueError(f"invalid color: {value}")
+    left = tuple(int(first[index : index + 2], 16) for index in (1, 3, 5))
+    right = tuple(int(second[index : index + 2], 16) for index in (1, 3, 5))
+    return "#" + "".join(
+        f"{round(a * (1 - ratio) + b * ratio):02X}"
+        for a, b in zip(left, right, strict=True)
+    )
+
+
 def load_themes(path: Path | str | None = None) -> dict[str, ThemeDefinition]:
     registry_path = Path(path) if path is not None else THEMES_PATH
     raw = json.loads(registry_path.read_text(encoding="utf-8"))
@@ -294,12 +312,25 @@ def resolve_theme(
     if brand.background is not None:
         requested_background = _normalize_color(brand.background, "background")
         if contrast_ratio(requested_background, colors["text"]) < 4.5:
+            adapted_text = _on_color(requested_background)
+            colors.update(
+                {
+                    "background": requested_background,
+                    "surface": mix_color(
+                        requested_background, adapted_text, 0.08
+                    ),
+                    "text": adapted_text,
+                    "muted_text": mix_color(
+                        requested_background, adapted_text, 0.64
+                    ),
+                }
+            )
             events.append(
                 ResolutionEvent(
-                    "BRAND_COLOR_CONTRAST_FALLBACK",
+                    "BRAND_BACKGROUND_CONTRAST_ADAPTED",
                     "background",
                     brand.background,
-                    colors["background"],
+                    requested_background,
                 )
             )
         else:

@@ -57,6 +57,9 @@ SEMANTIC_HINT_ALIASES = {
     "call-to-action": "recommendation",
     "funding-ask": "recommendation",
     "case-study": "quote",
+    "product-showcase": "image",
+    "product-vision": "image",
+    "brand-story": "image",
 }
 
 
@@ -735,7 +738,26 @@ _EXACT_MEASURE_PATTERN = re.compile(
     r"(?P<value>\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s+"
     r"(?P<unit>percent|percentage points?|million dollars?|billion dollars?|"
     r"thousand dollars?|accounts?|customer teams?|customers?|records?|retailers?|warehouses?|"
-    r"offices?|brands?|regions?|subscriptions?|releases?|hours?|minutes?|"
+    r"offices?|brands?|regions?|service regions?|agents?|request categories?|categories?|"
+    r"subscriptions?|releases?|hours?|minutes?|"
+    r"days?|weeks?|months?|years?)\b",
+    re.IGNORECASE,
+)
+_EXACT_WORD_MEASURE_PATTERN = re.compile(
+    r"\b(?P<value>one|two|three|four|five|six|seven|eight|nine|ten|eleven|"
+    r"twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|"
+    r"twenty(?:[- ](?:one|two|three|four|five|six|seven|eight|nine))?|"
+    r"thirty(?:[- ](?:one|two|three|four|five|six|seven|eight|nine))?|"
+    r"forty(?:[- ](?:one|two|three|four|five|six|seven|eight|nine))?|"
+    r"fifty(?:[- ](?:one|two|three|four|five|six|seven|eight|nine))?|"
+    r"sixty(?:[- ](?:one|two|three|four|five|six|seven|eight|nine))?|"
+    r"seventy(?:[- ](?:one|two|three|four|five|six|seven|eight|nine))?|"
+    r"eighty(?:[- ](?:one|two|three|four|five|six|seven|eight|nine))?|"
+    r"ninety(?:[- ](?:one|two|three|four|five|six|seven|eight|nine))?)\s+"
+    r"(?P<unit>percent|percentage points?|million dollars?|billion dollars?|"
+    r"thousand dollars?|accounts?|customer teams?|customers?|records?|retailers?|"
+    r"warehouses?|offices?|brands?|regions?|service regions?|agents?|"
+    r"request categories?|categories?|subscriptions?|releases?|hours?|minutes?|"
     r"days?|weeks?|months?|years?)\b",
     re.IGNORECASE,
 )
@@ -770,6 +792,100 @@ _CJK_PARALLEL_LIST_PATTERN = re.compile(
 def _exact_number(value: str) -> int | float:
     normalized = value.replace(",", "")
     return float(normalized) if "." in normalized else int(normalized)
+
+
+def _exact_number_word(value: object) -> int | None:
+    """Normalize a bounded English number word without changing source facts."""
+
+    if not isinstance(value, str):
+        return None
+    tokens = tuple(
+        token for token in re.split(r"[\s-]+", value.strip().casefold()) if token
+    )
+    if not tokens or len(tokens) > 4:
+        return None
+    small = {
+        "zero": 0,
+        "one": 1,
+        "two": 2,
+        "three": 3,
+        "four": 4,
+        "five": 5,
+        "six": 6,
+        "seven": 7,
+        "eight": 8,
+        "nine": 9,
+        "ten": 10,
+        "eleven": 11,
+        "twelve": 12,
+        "thirteen": 13,
+        "fourteen": 14,
+        "fifteen": 15,
+        "sixteen": 16,
+        "seventeen": 17,
+        "eighteen": 18,
+        "nineteen": 19,
+    }
+    tens = {
+        "twenty": 20,
+        "thirty": 30,
+        "forty": 40,
+        "fifty": 50,
+        "sixty": 60,
+        "seventy": 70,
+        "eighty": 80,
+        "ninety": 90,
+    }
+    total = 0
+    current = 0
+    for token in tokens:
+        if token == "and":
+            continue
+        if token in small:
+            current += small[token]
+        elif token in tens:
+            current += tens[token]
+        elif token == "hundred" and 1 <= current <= 9:
+            current *= 100
+        else:
+            return None
+    total += current
+    return total if 0 <= total <= 999 else None
+
+
+def _metric_display_value(value: object) -> object:
+    normalized = _exact_number_word(value)
+    return normalized if normalized is not None else value
+
+
+_MONTH_RANGE_PATTERN = re.compile(
+    r"\bfrom\s+"
+    r"(?P<start>January|February|March|April|May|June|July|August|"
+    r"September|October|November|December)\s+"
+    r"(?:through|to)\s+"
+    r"(?P<end>January|February|March|April|May|June|July|August|"
+    r"September|October|November|December)"
+    r"(?:\s+(?P<year>\d{4}))?\b",
+    re.IGNORECASE,
+)
+
+
+def _exact_month_range(fact: Fact) -> str | None:
+    """Return a compact range only when both endpoints are source-present."""
+
+    match = _MONTH_RANGE_PATTERN.search(fact.text)
+    if match is None:
+        return None
+    start = match.group("start").title()
+    end = match.group("end").title()
+    year = match.group("year")
+    return f"{start}–{end}{f' {year}' if year else ''}"
+
+
+def _metric_category(fact: Fact) -> str | None:
+    """Prefer a source-present precise period over a lossy upstream scope."""
+
+    return _exact_month_range(fact) or fact.time_scope
 
 
 def _exact_measure_label(
@@ -897,6 +1013,36 @@ def _structured_metric_items(
         return items
 
     measures = tuple(_EXACT_MEASURE_PATTERN.finditer(fact.text))
+    word_measures = tuple(_EXACT_WORD_MEASURE_PATTERN.finditer(fact.text))
+    if fact.value is None and (measures or word_measures):
+        source_measures = sorted(
+            (*measures, *word_measures),
+            key=lambda item: item.start(),
+        )
+        items: list[dict[str, Any]] = []
+        for index, match in enumerate(source_measures):
+            raw_value = match.group("value")
+            word_value = _exact_number_word(raw_value)
+            item = {
+                "label": _exact_measure_label(
+                    fact,
+                    match,
+                    fallback=match.group("unit").strip().title(),
+                ),
+                "value": (
+                    word_value
+                    if word_value is not None
+                    else _exact_number(raw_value)
+                ),
+                "unit": match.group("unit").strip(),
+            }
+            category = _metric_category(fact)
+            if index == 0 and category is not None:
+                item["category"] = category
+            items.append(item)
+        if include_description and len(fact.text) <= 160:
+            items[-1]["description"] = fact.text
+        return items
     trusted_measure_present = any(
         float(_exact_number(match.group("value"))) == float(fact.value)
         and match.group("unit").strip().casefold() == fact.unit.strip().casefold()
@@ -915,16 +1061,18 @@ def _structured_metric_items(
                 "value": _exact_number(match.group("value")),
                 "unit": match.group("unit").strip(),
             }
-            if index == 0 and fact.time_scope is not None:
-                item["category"] = fact.time_scope
+            category = _metric_category(fact)
+            if index == 0 and category is not None:
+                item["category"] = category
             items.append(item)
         if include_description and len(fact.text) <= 160:
             items[-1]["description"] = fact.text
         return items
 
-    item = {"label": label, "value": fact.value}
-    if fact.time_scope is not None:
-        item["category"] = fact.time_scope
+    item = {"label": label, "value": _metric_display_value(fact.value)}
+    category = _metric_category(fact)
+    if category is not None:
+        item["category"] = category
     if fact.unit is not None:
         item["unit"] = fact.unit
     if include_description and len(fact.text) <= 160:
@@ -1204,7 +1352,11 @@ def _fact_block(
     elif parallel_items is not None:
         block["items"] = parallel_items
         block["text"] = fact.text
-    elif fact.value is not None and kind in {
+    elif (
+        fact.value is not None
+        or _EXACT_MEASURE_PATTERN.search(fact.text)
+        or _EXACT_WORD_MEASURE_PATTERN.search(fact.text)
+    ) and kind in {
         "metrics", "trend", "comparison", "composition", "table"
     }:
         block["items"] = _structured_metric_items(
@@ -1386,6 +1538,23 @@ def _compile_narrative(fact_store: FactStore, brief: BriefPlan) -> tuple[Narrati
         ),
     )
 
+    analysis_period = (
+        next(
+            (
+                period
+                for fact in fact_store.active_facts()
+                if (period := _exact_month_range(fact)) is not None
+            ),
+            None,
+        )
+        if brief.scenario_id in {"data-analysis", "market-analysis", "research-report"}
+        else None
+    )
+    cover_statement = fact_store.project.objective or fact_store.project.title
+    if analysis_period is not None:
+        cover_statement = (
+            f"{cover_statement}\nAnalysis period · {analysis_period}"
+        )
     narrative_slides: list[NarrativeSlide] = [
         NarrativeSlide(
             id="cover",
@@ -1407,7 +1576,7 @@ def _compile_narrative(fact_store: FactStore, brief: BriefPlan) -> tuple[Narrati
                 {
                     "id": "cover.objective",
                     "kind": "statement",
-                    "text": fact_store.project.objective or fact_store.project.title,
+                    "text": cover_statement,
                 }
             ],
         }
@@ -1431,7 +1600,30 @@ def _compile_narrative(fact_store: FactStore, brief: BriefPlan) -> tuple[Narrati
         )
     semantic_adjustments: list[str] = []
     for group in groups:
-        facts = tuple(fact_store.fact(ref) for ref in group.fact_refs)
+        effective_fact_refs = list(group.fact_refs)
+        # A budget ceiling without the delivery window reads like an isolated
+        # price tag.  For proposals, bind the existing source-backed duration
+        # beside the budget so the investment page communicates an approval
+        # envelope without asking the model to invent context.
+        if archetype.id == "project-proposal" and any(
+            fact_store.fact(ref).claim_key == "budget"
+            for ref in effective_fact_refs
+        ):
+            duration_fact = next(
+                (
+                    fact
+                    for fact in fact_store.active_facts()
+                    if fact.claim_key == "duration"
+                ),
+                None,
+            )
+            if (
+                duration_fact is not None
+                and duration_fact.id not in effective_fact_refs
+            ):
+                effective_fact_refs.append(duration_fact.id)
+        effective_fact_refs_tuple = tuple(effective_fact_refs)
+        facts = tuple(fact_store.fact(ref) for ref in effective_fact_refs_tuple)
         role = group.beat_hint or _role_for_fact(facts[0], archetype)
         kind, semantic_adjustment = _effective_semantic(facts, group.semantic_hint)
         if semantic_adjustment is not None:
@@ -1473,8 +1665,30 @@ def _compile_narrative(fact_store: FactStore, brief: BriefPlan) -> tuple[Narrati
                 ),
             )
         )
+        if (
+            role == "data-scope"
+            and len(facts) == 1
+            and facts[0].claim_key == "exclusions"
+        ):
+            title = "Data Scope · Exclusions"
+        normalized_fact_text = re.sub(r"\s+", " ", facts[0].text).strip()
+        if (
+            not facts[0].language.casefold().startswith(("zh", "ja", "ko"))
+            and title == role.replace("-", " ").title()
+            and title.casefold() != normalized_fact_text.casefold()
+        ):
+            semantic_adjustments.append(
+                f"{group.id}:LONG_EVIDENCE_TITLE_ROLE_FALLBACK"
+            )
         narrative_slides.append(
-            NarrativeSlide(group.id, role, title, group.importance, group.fact_refs, kind)
+            NarrativeSlide(
+                group.id,
+                role,
+                title,
+                group.importance,
+                effective_fact_refs_tuple,
+                kind,
+            )
         )
         deck_slides.append(
             {
@@ -1498,6 +1712,20 @@ def _compile_narrative(fact_store: FactStore, brief: BriefPlan) -> tuple[Narrati
             }
         )
     closing_text = fact_store.project.objective or fact_store.project.title
+    decision_basis_keys = {
+        # The objective already states the twelve-week approval window.  Use
+        # the two supporting cards for the unresolved risk and budget ceiling,
+        # producing a complete decision frame instead of repeating duration.
+        "project-proposal": ("risk", "budget"),
+        "data-analysis": ("driver", "test"),
+        "product-launch": ("beta", "cohort"),
+    }.get(archetype.id, ())
+    decision_basis = tuple(
+        fact
+        for claim_key in decision_basis_keys
+        for fact in fact_store.active_facts()
+        if fact.claim_key == claim_key
+    )
     closing_title = _closing_title(closing_text, fact_store.project.language)
     narrative_slides.append(
         NarrativeSlide(
@@ -1505,7 +1733,7 @@ def _compile_narrative(fact_store: FactStore, brief: BriefPlan) -> tuple[Narrati
             "closing",
             closing_title,
             "high",
-            (),
+            tuple(fact.id for fact in decision_basis),
             "recommendation",
             True,
         )
@@ -1516,7 +1744,22 @@ def _compile_narrative(fact_store: FactStore, brief: BriefPlan) -> tuple[Narrati
             "role": "closing",
             "title": closing_title,
             "importance": "high",
-            "blocks": [{"id": "closing.action", "kind": "recommendation", "text": closing_text}],
+            "blocks": [
+                {
+                    "id": "closing.action",
+                    "kind": "recommendation",
+                    "text": closing_text,
+                },
+                *(
+                    {
+                        "id": f"closing.evidence-{index}",
+                        "kind": "statement",
+                        "text": fact.text,
+                        "source_ref": f"{fact.source_id}#{fact.locator}",
+                    }
+                    for index, fact in enumerate(decision_basis, start=1)
+                ),
+            ],
         }
     )
     required = [fact.id for fact in fact_store.active_facts() if fact.required]

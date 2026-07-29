@@ -19,6 +19,8 @@ from window_pptx.agnes_direct import (
     AGNES_VISION_ROUTE,
     AgnesDirectClient,
     AgnesDirectError,
+    AgnesReviewResult,
+    GeneratedAsset,
     ProviderRouteError,
     require_direct_route,
 )
@@ -141,6 +143,64 @@ def test_data_uri_requires_session_challenge_probe() -> None:
     assert request_bodies[-1]["messages"][0]["content"][1]["image_url"][
         "url"
     ].startswith("data:image/png;base64,")
+
+
+def test_blind_review_is_uncached_session_bound_and_schema_strict() -> None:
+    request_bodies: list[dict[str, object]] = []
+    blind_payload = {
+        "schema_version": "1.0",
+        "reviewer_id": "R-AI-ART-DIRECTOR",
+        "blind_id": "B-001-12345678",
+        "scores": {
+            "narrative_clarity": 4,
+            "content_accuracy": 4,
+            "visual_hierarchy": 5,
+            "layout_fitness_variety": 4,
+            "readability": 4,
+            "chart_diagram_appropriateness": 4,
+            "brand_consistency": 5,
+            "editability": 4,
+            "customer_delivery_readiness": 4,
+        },
+        "findings": [],
+        "notes": "Visible presentation quality is customer-ready.",
+        "verdict": "PASS",
+    }
+
+    def transport(request):
+        request_bodies.append(request["json"])
+        if "Capability challenge" in request["json"]["messages"][0]["content"][0][
+            "text"
+        ]:
+            payload = _review_payload()
+            match = re.search(
+                r"probe_token exactly as ([0-9a-f]{16})",
+                request["json"]["messages"][0]["content"][0]["text"],
+            )
+            assert match is not None
+            payload["probe_token"] = match.group(1)
+            return 200, {}, _chat_response(payload)
+        return 200, {}, _chat_response(blind_payload)
+
+    image = "data:image/png;base64," + base64.b64encode(b"png").decode()
+    client = AgnesDirectClient(
+        api_key="token",
+        base_url="https://provider.invalid/v1",
+        transport=transport,
+    )
+    probe = client.probe_data_uri(image)
+    result = client.blind_review(
+        image_urls=(image, image),
+        prompt="Review the anonymous deck.",
+        reviewer_id="R-AI-ART-DIRECTOR",
+        blind_id="B-001-12345678",
+    )
+
+    assert result.session_id == probe.session_id
+    assert result.payload == blind_payload
+    assert result.request_sha256
+    assert result.response_sha256
+    assert len(request_bodies) == 2
 
 
 def test_malformed_json_retries_once_then_fails_closed() -> None:
@@ -275,6 +335,7 @@ def test_image_generation_returns_frozen_base64_manifest() -> None:
 
     def transport(request):
         assert request["json"]["model"] == "agnes-image-2.1-flash"
+        assert "response_format" not in request["json"]
         return (
             200,
             {},
@@ -300,3 +361,238 @@ def test_image_generation_returns_frozen_base64_manifest() -> None:
     assert generated.manifest["output_sha256"]
     assert generated.manifest["prompt_sha256"]
     assert "prompt" not in generated.manifest
+
+
+def test_image_generation_freezes_authorized_provider_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    image_bytes = b"\x89PNG\r\n\x1a\nfrozen"
+
+    client = AgnesDirectClient(
+        api_key="token",
+        base_url="https://provider.invalid/v1",
+        transport=lambda _request: (
+            200,
+            {},
+            json.dumps(
+                {
+                    "data": [
+                        {
+                            "b64_json": None,
+                            "url": (
+                                "https://platform-outputs.agnes-ai.space/"
+                                "images/t2i/example.png"
+                            ),
+                        }
+                    ]
+                }
+            ).encode(),
+        ),
+    )
+    monkeypatch.setattr(
+        client,
+        "_download_generated_image",
+        lambda url: (
+            image_bytes
+            if url.startswith("https://platform-outputs.agnes-ai.space/")
+            else b""
+        ),
+    )
+
+    generated = client.generate_image(
+        prompt="Abstract field, no text, no logo, no watermark."
+    )
+
+    assert generated.image_bytes == image_bytes
+    assert generated.manifest["output_sha256"]
+
+
+def test_clean_image_retries_and_freezes_visual_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AgnesDirectClient(
+        api_key="token",
+        base_url="https://provider.invalid/v1",
+        transport=lambda _request: (500, {}, b""),
+    )
+    generated_prompts: list[str] = []
+    review_prompts: list[str] = []
+
+    def fake_generate_image(**kwargs):
+        generated_prompts.append(kwargs["prompt"])
+        payload = f"image-{len(generated_prompts)}".encode()
+        return GeneratedAsset(
+            route_id=AGNES_IMAGE_ROUTE.id,
+            model=AGNES_IMAGE_ROUTE.model,
+            image_bytes=payload,
+            manifest={"output_sha256": "f" * 64},
+        )
+
+    verdicts = iter(("FAIL", "PASS"))
+
+    def fake_review(**kwargs):
+        review_prompts.append(kwargs["prompt"])
+        verdict = next(verdicts)
+        payload = _review_payload()
+        payload["verdict"] = verdict
+        if verdict == "FAIL":
+            payload["findings"] = [
+                {
+                    "code": "PSEUDO_TEXT",
+                    "severity": "blocker",
+                    "slide_id": "asset",
+                    "region": "center",
+                    "evidence": "Visible pseudo-lettering.",
+                    "repair_code": "REGENERATE_WITHOUT_TEXT",
+                }
+            ]
+        return AgnesReviewResult(
+            route_id=AGNES_VISION_ROUTE.id,
+            model=AGNES_VISION_ROUTE.model,
+            request_sha256="a" * 64,
+            response_sha256=("b" if verdict == "FAIL" else "c") * 64,
+            cache_hit=False,
+            payload=payload,
+        )
+
+    monkeypatch.setattr(client, "generate_image", fake_generate_image)
+    monkeypatch.setattr(client, "probe_data_uri", lambda _value: None)
+    monkeypatch.setattr(client, "review", fake_review)
+
+    generated = client.generate_clean_image(
+        prompt="Editorial visual, no text, no logo, no watermark."
+    )
+
+    validation = generated.manifest["visual_validation"]
+    assert generated.image_bytes == b"image-2"
+    assert validation["verdict"] == "PASS"
+    assert validation["attempt"] == 2
+    assert validation["prior_failures"][0]["status"] == "rejected"
+    assert "Retry instruction" in generated_prompts[1]
+    assert "ORIGINAL VISUAL BRIEF" in review_prompts[0]
+    assert "explicit inclusion and exclusion" in review_prompts[0]
+
+
+def test_clean_image_exercises_generate_probe_and_review_transport() -> None:
+    image_bytes = b"\x89PNG\r\n\x1a\nclean"
+    request_urls: list[str] = []
+
+    def transport(request):
+        request_urls.append(request["url"])
+        if request["url"].endswith("/images/generations"):
+            return (
+                200,
+                {},
+                json.dumps(
+                    {
+                        "data": [
+                            {
+                                "b64_json": base64.b64encode(
+                                    image_bytes
+                                ).decode()
+                            }
+                        ]
+                    }
+                ).encode(),
+            )
+
+        payload = _review_payload()
+        prompt = request["json"]["messages"][0]["content"][0]["text"]
+        match = re.search(r"probe_token exactly as ([0-9a-f]{16})", prompt)
+        if match is not None:
+            payload["probe_token"] = match.group(1)
+        return 200, {}, _chat_response(payload)
+
+    client = AgnesDirectClient(
+        api_key="token",
+        base_url="https://provider.invalid/v1",
+        transport=transport,
+    )
+
+    generated = client.generate_clean_image(
+        prompt=(
+            "Editorial visual with layered paper geometry, "
+            "no text, no logo, no watermark."
+        ),
+        max_attempts=1,
+    )
+
+    assert generated.image_bytes == image_bytes
+    assert request_urls == [
+        "https://provider.invalid/v1/images/generations",
+        "https://provider.invalid/v1/chat/completions",
+        "https://provider.invalid/v1/chat/completions",
+    ]
+    validation = generated.manifest["visual_validation"]
+    assert validation["verdict"] == "PASS"
+    assert validation["attempt"] == 1
+    assert validation["route_id"] == AGNES_VISION_ROUTE.id
+    assert validation["request_sha256"]
+    assert validation["response_sha256"]
+
+
+def test_clean_image_fails_closed_after_visual_rejections(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AgnesDirectClient(
+        api_key="token",
+        base_url="https://provider.invalid/v1",
+        transport=lambda _request: (500, {}, b""),
+    )
+    generated = GeneratedAsset(
+        route_id=AGNES_IMAGE_ROUTE.id,
+        model=AGNES_IMAGE_ROUTE.model,
+        image_bytes=b"image",
+        manifest={"output_sha256": "f" * 64},
+    )
+    payload = _review_payload()
+    payload["verdict"] = "FAIL"
+    review = AgnesReviewResult(
+        route_id=AGNES_VISION_ROUTE.id,
+        model=AGNES_VISION_ROUTE.model,
+        request_sha256="a" * 64,
+        response_sha256="b" * 64,
+        cache_hit=False,
+        payload=payload,
+    )
+    monkeypatch.setattr(client, "generate_image", lambda **_kwargs: generated)
+    monkeypatch.setattr(client, "probe_data_uri", lambda _value: None)
+    monkeypatch.setattr(client, "review", lambda **_kwargs: review)
+
+    with pytest.raises(AgnesDirectError, match="failed semantic/no-text"):
+        client.generate_clean_image(
+            prompt="Editorial visual, no text, no logo, no watermark.",
+            max_attempts=2,
+        )
+
+
+def test_blind_review_normalizes_verdict_to_frozen_score_rule() -> None:
+    from window_pptx.agnes_direct import _strict_blind_review_payload
+
+    payload = {
+        "schema_version": "1.0",
+        "reviewer_id": "R-AI-ART-DIRECTOR",
+        "blind_id": "B-001-12345678",
+        "scores": {
+            "narrative_clarity": 4,
+            "content_accuracy": 4,
+            "visual_hierarchy": 4,
+            "layout_fitness_variety": 4,
+            "readability": 4,
+            "chart_diagram_appropriateness": 4,
+            "brand_consistency": 4,
+            "editability": 4,
+            "customer_delivery_readiness": 4,
+        },
+        "findings": [],
+        "notes": "Scores are internally consistent.",
+        "verdict": "PASS",
+    }
+
+    normalized = _strict_blind_review_payload(
+        payload,
+        reviewer_id="R-AI-ART-DIRECTOR",
+        blind_id="B-001-12345678",
+    )
+
+    assert normalized["verdict"] == "FAIL"

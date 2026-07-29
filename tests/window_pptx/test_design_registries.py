@@ -210,6 +210,30 @@ def test_brand_color_with_no_background_contrast_falls_back_explicitly() -> None
     assert silver.events[0].code == "BRAND_COLOR_CONTRAST_FALLBACK"
 
 
+def test_dark_brand_background_adapts_text_before_accent_validation() -> None:
+    theme = resolve_theme(
+        "executive-light",
+        brand=BrandOverrides(
+            background="#090B10",
+            primary="#F7F4FF",
+            accent="#A78BFA",
+            positive="#18B6A4",
+        ),
+        installed_fonts={"Arial"},
+    )
+
+    assert theme.colors["background"] == "#090B10"
+    assert theme.colors["text"] == "#FFFFFF"
+    assert theme.colors["surface"] != "#FFFFFF"
+    assert theme.colors["primary"] == "#F7F4FF"
+    assert theme.colors["accent"] == "#A78BFA"
+    assert theme.colors["positive"] == "#18B6A4"
+    assert any(
+        event.code == "BRAND_BACKGROUND_CONTRAST_ADAPTED"
+        for event in theme.events
+    )
+
+
 def test_invalid_brand_color_is_rejected() -> None:
     with pytest.raises(ValueError, match="color"):
         resolve_theme(

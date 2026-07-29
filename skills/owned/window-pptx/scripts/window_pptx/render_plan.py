@@ -40,6 +40,7 @@ from .themes import (
     BrandOverrides,
     ResolutionEvent,
     contrast_ratio,
+    mix_color,
     resolve_theme,
     select_theme,
 )
@@ -322,6 +323,7 @@ class RenderSlide:
     motif_id: str | None = None
     motif_variant: str | None = None
     motif_intensity: str | None = None
+    direction_annotation: tuple[str, str] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -348,6 +350,11 @@ class RenderSlide:
             "motif_id": self.motif_id,
             "motif_variant": self.motif_variant,
             "motif_intensity": self.motif_intensity,
+            "direction_annotation": (
+                list(self.direction_annotation)
+                if self.direction_annotation is not None
+                else None
+            ),
         }
 
 
@@ -461,6 +468,59 @@ def _rich_text_runs(
 ) -> tuple[TextRun, ...] | None:
     """Create an editable label/value/context hierarchy for metric panels."""
 
+    if (
+        component == "cta"
+        and text
+        and "→" in text
+        and re.search(r"\n\s*\n", text) is None
+    ):
+        match = re.search(r"\d+(?:\s*→\s*\d+)+", text)
+        if match is not None:
+            runs: list[TextRun] = []
+            before = text[: match.start()]
+            metric = match.group(0)
+            after = text[match.end() :]
+            first_suffix, separator, remainder = after.partition("\n")
+            if before:
+                runs.append(
+                    TextRun(
+                        text=before,
+                        font_size_pt=typography["body"],
+                        text_color=colors["text"],
+                        bold=False,
+                        break_after=False,
+                    )
+                )
+            runs.append(
+                TextRun(
+                    text=metric,
+                    font_size_pt=value_font_size_pt,
+                    text_color=colors["primary"],
+                    bold=True,
+                    break_after=not bool(first_suffix),
+                )
+            )
+            if first_suffix:
+                runs.append(
+                    TextRun(
+                        text=first_suffix,
+                        font_size_pt=typography["body"],
+                        text_color=colors["text"],
+                        bold=False,
+                        break_after=bool(separator),
+                    )
+                )
+            if separator and remainder:
+                runs.append(
+                    TextRun(
+                        text=remainder,
+                        font_size_pt=typography["body"],
+                        text_color=colors["muted_text"],
+                        bold=False,
+                        break_after=False,
+                    )
+                )
+            return tuple(runs)
     if component not in {"kpi", "comparison-panel", "recommendation-panel"} or not text:
         return None
     lines = text.split("\n")
@@ -1109,7 +1169,22 @@ def _complete_slot_texts(
     slide: Mapping[str, Any],
     project: Mapping[str, Any],
 ) -> dict[str, str]:
-    result = _slot_texts(layout.slots, fragments)
+    poster_close = (
+        _poster_closing_slot_texts("\n\n".join(fragments))
+        if layout.id == "cta.poster-editorial"
+        else None
+    )
+    result = poster_close or _slot_texts(layout.slots, fragments)
+    if layout.id == "cta.decision-three":
+        scenario = str(project.get("scenario", "")).casefold()
+        labels = (
+            ("01 · DECIDE", "02 · EVIDENCE", "03 · NEXT TEST")
+            if scenario == "data-analysis"
+            else ("01 · APPROVE", "02 · OPEN RISK", "03 · CEILING")
+        )
+        for slot_id, label in zip(("one", "two", "three"), labels, strict=True):
+            if result.get(slot_id):
+                result[slot_id] = f"{label}\n{result[slot_id]}"
     empty = tuple(
         slot for slot in _governed_text_slots(layout) if not result.get(slot.id)
     )
@@ -1120,6 +1195,39 @@ def _complete_slot_texts(
     if empty:
         result[empty[0].id] = _supporting_slot_text(slide, project)
     return result
+
+
+def _poster_closing_slot_texts(text: str) -> dict[str, str] | None:
+    """Parse the governed consulting close into one proof line and three chips."""
+
+    paragraphs = [
+        item.strip() for item in re.split(r"\n\s*\n", text) if item.strip()
+    ]
+    if len(paragraphs) != 2:
+        return None
+    decision_line = re.sub(
+        r"^(?:决策|decision)\s*[:：]\s*",
+        "",
+        paragraphs[1],
+        flags=re.IGNORECASE,
+    )
+    decisions = [
+        item.strip()
+        for item in re.split(r"[｜|]", decision_line)
+        if item.strip()
+    ]
+    if len(decisions) != 3:
+        return None
+    primary = paragraphs[0]
+    if len("".join(primary.split())) > 18 and " · " in primary:
+        lead, tail = primary.rsplit(" · ", 1)
+        primary = f"{lead}\n{tail}"
+    return {
+        "primary": primary,
+        "decision-one": decisions[0],
+        "decision-two": decisions[1],
+        "decision-three": decisions[2],
+    }
 
 
 def _supporting_slot_text(
@@ -1165,6 +1273,57 @@ def _supporting_slot_text(
         ),
         "Key takeaway",
     )
+
+
+def _poster_title_text(title: str, *, layout_id: str) -> str:
+    """Add a deliberate CJK line break for oversized editorial poster titles.
+
+    PowerPoint's renderer can otherwise leave a one-character orphan even when
+    the governed capacity estimate passes.  Known business-title suffixes are
+    kept intact; the content itself is unchanged.
+    """
+
+    compact = "".join(title.split())
+    if (
+        layout_id in {"cover.editorial", "cover.hero-left", "cover.hero-right"}
+        and "\n" not in title
+        and 22 <= len(compact) <= 52
+        and re.search(r"[A-Za-z]", title)
+    ):
+        words = title.split()
+        best = min(
+            range(1, len(words)),
+            key=lambda index: abs(
+                len(" ".join(words[:index])) - len(" ".join(words[index:]))
+            ),
+            default=0,
+        )
+        if best:
+            return f"{' '.join(words[:best])}\n{' '.join(words[best:])}"
+    if (
+        layout_id != "cover.poster-editorial"
+        or "\n" in title
+        or not 10 <= len(compact) <= 20
+        or re.fullmatch(r"[\u3400-\u9fff]+", compact) is None
+    ):
+        return title
+    suffixes = (
+        "建设提案",
+        "项目提案",
+        "年度总结",
+        "战略规划",
+        "市场分析",
+        "数据报告",
+        "研究报告",
+        "产品发布",
+        "营销方案",
+        "销售提案",
+    )
+    for suffix in suffixes:
+        if compact.endswith(suffix) and len(compact) - len(suffix) >= 5:
+            return f"{compact[:-len(suffix)]}\n{suffix}"
+    split_at = max(5, min(len(compact) - 4, round(len(compact) * 0.58)))
+    return f"{compact[:split_at]}\n{compact[split_at:]}"
 
 
 def _preflight_image_sources(
@@ -1253,7 +1412,18 @@ def _font_size(
         ):
             return typography["subtitle"]
         if (
-            (role in {"cover", "section"} or family_id == "focal-statement")
+            role == "cover"
+            and text
+            and slot is not None
+            and len("".join(text.split())) <= 34
+        ):
+            for candidate in range(
+                typography["display"], typography["title"] - 1, -2
+            ):
+                if _text_fits_slot_at_font(text, slot, candidate):
+                    return candidate
+        if (
+            (role in {"cover", "section", "closing"} or family_id == "focal-statement")
             and text
             and slot is not None
             and len("".join(text.split()))
@@ -1305,14 +1475,22 @@ def _font_size(
                     return candidate
         return typography["body"]
     if component == "body-text" and role == "cover":
+        return typography["body"]
+    if component == "body-text" and role == "section":
         return typography["subtitle"]
     if component == "cta":
         if text and slot is not None:
-            for level in ("title", "subtitle", "body"):
+            compact_length = len("".join(text.split()))
+            levels = (
+                ("title", "subtitle", "body")
+                if compact_length <= 52 and "\n" not in text
+                else ("subtitle", "body")
+                if compact_length <= 72 and "\n" not in text
+                else ("body",)
+            )
+            for level in levels:
                 candidate = typography[level]
-                if len("".join(text.split())) <= _slot_text_capacity_at_font(
-                    slot, candidate
-                ):
+                if _text_fits_slot_at_font(text, slot, candidate):
                     return candidate
         return typography["body"]
     if component in {"decoration", "icon", "image-frame"}:
@@ -1660,21 +1838,6 @@ def _validate_slide_size(slide_size: SlideSize) -> None:
         raise RenderPlanError("PowerPoint slide dimensions must be between 1 and 56 inches")
 
 
-def _mix_hex(base: str, accent: str, accent_ratio: float) -> str:
-    """Blend two governed colors without introducing an unregistered token."""
-
-    if not 0 <= accent_ratio <= 1:
-        raise RenderPlanError("color mix ratio must be between zero and one")
-    base_value = base.lstrip("#")
-    accent_value = accent.lstrip("#")
-    channels = []
-    for offset in (0, 2, 4):
-        left = int(base_value[offset : offset + 2], 16)
-        right = int(accent_value[offset : offset + 2], 16)
-        channels.append(round(left * (1 - accent_ratio) + right * accent_ratio))
-    return "#" + "".join(f"{channel:02X}" for channel in channels)
-
-
 def _expected_fill(
     component: str,
     background: str,
@@ -1689,7 +1852,7 @@ def _expected_fill(
     if component == "cta":
         return primary
     if component in {"card", "quote", "timeline-node", "recommendation-panel"}:
-        return _mix_hex(surface, primary, 0.06)
+        return mix_color(surface, primary, 0.06)
     return surface if component not in {"title", "body-text", "footer"} else background
 
 
@@ -1704,6 +1867,173 @@ def _expected_text_color(component: str, colors: Mapping[str, str]) -> str:
     if component == "footer":
         return colors["muted_text"]
     return colors["text"]
+
+
+def _slot_style(
+    *,
+    component: str,
+    slot_id: str,
+    layout_id: str,
+    colors: Mapping[str, str],
+    motif_id: str | None = None,
+) -> tuple[str, str]:
+    """Return deterministic editorial fill/text pairs for semantic slots.
+
+    Layout geometry alone does not create art direction.  These bounded
+    treatments turn the most common executive compositions into a deliberate
+    hierarchy while retaining native editable shapes and governed tokens.
+    """
+
+    default_fill = _expected_fill(
+        component,
+        colors["background"],
+        colors["surface"],
+        colors["primary"],
+    )
+    default_text = _expected_text_color(component, colors)
+    if (
+        motif_id in {"knowledge-wayfinding", "evidence-margin"}
+        and layout_id in {
+            "cta.image-stage",
+            "cta.editorial-left",
+            "cta.centered",
+        }
+        and component == "cta"
+    ):
+        return (
+            mix_color(colors["background"], colors["primary"], 0.10),
+            colors["text"],
+        )
+    if (
+        motif_id == "luminous-product-stage"
+        and layout_id == "cta.image-stage"
+        and component == "cta"
+    ):
+        return colors["surface"], colors["text"]
+    if layout_id.endswith(".editorial-three"):
+        if slot_id == "one":
+            return colors["primary"], colors["background"]
+        if slot_id == "two":
+            return mix_color(colors["background"], colors["accent"], 0.18), colors["text"]
+        if slot_id == "three":
+            return mix_color(colors["background"], colors["positive"], 0.14), colors["text"]
+    if layout_id == "agenda.grid-four":
+        if slot_id == "one":
+            return colors["primary"], colors["background"]
+        if slot_id == "two":
+            return mix_color(colors["background"], colors["accent"], 0.22), colors["text"]
+        if slot_id in {"three", "four"}:
+            return mix_color(colors["background"], colors["positive"], 0.10), colors["text"]
+    if layout_id == "cta.decision-three":
+        if slot_id == "one":
+            return colors["primary"], colors["background"]
+        if slot_id == "two":
+            return (
+                mix_color(colors["background"], colors["primary"], 0.16),
+                colors["text"],
+            )
+        if slot_id == "three":
+            return (
+                mix_color(colors["background"], colors["primary"], 0.26),
+                colors["text"],
+            )
+    if layout_id == "big-number.editorial-left":
+        if slot_id == "metric":
+            return colors["primary"], colors["background"]
+    if layout_id == "big-number.split":
+        if slot_id == "primary":
+            return colors["primary"], colors["background"]
+        if slot_id == "secondary":
+            return mix_color(colors["background"], colors["accent"], 0.24), colors["text"]
+    if layout_id == "big-number.centered":
+        if slot_id == "metric":
+            return colors["primary"], colors["background"]
+        if slot_id == "accent":
+            return colors["accent"], colors["accent"]
+    if layout_id == "recommendation.dual":
+        if slot_id == "primary":
+            return colors["primary"], colors["background"]
+        if slot_id == "secondary":
+            return mix_color(colors["background"], colors["positive"], 0.18), colors["text"]
+    if layout_id == "comparison.split":
+        if slot_id == "primary":
+            return colors["primary"], colors["background"]
+        if slot_id == "secondary":
+            return mix_color(colors["background"], colors["positive"], 0.14), colors["text"]
+    if layout_id == "risk-recommendation.split":
+        if slot_id == "primary":
+            return (
+                mix_color(colors["background"], colors["warning"], 0.34),
+                colors["text"],
+            )
+        if slot_id == "secondary":
+            return mix_color(colors["background"], colors["positive"], 0.15), colors["text"]
+    if layout_id.startswith("process.") and component == "process-step":
+        if motif_id == "knowledge-wayfinding":
+            if slot_id in {"one", "primary"}:
+                return colors["primary"], colors["background"]
+            if slot_id in {"two", "secondary"}:
+                return mix_color(
+                    colors["background"], colors["accent"], 0.18
+                ), colors["text"]
+            if slot_id == "three":
+                return mix_color(
+                    colors["background"], colors["positive"], 0.16
+                ), colors["text"]
+            return mix_color(
+                colors["background"], colors["primary"], 0.11
+            ), colors["text"]
+        return colors["primary"], colors["background"]
+    if layout_id.startswith("timeline.") and component == "timeline-node":
+        return colors["primary"], colors["background"]
+    if layout_id.startswith("matrix.") and component == "matrix-cell":
+        return mix_color(colors["background"], colors["positive"], 0.13), colors["text"]
+    if layout_id in {
+        "cover.full-visual",
+        "section.full-visual",
+        "cta.full-visual-stage",
+    } and slot_id in {
+        "title",
+        "body",
+        "footer",
+    }:
+        return default_fill, colors["background"]
+    if layout_id in {"cover.poster-editorial", "cta.poster-editorial"}:
+        if slot_id == "title":
+            return default_fill, colors["positive"]
+        if slot_id in {"body", "primary"}:
+            return colors["background"], colors["text"]
+        if slot_id == "decision-one":
+            return colors["positive"], colors["background"]
+        if slot_id == "decision-two":
+            return mix_color(colors["background"], colors["accent"], 0.18), colors["text"]
+        if slot_id == "decision-three":
+            return mix_color(colors["background"], colors["positive"], 0.12), colors["text"]
+        if slot_id == "footer":
+            return default_fill, colors["muted_text"]
+    return default_fill, default_text
+
+
+def _governed_slide_background(
+    colors: Mapping[str, str],
+    *,
+    motif_id: str | None,
+    role: str,
+    slide_index: int,
+) -> str:
+    if (
+        motif_id == "luminous-product-stage"
+        and role not in {"cover", "closing"}
+        and slide_index % 3 == 0
+    ):
+        return mix_color(colors["background"], colors["surface"], 0.62)
+    if (
+        motif_id == "evidence-margin"
+        and role not in {"cover", "closing"}
+        and slide_index % 3 == 0
+    ):
+        return mix_color(colors["background"], colors["surface"], 0.58)
+    return colors["background"]
 
 
 def _expected_font(component: str, heading: str, body: str) -> str:
@@ -1721,6 +2051,88 @@ def _expected_font(component: str, heading: str, body: str) -> str:
         }
         else body
     )
+
+
+def _direction_annotation(slide: Mapping[str, Any]) -> tuple[str, str] | None:
+    preserved = slide.get("direction_annotation")
+    if (
+        isinstance(preserved, (list, tuple))
+        and len(preserved) == 2
+        and all(isinstance(item, str) and item for item in preserved)
+    ):
+        return preserved[0], preserved[1]
+    source_text = " ".join(
+        str(block.get("text") or "")
+        for block in slide.get("blocks", ())
+        if isinstance(block, Mapping)
+    )
+    trend_match = re.search(
+        r"\b(?P<direction>declined|decreased|dropped|fell|increased|grew|rose)"
+        r"\s+(?:by\s+)?(?P<value>\d+(?:\.\d+)?|one|two|three|four|five|six|"
+        r"seven|eight|nine|ten|eleven|twelve)\s+percentage points?\s+from\s+"
+        r"(?P<start>January|February|March|April|May|June|July|August|"
+        r"September|October|November|December)\s+(?:through|to)\s+"
+        r"(?P<end>January|February|March|April|May|June|July|August|"
+        r"September|October|November|December)\b",
+        source_text,
+        flags=re.IGNORECASE,
+    )
+    number_words = {
+        "one": "1",
+        "two": "2",
+        "three": "3",
+        "four": "4",
+        "five": "5",
+        "six": "6",
+        "seven": "7",
+        "eight": "8",
+        "nine": "9",
+        "ten": "10",
+        "eleven": "11",
+        "twelve": "12",
+    }
+    if trend_match is not None:
+        raw_value = trend_match.group("value")
+        value = number_words.get(raw_value.casefold(), raw_value)
+        sign = (
+            "−"
+            if trend_match.group("direction").casefold()
+            in {"declined", "decreased", "dropped", "fell"}
+            else "+"
+        )
+        return (
+            (
+                f"{trend_match.group('start')[:3].upper()} → "
+                f"{trend_match.group('end')[:3].upper()}"
+            ),
+            f"Δ {sign}{value} PP",
+        )
+    if str(slide.get("role") or "").casefold() in {
+        "timeline",
+        "roadmap",
+        "milestones",
+    }:
+        timeline_match = re.search(
+            r"\b(?P<start>[A-Za-z][A-Za-z -]{1,30}?)\s+and\s+"
+            r"(?P<end>[A-Za-z][A-Za-z -]{1,30}?)\s+will\s+run\s+for\s+"
+            r"(?P<duration>\d+|one|two|three|four|five|six|seven|eight|nine|"
+            r"ten|eleven|twelve)\s+weeks?\b",
+            source_text,
+            flags=re.IGNORECASE,
+        )
+        if timeline_match is not None:
+            raw_duration = timeline_match.group("duration")
+            duration = number_words.get(
+                raw_duration.casefold(), raw_duration
+            )
+            return (
+                (
+                    f"{timeline_match.group('start').strip().upper()} → "
+                    f"{timeline_match.group('end').strip().upper()}"
+                ),
+                f"{duration} WEEKS",
+            )
+    return None
 
 
 def _art_direction_objects(
@@ -1748,7 +2160,13 @@ def _art_direction_objects(
         ),
     ]
     role = str(slide["role"])
+    resolved_layout_id = str(slide.get("resolved_layout_id") or "")
     motif = slide.get("composition_motif")
+    motif_id = (
+        motif.get("motif_id")
+        if isinstance(motif, Mapping)
+        else slide.get("motif_id")
+    )
     motif_variant = (
         motif.get("variant")
         if isinstance(motif, Mapping)
@@ -1759,16 +2177,287 @@ def _art_direction_objects(
         if isinstance(motif, Mapping)
         else slide.get("motif_intensity")
     )
+    direction_annotation = _direction_annotation(slide)
     if role == "cover":
-        specs.extend(
-            [
+        if resolved_layout_id == "cover.poster-editorial":
+            cover_specs = [
+                (
+                    "cover-title-field-cutout",
+                    6.30,
+                    1.22,
+                    slide_size.width - 6.72,
+                    5.38,
+                    None,
+                ),
+                (
+                    "hero-eyebrow",
+                    slide_size.width - 3.32,
+                    0.88,
+                    2.40,
+                    0.30,
+                    "KNOWLEDGE / PILOT",
+                )
+            ]
+        elif resolved_layout_id == "cover.full-visual":
+            cover_specs = [
+                (
+                    "cover-title-field",
+                    0.62,
+                    1.06,
+                    8.45,
+                    4.36,
+                    None,
+                ),
+                (
+                    "hero-eyebrow",
+                    0.92,
+                    0.88,
+                    2.74,
+                    0.30,
+                    "KNOWLEDGE / PILOT",
+                ),
+            ]
+        elif resolved_layout_id == "cover.editorial":
+            cover_specs = [
+                (
+                    "cover-kicker",
+                    slide_size.width - 3.28,
+                    1.00,
+                    2.54,
+                    0.34,
+                    (
+                        "RETENTION / ANALYSIS"
+                        if motif_id == "evidence-margin"
+                        else "ATLAS / MODERNIZATION"
+                    ),
+                ),
+                (
+                    "cover-band-1",
+                    slide_size.width - 3.18,
+                    2.36,
+                    2.42,
+                    0.12,
+                    None,
+                ),
+                (
+                    "cover-band-2",
+                    slide_size.width - 2.70,
+                    2.86,
+                    1.94,
+                    0.12,
+                    None,
+                ),
+                (
+                    "cover-band-3",
+                    slide_size.width - 2.22,
+                    3.36,
+                    1.46,
+                    0.12,
+                    None,
+                ),
+                (
+                    "cover-seal",
+                    slide_size.width - 2.66,
+                    4.06,
+                    1.76,
+                    1.76,
+                    "2026" if motif_id == "evidence-margin" else "12W",
+                ),
+            ]
+        elif motif_id == "institutional-beacon":
+            cover_specs = [
+                (
+                    "institutional-panel",
+                    slide_size.width - 4.02,
+                    0.68,
+                    3.36,
+                    slide_size.height - 1.36,
+                    None,
+                ),
+                (
+                    "institutional-kicker",
+                    slide_size.width - 3.68,
+                    1.02,
+                    2.70,
+                    0.32,
+                    "REVIEW / DECIDE",
+                ),
+                (
+                    "institutional-band-1",
+                    slide_size.width - 3.54,
+                    2.04,
+                    2.46,
+                    0.10,
+                    None,
+                ),
+                (
+                    "institutional-band-2",
+                    slide_size.width - 3.06,
+                    2.40,
+                    1.98,
+                    0.10,
+                    None,
+                ),
+                (
+                    "institutional-band-3",
+                    slide_size.width - 2.58,
+                    2.76,
+                    1.50,
+                    0.10,
+                    None,
+                ),
+                (
+                    "institutional-seal",
+                    slide_size.width - 2.20,
+                    4.18,
+                    1.14,
+                    1.14,
+                    None,
+                ),
+            ]
+        elif motif_id == "luminous-product-stage":
+            cover_specs = [
+                (
+                    "stage-panel",
+                    slide_size.width - 4.28,
+                    0.70,
+                    3.62,
+                    slide_size.height - 1.40,
+                    None,
+                ),
+                (
+                    "stage-kicker",
+                    slide_size.width - 3.86,
+                    1.04,
+                    2.82,
+                    0.32,
+                    "PRODUCT / LAUNCH",
+                ),
+                (
+                    "stage-beam-1",
+                    slide_size.width - 3.70,
+                    2.12,
+                    2.64,
+                    0.12,
+                    None,
+                ),
+                (
+                    "stage-beam-2",
+                    slide_size.width - 3.12,
+                    2.58,
+                    2.06,
+                    0.12,
+                    None,
+                ),
+                (
+                    "stage-device",
+                    slide_size.width - 2.96,
+                    3.18,
+                    1.88,
+                    2.12,
+                    None,
+                ),
+                (
+                    "stage-orbit",
+                    slide_size.width - 3.30,
+                    5.62,
+                    2.24,
+                    0.08,
+                    None,
+                ),
+            ]
+        elif motif_id == "evidence-margin":
+            cover_specs = [
+                (
+                    "evidence-panel",
+                    slide_size.width - 3.70,
+                    0.72,
+                    3.04,
+                    slide_size.height - 1.44,
+                    None,
+                ),
+                (
+                    "evidence-kicker",
+                    slide_size.width - 3.36,
+                    1.02,
+                    2.38,
+                    0.32,
+                    "EVIDENCE / DECISION",
+                ),
+                (
+                    "evidence-bracket-top",
+                    slide_size.width - 3.18,
+                    2.06,
+                    1.96,
+                    0.08,
+                    None,
+                ),
+                (
+                    "evidence-bracket-side",
+                    slide_size.width - 3.18,
+                    2.06,
+                    0.08,
+                    2.78,
+                    None,
+                ),
+                (
+                    "evidence-datum-1",
+                    slide_size.width - 2.74,
+                    2.56,
+                    1.52,
+                    0.08,
+                    None,
+                ),
+                (
+                    "evidence-datum-2",
+                    slide_size.width - 2.74,
+                    3.30,
+                    1.12,
+                    0.08,
+                    None,
+                ),
+                (
+                    "evidence-datum-3",
+                    slide_size.width - 2.74,
+                    4.04,
+                    1.72,
+                    0.08,
+                    None,
+                ),
+                (
+                    "evidence-stage-1",
+                    slide_size.width - 2.74,
+                    2.72,
+                    1.72,
+                    0.28,
+                    "01 SCOPE",
+                ),
+                (
+                    "evidence-stage-2",
+                    slide_size.width - 2.74,
+                    3.46,
+                    1.72,
+                    0.28,
+                    "02 RETENTION",
+                ),
+                (
+                    "evidence-stage-3",
+                    slide_size.width - 2.74,
+                    4.20,
+                    1.72,
+                    0.28,
+                    "03 ACTION",
+                ),
+            ]
+        else:
+            cover_specs = [
                 (
                     "hero-panel",
                     slide_size.width - 4.15,
                     0.76,
                     3.52,
                     slide_size.height - 1.52,
-                    "知识流转\n试点蓝图",
+                    None,
                 ),
                 (
                     "hero-eyebrow",
@@ -1776,7 +2465,7 @@ def _art_direction_objects(
                     0.98,
                     2.74,
                     0.30,
-                    "KNOWLEDGE / PILOT",
+                    "STRATEGY / ACTION",
                 ),
                 (
                     "hero-stair-1",
@@ -1803,7 +2492,7 @@ def _art_direction_objects(
                     None,
                 ),
             ]
-        )
+        specs.extend(cover_specs)
     elif role in {"section", "agenda"}:
         section_kicker = {
             "section-why-now": "WHY / NOW",
@@ -1812,36 +2501,50 @@ def _art_direction_objects(
         }.get(str(slide["id"]), "CHAPTER")
         specs.extend(
             [
+                *(
+                    [
+                        (
+                            "section-title-field",
+                            0.62,
+                            1.42,
+                            7.46,
+                            3.74,
+                            None,
+                        )
+                    ]
+                    if resolved_layout_id == "section.full-visual"
+                    else []
+                ),
                 (
                     "section-kicker",
-                    slide_size.width - 5.72,
-                    1.48,
-                    5.06,
-                    0.72,
+                    slide_size.width - 4.52,
+                    1.34,
+                    3.86,
+                    0.56,
                     section_kicker,
                 ),
                 (
                     "section-beam",
                     0.62,
-                    2.46,
-                    slide_size.width - 4.02,
-                    0.16,
+                    2.34,
+                    slide_size.width - 1.28,
+                    0.09,
                     None,
                 ),
                 (
                     "section-number",
-                    slide_size.width - 3.44,
-                    slide_size.height - 3.92,
-                    2.78,
-                    3.12,
+                    slide_size.width - 1.68,
+                    slide_size.height - 1.72,
+                    1.02,
+                    1.02,
                     str(slide_index).zfill(2),
                 ),
                 (
                     "section-rule",
-                    slide_size.width - 3.18,
-                    slide_size.height - 0.72,
-                    2.52,
-                    0.10,
+                    slide_size.width - 4.12,
+                    slide_size.height - 0.80,
+                    3.46,
+                    0.08,
                     None,
                 ),
                 (
@@ -1878,15 +2581,37 @@ def _art_direction_objects(
                 )
             )
         if role == "closing":
-            specs.append(
-                (
-                    "closing-rule",
-                    0.62,
-                    slide_size.height - 1.02,
-                    2.26,
-                    0.11,
-                    None,
-                )
+            specs.extend(
+                [
+                    *(
+                        [
+                            (
+                                (
+                                    "closing-title-field-cutout"
+                                    if resolved_layout_id
+                                    == "cta.poster-editorial"
+                                    else "closing-title-field"
+                                ),
+                                5.02,
+                                1.02,
+                                slide_size.width - 5.66,
+                                2.12,
+                                None,
+                            )
+                        ]
+                        if resolved_layout_id
+                        in {"cta.full-visual-stage", "cta.poster-editorial"}
+                        else []
+                    ),
+                    (
+                        "closing-rule",
+                        0.62,
+                        slide_size.height - 1.02,
+                        2.26,
+                        0.11,
+                        None,
+                    ),
+                ]
             )
     if family_id in {"process", "timeline", "roadmap"}:
         specs.append(
@@ -1899,27 +2624,29 @@ def _art_direction_objects(
                 None,
             )
         )
-    elif family_id in {"matrix", "quadrant"}:
-        specs.extend(
-            [
+        if family_id == "process":
+            specs.append(
                 (
-                    "matrix-axis-h",
-                    slide_size.width * 0.47,
-                    1.84,
-                    0.08,
-                    slide_size.height - 2.70,
+                    "process-title-anchor",
+                    0.50,
+                    1.52,
+                    slide_size.width - 1.00,
+                    0.06,
                     None,
-                ),
-                (
-                    "matrix-axis-v",
-                    0.96,
-                    slide_size.height * 0.52,
-                    slide_size.width - 1.92,
-                    0.08,
-                    None,
-                ),
-            ]
-        )
+                )
+            )
+            if role == "solution":
+                for offset, x in enumerate((4.36, 8.68, 10.88), start=1):
+                    specs.append(
+                        (
+                            f"process-connector-{offset}",
+                            x,
+                            3.56,
+                            0.42,
+                            0.42,
+                            "→",
+                        )
+                    )
     elif family_id == "comparison":
         specs.append(
             (
@@ -1930,6 +2657,108 @@ def _art_direction_objects(
                 0.54,
                 "→",
             )
+        )
+    elif family_id == "big-number":
+        if resolved_layout_id == "big-number.split":
+            specs.append(
+                (
+                    "metric-bridge",
+                    slide_size.width * 0.472,
+                    slide_size.height * 0.55,
+                    0.76,
+                    0.64,
+                    ">",
+                )
+            )
+        elif resolved_layout_id == "big-number.centered":
+            specs.extend(
+                [
+                    (
+                        "metric-status-mark",
+                        slide_size.width - 3.36,
+                        3.28,
+                        1.06,
+                        1.06,
+                        "◎",
+                    ),
+                    (
+                        "metric-status-label",
+                        slide_size.width - 2.18,
+                        3.62,
+                        1.52,
+                        0.38,
+                        "KEY METRIC",
+                    ),
+                ]
+            )
+    elif family_id == "focal-statement" and role in {
+        "trend",
+        "trends",
+        "market-trends",
+    }:
+        # A prose-only trend claim without a chartable series still needs a
+        # semantic visual cue.  The editable staircase communicates direction
+        # without inventing values, ticks, or a false quantitative scale.
+        specs.extend(
+            [
+                ("trend-axis", 7.52, 4.22, 4.60, 0.05, None),
+                ("trend-step-1", 7.66, 2.28, 1.08, 0.09, None),
+                ("trend-drop-1", 8.65, 2.28, 0.09, 0.62, None),
+                ("trend-step-2", 8.65, 2.81, 1.08, 0.09, None),
+                ("trend-drop-2", 9.64, 2.81, 0.09, 0.62, None),
+                ("trend-step-3", 9.64, 3.34, 1.08, 0.09, None),
+                ("trend-drop-3", 10.63, 3.34, 0.09, 0.62, None),
+                ("trend-step-4", 10.63, 3.87, 1.30, 0.09, None),
+                ("trend-node-1", 7.58, 2.17, 0.23, 0.23, None),
+                ("trend-node-2", 8.57, 2.70, 0.23, 0.23, None),
+                ("trend-node-3", 9.56, 3.23, 0.23, 0.23, None),
+                ("trend-terminal-node", 11.82, 3.76, 0.26, 0.26, None),
+                ("trend-y-label", 7.44, 2.02, 1.66, 0.32, "RETENTION"),
+                (
+                    "trend-start-label",
+                    7.58,
+                    4.38,
+                    1.76,
+                    0.32,
+                    "JAN · START",
+                ),
+                (
+                    "trend-end-label",
+                    10.18,
+                    4.38,
+                    2.62,
+                    0.32,
+                    "JUN · START −4 PP",
+                ),
+            ]
+        )
+        if direction_annotation is not None:
+            specs.extend(
+                [
+                    ("trend-period", 7.66, 1.62, 2.02, 0.42, direction_annotation[0]),
+                    ("trend-delta", 10.06, 1.62, 2.02, 0.42, direction_annotation[1]),
+                ]
+            )
+    elif (
+        family_id == "focal-statement"
+        and role in {"timeline", "roadmap", "milestones"}
+        and direction_annotation is not None
+    ):
+        stage_labels = tuple(
+            part.strip()
+            for part in direction_annotation[0].split("→", maxsplit=1)
+        )
+        start_label = stage_labels[0]
+        end_label = stage_labels[1] if len(stage_labels) == 2 else "END"
+        specs.extend(
+            [
+                ("timeline-track", 6.22, 4.42, 5.48, 0.08, None),
+                ("timeline-start-node", 6.12, 4.31, 0.30, 0.30, None),
+                ("timeline-end-node", 11.58, 4.31, 0.30, 0.30, None),
+                ("timeline-start-label", 6.12, 3.78, 1.72, 0.38, start_label),
+                ("timeline-end-label", 10.16, 3.78, 1.72, 0.38, end_label),
+                ("timeline-duration", 8.23, 4.82, 1.56, 0.40, direction_annotation[1]),
+            ]
         )
     if motif_variant == "portal" and role not in {"cover", "closing"}:
         portal_width = 1.48 if motif_intensity == "strong" else 1.08
@@ -1944,7 +2773,10 @@ def _art_direction_objects(
                     None,
                 )
             )
-    elif motif_variant == "path":
+    elif motif_variant == "path" and not (
+        family_id == "focal-statement"
+        and role in {"timeline", "roadmap", "milestones"}
+    ):
         for offset in range(4):
             specs.append(
                 (
@@ -1956,7 +2788,11 @@ def _art_direction_objects(
                     None,
                 )
             )
-    elif motif_variant == "node":
+    elif motif_variant == "node" and family_id not in {
+        "process",
+        "big-number",
+        "focal-statement",
+    }:
         for offset in range(3):
             specs.append(
                 (
@@ -1999,16 +2835,205 @@ def _art_direction_objects(
                 ),
             ]
         )
+    elif motif_variant == "beacon-ring":
+        for offset in range(3):
+            specs.append(
+                (
+                    f"beacon-ring-{offset + 1}",
+                    slide_size.width - 2.34 + offset * 0.26,
+                    0.90 + offset * 0.22,
+                    1.58 - offset * 0.38,
+                    0.08,
+                    None,
+                )
+            )
+    elif motif_variant == "ceremonial-band":
+        specs.extend(
+            [
+                (
+                    "ceremonial-band-primary",
+                    0.72,
+                    slide_size.height - 0.76,
+                    2.34,
+                    0.10,
+                    None,
+                ),
+                (
+                    "ceremonial-band-accent",
+                    3.14,
+                    slide_size.height - 0.76,
+                    0.64,
+                    0.10,
+                    None,
+                ),
+            ]
+        )
+    elif motif_variant == "milestone-seal":
+        specs.append(
+            (
+                "milestone-seal",
+                slide_size.width - 1.72,
+                0.86,
+                0.86,
+                0.86,
+                str(slide_index).zfill(2),
+            )
+        )
+    elif motif_variant == "horizon-line":
+        specs.append(
+            (
+                "horizon-line",
+                0.72,
+                slide_size.height * 0.54,
+                slide_size.width - 1.44,
+                0.06,
+                None,
+            )
+        )
+    elif motif_variant in {"stage-arc", "orbit", "beam"}:
+        for offset in range(3):
+            specs.append(
+                (
+                    f"stage-{motif_variant}-{offset + 1}",
+                    slide_size.width - 3.08 + offset * 0.42,
+                    0.82 + offset * 0.32,
+                    2.24 - offset * 0.54,
+                    0.08,
+                    None,
+                )
+            )
+    elif motif_variant == "device-glow":
+        specs.extend(
+            [
+                (
+                    "device-glow-frame",
+                    slide_size.width - 2.62,
+                    0.84,
+                    1.76,
+                    1.18,
+                    None,
+                ),
+                (
+                    "device-glow-line",
+                    slide_size.width - 2.34,
+                    1.58,
+                    1.20,
+                    0.08,
+                    None,
+                ),
+            ]
+        )
+    elif motif_variant == "datum-line":
+        specs.append(
+            (
+                "datum-line",
+                slide_size.width - 3.14,
+                1.04,
+                2.30,
+                0.07,
+                None,
+            )
+        )
+    elif motif_variant == "evidence-bracket":
+        specs.extend(
+            [
+                (
+                    "evidence-bracket-top",
+                    slide_size.width - 2.66,
+                    0.86,
+                    1.84,
+                    0.07,
+                    None,
+                ),
+                (
+                    "evidence-bracket-side",
+                    slide_size.width - 0.89,
+                    0.86,
+                    0.07,
+                    1.20,
+                    None,
+                ),
+            ]
+        )
+    elif motif_variant == "annotation-dot":
+        specs.extend(
+            [
+                (
+                    "annotation-dot",
+                    slide_size.width - 1.30,
+                    0.92,
+                    0.22,
+                    0.22,
+                    None,
+                ),
+                (
+                    "annotation-rail",
+                    slide_size.width - 3.00,
+                    1.38,
+                    1.92,
+                    0.06,
+                    None,
+                ),
+            ]
+        )
+    elif motif_variant == "editorial-rule":
+        specs.append(
+            (
+                "editorial-rule",
+                0.72,
+                1.30,
+                3.18,
+                0.07,
+                None,
+            )
+        )
     fact_refs = slide.get("composition_fact_refs") or slide.get("fact_refs") or ()
+    if role != "cover" and motif_id in {
+        "evidence-margin",
+        "knowledge-wayfinding",
+    }:
+        specs.append(
+            (
+                "brand-kicker",
+                slide_size.width - 3.86,
+                0.26,
+                2.72,
+                0.28,
+                (
+                    "RETENTION / ANALYSIS"
+                    if motif_id == "evidence-margin"
+                    else "ATLAS / MODERNIZATION"
+                ),
+            )
+        )
     if fact_refs:
+        explicit_input_source = motif_id == "evidence-margin"
         specs.append(
             (
                 "evidence-tag",
-                slide_size.width - 3.00,
-                slide_size.height - 0.64,
-                1.72,
-                0.24,
-                f"证据 • {len(fact_refs):02d}",
+                (
+                    slide_size.width - 4.45
+                    if explicit_input_source
+                    else slide_size.width - 4.08
+                    if motif_id == "knowledge-wayfinding"
+                    else slide_size.width - 3.00
+                ),
+                slide_size.height - 0.67,
+                3.15
+                if explicit_input_source
+                else 2.80
+                if motif_id == "knowledge-wayfinding"
+                else 1.72,
+                0.30,
+                (
+                    f"SOURCE {len(fact_refs):02d} · ANALYSIS INPUT"
+                    if explicit_input_source
+                    else "SOURCE · PROJECT BRIEF"
+                    if motif_id == "knowledge-wayfinding"
+                    else f"SOURCE • {len(fact_refs):02d}"
+                    if motif_id == "institutional-beacon"
+                    else f"EVIDENCE • {len(fact_refs):02d}"
+                ),
             )
         )
 
@@ -2016,13 +3041,36 @@ def _art_direction_objects(
     for offset, (token, x, y, width, height, text) in enumerate(specs, start=1):
         art_component = (
             "statement"
-            if token
+            if text is not None
+            and token
             in {
-                "hero-panel",
-                "section-number",
-                "section-kicker",
-                "comparison-arrow",
-            }
+                    "hero-panel",
+                    "institutional-seal",
+                    "milestone-seal",
+                    "section-number",
+                    "section-kicker",
+                    "comparison-arrow",
+                    "metric-bridge",
+                    "metric-status-mark",
+                    "metric-status-label",
+                    "trend-period",
+                    "trend-delta",
+                    "trend-y-label",
+                    "trend-start-label",
+                    "trend-end-label",
+                    "brand-kicker",
+                    "evidence-stage-1",
+                    "evidence-stage-2",
+                    "evidence-stage-3",
+                    "cover-kicker",
+                    "cover-seal",
+                    "timeline-start-label",
+                    "timeline-end-label",
+                    "timeline-duration",
+                    "process-connector-1",
+                    "process-connector-2",
+                    "process-connector-3",
+                }
             else "footer"
             if token == "evidence-tag"
             else "accent"
@@ -2031,11 +3079,18 @@ def _art_direction_objects(
                 for marker in (
                     "node",
                     "eyebrow",
+                    "kicker",
                     "marker",
                     "stair",
                     "beam",
                     "rail",
                     "axis",
+                    "field",
+                    "datum",
+                    "bracket",
+                    "orbit",
+                    "glow",
+                    "seal",
                 )
             )
             else "decoration"
@@ -2043,15 +3098,37 @@ def _art_direction_objects(
         art_color = (
             theme.colors["background"]
             if "cutout" in token
+            else primary
+            if token in {"brand-kicker", "cover-kicker", "cover-seal"}
+            else theme.colors["accent"]
+            if token == "timeline-end-label"
             else theme.colors["positive"]
             if any(
                 marker in token
-                for marker in ("path", "rail", "beam", "axis")
+                for marker in (
+                    "path",
+                    "rail",
+                    "beam",
+                    "axis",
+                    "datum",
+                    "horizon",
+                    "editorial-rule",
+                )
             )
-            else theme.colors["warning"]
+            else theme.colors["accent"]
             if any(
                 marker in token
-                for marker in ("node", "eyebrow", "marker", "stair")
+                for marker in (
+                    "node",
+                    "eyebrow",
+                    "kicker",
+                    "marker",
+                    "stair",
+                    "seal",
+                    "orbit",
+                    "bracket",
+                    "glow",
+                )
             )
             else primary
         )
@@ -2065,7 +3142,22 @@ def _art_direction_objects(
                 y=y,
                 width=width,
                 height=height,
-                layer=10,
+                layer=25
+                if token
+                in {
+                    "cover-title-field",
+                    "cover-title-field-cutout",
+                    "section-title-field",
+                    "closing-title-field",
+                    "closing-title-field-cutout",
+                    "metric-bridge",
+                    "comparison-arrow",
+                    "process-connector-1",
+                    "process-connector-2",
+                    "process-connector-3",
+                }
+                or token in {"evidence-tag", "page-number"}
+                else 10,
                 group_id=group_id,
                 native_editable=True,
                 text=text,
@@ -2073,14 +3165,34 @@ def _art_direction_objects(
                 asset_record=None,
                 font_name=theme.fonts["heading"],
                 font_size_pt=(
-                    44
-                    if token == "section-number"
+                    30
+                    if token in {"section-number", "institutional-seal", "milestone-seal"}
                     else 26
                     if token == "hero-panel"
-                    else 28
+                    else 22
                     if token == "section-kicker"
                     else 30
-                    if token == "comparison-arrow"
+                    if token
+                    in {"comparison-arrow", "metric-bridge", "metric-status-mark"}
+                    else 15
+                    if token in {
+                        "metric-status-label",
+                        "trend-period",
+                        "timeline-start-label",
+                        "timeline-end-label",
+                    }
+                    else 18
+                    if token in {"trend-delta", "timeline-duration"}
+                    else 22
+                    if token.startswith("process-connector-")
+                    else 9
+                    if token in {"hero-eyebrow", "cover-kicker"}
+                    else 24
+                    if token == "cover-seal"
+                    else 10
+                    if token == "brand-kicker"
+                    else 9
+                    if token.startswith("evidence-stage-")
                     else 11
                 ),
                 text_color=(
@@ -2315,7 +3427,13 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
             raise RenderPlanError(
                 f"render slide {slide.source_id} has an unknown or mismatched layout"
             )
-        if slide.background_color != governed_theme.colors["background"]:
+        expected_slide_background = _governed_slide_background(
+            governed_theme.colors,
+            motif_id=slide.motif_id,
+            role=slide.role,
+            slide_index=slide.index,
+        )
+        if slide.background_color != expected_slide_background:
             raise RenderPlanError(
                 f"render slide {slide.source_id} diverges from governed theme"
             )
@@ -2357,13 +3475,27 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
             )
         if not isinstance(slide.objects, tuple) or not slide.objects:
             raise RenderPlanError(f"render slide {slide.source_id} has no objects")
+        if slide.direction_annotation is not None and (
+            not isinstance(slide.direction_annotation, tuple)
+            or len(slide.direction_annotation) != 2
+            or not all(
+                isinstance(item, str) and item
+                for item in slide.direction_annotation
+            )
+        ):
+            raise RenderPlanError(
+                f"render slide {slide.source_id} trend annotation is invalid"
+            )
         expected_art = _art_direction_objects(
             slide={
                 "id": slide.source_id,
                 "role": slide.role,
+                "motif_id": slide.motif_id,
                 "motif_variant": slide.motif_variant,
                 "motif_intensity": slide.motif_intensity,
                 "fact_refs": slide.fact_refs,
+                "resolved_layout_id": slide.layout_id,
+                "direction_annotation": slide.direction_annotation,
             },
             slide_index=slide.index,
             slide_size=plan.slide_size,
@@ -2466,10 +3598,51 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
                 raise RenderPlanError(f"{path} group id is invalid")
             if item.text is not None and not isinstance(item.text, str):
                 raise RenderPlanError(f"{path} text is invalid")
+            _validation_fill, validation_text = _slot_style(
+                component=slot.component,
+                slot_id=slot.id,
+                layout_id=slide.layout_id,
+                colors=governed_theme.colors,
+                motif_id=slide.motif_id,
+            )
+            validation_rich_colors = dict(governed_theme.colors)
+            if validation_text == governed_theme.colors["background"]:
+                validation_rich_colors["muted_text"] = governed_theme.colors[
+                    "background"
+                ]
+                validation_rich_colors["primary"] = (
+                    governed_theme.colors["background"]
+                    if slot.component == "comparison-panel"
+                    else governed_theme.colors["accent"]
+                )
+            elif (
+                slide.layout_id == "cta.poster-editorial"
+                and slot.id == "primary"
+            ):
+                validation_rich_colors["primary"] = governed_theme.colors["accent"]
+            expected_text_runs = _rich_text_runs(
+                item.component,
+                item.text,
+                value_font_size_pt=(
+                    governed_theme.typography["title"]
+                    if (
+                        slide.layout_id == "cta.poster-editorial"
+                        and slot.id == "primary"
+                    )
+                    else int(item.font_size_pt)
+                ),
+                typography=governed_theme.typography,
+                colors=validation_rich_colors,
+            )
             if item.text_runs is not None:
                 if (
                     item.component
-                    not in {"kpi", "comparison-panel", "recommendation-panel"}
+                    not in {
+                        "kpi",
+                        "comparison-panel",
+                        "recommendation-panel",
+                        "cta",
+                    }
                     or item.kind not in {"text", "shape"}
                     or item.text is None
                     or not isinstance(item.text_runs, tuple)
@@ -2485,7 +3658,8 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
                     if (
                         type(run.font_size_pt) is not int
                         or run.font_size_pt < 11
-                        or run.font_size_pt > item.font_size_pt
+                        or run.font_size_pt
+                        > max(governed_theme.typography.values())
                         or run.font_size_pt
                         not in set(governed_theme.typography.values())
                         or not HEX_COLOR.fullmatch(run.text_color)
@@ -2504,13 +3678,6 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
                     raise RenderPlanError(
                         f"{path} rich text does not reconstruct canonical text"
                     )
-            expected_text_runs = _rich_text_runs(
-                item.component,
-                item.text,
-                value_font_size_pt=int(item.font_size_pt),
-                typography=governed_theme.typography,
-                colors=governed_theme.colors,
-            )
             if item.text_runs != expected_text_runs:
                 raise RenderPlanError(
                     f"{path} rich text diverges from the governed hierarchy"
@@ -2622,6 +3789,26 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
                 or item.group_id != expected_group
             ):
                 raise RenderPlanError(f"{path} diverges from governed component rules")
+            expected_fill, expected_text = _slot_style(
+                component=slot.component,
+                slot_id=slot.id,
+                layout_id=slide.layout_id,
+                colors=governed_theme.colors,
+                motif_id=slide.motif_id,
+            )
+            expected_font_size = _font_size(
+                slot.component,
+                governed_theme.typography,
+                text=item.text,
+                slot=slot,
+                role=slide.role,
+                family_id=slide.family_id,
+            )
+            if (
+                slide.layout_id == "cta.poster-editorial"
+                and slot.component == "card"
+            ):
+                expected_font_size = governed_theme.typography["subtitle"]
             if (
                 item.font_name
                 != _expected_font(
@@ -2629,24 +3816,9 @@ def validate_render_plan(plan: RenderPlan) -> RenderPlan:
                     governed_theme.fonts["heading"],
                     governed_theme.fonts["body"],
                 )
-                or item.font_size_pt
-                != _font_size(
-                    slot.component,
-                    governed_theme.typography,
-                    text=item.text,
-                    slot=slot,
-                    role=slide.role,
-                    family_id=slide.family_id,
-                )
-                or item.text_color
-                != _expected_text_color(slot.component, governed_theme.colors)
-                or item.fill_color
-                != _expected_fill(
-                    slot.component,
-                    governed_theme.colors["background"],
-                    governed_theme.colors["surface"],
-                    governed_theme.colors["primary"],
-                )
+                or item.font_size_pt != expected_font_size
+                or item.text_color != expected_text
+                or item.fill_color != expected_fill
                 or item.line_color != governed_theme.colors["primary"]
             ):
                 raise RenderPlanError(f"{path} diverges from governed theme")
@@ -2725,6 +3897,15 @@ def _build_render_plan_from_compiled(
             )
         item_count = _item_count(slide)
         fragments, source_refs = _slide_content(slide)
+        for index, binding in enumerate(
+            slide.get("composition_asset_bindings", ())
+        ):
+            if (
+                isinstance(binding, dict)
+                and binding.get("status") in {"resolved", "generated"}
+                and binding.get("asset_id") in governed_assets
+            ):
+                source_refs[f"composition-asset-{index}"] = binding["asset_id"]
         secondary_fragments = [
             fragment
             for block in slide["blocks"]
@@ -2885,6 +4066,32 @@ def _build_render_plan_from_compiled(
         secondary_fragments = _without_title_duplication(
             secondary_fragments, slide.get("title")
         )
+        if (
+            layout.id == "cta.poster-editorial"
+            and _poster_closing_slot_texts("\n\n".join(fragments)) is None
+        ):
+            poster_layout = layout
+            layout = resolve_layout(
+                "cta.full-visual-stage",
+                slide_size,
+                previous_layouts,
+                item_count=item_count,
+                density=density,
+                variant_seed=slide_variant_seed,
+                forbidden_components=forbidden_components,
+                component_limits=component_limits,
+            )
+            findings.append(
+                RenderFinding(
+                    "POSTER_CTA_SEMANTIC_FALLBACK",
+                    f"slides.{slide['id']}",
+                    (
+                        f"{poster_layout.id} requires one proof line and exactly "
+                        f"three decision chips; using {layout.id} for the "
+                        "source-preserving single-action close"
+                    ),
+                )
+            )
         advanced_slots = tuple(
             slot
             for slot in layout.slots
@@ -3149,7 +4356,10 @@ def _build_render_plan_from_compiled(
                     )
 
             if slot.component == "title":
-                text = slide.get("title") or slide["role"].replace("-", " ").title()
+                text = _poster_title_text(
+                    slide.get("title") or slide["role"].replace("-", " ").title(),
+                    layout_id=layout.id,
+                )
             elif slot.component == "footer":
                 text = f"{slide_index} / {slide_total}"
             elif slot.component == "image-frame":
@@ -3183,12 +4393,47 @@ def _build_render_plan_from_compiled(
                 role=slide["role"],
                 family_id=layout.family_id,
             )
+            if (
+                layout.id == "cta.poster-editorial"
+                and slot.component == "card"
+            ):
+                font_size_pt = theme.typography["subtitle"]
+            motif_value = slide.get("composition_motif")
+            slide_motif_id = (
+                motif_value.get("motif_id")
+                if isinstance(motif_value, Mapping)
+                else None
+            )
+            fill_color, text_color = _slot_style(
+                component=slot.component,
+                slot_id=slot.id,
+                layout_id=layout.id,
+                colors=theme.colors,
+                motif_id=slide_motif_id,
+            )
+            rich_text_colors = dict(theme.colors)
+            if text_color == theme.colors["background"]:
+                rich_text_colors["muted_text"] = theme.colors["background"]
+                rich_text_colors["primary"] = (
+                    theme.colors["background"]
+                    if slot.component == "comparison-panel"
+                    else theme.colors["accent"]
+                )
+            elif layout.id == "cta.poster-editorial" and slot.id == "primary":
+                rich_text_colors["primary"] = theme.colors["accent"]
             text_runs = _rich_text_runs(
                 slot.component,
                 text,
-                value_font_size_pt=font_size_pt,
+                value_font_size_pt=(
+                    theme.typography["title"]
+                    if (
+                        layout.id == "cta.poster-editorial"
+                        and slot.id == "primary"
+                    )
+                    else font_size_pt
+                ),
                 typography=theme.typography,
-                colors=theme.colors,
+                colors=rich_text_colors,
             )
             objects.append(
                 RenderObject(
@@ -3223,13 +4468,8 @@ def _build_render_plan_from_compiled(
                         else theme.fonts["body"]
                     ),
                     font_size_pt=font_size_pt,
-                    text_color=_expected_text_color(slot.component, theme.colors),
-                    fill_color=_expected_fill(
-                        slot.component,
-                        theme.colors["background"],
-                        theme.colors["surface"],
-                        theme.colors["primary"],
-                    ),
+                    text_color=text_color,
+                    fill_color=fill_color,
                     line_color=theme.colors["primary"],
                     advanced=advanced,
                     semantic_source=semantic_source if carries_semantics else None,
@@ -3254,7 +4494,7 @@ def _build_render_plan_from_compiled(
             )
         objects.extend(
             _art_direction_objects(
-                slide=slide,
+                slide={**slide, "resolved_layout_id": layout.id},
                 slide_index=slide_index,
                 slide_size=slide_size,
                 family_id=layout.family_id,
@@ -3264,6 +4504,18 @@ def _build_render_plan_from_compiled(
         render_item_count = max(
             layout.capacity.min_items,
             min(item_count, layout.capacity.max_items),
+        )
+        motif_value = slide.get("composition_motif")
+        slide_motif_id = (
+            motif_value.get("motif_id")
+            if isinstance(motif_value, Mapping)
+            else None
+        )
+        background_color = _governed_slide_background(
+            theme.colors,
+            motif_id=slide_motif_id,
+            role=slide["role"],
+            slide_index=slide_index,
         )
         render_slides.append(
             RenderSlide(
@@ -3276,7 +4528,7 @@ def _build_render_plan_from_compiled(
                 item_count=render_item_count,
                 requested_density=density,
                 resolved_density=layout.resolved_density,
-                background_color=theme.colors["background"],
+                background_color=background_color,
                 objects=tuple(objects),
                 speaker_notes=slide.get("speaker_notes"),
                 motion=motion,
@@ -3308,6 +4560,7 @@ def _build_render_plan_from_compiled(
                     if isinstance(slide.get("composition_motif"), dict)
                     else None
                 ),
+                direction_annotation=_direction_annotation(slide),
             )
         )
 

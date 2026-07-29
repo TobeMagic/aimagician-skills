@@ -76,6 +76,17 @@ _ELEVATED_SHAPE_COMPONENTS = {
 }
 
 
+def _diagram_contrast_text(color: str) -> str:
+    value = color.lstrip("#")
+    channels = [int(value[index : index + 2], 16) / 255 for index in (0, 2, 4)]
+    luminance = (
+        0.2126 * channels[0]
+        + 0.7152 * channels[1]
+        + 0.0722 * channels[2]
+    )
+    return "#111827" if luminance > 0.42 else "#F8FAFC"
+
+
 class OoxmlSemanticError(ValueError):
     """The candidate package does not preserve its authoritative RenderPlan."""
 
@@ -894,7 +905,11 @@ def _assert_object_style(node: ET.Element, item: RenderObject) -> None:
                 )
         elif item.component == "accent":
             expected_alpha = (
-                85_000
+                100_000
+                if item.group_id
+                and item.group_id.endswith("_art")
+                and "title_field" in item.name
+                else 85_000
                 if item.group_id and item.group_id.endswith("_art")
                 else 18_000
             )
@@ -1045,7 +1060,11 @@ def _diagram_child_geometry(
         height = item.height * (0.55 if diagram_type == "timeline" else 0.58)
         return (
             item.x + index * (width + gap),
-            item.y + (0 if index % 2 == 0 else item.height - height),
+            (
+                item.y + (item.height - height) / 2
+                if diagram_type == "timeline"
+                else item.y + (0 if index % 2 == 0 else item.height - height)
+            ),
             width,
             height,
         )
@@ -1106,6 +1125,10 @@ def _assert_diagram_children(nodes: dict[str, ET.Element], item: RenderObject) -
             node_count=len(item.advanced.nodes),
             index=index - 1,
         )
+        highlight_first_matrix_node = (
+            index == 1
+            and item.advanced.diagram_type in {"matrix", "quadrant"}
+        )
         governed_child = replace(
             item,
             id=f"{item.id}.node.{index}",
@@ -1116,7 +1139,21 @@ def _assert_diagram_children(nodes: dict[str, ET.Element], item: RenderObject) -
             width=width,
             height=height,
             text=expected_text,
-            font_size_pt=max(9, item.font_size_pt - 1),
+            font_size_pt=(
+                max(18, item.font_size_pt)
+                if item.advanced.diagram_type == "timeline"
+                else max(9, item.font_size_pt - 1)
+            ),
+            fill_color=(
+                item.line_color
+                if highlight_first_matrix_node
+                else item.fill_color
+            ),
+            text_color=(
+                _diagram_contrast_text(item.line_color)
+                if highlight_first_matrix_node
+                else item.text_color
+            ),
             advanced=None,
         )
         _assert_object_geometry(child, governed_child)
@@ -1249,7 +1286,7 @@ def _assert_role_layout_system(
     if (
         background is None
         or background.casefold()
-        != slide.background_color.lstrip("#").casefold()
+        != plan.background_color.lstrip("#").casefold()
     ):
         raise OoxmlSemanticError(
             f"ROLE_LAYOUT_BACKGROUND_MISMATCH: {slide.source_id}"

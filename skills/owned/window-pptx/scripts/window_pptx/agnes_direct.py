@@ -2,7 +2,7 @@
 
 The adapter intentionally does not reuse OpenCode model identities.  It
 supports strict visual-review JSON, a session-bound Data-URI probe, redacted
-HTTP failures, deterministic cache replay, and Base64 image generation.
+HTTP failures, deterministic cache replay, and frozen image generation.
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ import json
 import re
 import secrets
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -78,6 +79,27 @@ class AgnesReviewResult:
 
 
 @dataclass(frozen=True)
+class AgnesBlindReviewResult:
+    route_id: str
+    model: str
+    session_id: str
+    request_sha256: str
+    response_sha256: str
+    payload: Mapping[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": "1.0",
+            "route_id": self.route_id,
+            "model": self.model,
+            "session_id": self.session_id,
+            "request_sha256": self.request_sha256,
+            "response_sha256": self.response_sha256,
+            "payload": dict(self.payload),
+        }
+
+
+@dataclass(frozen=True)
 class GeneratedAsset:
     route_id: str
     model: str
@@ -130,10 +152,23 @@ _SCORE_AXES = {
     "deck_rhythm",
     "asset_polish",
 }
+_BLIND_SCORE_AXES = {
+    "narrative_clarity",
+    "content_accuracy",
+    "visual_hierarchy",
+    "layout_fitness_variety",
+    "readability",
+    "chart_diagram_appropriateness",
+    "brand_consistency",
+    "editability",
+    "customer_delivery_readiness",
+}
 _DATA_URI = re.compile(
     r"^data:image/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=]+)$"
 )
 Transport = Callable[[dict[str, Any]], tuple[int, Mapping[str, str], bytes]]
+_GENERATED_IMAGE_HOSTS = {"platform-outputs.agnes-ai.space"}
+_MAX_GENERATED_IMAGE_BYTES = 24 * 1024 * 1024
 
 
 def require_direct_route(route_id: str, *, capability: str) -> ProviderRoute:
@@ -344,6 +379,67 @@ def _strict_review_payload(
     ):
         raise AgnesDirectError("Agnes review did not return strict JSON")
     return normalized, tuple(trace)
+
+
+def _strict_blind_review_payload(
+    value: Any,
+    *,
+    reviewer_id: str,
+    blind_id: str,
+) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != {
+        "schema_version",
+        "reviewer_id",
+        "blind_id",
+        "scores",
+        "findings",
+        "notes",
+        "verdict",
+    }:
+        raise AgnesDirectError("Agnes blind review did not return strict JSON")
+    if (
+        value["schema_version"] != "1.0"
+        or value["reviewer_id"] != reviewer_id
+        or value["blind_id"] != blind_id
+        or value["verdict"] not in {"PASS", "FAIL"}
+        or not isinstance(value["notes"], str)
+        or not value["notes"].strip()
+    ):
+        raise AgnesDirectError("Agnes blind review did not return strict JSON")
+    scores = value["scores"]
+    if (
+        not isinstance(scores, dict)
+        or set(scores) != _BLIND_SCORE_AXES
+        or any(
+            isinstance(score, bool)
+            or not isinstance(score, int)
+            or not 1 <= score <= 5
+            for score in scores.values()
+        )
+    ):
+        raise AgnesDirectError("Agnes blind review did not return strict JSON")
+    findings = value["findings"]
+    if not isinstance(findings, list):
+        raise AgnesDirectError("Agnes blind review did not return strict JSON")
+    for finding in findings:
+        if (
+            not isinstance(finding, dict)
+            or set(finding) != {"severity", "dimension", "evidence"}
+            or finding["severity"] not in {"blocker", "important", "nitpick"}
+            or finding["dimension"] not in _BLIND_SCORE_AXES
+            or not isinstance(finding["evidence"], str)
+            or not finding["evidence"].strip()
+        ):
+            raise AgnesDirectError("Agnes blind review did not return strict JSON")
+    normalized = dict(value)
+    expected_verdict = (
+        "PASS"
+        if sum(scores.values()) / len(scores) >= 4.2
+        and min(scores.values()) >= 4
+        else "FAIL"
+    )
+    normalized["verdict"] = expected_verdict
+    return normalized
 
 
 class AgnesDirectClient:
@@ -644,6 +740,116 @@ class AgnesDirectClient:
             scope=scope,
         )
 
+    def blind_review(
+        self,
+        *,
+        image_urls: tuple[str, ...],
+        prompt: str,
+        reviewer_id: str,
+        blind_id: str,
+    ) -> AgnesBlindReviewResult:
+        """Run one uncached, session-bound independent blind scoring request."""
+
+        if not 2 <= len(image_urls) <= 4:
+            raise AgnesDirectError(
+                "Agnes blind review requires two to four images"
+            )
+        if not isinstance(prompt, str) or not prompt.strip():
+            raise AgnesDirectError("Agnes blind review prompt cannot be empty")
+        if not isinstance(reviewer_id, str) or not reviewer_id.strip():
+            raise AgnesDirectError("Agnes blind reviewer_id cannot be empty")
+        if not isinstance(blind_id, str) or not blind_id.strip():
+            raise AgnesDirectError("Agnes blind_id cannot be empty")
+        for image_url in image_urls:
+            if image_url.startswith("data:"):
+                _validated_data_uri(image_url)
+                if not self._data_uri_enabled:
+                    raise AgnesDirectError(
+                        "Data URI requires a successful session challenge probe"
+                    )
+            elif not image_url.startswith("https://"):
+                raise AgnesDirectError(
+                    "Agnes blind review images require HTTPS or probed Data URI"
+                )
+        content: list[dict[str, Any]] = [
+            {
+                "type": "text",
+                "text": (
+                    f"{prompt}\n\nReturn only strict JSON. Exact root keys: "
+                    "schema_version, reviewer_id, blind_id, scores, findings, "
+                    "notes, verdict. scores must contain exactly "
+                    f"{', '.join(sorted(_BLIND_SCORE_AXES))}, each integer 1..5. "
+                    "findings items contain exactly severity, dimension, evidence."
+                ),
+            }
+        ]
+        content.extend(
+            {"type": "image_url", "image_url": {"url": image_url}}
+            for image_url in image_urls
+        )
+        request_payload = {
+            "model": AGNES_VISION_ROUTE.model,
+            "messages": [{"role": "user", "content": content}],
+            "temperature": 0,
+            "response_format": {"type": "json_object"},
+        }
+        request_sha256 = _sha256(_canonical_bytes(request_payload))
+        last_error: AgnesDirectError | None = None
+        for attempt in range(2):
+            payload = request_payload
+            if attempt:
+                payload = {
+                    **request_payload,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": (
+                                        content[0]["text"]
+                                        + "\nYour prior response was invalid. "
+                                        "Repair the JSON schema only; add no prose."
+                                    ),
+                                },
+                                *content[1:],
+                            ],
+                        }
+                    ],
+                }
+            response = self._post_json("chat/completions", payload)
+            try:
+                raw_content = response["choices"][0]["message"]["content"]
+                decoded = json.loads(raw_content)
+                strict = _strict_blind_review_payload(
+                    decoded,
+                    reviewer_id=reviewer_id,
+                    blind_id=blind_id,
+                )
+            except (
+                KeyError,
+                IndexError,
+                TypeError,
+                json.JSONDecodeError,
+                AgnesDirectError,
+            ) as exc:
+                last_error = AgnesDirectError(
+                    "Agnes blind review did not return strict JSON"
+                )
+                last_error.__cause__ = exc
+                continue
+            return AgnesBlindReviewResult(
+                route_id=AGNES_VISION_ROUTE.id,
+                model=AGNES_VISION_ROUTE.model,
+                session_id=self._session_id,
+                request_sha256=request_sha256,
+                response_sha256=_sha256(_canonical_bytes(strict)),
+                payload=strict,
+            )
+        raise last_error or AgnesDirectError(
+            "Agnes blind review did not return strict JSON"
+        )
+
     def generate_image(
         self,
         *,
@@ -663,7 +869,6 @@ class AgnesDirectClient:
             "model": AGNES_IMAGE_ROUTE.model,
             "prompt": prompt,
             "size": size,
-            "response_format": "b64_json",
         }
         input_hashes: list[str] = []
         if reference_data_uri is not None:
@@ -672,10 +877,15 @@ class AgnesDirectClient:
             input_hashes.append(_sha256(reference_bytes))
         response = self._post_json("images/generations", payload)
         try:
-            encoded = response["data"][0]["b64_json"]
-            if not isinstance(encoded, str):
+            item = response["data"][0]
+            encoded = item.get("b64_json")
+            image_url = item.get("url")
+            if isinstance(encoded, str) and encoded:
+                image_bytes = base64.b64decode(encoded, validate=True)
+            elif isinstance(image_url, str) and image_url:
+                image_bytes = self._download_generated_image(image_url)
+            else:
                 raise TypeError
-            image_bytes = base64.b64decode(encoded, validate=True)
         except (
             KeyError,
             IndexError,
@@ -706,6 +916,158 @@ class AgnesDirectClient:
             },
         )
 
+    def generate_clean_image(
+        self,
+        *,
+        prompt: str,
+        reference_data_uri: str | None = None,
+        size: str = "1536x1024",
+        max_attempts: int = 3,
+    ) -> GeneratedAsset:
+        """Generate a raster and fail closed unless Agnes sees a faithful asset.
+
+        Prompt guardrails are necessary but insufficient: image models can
+        still synthesize pseudo-lettering or ignore subject exclusions.  This
+        method freezes a direct vision review into the provider manifest and
+        retries with a stricter instruction before the asset can enter a
+        presentation.
+        """
+
+        if type(max_attempts) is not int or not 1 <= max_attempts <= 3:
+            raise AgnesDirectError("clean image max_attempts must be 1..3")
+        failures: list[dict[str, Any]] = []
+        for attempt in range(1, max_attempts + 1):
+            attempt_prompt = prompt
+            if attempt > 1:
+                attempt_prompt += (
+                    " Retry instruction: remove every visible letter, number, "
+                    "word-like glyph, signature, label, brand mark, interface "
+                    "caption, and watermark. Obey every subject inclusion and "
+                    "exclusion in the original brief literally. Use only "
+                    "non-text visual elements permitted by that brief."
+                )
+            generated = self.generate_image(
+                prompt=attempt_prompt,
+                reference_data_uri=reference_data_uri,
+                size=size,
+            )
+            data_uri = (
+                "data:image/png;base64,"
+                + base64.b64encode(generated.image_bytes).decode("ascii")
+            )
+            if not self._data_uri_enabled:
+                self.probe_data_uri(data_uri)
+            try:
+                review = self.review(
+                    image_urls=(data_uri,),
+                    scope="slide",
+                    prompt=(
+                        "This is a generated presentation background asset. "
+                        "Inspect the pixels against the complete original visual "
+                        "brief below. Verdict PASS is allowed only when (1) there "
+                        "are zero visible letters, words, numbers, word-like "
+                        "pseudo-glyphs, logos, signatures, UI labels, or "
+                        "watermarks anywhere, and (2) the depicted subject obeys "
+                        "every explicit inclusion and exclusion in the brief. "
+                        "Any forbidden object, off-brief subject, or ambiguous "
+                        "glyph-like mark requires FAIL. Do not judge whether later "
+                        "editable PowerPoint text would be attractive.\n\n"
+                        f"ORIGINAL VISUAL BRIEF:\n{prompt}"
+                    ),
+                )
+            except AgnesDirectError as exc:
+                failures.append(
+                    {
+                        "attempt": attempt,
+                        "status": "review-error",
+                        "error": type(exc).__name__,
+                    }
+                )
+                continue
+            verdict = review.payload["verdict"]
+            if verdict == "PASS":
+                return GeneratedAsset(
+                    route_id=generated.route_id,
+                    model=generated.model,
+                    image_bytes=generated.image_bytes,
+                    manifest={
+                        **dict(generated.manifest),
+                        "visual_validation": {
+                            "route_id": review.route_id,
+                            "model": review.model,
+                            "request_sha256": review.request_sha256,
+                            "response_sha256": review.response_sha256,
+                            "verdict": verdict,
+                            "criteria": (
+                                "semantic-brief-fidelity-and-no-visible-"
+                                "text-logo-watermark"
+                            ),
+                            "attempt": attempt,
+                            "prior_failures": failures,
+                            "review_payload": dict(review.payload),
+                        },
+                    },
+                )
+            failures.append(
+                {
+                    "attempt": attempt,
+                    "status": "rejected",
+                    "response_sha256": review.response_sha256,
+                    "findings": list(review.payload["findings"]),
+                }
+            )
+        raise AgnesDirectError(
+            "generated image failed semantic/no-text visual validation"
+        )
+
+    def _download_generated_image(self, image_url: str) -> bytes:
+        parsed = urllib.parse.urlparse(image_url)
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname not in _GENERATED_IMAGE_HOSTS
+            or parsed.username is not None
+            or parsed.password is not None
+        ):
+            raise AgnesDirectError(
+                "Agnes generated-image URL is not on an authorized HTTPS host"
+            )
+        request = urllib.request.Request(
+            image_url,
+            headers={"accept": "image/png,image/jpeg"},
+            method="GET",
+        )
+        try:
+            with urllib.request.urlopen(
+                request, timeout=self._timeout_seconds
+            ) as response:
+                final = urllib.parse.urlparse(response.geturl())
+                if (
+                    final.scheme != "https"
+                    or final.hostname not in _GENERATED_IMAGE_HOSTS
+                ):
+                    raise AgnesDirectError(
+                        "Agnes generated-image redirect left the authorized host"
+                    )
+                payload = response.read(_MAX_GENERATED_IMAGE_BYTES + 1)
+        except AgnesDirectError:
+            raise
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise AgnesDirectError(
+                "Agnes generated image could not be downloaded"
+            ) from exc
+        if not payload or len(payload) > _MAX_GENERATED_IMAGE_BYTES:
+            raise AgnesDirectError(
+                "Agnes generated image is empty or exceeds the size limit"
+            )
+        if not (
+            payload.startswith(b"\x89PNG\r\n\x1a\n")
+            or payload.startswith(b"\xff\xd8")
+        ):
+            raise AgnesDirectError(
+                "Agnes generated image is not a supported PNG or JPEG"
+            )
+        return payload
+
 
 __all__ = [
     "AGNES_IMAGE_ROUTE",
@@ -713,6 +1075,7 @@ __all__ = [
     "DEESEEK_CODE_ROUTE",
     "AgnesDirectClient",
     "AgnesDirectError",
+    "AgnesBlindReviewResult",
     "AgnesReviewResult",
     "CapabilityProbe",
     "GeneratedAsset",

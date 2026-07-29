@@ -26,6 +26,7 @@ from window_pptx.cli import (
     parse_args as parse_cli_args,
 )
 from window_pptx.backends import BackendSelection, negotiate_backend
+from window_pptx.agnes_direct import AgnesDirectClient
 from window_pptx.com_diagnostics import (
     certify_powerpoint,
     doctor_powerpoint,
@@ -2133,6 +2134,7 @@ def write_brief_generation_artifacts(
         "narrative_plan": audit_dir / "narrative-plan.json",
         "visual_plan": audit_dir / "visual-plan.json",
         "asset_plan": audit_dir / "asset-plan.json",
+        "asset_materialization": audit_dir / "asset-materialization.json",
         "composition_plan": audit_dir / "composition-plan.json",
         "quality_report_v3": audit_dir / "quality-report.v3.json",
         "generation_manifest": audit_dir / "generation-manifest.json",
@@ -2157,6 +2159,15 @@ def write_brief_generation_artifacts(
     artifacts["asset_plan"].write_text(
         json.dumps(
             generation.asset_plan.to_dict(), ensure_ascii=False, indent=2
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    artifacts["asset_materialization"].write_text(
+        json.dumps(
+            generation.asset_materialization.to_dict(),
+            ensure_ascii=False,
+            indent=2,
         )
         + "\n",
         encoding="utf-8",
@@ -2421,6 +2432,23 @@ def main(
                     prepared_asset_manifest_path = asset_manifest_path
                     prepared_asset_bindings = load_asset_bindings(asset_manifest_path)
             installed_fonts = set(args.installed_font) or discover_installed_fonts()
+            image_generator = None
+            asset_output_dir = None
+            if args.generate_assets_with_agnes:
+                api_key = os.environ.get("AGNES_API_KEY")
+                if not api_key:
+                    die(
+                        "AGNES_API_KEY is required with "
+                        "--generate-assets-with-agnes"
+                    )
+                image_generator = AgnesDirectClient(
+                    api_key=api_key,
+                    timeout_seconds=90,
+                    max_retries=2,
+                ).generate_clean_image
+                asset_output_dir = resolve_path(
+                    project_dir, args.asset_output_dir
+                )
             prepared_brief_generation = prepare_brief_generation(
                 fact_store,
                 brief_text,
@@ -2439,6 +2467,8 @@ def main(
                     if prepared_asset_manifest_path is not None
                     else None
                 ),
+                image_generator=image_generator,
+                asset_output_dir=asset_output_dir,
                 direction_mode=args.direction_mode,
                 direction_id=args.direction_id,
                 design_system_version=args.design_system_version,

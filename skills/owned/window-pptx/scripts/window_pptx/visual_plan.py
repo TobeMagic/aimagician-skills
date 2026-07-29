@@ -247,7 +247,15 @@ def _asset_kind(family: str) -> tuple[str, bool, str]:
         return "chart", True, "native-editable-chart"
     if family in {"timeline", "roadmap", "process", "matrix", "quadrant", "org-map", "demo-flow"}:
         return "diagram", True, "native-editable-diagram"
-    if family in {"cover", "section", "case-study", "social-proof", "product-hero"}:
+    if family in {
+        "cover",
+        "section",
+        "case-study",
+        "social-proof",
+        "product-hero",
+        "closing",
+        "cta",
+    }:
         return "photo", False, "branded-native-geometry"
     if family in {"feature-bento", "card-grid", "evidence-cards"}:
         return "icon", False, "consistent-native-icon-set"
@@ -275,12 +283,20 @@ def compile_visual_plan(
             role=slide.role,
             semantic_kind=slide.semantic_kind,
         )
+        structural_section = slide.structural and slide.role.casefold() in {
+            "section",
+            "agenda",
+            "contents",
+        }
         density = (
             recipe.density
-            if recipe is not None
+            if recipe is not None and not structural_section
             else pack.pacing.density_pattern[index % len(pack.pacing.density_pattern)]
         )
-        if recipe is not None:
+        if structural_section:
+            family, rule = _family_for_slide(slide, pack)
+            recipe = None
+        elif recipe is not None:
             family = _available_family(pack, (recipe.family,))
             rule = f"GRAMMAR_{recipe.id}"
         else:
@@ -331,6 +347,8 @@ def compile_visual_plan(
             "quadrant",
             "org-map",
             "demo-flow",
+            "closing",
+            "cta",
         }
         if asset_required or asset_supported:
             asset_id = f"asset-{slide.id}"

@@ -148,6 +148,22 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--generate-assets-with-agnes",
+        action="store_true",
+        help=(
+            "Materialize eligible BriefPlan visual intents through the direct "
+            "Agnes image route. Requires AGNES_API_KEY and --render-brief-plan."
+        ),
+    )
+    parser.add_argument(
+        "--asset-output-dir",
+        default=".window-pptx/generated-assets",
+        help=(
+            "Frozen generated-asset directory, relative to --project-dir unless "
+            "absolute. Used only with --generate-assets-with-agnes."
+        ),
+    )
+    parser.add_argument(
         "--slide-width-in",
         type=float,
         help="Explicit slide width in inches for governed rendering.",
@@ -418,6 +434,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("governed render routes cannot use --attach-existing")
     if args.asset_manifest and not (args.render_deck_plan or args.render_brief_plan):
         parser.error("--asset-manifest requires a render route")
+    if args.generate_assets_with_agnes and not args.render_brief_plan:
+        parser.error(
+            "--generate-assets-with-agnes requires --render-brief-plan"
+        )
     if (args.backend != "auto" or args.verification != "portable") and not (
         args.render_deck_plan or args.render_brief_plan or template_pack_route
     ):
@@ -641,9 +661,20 @@ def build_dry_run_result(args: argparse.Namespace, project_dir: str | Path) -> d
                 str(base / ".window-pptx" / "audits" / "repair-log.v2.json"),
                 str(base / ".window-pptx" / "audits" / "quality-v2-previews"),
                 str(base / ".window-pptx" / "audits" / "narrative-plan.json"),
+                str(
+                    base
+                    / ".window-pptx"
+                    / "audits"
+                    / "asset-materialization.json"
+                ),
                 str(base / ".window-pptx" / "audits" / "generation-manifest.json"),
             ]
         )
+        if args.generate_assets_with_agnes:
+            generated = Path(args.asset_output_dir)
+            would_write.append(
+                str(generated if generated.is_absolute() else base / generated)
+            )
         if args.design_system_version == "art-direction-v1":
             would_write.append(
                 str(base / ".window-pptx" / "audits" / "direction-decision.json")

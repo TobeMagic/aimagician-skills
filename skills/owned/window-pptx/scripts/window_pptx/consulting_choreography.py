@@ -113,7 +113,10 @@ def _delivery_block(
         "items": [
             {
                 "label": f"{index:02d}  {stage}",
-                "text": str(month),
+                "text": (
+                    str(month).replace(str(stage), "").strip()
+                    or str(month)
+                ),
             }
             for index, (stage, month) in enumerate(
                 zip(approach_items, timeline_items, strict=True),
@@ -188,7 +191,13 @@ def apply_consulting_tracer_choreography(
             items = block.get("items")
             if isinstance(items, list):
                 block["items"] = [
-                    f"{index:02d}  {item}"
+                    (
+                        f"{index:02d}  {item}  →"
+                        if slide is solution_slide
+                        else f"{index:02d}  起点 · {item}"
+                        if slide is scope_slide and index == 1
+                        else f"{index:02d}  {item}"
+                    )
                     for index, item in enumerate(items, start=1)
                 ]
     for block in team_slide.get("blocks", []):
@@ -217,9 +226,9 @@ def apply_consulting_tracer_choreography(
                 "id": "next-steps-decision-gates",
                 "kind": "recommendation",
                 "items": [
-                    "01  试点范围",
-                    "02  业务负责人",
-                    "03  启动日期",
+                    "01\n确定试点范围",
+                    "02\n指定业务负责人",
+                    "03\n确认启动日期",
                 ],
                 "text": decision_text,
                 "source_ref": "request#next-steps",
@@ -273,7 +282,27 @@ def apply_consulting_tracer_choreography(
             "current-state",
             "current-state",
             "当前状态与关键证据",
-            _renamed_blocks(source_slides, "context", "problem"),
+            (
+                {
+                    "id": "current-state-comparison",
+                    "kind": "comparison",
+                    "items": [
+                        {
+                            "label": "现状断点",
+                            "text": _source_text(source_slides, "context"),
+                        },
+                        {
+                            "label": "审批周期",
+                            "text": _source_text(source_slides, "problem"),
+                        },
+                    ],
+                    "text": (
+                        f"{_source_text(source_slides, 'context')}\n"
+                        f"{_source_text(source_slides, 'problem')}"
+                    ),
+                    "source_ref": "request#context+problem",
+                },
+            ),
         ),
         _slide(
             "transformation-bridge",

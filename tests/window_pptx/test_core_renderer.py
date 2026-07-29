@@ -207,6 +207,91 @@ def test_render_plan_is_deterministic_governed_and_serializable() -> None:
     assert first.to_dict() == second.to_dict()
 
 
+def test_single_action_close_with_visual_falls_back_from_poster_without_fabrication(
+    tmp_path: Path,
+) -> None:
+    image = tmp_path / "closing.png"
+    write_png(image, width=1800, height=1200)
+    deck = {
+        "schema_version": "1.0",
+        "project": {
+            "title": "Discovery proposal",
+            "scenario": "project-proposal",
+            "audience": "executive",
+            "language": "en-US",
+        },
+        "preferences": {"density": "balanced", "tone": "professional"},
+        "slides": [
+            {
+                "id": "decision",
+                "role": "closing",
+                "title": "Decision required",
+                "importance": "critical",
+                "blocks": [
+                    {
+                        "id": "decision-action",
+                        "kind": "recommendation",
+                        "text": "Approve a twelve-week discovery and pilot.",
+                    }
+                ],
+            }
+        ],
+    }
+    composition = {
+        "composition_id": "proposal.close",
+        "variant_id": "poster-with-visual",
+        "layout_id": "cta.poster-editorial",
+        "background_mode": "dark",
+        "emphasis": "critical",
+        "density": "balanced",
+        "energy": "high",
+        "fact_refs": [],
+        "slot_bindings": [
+            {"slot_id": "visual", "component_id": "image-frame"},
+            {"slot_id": "primary", "component_id": "cta"},
+        ],
+        "asset_bindings": [
+            {
+                "asset_id": "closing-visual",
+                "slot_id": "visual",
+                "status": "resolved",
+            }
+        ],
+        "motif": {"motif_id": "editorial-stage"},
+        "repair_variant_ids": ["cta.full-visual-stage"],
+        "decision_trace": {},
+    }
+
+    plan = build_render_plan(
+        deck,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        asset_bindings={
+            "closing-visual": asset_binding(
+                image,
+                asset_id="closing-visual",
+                width=1800,
+                height=1200,
+            )
+        },
+        composition_by_slide={"decision": composition},
+    )
+
+    assert plan.slides[0].layout_id == "cta.full-visual-stage", (
+        plan.slides[0].layout_id,
+        [(finding.code, finding.message) for finding in plan.findings],
+    )
+    texts = [
+        obj.text for obj in plan.slides[0].objects if obj.text is not None
+    ]
+    assert "Approve a twelve-week discovery and pilot." in texts
+    assert not any("decision chip" in text.casefold() for text in texts)
+    assert any(
+        finding.code == "POSTER_CTA_SEMANTIC_FALLBACK"
+        for finding in plan.findings
+    )
+
+
 def test_core_renderer_is_exposed_from_the_public_package() -> None:
     assert window_pptx.build_render_plan is build_render_plan
     assert window_pptx.PowerPointRenderer is PowerPointRenderer
@@ -457,6 +542,141 @@ def test_single_kpi_uses_metric_spotlight_with_exact_large_integer() -> None:
     assert metric.kind == "shape"
     assert "42,180 subscriptions" in (metric.text or "")
     assert any(item.component == "accent" for item in slide.objects)
+    assert {
+        item.id.rsplit(".", 1)[-1]: item.text
+        for item in slide.objects
+        if ".art.metric-status-" in item.id
+    } == {
+        "metric-status-mark": "◎",
+        "metric-status-label": "KEY METRIC",
+    }
+
+
+def test_single_kpi_status_icon_is_not_a_fake_bar_chart() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "churn",
+            "role": "performance",
+            "title": "Enterprise churn improved to 3.1 percent.",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "churn.metric",
+                    "kind": "metrics",
+                    "source_ref": "benchmark#business-report/churn",
+                    "items": [
+                        {"label": "Churn", "value": 3.1, "unit": "percent"}
+                    ],
+                }
+            ],
+        }
+    ]
+
+    slide = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    ).slides[0]
+    status = {
+        item.id.rsplit(".", 1)[-1]: item.text
+        for item in slide.objects
+        if ".art.metric-status-" in item.id
+    }
+    assert status == {
+        "metric-status-mark": "◎",
+        "metric-status-label": "KEY METRIC",
+    }
+    assert not any(item.kind == "chart" for item in slide.objects)
+
+
+def test_prose_only_trend_gets_editable_directional_motif_without_fake_data() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "trends",
+            "role": "trends",
+            "title": "Trends",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "trends.statement",
+                    "kind": "statement",
+                    "text": (
+                        "Cohort retention declined four percentage points "
+                        "from January to June."
+                    ),
+                }
+            ],
+        }
+    ]
+
+    slide = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    ).slides[0]
+    trend_objects = tuple(
+        item
+        for item in slide.objects
+        if ".art.trend-" in item.id
+    )
+
+    assert slide.family_id == "focal-statement"
+    assert len(trend_objects) == 17
+    assert any(item.id.endswith(".art.trend-axis") for item in trend_objects)
+    assert all(item.native_editable for item in trend_objects)
+    assert all(item.advanced is None for item in trend_objects)
+    assert {
+        item.id.rsplit(".", 1)[-1]: item.text
+        for item in trend_objects
+        if item.text is not None
+    } == {
+        "trend-period": "JAN → JUN",
+        "trend-delta": "Δ −4 PP",
+        "trend-y-label": "RETENTION",
+        "trend-start-label": "JAN · BASELINE",
+        "trend-end-label": "JUN · BASELINE −4 PP",
+    }
+
+
+def test_prose_only_timeline_uses_source_bound_duration_annotation() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "timeline",
+            "role": "timeline",
+            "title": "Discovery and pilot will run for twelve weeks.",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "timeline.statement",
+                    "kind": "statement",
+                    "text": "Discovery and pilot will run for twelve weeks.",
+                }
+            ],
+        }
+    ]
+
+    slide = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    ).slides[0]
+    timeline_labels = {
+        item.id.rsplit(".", 1)[-1]: item.text
+        for item in slide.objects
+        if ".art.timeline-" in item.id
+    }
+
+    assert slide.family_id == "focal-statement"
+    assert timeline_labels["timeline-start-label"] == "DISCOVERY"
+    assert timeline_labels["timeline-end-label"] == "PILOT"
+    assert timeline_labels["timeline-duration"] == "12 WEEKS"
+    assert timeline_labels["timeline-track"] is None
+    assert timeline_labels["timeline-start-node"] is None
+    assert timeline_labels["timeline-end-node"] is None
+    assert not any(".art.wayfinding-path-" in item.id for item in slide.objects)
 
 
 def test_word_form_metric_keeps_a_capacity_safe_big_number_variant() -> None:

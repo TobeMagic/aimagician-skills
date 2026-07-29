@@ -131,6 +131,84 @@ def test_composition_plan_rejects_slide_identity_drift() -> None:
         compile_composition_plan(narrative, broken, assets, pack)
 
 
+@pytest.mark.parametrize(
+    ("scenario", "expected_cover", "expected_closing"),
+    (
+        ("product-launch", "cover.image-stage", "cta.image-stage"),
+        ("data-analysis", "cover.editorial", "cta.decision-three"),
+        ("project-proposal", "cover.editorial", "cta.decision-three"),
+    ),
+)
+def test_image_led_bookends_follow_design_pack_surface_system(
+    scenario: str,
+    expected_cover: str,
+    expected_closing: str,
+) -> None:
+    pack = select_design_pack(scenario)
+    narrative = NarrativePlan(
+        schema_version="1.0",
+        archetype_id=scenario,
+        fact_store_digest="b" * 64,
+        slides=(
+            NarrativeSlide(
+                id="cover",
+                role="cover",
+                title="Decision-ready opening",
+                importance="critical",
+                fact_refs=("fact-cover",),
+                semantic_kind="cards",
+                structural=True,
+            ),
+            NarrativeSlide(
+                id="closing",
+                role="closing",
+                title="Decision required",
+                importance="critical",
+                fact_refs=("fact-closing-risk", "fact-closing-budget"),
+                semantic_kind="cards",
+                structural=True,
+            ),
+        ),
+        coverage={
+            "required_fact_ids": [
+                "fact-cover",
+                "fact-closing-risk",
+                "fact-closing-budget",
+            ],
+            "covered_fact_ids": [
+                "fact-cover",
+                "fact-closing-risk",
+                "fact-closing-budget",
+            ],
+        },
+        decisions=(),
+    )
+    visual, assets = compile_visual_plan(narrative, design_pack=pack)
+    resolved_assets = type(assets)(
+        design_pack_id=assets.design_pack_id,
+        assets=tuple(
+            type(asset)(
+                id=asset.id,
+                slide_id=asset.slide_id,
+                purpose=asset.purpose,
+                kind=asset.kind,
+                priority=asset.priority,
+                fallback=asset.fallback,
+                editable=asset.editable,
+                status="resolved",
+            )
+            for asset in assets.assets
+        ),
+    )
+
+    plan = compile_composition_plan(
+        narrative, visual, resolved_assets, pack
+    )
+
+    assert plan.slides[0].layout_id == expected_cover
+    assert plan.slides[1].layout_id == expected_closing
+
+
 def test_generation_materializes_composition_plan_into_render_plan() -> None:
     facts = json.loads(
         (

@@ -34,6 +34,26 @@ def _write_sparse_pptx(path: Path) -> None:
         archive.writestr("ppt/slides/slide1.xml", slide)
 
 
+def _write_same_count_different_geometry_pptx(path: Path) -> None:
+    def slide(x: int) -> str:
+        return f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+ xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+ <p:cSld><p:spTree>
+  <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+  <p:grpSpPr/>
+  <p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+   <p:spPr><a:xfrm><a:off x="{x}" y="800000"/><a:ext cx="4000000" cy="1000000"/></a:xfrm></p:spPr>
+   <p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Title</a:t></a:r></a:p></p:txBody>
+  </p:sp>
+ </p:spTree></p:cSld>
+</p:sld>"""
+
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("ppt/slides/slide1.xml", slide(500000))
+        archive.writestr("ppt/slides/slide2.xml", slide(6500000))
+
+
 def test_reference_template_passes_structural_visual_floor() -> None:
     source = (
         SKILL_ROOT
@@ -75,6 +95,20 @@ def test_sparse_text_only_deck_fails_generated_visual_floor(tmp_path: Path) -> N
     assert complexity.objects_per_slide == (1,)
     assert hard_codes == {
         "GENERATED_VISUAL_OBJECT_FLOOR",
-        "GENERATED_LAYOUT_VARIATION_FLOOR",
         "GENERATED_RICH_SLIDE_RATIO_FLOOR",
+    }
+
+
+def test_layout_signature_distinguishes_same_counts_with_different_geometry(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "same-count-different-geometry.pptx"
+    _write_same_count_different_geometry_pptx(source)
+
+    complexity = inspect_reference_complexity(source)
+
+    assert complexity.layout_signature_count == 2
+    _, findings = assess_generated_visual_quality(source)
+    assert "GENERATED_LAYOUT_VARIATION_FLOOR" not in {
+        finding.code for finding in findings if finding.severity == "hard-gate"
     }

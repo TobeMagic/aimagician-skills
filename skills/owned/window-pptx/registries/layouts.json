@@ -32,7 +32,7 @@
     {"id": "metric-spotlight", "capacity": {"min_items": 1, "max_items": 1, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["metric"], "slots": [
       {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 4},
       {"id": "metric", "component": "kpi", "col": 0, "row": 7, "col_span": 8, "row_span": 13},
-      {"id": "accent", "component": "accent", "col": 10, "row": 10, "col_span": 1, "row_span": 8},
+      {"id": "accent", "component": "accent", "col": 10, "row": 12, "col_span": 2, "row_span": 1},
       {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
     {"id": "metric-duo", "capacity": {"min_items": 2, "max_items": 2, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["primary", "secondary"], "slots": [
@@ -106,6 +106,13 @@
       {"id": "three", "component": "card", "col": 8, "row": 9, "col_span": 4, "row_span": 7},
       {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
+    {"id": "decision-three", "capacity": {"min_items": 1, "max_items": 3, "densities": ["sparse", "balanced", "dense"]}, "capacity_slots": ["one", "two", "three"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 4},
+      {"id": "one", "component": "cta", "col": 0, "row": 8, "col_span": 4, "row_span": 8},
+      {"id": "two", "component": "card", "col": 4, "row": 9, "col_span": 4, "row_span": 8},
+      {"id": "three", "component": "card", "col": 8, "row": 10, "col_span": 4, "row_span": 8},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
     {"id": "grid-four", "capacity": {"min_items": 4, "max_items": 8, "densities": ["balanced", "dense"]}, "capacity_slots": ["one", "two", "three", "four"], "slots": [
       {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
       {"id": "one", "component": "card", "col": 0, "row": 5, "col_span": 6, "row_span": 7},
@@ -167,24 +174,78 @@
       {"id": "table", "component": "table", "col": 0, "row": 5, "col_span": 12, "row_span": 17},
       {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
     ]},
+    {"id": "editorial-three", "capacity": {"min_items": 3, "max_items": 6, "densities": ["balanced", "dense"]}, "capacity_slots": ["one", "two", "three"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "one", "component": "card", "col": 0, "row": 5, "col_span": 6, "row_span": 16},
+      {"id": "two", "component": "card", "col": 6, "row": 5, "col_span": 6, "row_span": 7},
+      {"id": "three", "component": "card", "col": 6, "row": 13, "col_span": 6, "row_span": 8},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "editorial-flow", "capacity": {"min_items": 1, "max_items": 8, "densities": ["balanced", "dense"]}, "capacity_slots": ["flow", "notes"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "accent", "component": "accent", "col": 0, "row": 6, "col_span": 1, "row_span": 14},
+      {"id": "flow", "component": "process-step", "col": 1, "row": 6, "col_span": 8, "row_span": 14},
+      {"id": "notes", "component": "body-text", "col": 10, "row": 7, "col_span": 2, "row_span": 12},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
+    {"id": "editorial-matrix", "capacity": {"min_items": 1, "max_items": 9, "densities": ["balanced", "dense"]}, "capacity_slots": ["matrix", "notes"], "slots": [
+      {"id": "title", "component": "title", "col": 0, "row": 1, "col_span": 12, "row_span": 3},
+      {"id": "matrix", "component": "matrix-cell", "col": 0, "row": 5, "col_span": 8, "row_span": 17},
+      {"id": "accent", "component": "accent", "col": 9, "row": 6, "col_span": 1, "row_span": 14},
+      {"id": "notes", "component": "body-text", "col": 10, "row": 7, "col_span": 2, "row_span": 12},
+      {"id": "footer", "component": "footer", "col": 0, "row": 23, "col_span": 12, "row_span": 1}
+    ]},
     {"id": "full-visual", "capacity": {"min_items": 1, "max_items": 4, "densities": ["sparse", "balanced"]}, "capacity_slots": ["visual"], "slots": [
       {"id": "visual", "component": "image-frame", "col": 0, "row": 0, "col_span": 12, "row_span": 24},
       {"id": "overlay", "component": "body-text", "col": 1, "row": 16, "col_span": 7, "row_span": 5, "allow_overlap": true}
+    ]},
+    {"id": "section-full-visual", "capacity": {"min_items": 1, "max_items": 2, "densities": ["sparse", "balanced"]}, "capacity_slots": ["body"], "slots": [
+      {"id": "visual", "component": "image-frame", "col": 0, "row": 0, "col_span": 12, "row_span": 24},
+      {"id": "title", "component": "title", "col": 1, "row": 5, "col_span": 7, "row_span": 6, "allow_overlap": true},
+      {"id": "body", "component": "body-text", "col": 1, "row": 13, "col_span": 6, "row_span": 4, "allow_overlap": true},
+      {"id": "footer", "component": "footer", "col": 1, "row": 22, "col_span": 10, "row_span": 1, "allow_overlap": true}
+    ]},
+    {"id": "cover-full-visual", "capacity": {"min_items": 1, "max_items": 2, "densities": ["sparse", "balanced"]}, "capacity_slots": ["body"], "slots": [
+      {"id": "visual", "component": "image-frame", "col": 0, "row": 0, "col_span": 12, "row_span": 24},
+      {"id": "title", "component": "title", "col": 1, "row": 4, "col_span": 8, "row_span": 7, "allow_overlap": true},
+      {"id": "body", "component": "body-text", "col": 1, "row": 14, "col_span": 6, "row_span": 4, "allow_overlap": true},
+      {"id": "footer", "component": "footer", "col": 1, "row": 22, "col_span": 10, "row_span": 1, "allow_overlap": true}
+    ]},
+    {"id": "cover-poster-editorial", "capacity": {"min_items": 1, "max_items": 2, "densities": ["sparse", "balanced"]}, "capacity_slots": ["body"], "slots": [
+      {"id": "visual", "component": "image-frame", "col": 0, "row": 0, "col_span": 12, "row_span": 24},
+      {"id": "title", "component": "title", "col": 6, "row": 5, "col_span": 6, "row_span": 9, "allow_overlap": true},
+      {"id": "body", "component": "body-text", "col": 6, "row": 16, "col_span": 6, "row_span": 5, "allow_overlap": true},
+      {"id": "footer", "component": "footer", "col": 6, "row": 22, "col_span": 6, "row_span": 1, "allow_overlap": true}
+    ]},
+    {"id": "closing-full-visual", "capacity": {"min_items": 1, "max_items": 3, "densities": ["sparse", "balanced"]}, "capacity_slots": ["body"], "slots": [
+      {"id": "visual", "component": "image-frame", "col": 0, "row": 0, "col_span": 12, "row_span": 24},
+      {"id": "title", "component": "title", "col": 5, "row": 3, "col_span": 7, "row_span": 6, "allow_overlap": true},
+      {"id": "body", "component": "cta", "col": 5, "row": 10, "col_span": 7, "row_span": 11, "allow_overlap": true},
+      {"id": "footer", "component": "footer", "col": 1, "row": 22, "col_span": 10, "row_span": 1, "allow_overlap": true}
+    ]},
+    {"id": "closing-poster-editorial", "capacity": {"min_items": 1, "max_items": 4, "densities": ["sparse", "balanced"]}, "capacity_slots": ["primary", "decision-one", "decision-two", "decision-three"], "slots": [
+      {"id": "visual", "component": "image-frame", "col": 0, "row": 0, "col_span": 12, "row_span": 24},
+      {"id": "title", "component": "title", "col": 5, "row": 5, "col_span": 7, "row_span": 7, "allow_overlap": true},
+      {"id": "primary", "component": "cta", "col": 5, "row": 13, "col_span": 7, "row_span": 4, "allow_overlap": true},
+      {"id": "decision-one", "component": "card", "col": 5, "row": 18, "col_span": 2, "row_span": 3, "allow_overlap": true},
+      {"id": "decision-two", "component": "card", "col": 7, "row": 18, "col_span": 2, "row_span": 3, "allow_overlap": true},
+      {"id": "decision-three", "component": "card", "col": 9, "row": 18, "col_span": 3, "row_span": 3, "allow_overlap": true},
+      {"id": "footer", "component": "footer", "col": 5, "row": 22, "col_span": 7, "row_span": 1, "allow_overlap": true}
     ]}
   ],
   "families": [
-    {"id": "cover", "variants": [{"id": "cover.hero-left", "recipe": "hero-left"}, {"id": "cover.hero-right", "recipe": "hero-right"}, {"id": "cover.editorial", "recipe": "cover-editorial"}, {"id": "cover.centered", "recipe": "centered"}]},
-    {"id": "section", "variants": [{"id": "section.centered", "recipe": "centered"}, {"id": "section.hero-left", "recipe": "hero-left"}, {"id": "section.full-visual", "recipe": "full-visual"}]},
+    {"id": "cover", "variants": [{"id": "cover.hero-left", "recipe": "hero-left"}, {"id": "cover.hero-right", "recipe": "hero-right"}, {"id": "cover.image-stage", "recipe": "split-right"}, {"id": "cover.full-visual", "recipe": "cover-full-visual"}, {"id": "cover.poster-editorial", "recipe": "cover-poster-editorial"}, {"id": "cover.editorial", "recipe": "cover-editorial"}, {"id": "cover.centered", "recipe": "centered"}]},
+    {"id": "section", "variants": [{"id": "section.centered", "recipe": "centered"}, {"id": "section.hero-left", "recipe": "hero-left"}, {"id": "section.image-stage", "recipe": "split-right"}, {"id": "section.full-visual", "recipe": "section-full-visual"}]},
     {"id": "agenda", "variants": [{"id": "agenda.top-band", "recipe": "top-band"}, {"id": "agenda.three-column", "recipe": "three-column"}, {"id": "agenda.grid-four", "recipe": "grid-four"}, {"id": "agenda.five-card", "recipe": "five-card"}, {"id": "agenda.six-card", "recipe": "six-card"}]},
     {"id": "executive-summary", "variants": [{"id": "executive-summary.top-band", "recipe": "top-band"}, {"id": "executive-summary.centered", "recipe": "centered"}, {"id": "executive-summary.editorial-left", "recipe": "hero-left", "components": {"visual": "decoration"}}, {"id": "executive-summary.split-left", "recipe": "split-left"}, {"id": "executive-summary.grid-four", "recipe": "grid-four"}]},
     {"id": "focal-statement", "variants": [{"id": "focal-statement.centered", "recipe": "statement-stage"}, {"id": "focal-statement.top-band", "recipe": "top-band", "components": {"content": "statement"}}, {"id": "focal-statement.editorial-left", "recipe": "statement-rail"}, {"id": "focal-statement.quote-centered", "recipe": "focus-panel", "components": {"content": "quote"}}, {"id": "focal-statement.quote-left", "recipe": "statement-rail", "components": {"content": "quote"}}]},
-    {"id": "big-number", "variants": [{"id": "big-number.centered", "recipe": "metric-spotlight"}, {"id": "big-number.metric-left", "recipe": "metric-left"}, {"id": "big-number.top-band", "recipe": "top-band", "components": {"content": "kpi"}}, {"id": "big-number.editorial-left", "recipe": "metric-rail"}, {"id": "big-number.hero-left", "recipe": "hero-left", "components": {"body": "kpi"}}, {"id": "big-number.split", "recipe": "metric-duo"}, {"id": "big-number.three-column", "recipe": "three-column", "components": {"one": "kpi", "two": "kpi", "three": "kpi"}}, {"id": "big-number.grid-four", "recipe": "grid-four", "components": {"one": "kpi", "two": "kpi", "three": "kpi", "four": "kpi"}}]},
+    {"id": "big-number", "variants": [{"id": "big-number.centered", "recipe": "metric-spotlight"}, {"id": "big-number.metric-left", "recipe": "metric-left"}, {"id": "big-number.top-band", "recipe": "top-band", "components": {"content": "kpi"}}, {"id": "big-number.editorial-left", "recipe": "metric-rail"}, {"id": "big-number.hero-left", "recipe": "hero-left", "components": {"body": "kpi"}}, {"id": "big-number.split", "recipe": "metric-duo"}, {"id": "big-number.three-column", "recipe": "three-column", "components": {"one": "kpi", "two": "kpi", "three": "kpi"}}, {"id": "big-number.editorial-three", "recipe": "editorial-three", "components": {"one": "kpi", "two": "kpi", "three": "kpi"}}, {"id": "big-number.grid-four", "recipe": "grid-four", "components": {"one": "kpi", "two": "kpi", "three": "kpi", "four": "kpi"}}]},
     {"id": "text-media", "variants": [{"id": "text-media.split-left", "recipe": "split-left"}, {"id": "text-media.split-right", "recipe": "split-right"}, {"id": "text-media.hero-left", "recipe": "hero-left"}]},
-    {"id": "cards", "variants": [{"id": "cards.three-column", "recipe": "three-column"}, {"id": "cards.compact-three", "recipe": "three-tile"}, {"id": "cards.grid-four", "recipe": "grid-four"}, {"id": "cards.top-band", "recipe": "top-band", "components": {"content": "card"}}]},
-    {"id": "timeline", "variants": [{"id": "timeline.horizontal", "recipe": "timeline-flow"}, {"id": "timeline.split", "recipe": "split-left", "components": {"primary": "timeline-node"}}, {"id": "timeline.focus", "recipe": "top-band", "components": {"content": "timeline-node"}}]},
-    {"id": "process", "variants": [{"id": "process.horizontal", "recipe": "linear-flow"}, {"id": "process.cards", "recipe": "three-column", "components": {"one": "process-step", "two": "process-step", "three": "process-step"}}, {"id": "process.focus", "recipe": "top-band", "components": {"content": "process-step"}}, {"id": "process.compact", "recipe": "matrix-focus", "components": {"matrix": "process-step"}}]},
+    {"id": "cards", "variants": [{"id": "cards.three-column", "recipe": "three-column"}, {"id": "cards.compact-three", "recipe": "three-tile"}, {"id": "cards.editorial-three", "recipe": "editorial-three"}, {"id": "cards.grid-four", "recipe": "grid-four"}, {"id": "cards.top-band", "recipe": "top-band", "components": {"content": "card"}}]},
+    {"id": "timeline", "variants": [{"id": "timeline.horizontal", "recipe": "timeline-flow"}, {"id": "timeline.editorial", "recipe": "editorial-flow", "components": {"flow": "timeline-node"}}, {"id": "timeline.split", "recipe": "split-left", "components": {"primary": "timeline-node"}}, {"id": "timeline.focus", "recipe": "top-band", "components": {"content": "timeline-node"}}]},
+    {"id": "process", "variants": [{"id": "process.horizontal", "recipe": "linear-flow"}, {"id": "process.editorial", "recipe": "editorial-flow"}, {"id": "process.cards", "recipe": "three-column", "components": {"one": "process-step", "two": "process-step", "three": "process-step"}}, {"id": "process.focus", "recipe": "top-band", "components": {"content": "process-step"}}, {"id": "process.compact", "recipe": "matrix-focus", "components": {"matrix": "process-step"}}]},
     {"id": "comparison", "variants": [{"id": "comparison.focus", "recipe": "focus-panel", "components": {"content": "comparison-panel"}}, {"id": "comparison.split", "recipe": "metric-duo", "components": {"primary": "comparison-panel", "secondary": "comparison-panel"}}, {"id": "comparison.columns", "recipe": "three-column", "components": {"one": "comparison-panel", "two": "comparison-panel", "three": "comparison-panel"}}, {"id": "comparison.matrix", "recipe": "grid-four", "components": {"one": "comparison-panel", "two": "comparison-panel", "three": "comparison-panel", "four": "comparison-panel"}}]},
-    {"id": "matrix", "variants": [{"id": "matrix.focus", "recipe": "matrix-focus"}, {"id": "matrix.grid", "recipe": "grid-four", "components": {"one": "matrix-cell", "two": "matrix-cell", "three": "matrix-cell", "four": "matrix-cell"}}, {"id": "matrix.split", "recipe": "split-left", "components": {"primary": "matrix-cell", "secondary": "matrix-cell"}}]},
+    {"id": "matrix", "variants": [{"id": "matrix.focus", "recipe": "matrix-focus"}, {"id": "matrix.editorial", "recipe": "editorial-matrix"}, {"id": "matrix.grid", "recipe": "grid-four", "components": {"one": "matrix-cell", "two": "matrix-cell", "three": "matrix-cell", "four": "matrix-cell"}}, {"id": "matrix.split", "recipe": "split-left", "components": {"primary": "matrix-cell", "secondary": "matrix-cell"}}]},
     {"id": "quadrant", "variants": [{"id": "quadrant.focus", "recipe": "matrix-focus"}, {"id": "quadrant.insight", "recipe": "chart-focus"}, {"id": "quadrant.split", "recipe": "split-right", "components": {"primary": "matrix-cell", "secondary": "matrix-cell"}}]},
     {"id": "funnel", "variants": [{"id": "funnel.focus", "recipe": "chart-focus"}, {"id": "funnel.flow", "recipe": "linear-flow"}, {"id": "funnel.split", "recipe": "split-left", "components": {"primary": "process-step"}}, {"id": "funnel.compact", "recipe": "top-band", "components": {"content": "process-step"}}]},
     {"id": "roadmap", "variants": [{"id": "roadmap.timeline", "recipe": "timeline-flow"}, {"id": "roadmap.flow", "recipe": "linear-flow"}, {"id": "roadmap.columns", "recipe": "three-column", "components": {"one": "timeline-node", "two": "timeline-node", "three": "timeline-node"}}, {"id": "roadmap.focus", "recipe": "top-band", "components": {"content": "timeline-node"}}]},
@@ -194,9 +255,9 @@
     {"id": "case-study", "variants": [{"id": "case-study.split", "recipe": "split-left"}, {"id": "case-study.story", "recipe": "top-band"}, {"id": "case-study.gallery", "recipe": "gallery-two"}]},
     {"id": "team", "variants": [{"id": "team.three", "recipe": "three-column", "components": {"one": "team-member", "two": "team-member", "three": "team-member"}}, {"id": "team.grid", "recipe": "grid-four", "components": {"one": "team-member", "two": "team-member", "three": "team-member", "four": "team-member"}}, {"id": "team.profile", "recipe": "split-right", "components": {"secondary": "team-member"}}]},
     {"id": "risk-recommendation", "variants": [{"id": "risk-recommendation.focus", "recipe": "focus-panel", "components": {"content": "risk-panel"}}, {"id": "risk-recommendation.dual", "recipe": "metric-duo", "components": {"primary": "risk-panel", "secondary": "risk-panel"}}, {"id": "risk-recommendation.split", "recipe": "split-left", "components": {"primary": "risk-panel", "secondary": "recommendation-panel"}}, {"id": "risk-recommendation.cards", "recipe": "grid-four", "components": {"one": "risk-panel", "two": "risk-panel", "three": "recommendation-panel", "four": "recommendation-panel"}}]},
-    {"id": "recommendation", "variants": [{"id": "recommendation.focus", "recipe": "focus-panel", "components": {"content": "recommendation-panel"}}, {"id": "recommendation.dual", "recipe": "metric-duo", "components": {"primary": "recommendation-panel", "secondary": "recommendation-panel"}}, {"id": "recommendation.columns", "recipe": "three-column", "components": {"one": "recommendation-panel", "two": "recommendation-panel", "three": "recommendation-panel"}}, {"id": "recommendation.grid", "recipe": "grid-four", "components": {"one": "recommendation-panel", "two": "recommendation-panel", "three": "recommendation-panel", "four": "recommendation-panel"}}]},
+    {"id": "recommendation", "variants": [{"id": "recommendation.focus", "recipe": "focus-panel", "components": {"content": "recommendation-panel"}}, {"id": "recommendation.dual", "recipe": "metric-duo", "components": {"primary": "recommendation-panel", "secondary": "recommendation-panel"}}, {"id": "recommendation.columns", "recipe": "three-column", "components": {"one": "recommendation-panel", "two": "recommendation-panel", "three": "recommendation-panel"}}, {"id": "recommendation.editorial-three", "recipe": "editorial-three", "components": {"one": "recommendation-panel", "two": "recommendation-panel", "three": "recommendation-panel"}}, {"id": "recommendation.grid", "recipe": "grid-four", "components": {"one": "recommendation-panel", "two": "recommendation-panel", "three": "recommendation-panel", "four": "recommendation-panel"}}]},
     {"id": "summary", "variants": [{"id": "summary.top-band", "recipe": "top-band"}, {"id": "summary.grid", "recipe": "grid-four"}, {"id": "summary.centered", "recipe": "centered"}]},
-    {"id": "cta", "variants": [{"id": "cta.centered", "recipe": "cta-stage"}, {"id": "cta.top-band", "recipe": "top-band", "components": {"content": "cta"}}, {"id": "cta.editorial-left", "recipe": "cta-rail"}, {"id": "cta.hero-left", "recipe": "hero-left", "components": {"body": "cta"}}, {"id": "cta.full-visual", "recipe": "full-visual", "components": {"overlay": "cta"}}]},
+    {"id": "cta", "variants": [{"id": "cta.centered", "recipe": "cta-stage"}, {"id": "cta.top-band", "recipe": "top-band", "components": {"content": "cta"}}, {"id": "cta.decision-three", "recipe": "decision-three"}, {"id": "cta.editorial-left", "recipe": "cta-rail"}, {"id": "cta.hero-left", "recipe": "hero-left", "components": {"body": "cta"}}, {"id": "cta.image-stage", "recipe": "split-right", "components": {"secondary": "cta"}}, {"id": "cta.full-visual-stage", "recipe": "closing-full-visual"}, {"id": "cta.poster-editorial", "recipe": "closing-poster-editorial"}, {"id": "cta.full-visual", "recipe": "full-visual", "components": {"overlay": "cta"}}]},
     {"id": "image-story", "variants": [{"id": "image-story.full", "recipe": "full-visual"}, {"id": "image-story.gallery", "recipe": "gallery-two"}, {"id": "image-story.split", "recipe": "split-right"}]}
   ],
   "semantic_form_map": {

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
+from .layouts import load_layout_registry
 from .registry import Archetype, RegistryError, resolve_archetype
 
 
@@ -59,6 +60,51 @@ FORBIDDEN_RAW_FIELDS = {
     "python",
     "javascript",
 }
+
+
+def _composition_layout_capacity_matches(
+    layout_id: object,
+    *,
+    item_count: int,
+    density: str,
+    semantic_type: str,
+    structural_role: str,
+) -> bool:
+    """Fail open when an art layout cannot hold or express the actual content."""
+
+    if not isinstance(layout_id, str):
+        return False
+    registry = load_layout_registry()
+    variant = registry.variants.get(layout_id)
+    if variant is None:
+        return False
+    capacity = registry.recipe_capacities.get(variant.recipe_id)
+    if capacity is None:
+        return False
+    compatible_semantics = {
+        "big-number": {"metrics", "comparison"},
+        "cards": {"bullets", "generic", "statement", "recommendation"},
+        "comparison": {"comparison", "metrics"},
+        "data-chart": {"trend", "comparison", "composition"},
+        "executive-summary": {"bullets", "generic", "statement"},
+        "focal-statement": {"statement", "quote", "generic"},
+        "matrix": {"matrix", "bullets"},
+        # A source-grounded parallel list may be promoted to a process only
+        # when CompositionPlan has already selected a governed process recipe
+        # (for example proposal.solution). This lets weak-model evidence such
+        # as "intake, triage, routing, status notifications" render as an
+        # editable flow without requiring the model to invent descriptions.
+        "process": {"process", "sequence", "matrix", "bullets"},
+        "recommendation": {"recommendation", "bullets"},
+        "risk-recommendation": {"risk", "recommendation"},
+        "timeline": {"timeline", "roadmap", "sequence"},
+    }
+    semantic_match = (
+        structural_role in {"cover", "section", "agenda", "contents", "closing"}
+        or semantic_type
+        in compatible_semantics.get(variant.family_id, {semantic_type})
+    )
+    return semantic_match and capacity.accepts(item_count, density)
 
 CONTENT_KINDS = {
     "bullets",
@@ -794,8 +840,45 @@ def compile_deck_plan(
                         "composition_variant_id": composition["variant_id"],
                         "composition_layout_id": composition["layout_id"],
                         "composition_layout_enforced": (
-                            composition["motif"].get("motif_id")
-                            == "knowledge-wayfinding"
+                            _composition_layout_capacity_matches(
+                                composition["layout_id"],
+                                item_count=item_count,
+                                density=density,
+                                semantic_type=semantic_type,
+                                structural_role=slide.role,
+                            )
+                            and (
+                                composition["motif"].get("motif_id")
+                                == "knowledge-wayfinding"
+                                or (
+                                    composition["motif"].get("motif_id")
+                                    == "evidence-margin"
+                                    and composition["layout_id"]
+                                    in {
+                                        "cover.editorial",
+                                        "big-number.editorial-left",
+                                        "big-number.centered",
+                                        "focal-statement.editorial-left",
+                                        "data-chart.focus",
+                                        "big-number.split",
+                                        "recommendation.focus",
+                                        "cta.decision-three",
+                                    }
+                                )
+                                or (
+                                    any(
+                                        isinstance(binding, dict)
+                                        and binding.get("status")
+                                        in {"resolved", "generated"}
+                                        for binding in composition["asset_bindings"]
+                                    )
+                                    and any(
+                                        isinstance(binding, dict)
+                                        and binding.get("component_id") == "image-frame"
+                                        for binding in composition["slot_bindings"]
+                                    )
+                                )
+                            )
                         ),
                         "composition_background_mode": composition[
                             "background_mode"
