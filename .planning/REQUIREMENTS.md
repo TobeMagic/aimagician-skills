@@ -510,8 +510,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|----------|--------|
 | V6-BRIEF-01 | Phase 36 | Complete |
 | V6-CORPUS-01 | Phase 36 | Complete |
-| V6-ASSET-01 | Phase 37 | Planned |
-| V6-LIB-01 | Phase 37 | Planned |
+| V6-ASSET-01 | Phase 37 | Complete |
+| V6-LIB-01 | Phase 37 | Complete |
 | V6-DESIGN-01 | Phase 38 | Planned |
 | V6-DECK-01 | Phase 38 | Planned |
 | V6-PORT-01 | Phase 39 | Planned |

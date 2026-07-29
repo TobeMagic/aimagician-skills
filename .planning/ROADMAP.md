@@ -622,7 +622,7 @@ flagships, twelve realistic skeletons, and v6 traceability.
 addressing, stable metadata, and a resumable queryable catalog.
 **Depends on:** Phase 36
 **Requirements:** [V6-ASSET-01, V6-LIB-01]
-**Status:** In Progress
+**Status:** Complete — 2026-07-29
 
 ### Phase 38: Certified Template Intelligence
 
@@ -630,7 +630,7 @@ addressing, stable metadata, and a resumable queryable catalog.
 retrieval, and certified complete-work visual spines.
 **Depends on:** Phase 37 `SEED_READY`; full sync may continue
 **Requirements:** [V6-LIB-01, V6-DESIGN-01, V6-DECK-01]
-**Status:** Planned
+**Status:** In Progress
 
 ### Phase 39: Work-Report Flagship Tracer
 

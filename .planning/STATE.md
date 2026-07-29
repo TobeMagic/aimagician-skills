@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Window-PPTX Template-Intelligence Quality Reset
-current_phase: 37
-current_phase_name: Secure Acquisition and Catalog
+current_phase: 38
+current_phase_name: Certified Template Intelligence
 status: in_progress
-stopped_at: Phase 37 non-auth acquisition and catalog tracer; authenticated sync NEEDS_AUTH
-last_updated: "2026-07-29T21:12:00+08:00"
+stopped_at: Phase 37 engineering complete; Phase 38 template intelligence next
+last_updated: "2026-07-29T23:00:00+08:00"
 last_activity: 2026-07-29
 progress:
   total_phases: 43
-  completed_phases: 34
+  completed_phases: 35
   total_plans: 41
-  completed_plans: 37
-  percent: 79
+  completed_plans: 38
+  percent: 81
 ---
 
 # Project State
@@ -26,10 +26,10 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v6.0 Phase 37 builds the entitlement-aware private
-acquisition boundary, quarantine, content-addressed catalog, and stable
-TemplatePack discovery metadata. Authenticated sync remains `NEEDS_AUTH`;
-non-authenticated contract and catalog work continues.
+**Current focus:** v6.0 Phase 38 builds TemplatePack v2, Registry v3,
+ArtDirectionProfile, semantic retrieval, and certified complete-work visual
+spines on the Phase 37 `SEED_READY` catalog boundary. Authenticated commercial
+sync remains `NEEDS_AUTH` and may continue independently.
 
 The v5.1 work is preserved at archive commit
 `e4ed78c7b31beebdb94f0f37c6c412012dfec085` and annotated tag
@@ -46,9 +46,9 @@ fully independent AI blind-review contexts for v6 acceptance.
 ## Current Position
 
 Milestone: v6.0 Window-PPTX Template-Intelligence Quality Reset
-Current Phase: 37
-Current Phase Name: Secure Acquisition and Catalog
-Status: In progress — non-auth acquisition and catalog tracer
+Current Phase: 38
+Current Phase Name: Certified Template Intelligence
+Status: In progress — certified template intelligence
 Last Activity: 2026-07-29
 
 Foundation completed:
@@ -78,6 +78,14 @@ Foundation completed:
     regression repairs pass;
   - independent specification, post-fix quality, committed verification, and
     fresh Agnes completion audits return PASS with no Blocker or Important.
+- Phase 37 engineering is complete:
+  - dry-run-first acquisition manifests, host-scoped auth policy, private
+    credential/state confinement, passive quarantine, and evidence-bound
+    rights certification pass;
+  - Catalog v3 provides strict stable IDs, dedupe/aliases, dependency closure,
+    deterministic certified-only query, and legacy-unverified compatibility;
+  - 32 focused, 176 related, and 843 complete Window-PPTX tests pass;
+    authenticated commercial sync remains `NEEDS_AUTH`.
 - Phase 19 deep merge audit completed:
   - GSD state machine remains canonical;
   - Superpowers planning/writing quality gates are folded into `aimagician-superpower`;
@@ -188,13 +196,18 @@ Active v5 foundation:
   pass deck-family/style-cluster and dependency-closure certification.
 - [Phase 36]: COM is optional diagnostics only. Portable native-editable PPTX,
   isolated rendering, OOXML inspection, and AI visual evidence own v6 GO.
+- [Phase 37]: Public metadata inventory is explicitly unverified and never
+  auto-selects; certification requires matching allowed rights plus an
+  `ACCEPT` passive-quarantine report.
+- [Phase 37]: Authenticated commercial sync remains `NEEDS_AUTH`; the offline
+  five-command tracer and `SEED_READY` catalog do not impute unavailable
+  commercial inventory.
 
 ## Next Actions
 
-1. Implement Phase 37 acquisition schemas, quarantine rules, resumable state,
-   rights records, and a dry-run/no-auth test seam.
-2. Build stable content-addressed catalog IDs, dedupe, dependency closure, and
-   compatibility-safe query boundaries without requiring private bytes.
+1. Implement Phase 38 TemplatePack v2 and Registry v3 contracts on Catalog v3.
+2. Add semantic retrieval, ArtDirectionProfile, capacity/style/dependency
+   certification, and legally usable complete-work spine intake.
 3. Keep authenticated commercial sync `NEEDS_AUTH` until credential rotation
    is confirmed and a short-lived credential is supplied under `.private/`.
 
