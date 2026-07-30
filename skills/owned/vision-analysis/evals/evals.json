@@ -1,0 +1,30 @@
+{
+  "skill": "vision-analysis",
+  "scenarios": [
+    {
+      "id": "cli-screenshot-review",
+      "prompt": "Use OpenCode to inspect these launcher screenshots and report visual regressions.",
+      "expected": "Loads vision-analysis before CLI-agent reasoning, requires explicit external-upload authorization, and passes sanitized textual evidence to OpenCode."
+    },
+    {
+      "id": "multi-image-diagram-comparison",
+      "prompt": "Compare these two architecture diagram images and list changed flows and uncertain labels.",
+      "expected": "Uses repeatable image inputs and separates observations, inference, and uncertainty."
+    },
+    {
+      "id": "rendered-pdf-page",
+      "prompt": "Read this rendered PNG page from a scanned report and extract the visible table.",
+      "expected": "Triggers vision-analysis for the image but does not claim native PDF parsing."
+    },
+    {
+      "id": "text-only-negative",
+      "prompt": "Compare these two JSON API responses and identify schema changes.",
+      "expected": "Does not trigger vision-analysis because no pixel understanding is required."
+    },
+    {
+      "id": "image-generation-negative",
+      "prompt": "Generate a new product poster image.",
+      "expected": "Routes to an image-generation skill rather than vision-analysis."
+    }
+  ]
+}

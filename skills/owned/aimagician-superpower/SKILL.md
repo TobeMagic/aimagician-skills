@@ -33,6 +33,7 @@ metadata:
     - references/capabilities/domain-gates.md
   preferred_companions:
     - cli-agent-delegator
+    - vision-analysis
     - parallel-worktree-pr-flow
     - llm-know-how-wiki
     - interface-design
@@ -63,6 +64,19 @@ Before any non-trivial execution, and always after resume, context compaction, h
 7. Resume from the last verified checkpoint. Do not restart solved discovery or skip an unfinished gate.
 
 If a source is absent, record that fact and decide whether it is blocking. Do not invent missing context. Never present a partial implementation as complete, and do not stop while accepted work remains feasible.
+
+## Active Goal Lock
+
+Before changing files, lock execution to the active planning target:
+
+1. Read the active milestone and phase from `.planning/STATE.md`.
+2. Read that phase's status, literal goal, requirement IDs, and success criteria from `.planning/ROADMAP.md`.
+3. Confirm the phase specification repeats the same goal and requirements, and confirm `.planning/REQUIREMENTS.md` maps every requirement to that phase.
+4. Run `workflow.mjs validate --gate align`. Do not edit while alignment fails.
+5. Map each planned action to a `REQ-*` item or an explicit `GOAL-*` acceptance criterion. Work with no mapping is scope drift.
+6. Run `workflow.mjs trace` at checkpoints and before any completion claim. A passing test is evidence for a mapped criterion, not proof that the phase goal is complete.
+
+An off-phase task requires a controlled exception with the parent milestone, parent phase, explicit `USR-*` approval, and a return checkpoint. Resume the parent phase after the exception. Never relabel partial progress as phase or milestone completion.
 
 ## Capability Routing
 
@@ -95,7 +109,7 @@ Role prompt templates live under `references/roles/`. Planning templates live un
 For any change beyond a known one-file edit, do not move from request directly to code. Establish five engineering artifacts, inline for small work or from `assets/templates/` for substantial work:
 
 1. **Behavior contract:** observable current and target behavior, acceptance examples, invariants, and failure behavior.
-2. **Context map:** entry points, ownership boundaries, dependency direction, data/control flow, persisted state, and likely blast radius.
+2. **Context map:** active milestone, phase, literal roadmap goal, acceptance criteria, entry points, ownership boundaries, dependency direction, data/control flow, persisted state, and likely blast radius.
 3. **Design record:** at least two materially viable designs when tradeoffs exist, chosen interfaces and test seams, compatibility, migration, rollback, security, performance, and operability.
 4. **Change brief:** ordered vertical slices, exact file scope, integration points, and evidence expected after each slice.
 5. **Review record:** specification findings first, then correctness, tests, security, maintainability, extensibility, performance, operability, and diff hygiene.
@@ -124,11 +138,11 @@ Every lightweight task that will end in a completion claim uses one `.planning/t
 
 ### 1. Recover Context
 
-Run the Mandatory Start And Resume Gate. Establish the last verified state, current dirty files, active blockers, and next safe action.
+Run the Mandatory Start And Resume Gate and Active Goal Lock. Establish the last verified state, active milestone and phase, literal roadmap goal, current dirty files, active blockers, and next safe action.
 
 ### 2. Establish Target And Boundary
 
-State the measurable objective, user-visible outcome, in-scope work, non-goals, constraints, dependencies, rollback or stop conditions, and completion evidence. Classify the work as quick, phase, milestone, spike, repair, review, or follow-up.
+State the measurable objective, user-visible outcome, active milestone and phase, literal roadmap goal, in-scope work, non-goals, constraints, dependencies, rollback or stop conditions, and completion evidence. Classify the work as quick, phase, milestone, spike, repair, review, or follow-up.
 
 ### 3. Discuss Baseline Requirements
 
@@ -148,17 +162,17 @@ Define the behavior contract, durable domain vocabulary, invariants, interfaces,
 
 ### 7. Execute And Checkpoint
 
-Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Deliver one end-to-end tracer slice before broadening. Agree the most public practical test seam, make the first check fail for the intended behavioral reason, then complete one red-green-refactor slice before the next. Reject tautological tests, tests that only replay mocked returns, and horizontal tests disconnected from observable behavior. Use expand-contract for wide refactors and reversible prototypes for uncertain architecture. Give each bounded implementation slice a clean context and finish it with fresh evidence plus a durable handoff; do not rely on lossy mid-slice compaction. Before the controller performs a simple short execution task, apply the `cli-agent-delegator` short-task gate. Eligible test runs, Git checks, reports, localized fixes, scoped research, and visual inspection are delegated by default. Write work must use an exact scope in an isolated worktree. A bounded quick write gets one combined pre-commit review. Substantial delegated implementation gets a fresh implementer context, independent specification review, then quality review. Fix and re-review before advancing.
+Run the alignment gate before editing. Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Deliver one end-to-end tracer slice before broadening. Agree the most public practical test seam, make the first check fail for the intended behavioral reason, then complete one red-green-refactor slice before the next. Reject tautological tests, tests that only replay mocked returns, and horizontal tests disconnected from observable behavior. Use expand-contract for wide refactors and reversible prototypes for uncertain architecture. Give each bounded implementation slice a clean context and finish it with fresh evidence plus a durable handoff; do not rely on lossy mid-slice compaction. Before the controller performs a simple short execution task, apply the `cli-agent-delegator` short-task gate. Eligible test runs, Git checks, reports, localized fixes, and scoped research are delegated by default. Visual evidence is acquired through `vision-analysis`; only sanitized text evidence is delegated for reasoning. Write work must use an exact scope in an isolated worktree. A bounded quick write gets one combined pre-commit review. Substantial delegated implementation gets a fresh implementer context, independent specification review, then quality review. Fix and re-review before advancing.
 
 ### 8. Verify And UAT
 
-Run narrow checks first, then the broader suite justified by blast radius. Trace requirement to task to evidence. Exercise observable UAT for user-facing behavior. Record commands, outputs, inspected artifacts, failures, skipped checks, and residual risk. For substantial work, delegate an independent verifier through `cli-agent-delegator`, then rerun or inspect the decisive evidence yourself.
+Run narrow checks first, then the broader suite justified by blast radius. Trace original request to requirement, roadmap goal criterion, task, and evidence. Exercise observable UAT for user-facing behavior. Record commands, outputs, inspected artifacts, failures, skipped checks, and residual risk. For substantial work, delegate an independent verifier through `cli-agent-delegator`, then rerun or inspect the decisive evidence yourself.
 
 ### 9. Audit
 
 Compare the result with the locked specification, original request, non-goals, plan, and evidence. Check integration wiring, regression risk, capability preservation, stale placeholders, security, cleanup, documentation, and installation state. Use a fresh OpenCode reviewer through `cli-agent-delegator` for phase audit and for milestone or complete closure. Reconcile its findings against primary evidence and classify every gap.
 
-Every completion claim, including a bounded quick task, must use a fresh independent OpenCode session. Non-visual audit reasoning follows the DeepSeek-first route; visual evidence uses Agnes or another verified vision-capable model; automatic Agnes fallback is limited to explicit usage, quota, or rate-limit events. The audit freezes the reviewed commit or diff and maps `USR-* -> REQ-* -> implementation -> evidence -> audit decision`. Record provider, primary model, final model, attempt chain, fallback reason, session, run status, review point, requirement matrix, Blocker/Important/Nitpick counts, and main-Agent spot-check evidence. Tests passing alone never satisfies this gate.
+Every completion claim, including a bounded quick task, must use a fresh independent OpenCode session. Visual evidence is acquired through `vision-analysis` with explicit upload authorization, then passed as text to the reviewer. Audit reasoning follows the DeepSeek-first route; Agnes is a text-reasoning fallback only after a verified DeepSeek usage or quota limit. The audit freezes the reviewed commit or diff and maps `USR-* -> REQ-* -> implementation -> evidence -> audit decision`. Record provider, primary model, final model, attempt chain, fallback reason, session, run status, review point, requirement matrix, Blocker/Important/Nitpick counts, and main-Agent spot-check evidence. Tests passing alone never satisfies this gate.
 
 Any `FAIL`, `NOT_RUN`, unresolved `Blocker`, or unresolved `Important` keeps the checklist open. Continue implementing and re-auditing while feasible. Defer an Important finding only through an explicit user decision. Stop as blocked only for a genuine external inability, not because the remaining work is inconvenient.
 
@@ -173,23 +187,28 @@ From the installed skill directory:
 ```bash
 node scripts/workflow.mjs status --project <path> --phase <phase>
 node scripts/workflow.mjs next --project <path> --phase <phase>
+node scripts/workflow.mjs validate --project <path> --phase <phase> --gate align
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate spec
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate execute
 node scripts/workflow.mjs trace --project <path> --phase <phase> --format json
 node scripts/workflow.mjs init --project <path> --task <task-id> --write
 node scripts/workflow.mjs status --project <path> --task <task-id>
+node scripts/workflow.mjs validate --project <path> --task <task-id> --gate align
 node scripts/workflow.mjs validate --project <path> --task <task-id> --gate complete
+node scripts/workflow.mjs init --project <path> --milestone <milestone-id> --write
+node scripts/workflow.mjs validate --project <path> --milestone <milestone-id> --gate complete
 node scripts/engineering-route.mjs --kind feature --risk medium --format json
 node scripts/engineering-route.mjs --kind refactor --risk high
 node scripts/engineering-route.mjs --kind discovery --risk high --format json
 node scripts/engineering-route.mjs --kind prototype --risk medium
 ```
 
-`spec` checks locked requirements, USR source mapping, and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires completed research, discussion, context, and accepted plans. `complete` requires passing evidence, a recorded independent OpenCode audit with no unresolved Blocker or Important, summary, and UAT when user-facing. Task mode supports one-file lightweight completion records and only the complete gate. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the minimum engineering stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
+`align` proves the selected work matches the active milestone, phase, literal roadmap goal, requirement mapping, and any controlled exception. `spec` checks locked requirements, USR source mapping, and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires alignment plus completed research, discussion, context, and accepted plans. Phase `complete` requires requirement and goal-criterion evidence, a passing phase audit, summary, and no unresolved Blocker or Important. Milestone `complete` additionally requires every member phase complete plus a milestone-wide requirement and goal audit. Task mode supports alignment and complete gates. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the minimum engineering stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
 
 ## Companion Routing
 
-- Broad exploration, deep research, visual inspection, bounded CLI work, tests, git checks, and independent reviewer roles: `cli-agent-delegator`.
+- Broad exploration, deep research, bounded CLI work, tests, git checks, and independent reviewer roles: `cli-agent-delegator`.
+- Authorized image, screenshot, diagram, and other visual evidence acquisition: `vision-analysis`; pass its text evidence to the reasoning agent.
 - Parallel write lanes and worktree integration: `parallel-worktree-pr-flow`.
 - Wiki, durable engineering context, secret inventory, and sensitive scans: `llm-know-how-wiki`.
 - UI contracts, visual decisions, accessibility, and screenshots: `interface-design` and `webapp-testing`.

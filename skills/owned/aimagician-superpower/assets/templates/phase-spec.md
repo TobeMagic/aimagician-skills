@@ -1,6 +1,8 @@
 # Phase {{PHASE}}: {{PHASE_NAME}} - Specification
 
 **Created:** {{DATE}}
+**Milestone:** TBD
+**Roadmap phase:** {{PHASE_PREFIX}}
 **Status:** Draft
 **Risk:** {{RISK}}
 **User-facing:** no
@@ -54,6 +56,7 @@ TBD - describe current behavior with concrete repository or runtime evidence.
 ## Acceptance Criteria
 
 - [ ] REQ-001 has concrete passing evidence.
+- [ ] Every roadmap `GOAL-{{PHASE_PREFIX}}-*` criterion has observable PASS evidence.
 
 ## Blocking Questions
 

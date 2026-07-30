@@ -126,6 +126,41 @@ describe("aimagician-superpower workflow runtime", () => {
     expect(parsed.findings).toContainEqual(expect.objectContaining({ code: "PLAN_REQUIREMENT_UNMAPPED", requirement: "ASR-02" }));
   });
 
+  it("blocks execution when the selected phase or specification goal drifts from active planning", async () => {
+    const fixture = await makeInitializedPhase();
+    await writeFile(fixture.specPath, validSpec(), "utf8");
+
+    const aligned = await runNode(workflowScript, [
+      "validate", "--project", fixture.project, "--phase", "01", "--gate", "align", "--format", "json"
+    ]);
+    expect(aligned.exitCode).toBe(0);
+    expect(JSON.parse(aligned.stdout)).toMatchObject({
+      ok: true,
+      milestone: "test-v1",
+      goal: "Agents can validate workflow state and requirement evidence deterministically."
+    });
+
+    await writeFile(fixture.specPath, validSpec().replace(
+      "Agents can validate workflow state and requirement evidence deterministically.",
+      "Agents can ship unrelated work."
+    ), "utf8");
+    const goalDrift = await runNode(workflowScript, [
+      "validate", "--project", fixture.project, "--phase", "01", "--gate", "align", "--format", "json"
+    ]);
+    expect(goalDrift.exitCode).toBe(1);
+    expect((JSON.parse(goalDrift.stdout) as { findings: Array<{ code: string }> }).findings)
+      .toContainEqual(expect.objectContaining({ code: "ALIGN_GOAL_DRIFT" }));
+
+    await writeFile(fixture.specPath, validSpec(), "utf8");
+    await writeFile(join(fixture.project, ".planning", "STATE.md"), validState().replace("current_phase: 01", "current_phase: 02"), "utf8");
+    const phaseDrift = await runNode(workflowScript, [
+      "validate", "--project", fixture.project, "--phase", "01", "--gate", "align", "--format", "json"
+    ]);
+    expect(phaseDrift.exitCode).toBe(1);
+    expect((JSON.parse(phaseDrift.stdout) as { findings: Array<{ code: string }> }).findings)
+      .toContainEqual(expect.objectContaining({ code: "ALIGN_PHASE_DRIFT" }));
+  });
+
   it("requires research, renewed discussion, context, and plan acceptance before execution", async () => {
     const fixture = await makeInitializedPhase();
     await writeFile(fixture.specPath, validSpec(), "utf8");
@@ -192,6 +227,78 @@ describe("aimagician-superpower workflow runtime", () => {
     const next = await runNode(workflowScript, ["next", "--project", fixture.project, "--phase", "01", "--format", "json"]);
     expect(next.exitCode).toBe(0);
     expect(JSON.parse(next.stdout)).toMatchObject({ status: "complete", nextAction: "No workflow action remains for this phase." });
+  });
+
+  it("does not accept passing requirement tests without roadmap goal evidence", async () => {
+    const fixture = await makeInitializedPhase();
+    await writeFile(fixture.specPath, validSpec(), "utf8");
+    await writeFile(fixture.planPath, validPlan(), "utf8");
+    await writeFile(fixture.researchPath, validResearch(), "utf8");
+    await writeFile(fixture.discussionPath, validDiscussion(), "utf8");
+    await writeFile(fixture.contextPath, validContext(), "utf8");
+    await writeFile(fixture.validationPath, validValidation().replace(
+      /\n## Goal Evidence[\s\S]*$/,
+      ""
+    ), "utf8");
+    await writeFile(fixture.auditPath, validAudit(), "utf8");
+    await writeFile(fixture.summaryPath, "# Summary\n\n**Status:** Complete\n\n## Outcome\n\nRequirements passed.\n", "utf8");
+
+    const complete = await runNode(workflowScript, [
+      "validate", "--project", fixture.project, "--phase", "01", "--gate", "complete", "--format", "json"
+    ]);
+    expect(complete.exitCode).toBe(1);
+    expect((JSON.parse(complete.stdout) as { findings: Array<{ code: string }> }).findings)
+      .toContainEqual(expect.objectContaining({ code: "GOAL_EVIDENCE_NOT_PASSED", requirement: "GOAL-01-01" }));
+  });
+
+  it("requires controlled-exception metadata for a task while a phase is active", async () => {
+    const project = await makeProject();
+    await runNode(workflowScript, ["init", "--project", project, "--task", "urgent-fix", "--write", "--format", "json"]);
+    await writeFile(join(project, ".planning", "REQUESTS.md"), validRequests(), "utf8");
+    await writeFile(join(project, ".planning", "STATE.md"), validState(), "utf8");
+    await writeFile(join(project, ".planning", "tasks", "urgent-fix.md"), validNeutralTask().replaceAll("quick-fix", "urgent-fix"), "utf8");
+
+    const missing = await runNode(workflowScript, [
+      "validate", "--project", project, "--task", "urgent-fix", "--gate", "align", "--format", "json"
+    ]);
+    expect(missing.exitCode).toBe(1);
+    expect((JSON.parse(missing.stdout) as { findings: Array<{ code: string }> }).findings.map((item) => item.code))
+      .toEqual(expect.arrayContaining(["TASK_PARENT_PHASE_MISSING", "TASK_PARENT_MILESTONE_DRIFT", "TASK_EXCEPTION_STATUS_INVALID"]));
+
+    await writeFile(join(project, ".planning", "tasks", "urgent-fix.md"), validControlledTask(), "utf8");
+    const approved = await runNode(workflowScript, [
+      "validate", "--project", project, "--task", "urgent-fix", "--gate", "align", "--format", "json"
+    ]);
+    expect(approved.exitCode).toBe(0);
+    expect(JSON.parse(approved.stdout)).toMatchObject({ ok: true, task: "urgent-fix", gate: "align" });
+  });
+
+  it("validates a milestone only after every phase goal, requirement, audit, and summary passes", async () => {
+    const fixture = await makeInitializedPhase();
+    await writeFile(fixture.specPath, validSpec(), "utf8");
+    await writeFile(fixture.planPath, validPlan(), "utf8");
+    await writeFile(fixture.researchPath, validResearch(), "utf8");
+    await writeFile(fixture.discussionPath, validDiscussion(), "utf8");
+    await writeFile(fixture.contextPath, validContext(), "utf8");
+    await writeFile(fixture.validationPath, validValidation(), "utf8");
+    await writeFile(fixture.auditPath, validAudit(), "utf8");
+    await writeFile(fixture.summaryPath, "# Summary\n\n**Status:** Complete\n\n## Outcome\n\nRuntime behavior is verified.\n", "utf8");
+    await writeFile(join(fixture.project, ".planning", "ROADMAP.md"), validRoadmap("Complete"), "utf8");
+    await writeFile(join(fixture.project, ".planning", "REQUIREMENTS.md"), validProjectRequirements("Complete"), "utf8");
+
+    const initialized = await runNode(workflowScript, [
+      "init", "--project", fixture.project, "--milestone", "test-v1", "--write", "--format", "json"
+    ]);
+    expect(initialized.exitCode).toBe(0);
+    const milestoneDir = join(fixture.project, ".planning", "milestones", "test-v1");
+    await writeFile(join(milestoneDir, "MILESTONE-AUDIT.md"), validMilestoneAudit(), "utf8");
+    await writeFile(join(milestoneDir, "MILESTONE-SUMMARY.md"), "# Milestone Summary\n\n**Status:** Complete\n\n## Outcome\n\nAll phase goals passed.\n", "utf8");
+
+    const complete = await runNode(workflowScript, [
+      "validate", "--project", fixture.project, "--milestone", "test-v1", "--gate", "complete", "--format", "json"
+    ]);
+    expect(complete.exitCode).toBe(0);
+    expect(JSON.parse(complete.stdout)).toMatchObject({ ok: true, milestone: "test-v1", status: "passed" });
   });
 
   it("rejects unsafe phase traversal without creating files", async () => {
@@ -284,6 +391,9 @@ async function makeInitializedPhase(): Promise<{
   const result = await runNode(workflowScript, ["init", "--project", project, "--phase", "01-runtime", "--write", "--format", "json"]);
   expect(result.exitCode).toBe(0);
   await writeFile(join(project, ".planning", "REQUESTS.md"), validRequests(), "utf8");
+  await writeFile(join(project, ".planning", "STATE.md"), validState(), "utf8");
+  await writeFile(join(project, ".planning", "ROADMAP.md"), validRoadmap(), "utf8");
+  await writeFile(join(project, ".planning", "REQUIREMENTS.md"), validProjectRequirements(), "utf8");
   const phaseDir = join(project, ".planning", "phases", "01-runtime");
   return {
     project,
@@ -387,6 +497,49 @@ Provide deterministic workflow validation and traceability.
 
 - ASR-01
 - ASR-02
+`;
+}
+
+function validState(): string {
+  return `---
+milestone: test-v1
+current_phase: 01
+status: in_progress
+---
+
+# Project State
+
+**Milestone:** test-v1
+**Current phase:** 01
+**Status:** In Progress
+`;
+}
+
+function validRoadmap(status = "In Progress"): string {
+  return `# Roadmap
+
+## Milestone test-v1 - Runtime
+
+### Phase 01: Runtime
+
+**Goal:** Agents can validate workflow state and requirement evidence deterministically.
+**Requirements:** [ASR-01, ASR-02]
+**Status:** ${status}
+**Success Criteria**:
+
+1. **GOAL-01-01:** Valid and invalid workflow states produce deterministic outcomes.
+`;
+}
+
+function validProjectRequirements(status = "In Progress"): string {
+  return `# Requirements
+
+## Traceability
+
+| Requirement | Phase | Status |
+|---|---|---|
+| ASR-01 | Phase 01 | ${status} |
+| ASR-02 | Phase 01 | ${status} |
 `;
 }
 
@@ -531,6 +684,12 @@ function validValidation(): string {
 |---|---|---|---|
 | ASR-01 | PASS | focused runtime test | Valid and invalid fixtures behave as specified. |
 | ASR-02 | PASS | trace test | Both requirements are planned and evidenced. |
+
+## Goal Evidence
+
+| Goal criterion | Status | Evidence | Observed result |
+|---|---|---|---|
+| GOAL-01-01 | PASS | alignment and completion tests | Goal drift fails and aligned work passes. |
 `;
 }
 
@@ -555,6 +714,12 @@ function validAudit(): string {
 |---|---|---|---|---|---|
 | USR-TEST-001 | ASR-01 | Yes | PASS | PASS | Complete |
 | USR-TEST-001 | ASR-02 | Yes | PASS | PASS | Complete |
+
+## Goal Coverage
+
+| Goal criterion | Planned | Evidence | Audit | Decision |
+|---|---|---|---|---|
+| GOAL-01-01 | Yes | PASS | PASS | Complete |
 
 ## Finding Counts
 
@@ -661,6 +826,56 @@ Apply and verify a bounded quick fix.
 
 **Status:** Complete
 **Reason:** Checklist, evidence, and audit passed.
+`;
+}
+
+function validControlledTask(): string {
+  return validNeutralTask()
+    .replaceAll("quick-fix", "urgent-fix")
+    .replace(
+      "**Source request:** USR-TEST-001",
+      `**Source request:** USR-TEST-001
+**Parent milestone:** test-v1
+**Parent phase:** 01
+**Exception status:** Approved
+**Approval source:** USR-TEST-001
+**Return checkpoint:** Resume the active runtime validation phase.`
+    );
+}
+
+function validMilestoneAudit(): string {
+  return `# Milestone test-v1 - Audit
+
+## Auditor Run
+
+- **Provider:** OpenCode
+- **Primary model:** \`opencode/deepseek-v4-flash-free\`
+- **Model:** \`opencode/deepseek-v4-flash-free\`
+- **Attempt chain:** \`opencode/deepseek-v4-flash-free: success\`
+- **Fallback reason:** NONE
+- **Session:** ses_milestone_complete
+- **Run status:** DONE
+- **Review point:** test-fixture-head
+- **Controller spot-check:** PASS - phase evidence and goal outcomes were rerun.
+
+## Requirement And Goal Coverage
+
+| Phase | Item | Evidence | Audit | Decision |
+|---|---|---|---|---|
+| 01 | ASR-01 | PASS | PASS | Complete |
+| 01 | ASR-02 | PASS | PASS | Complete |
+| 01 | GOAL-01-01 | PASS | PASS | Complete |
+
+## Finding Counts
+
+- **Blocker:** 0
+- **Important:** 0
+- **Nitpick:** 0
+
+## Closure Decision
+
+**Status:** Complete
+**Reason:** Every phase goal and requirement passed.
 `;
 }
 

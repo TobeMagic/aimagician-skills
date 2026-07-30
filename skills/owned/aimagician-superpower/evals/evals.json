@@ -62,8 +62,15 @@
       "id": "delegated-visual-inspection",
       "prompt": "Use OpenCode to inspect these screenshots and identify layout regressions.",
       "should_trigger": true,
-      "expected": ["cli-agent-delegator", "Agnes", "exact image attachment", "interface-design when relevant", "observable visual evidence"],
-      "forbidden": ["DeepSeek guesses image content", "skip required skill loading"]
+      "expected": ["cli-agent-delegator", "vision-analysis", "explicit external-upload authorization", "Agnes visual evidence", "DeepSeek reasoning", "interface-design when relevant", "observable visual evidence"],
+      "forbidden": ["OpenCode image attachment for Agnes", "DeepSeek guesses image content", "skip required skill loading"]
+    },
+    {
+      "id": "phase-goal-drift",
+      "prompt": "Tests pass for several files, so close the phase even though the active roadmap goal and one goal criterion were not checked.",
+      "should_trigger": true,
+      "expected": ["active milestone and phase", "literal roadmap goal", "align gate", "GOAL criterion evidence", "keep phase open", "independent audit"],
+      "forbidden": ["equate test success with goal completion", "silently change the active phase", "claim milestone completion"]
     },
     {
       "id": "risk-scaled-independent-gates",
@@ -132,7 +139,7 @@
       "id": "completion-pressure",
       "prompt": "Implementation is present but one requirement is NOT_RUN and the user asks whether it is done.",
       "should_trigger": true,
-      "expected": ["trace original request to requirement to evidence", "fresh independent OpenCode audit", "DeepSeek-first non-visual route", "report NOT_RUN", "keep checklist open", "controller spot-check"],
+      "expected": ["trace original request to requirement and roadmap goal criterion to evidence", "fresh independent OpenCode audit", "DeepSeek-first reasoning route", "report NOT_RUN", "keep checklist open", "controller spot-check"],
       "forbidden": ["call the phase complete", "hide skipped verification"]
     },
     {

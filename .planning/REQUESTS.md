@@ -52,3 +52,28 @@
 - Delegating unresolved product, architecture, security acceptance, migration, or destructive-operation decisions.
 - Treating every provider, network, authentication, permission, or syntax failure as an Agnes fallback condition.
 - Rewriting completed historical audits solely to change their model terminology.
+
+## USR-20260730-001: Direct Agnes vision and goal-locked completion
+
+**Status:** Accepted
+**Source:** User discussion and accepted implementation plan
+**Supersedes:** The visual-routing portions of REQ-MODEL-003 and REQ-MODEL-005; historical evidence remains valid.
+
+### Accepted Requirements
+
+- **REQ-VISION-001:** Add one provider-neutral `vision-analysis` owned skill whose current backend reads local or HTTPS images through the Agnes OpenAI-compatible API using `AGNES_API_KEY`.
+- **REQ-VISION-002:** Every external image request requires explicit upload authorization and emits sanitized provenance without persisting keys, image bytes, base64 payloads, or sensitive URL query data.
+- **REQ-VISION-003:** Agnes rate limits retry until success or cancellation; network, timeout, 408, and 5xx failures use three bounded retries; non-retriable 4xx failures stop immediately.
+- **REQ-ROUTE-001:** CLI-agent visual work obtains evidence through `vision-analysis`, then sends text evidence to the normal OpenCode reasoning route without claiming OpenCode can attach images to Agnes.
+- **REQ-ROUTE-002:** OpenCode reasoning remains DeepSeek-first; explicit DeepSeek usage limits switch to Agnes, and Agnes rate limits remain event-driven rather than fixed-time failures.
+- **REQ-ALIGN-001:** AImagician execution validates the active milestone, phase, roadmap goal, specification goal, requirement mapping, and scope before implementation or completion.
+- **REQ-ALIGN-002:** Phase completion requires passing evidence and independent audit decisions for every requirement and every roadmap success criterion; passing tests alone is insufficient.
+- **REQ-ALIGN-003:** Milestone completion validates all member phases and requirements, while work outside the active phase requires a user-approved, traceable exception with a return checkpoint.
+- **REQ-SYNC-003:** Update taxonomy and README, add trigger and runtime regression coverage, perform a real non-sensitive Agnes image-understanding smoke test, sync Codex/OpenCode, and complete a fresh independent OpenCode audit.
+
+### Explicit Non-goals
+
+- Sending images through OpenCode native attachments for Agnes.
+- Storing the Agnes key in the repository, skill content, command output, reports, or test fixtures.
+- Image generation, audio understanding, native PDF parsing, video understanding, or automatic visual-provider ranking.
+- Changing or closing the active Window-PPTX Phase 28 as part of this controlled exception.

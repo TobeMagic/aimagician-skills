@@ -75,13 +75,13 @@ describe("cli-agent-delegator capability contract", () => {
     expect(prompt).toContain("full-repository diffs");
   });
 
-  it("routes text to DeepSeek, vision to Agnes, and only quota failures to Agnes fallback", async () => {
+  it("routes vision through direct evidence, reasoning through DeepSeek, and only quota failures to Agnes fallback", async () => {
     const provider = await readFile(join(delegatorRoot, "references", "providers", "opencode.md"), "utf8");
     const runner = await readFile(join(delegatorRoot, "scripts", "opencode-run.mjs"), "utf8");
 
     expect(provider).toContain("Known-Good Fast Path");
-    expect(provider).toContain("for every non-visual discovery, research, test, Git, bounded implementation, review, verification, and completion-audit task");
-    expect(provider).toContain("default for work that must directly understand images");
+    expect(provider).toContain("`vision-analysis` acquires pixels through its authorized Agnes API backend");
+    expect(provider).toContain("default reasoning model for text-only work and for reasoning over visual evidence");
     expect(provider).toContain("If DeepSeek is absent");
     expect(provider).toContain("let the controller select for the task");
     expect(provider).toContain("only when logs identify an explicit usage, quota, rate-limit");
@@ -90,12 +90,17 @@ describe("cli-agent-delegator capability contract", () => {
     expect(provider).toContain('-m "agnes/agnes-2.0-flash"');
     expect(provider).toContain('"<same_detailed_prompt>"');
     expect(provider).toContain('"<completion_audit_prompt>"');
+    expect(provider).toContain("--allow-external-upload");
+    expect(provider).toContain("never attach the image to OpenCode for Agnes");
+    expect(provider).not.toContain('-f "<image_path>"');
     expect(provider).not.toMatch(/opencode run[^\n]*--prompt/);
     expect(provider).toContain("prompt as the trailing positional message");
     expect(runner).toContain('execFileAsync("opencode", ["models", "--verbose"]');
     expect(runner).toContain('fallbackReason = "explicit-usage-limit"');
+    expect(runner).toContain("buildVisualReasoningPrompt");
+    expect(runner).toContain("analyzeImages");
     expect(runner).toContain('"selection-required"');
-    expect(runner).not.toContain("setTimeout(");
+    expect(runner).not.toContain("VERIFIED_CAPABILITY_OVERRIDES");
   });
 
   it("uses direct commands by default and limits environment probes to diagnostics", async () => {
@@ -109,7 +114,7 @@ describe("cli-agent-delegator capability contract", () => {
     expect(provider).toContain("Run diagnostics only for first-time setup in a new environment");
     expect(skill).toContain("Use the known-good fast path");
     expect(skill).toContain("Do not repeat binary, version, model-list, or help probes");
-    expect(skill).toContain("Automatic Agnes fallback is allowed only for a verified usage, quota, or rate-limit event");
+    expect(skill).toContain("Automatic Agnes reasoning fallback is allowed only for a verified DeepSeek usage, quota, or rate-limit event");
   });
 
   it("waits on activity events instead of elapsed-time limits", async () => {
@@ -161,7 +166,7 @@ describe("cli-agent-delegator capability contract", () => {
     expect(scenario?.expected).toContain("delegate the multi-file audit first");
     expect(scenario?.forbidden).toContain("main agent performs the whole multi-file scan itself");
     expect(researchScenario?.expected).toContain("direct DeepSeek command");
-    expect(researchScenario?.expected).toContain("Agnes one-time fallback after an explicit usage limit");
+    expect(researchScenario?.expected).toContain("Agnes fallback after an explicit usage limit");
     expect(researchScenario?.forbidden).toContain("repeat version, model-list, or help probes before routine execution");
   });
 });

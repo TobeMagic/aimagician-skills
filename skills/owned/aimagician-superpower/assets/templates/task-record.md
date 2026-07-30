@@ -3,6 +3,11 @@
 **Task ID:** {{TASK}}
 **Status:** In progress
 **Source request:** USR-001
+**Parent milestone:** TBD
+**Parent phase:** TBD
+**Exception status:** Not required
+**Approval source:** NONE
+**Return checkpoint:** NONE
 **Review point:** NOT_RUN
 
 ## Original Request

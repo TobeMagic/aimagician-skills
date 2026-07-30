@@ -53,7 +53,8 @@ describe("consolidated owned skill content", () => {
     expect(skill).toContain("Never present a partial implementation as complete");
     expect(skill).toContain("scripts/workflow.mjs");
     expect(skill).toMatch(/preferred_companions:[\s\S]*?- skill-creator[\s\S]*?compatibility:/);
-    expect(skill).toContain("`execute` additionally requires completed research, discussion, context, and accepted plans");
+    expect(skill).toContain("`execute` additionally requires alignment plus completed research, discussion, context, and accepted plans");
+    expect(skill).toContain("`align` proves the selected work matches the active milestone, phase, literal roadmap goal");
 
     for (const modulePath of modulePaths) expect(skill).toContain(modulePath);
     expect(modules.join("\n")).toContain("ambiguity = 1 -");

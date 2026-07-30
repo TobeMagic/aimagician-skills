@@ -106,12 +106,18 @@ skills:
     subgroup: academic
     tags: [papers, literature, experiments]
     recommendedScopes: [project]
+  vision-analysis:
+    group: research
+    subgroup: visual-analysis
+    tags: [vision, image-understanding, multimodal, screenshot, visual-evidence, agnes]
+    recommendedScopes: [global]
+    description: Direct, consent-gated image understanding with sanitized evidence and provider provenance for downstream reasoning.
   cli-agent-delegator:
     group: operate
     subgroup: agent-orchestration
-    tags: [cli-agent, multi-agent, delegation, orchestration, opencode, exploration, research, review, verification]
+    tags: [cli-agent, multi-agent, delegation, orchestration, opencode, exploration, research, review, verification, short-task]
     recommendedScopes: [global]
-    description: Delegate broad discovery, deep research, visual inspection, bounded git/test/write tasks, and independent review to OpenCode while retaining main-Agent judgment.
+    description: Delegate broad discovery, deep research, bounded short git/test/write tasks, reasoning over acquired visual evidence, and independent review to OpenCode while retaining main-Agent judgment.
   composio-tool-router:
     group: operate
     subgroup: tool-routing

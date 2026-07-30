@@ -25,11 +25,11 @@ Follow an existing repository convention instead of creating a competing structu
 ## Resume Protocol
 
 1. Reload the main skill.
-2. Read state, roadmap, requirements, active specification, context, discussion, research, plans, validation, audit, and summary.
+2. Read state, roadmap, requirements, active specification, context, discussion, research, plans, validation, audit, and summary. Extract the active milestone, phase, literal roadmap goal, `GOAL-*` criteria, and `REQ-*` set.
 3. Read project docs and the project knowledge base.
 4. Inspect git status and recent relevant commits.
 5. Identify the last requirement-backed checkpoint and unverified work after it.
-6. Run `node scripts/workflow.mjs status ...` or `next ...` when the phase uses supported artifacts.
+6. Run `node scripts/workflow.mjs validate ... --gate align`, then `status ...` or `next ...` when the work uses supported artifacts.
 7. State known facts, unavailable sources, conflicts, blockers, and the next safe action.
 8. Continue from the checkpoint; do not repeat solved research or skip an incomplete gate.
 
@@ -54,3 +54,11 @@ Record after each meaningful unit:
 - For an interrupted write operation, inspect resulting state before retrying.
 
 Use `workflow.mjs trace` before closure so the next agent can distinguish completed implementation from unsupported claims.
+
+## Drift And Exception Control
+
+- Keep the active milestone, phase, literal roadmap goal, requirement IDs, and goal criteria visible in every checkpoint.
+- Map each changed file and verification action to a requirement or goal criterion. Unmapped work is drift until justified.
+- A test result proves only the criterion it exercises. It cannot replace goal acceptance or requirement coverage.
+- Off-phase work requires a controlled exception with parent milestone, parent phase, explicit `USR-*` approval, and a return checkpoint.
+- Do not advance phase or milestone status while `validate --gate align` reports drift.

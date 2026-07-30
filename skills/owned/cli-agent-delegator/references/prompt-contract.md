@@ -39,7 +39,7 @@ WRITE_SCOPE: <exact paths, or NONE>
 ALLOWED_COMMANDS: <command classes and important exact commands>
 TESTS_AND_EVIDENCE: <checks to run or evidence to collect>
 GIT_POLICY: <inspect-only | no-commit | local-commit-after-review | other explicit policy>
-MODEL_POLICY: <DeepSeek default | controller-selected free model because DeepSeek is absent | Agnes visual | Agnes quota fallback>
+MODEL_POLICY: <DeepSeek reasoning default | controller-selected free reasoning model because DeepSeek is absent | vision-analysis evidence then DeepSeek reasoning | Agnes quota fallback>
 CHILD_AGENT_POLICY: <forbidden | explicitly bounded roles>
 
 STATUS_PROTOCOL: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
@@ -67,6 +67,7 @@ Name only skills relevant to the role. Typical routing:
 - tests, git checks, implementation, or engineering review: `cli-agent-delegator` plus `aimagician-superpower`;
 - browser verification: add `webapp-testing`;
 - HTML visual review: add `interface-design`;
+- image, screenshot, chart, or diagram understanding: add `vision-analysis` and record explicit external-upload authorization;
 - PR state: add `github-pr-workflow`;
 - parallel write lanes: add `parallel-worktree-pr-flow`.
 - system prompt or agent instruction design: add `system-prompt-engineering`.

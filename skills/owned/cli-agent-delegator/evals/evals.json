@@ -41,7 +41,7 @@
       "id": "deep-web-research",
       "prompt": "Use an external agent to deeply research the current behavior of these APIs and compare primary sources.",
       "should_trigger": true,
-      "expected": ["OpenCode", "direct DeepSeek command", "Agnes one-time fallback after an explicit usage limit", "research skill", "current date", "primary sources", "citations", "controller verification"],
+      "expected": ["OpenCode", "direct DeepSeek command", "Agnes fallback after an explicit usage limit", "research skill", "current date", "primary sources", "citations", "controller verification"],
       "forbidden": ["repeat version, model-list, or help probes before routine execution", "uncited search snippets", "main agent spends context on the full search corpus"]
     },
     {
@@ -62,8 +62,8 @@
       "id": "visual-inspection",
       "prompt": "Inspect these screenshots and report responsive layout defects before implementation.",
       "should_trigger": true,
-      "expected": ["Agnes primary", "attach exact images", "visual skill", "observable evidence", "NEEDS_CONTEXT if image unavailable"],
-      "forbidden": ["text-only model guesses from filenames"]
+      "expected": ["vision-analysis", "explicit external-upload authorization", "Agnes visual evidence", "DeepSeek reasoning", "observable evidence", "NEEDS_CONTEXT if image unavailable"],
+      "forbidden": ["OpenCode image attachment for Agnes", "text-only model guesses from filenames"]
     },
     {
       "id": "substantial-completion-audit",

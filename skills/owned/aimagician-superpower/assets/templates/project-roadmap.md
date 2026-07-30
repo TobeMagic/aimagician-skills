@@ -8,8 +8,8 @@
 
 **Goal:** TBD
 **Requirements:** REQ-001
-**Status:** Planned
+**Status:** In Progress
 
 **Success Criteria:**
 
-1. TBD
+1. **GOAL-{{PHASE_PREFIX}}-01:** TBD

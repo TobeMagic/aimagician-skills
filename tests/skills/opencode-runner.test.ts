@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_QUOTA_FALLBACK_MODEL,
   DEFAULT_TEXT_MODEL,
-  DEFAULT_VISION_MODEL,
+  buildVisualReasoningPrompt,
   classifyOpenCodeFailure,
   freeCandidates,
   isTerminalUsageEvent,
@@ -55,21 +56,21 @@ agnes/agnes-2.0-flash
 `;
 
 describe("OpenCode dynamic model runner", () => {
-  it("parses verbose metadata and applies the verified Agnes vision override", () => {
+  it("parses provider metadata without inventing OpenCode image capabilities", () => {
     const models = parseVerboseModels(verboseModels);
     expect(models.map((model) => model.id)).toEqual([
       DEFAULT_TEXT_MODEL,
       "opencode/mimo-v2.5-free",
-      DEFAULT_VISION_MODEL
+      DEFAULT_QUOTA_FALLBACK_MODEL
     ]);
-    expect(models.find((model) => model.id === DEFAULT_VISION_MODEL)).toMatchObject({
+    expect(models.find((model) => model.id === DEFAULT_QUOTA_FALLBACK_MODEL)).toMatchObject({
       free: true,
-      imageInput: true,
-      capabilitySource: "verified-override"
+      imageInput: false,
+      capabilitySource: "provider-metadata"
     });
   });
 
-  it("uses DeepSeek for text and Agnes for vision", () => {
+  it("uses DeepSeek reasoning after both text and visual evidence acquisition", () => {
     const models = parseVerboseModels(verboseModels);
     expect(resolveModelRoute({ models, modality: "text" })).toMatchObject({
       status: "selected",
@@ -78,8 +79,8 @@ describe("OpenCode dynamic model runner", () => {
     });
     expect(resolveModelRoute({ models, modality: "vision" })).toMatchObject({
       status: "selected",
-      model: { id: DEFAULT_VISION_MODEL },
-      reason: "default-vision-model"
+      model: { id: DEFAULT_TEXT_MODEL },
+      reason: "default-text-model"
     });
   });
 
@@ -107,7 +108,7 @@ describe("OpenCode dynamic model runner", () => {
       requestedModel: "opencode/mimo-v2.5-free"
     })).toMatchObject({
       status: "invalid-selection",
-      reason: expect.stringContaining("required non-visual default")
+      reason: expect.stringContaining("required reasoning default")
     });
   });
 
@@ -123,11 +124,22 @@ describe("OpenCode dynamic model runner", () => {
     expect(isTerminalUsageEvent("the research report discusses API quota design")).toBe(false);
   });
 
-  it("filters visual candidates from capabilities rather than model names", () => {
+  it("keeps free-model candidates limited to OpenCode reasoning models", () => {
     const models = parseVerboseModels(verboseModels);
     expect(freeCandidates(models, { modality: "vision" }).map((model) => model.id)).toEqual([
-      DEFAULT_VISION_MODEL,
+      DEFAULT_TEXT_MODEL,
       "opencode/mimo-v2.5-free"
     ]);
+  });
+
+  it("labels visual evidence as controller-provided rather than an OpenCode attachment", () => {
+    const prompt = buildVisualReasoningPrompt("Review the screenshot.", {
+      provider: "agnes",
+      model: "agnes-2.0-flash",
+      analysis: "A blue button is clipped."
+    });
+    expect(prompt).toContain("Controller-Provided Visual Evidence");
+    expect(prompt).toContain("Do not claim that OpenCode or the reasoning model read the original files");
+    expect(prompt).toContain('"analysis": "A blue button is clipped."');
   });
 });

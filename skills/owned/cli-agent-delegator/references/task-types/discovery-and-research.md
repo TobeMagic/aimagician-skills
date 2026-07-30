@@ -7,9 +7,9 @@ Use this task family for broad context gathering that would otherwise consume th
 - **Repository or system discovery:** map relevant entry points, ownership boundaries, dependencies, representative data/control flow, existing patterns, risks, likely change locations, tests, and open questions.
 - **Deep web research:** search current sources, favor primary and authoritative material, record dates, distinguish evidence from inference, compare alternatives, and return citations suitable for controller verification.
 - **Cross-source comparison:** use one comparison frame and expose incompatible assumptions rather than flattening differences.
-- **Visual or image inspection:** use `agnes/agnes-2.0-flash`, attach the exact image with the supported OpenCode file option, and report observable evidence separately from interpretation.
+- **Visual or image inspection:** load `vision-analysis`, require explicit external-upload authorization, acquire sanitized evidence through its Agnes backend, and then use the normal OpenCode reasoning route.
 
-Use DeepSeek V4 Flash Free for ordinary non-visual discovery and research. If DeepSeek is absent, return the live free candidates for controller selection. Use Agnes when pixels must be understood or after an explicit usage, quota, or rate-limit failure. Do not convert authentication, network, permission, syntax, or generic worker failures into an Agnes fallback. Do not send an image task to a text-only model.
+Use DeepSeek V4 Flash Free for ordinary discovery, research, and reasoning over visual evidence. If DeepSeek is absent, return the live free candidates for controller selection. Use Agnes directly for pixel evidence through `vision-analysis`, and as the OpenCode text fallback only after an explicit DeepSeek usage, quota, or rate-limit failure. Do not convert authentication, network, permission, syntax, or generic worker failures into a model fallback.
 
 ## Discovery Questions
 
@@ -46,13 +46,13 @@ The worker must not treat search snippets, generated summaries, or an uncited mo
 
 Include:
 
-- exact image paths and permission to read them;
+- exact image paths or HTTPS URLs and explicit permission to upload them externally;
 - what to inspect: layout, text, hierarchy, state, defect, comparison, accessibility, pixel behavior, or other concrete question;
 - whether OCR-like transcription is needed;
-- required visual or domain skill;
+- `vision-analysis` plus any required domain skill;
 - required output evidence, such as region descriptions, dimensions, or comparison table.
 
-If an image cannot be loaded, return `NEEDS_CONTEXT`; do not infer its contents from a filename.
+If an image cannot be loaded or upload authorization is absent, return `NEEDS_CONTEXT`; do not infer its contents from a filename.
 
 ## Handoff
 

@@ -20,6 +20,12 @@
 |---|---|---|---|---|---|
 | USR-001 | REQ-001 | No | NOT_RUN | NOT_RUN | Blocker |
 
+## Goal Coverage
+
+| Goal criterion | Planned | Evidence | Audit | Decision |
+|---|---|---|---|---|
+| GOAL-{{PHASE_PREFIX}}-01 | Yes | NOT_RUN | NOT_RUN | Blocker |
+
 ## Review Findings
 
 - Specification compliance: NOT_RUN

@@ -13,6 +13,12 @@
 |---|---|---|---|
 | REQ-001 | NOT_RUN | TBD | TBD |
 
+## Goal Evidence
+
+| Goal criterion | Status | Evidence | Observed result |
+|---|---|---|---|
+| GOAL-{{PHASE_PREFIX}}-01 | NOT_RUN | TBD | TBD |
+
 ## Commands
 
 | Command | Result | Notes |

@@ -26,7 +26,8 @@ External catalog sources remain visible reference material and are disabled by d
 | Skill | Purpose |
 |---|---|
 | `aimagician-superpower` | Risk-scaled SDD, codebase exploration, progressive discovery, prototypes, engineering design, vertical delivery, debugging, review, verification, audit, and handoff |
-| `cli-agent-delegator` | Delegate broad discovery, deep research, visual inspection, bounded git/test/write work, and independent review to OpenCode while the main Agent retains final judgment |
+| `cli-agent-delegator` | Delegate broad discovery, deep research, bounded short git/test/write work, reasoning over acquired visual evidence, and independent review to OpenCode while the main Agent retains final judgment |
+| `vision-analysis` | Acquire consent-gated image evidence through the direct Agnes API and return sanitized provenance for downstream reasoning |
 | `system-prompt-engineering` | Design and audit system prompts with routed guidance for tools, delegation, safety, memory, search, channels, coding agents, and evaluation |
 | `composio-tool-router` | Route SaaS tool discovery and execution through Composio CLI with service-scoped lookup and schema-on-demand |
 | `skill-creator` | Create, merge, classify, and verify skills |

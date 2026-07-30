@@ -51,12 +51,13 @@ GIT_POLICY: inspect-only
 ROLE: visual-inspector
 TASK_TYPE: discovery
 MODALITY: vision
-MODEL_POLICY: Agnes visual
+MODEL_POLICY: vision-analysis evidence then DeepSeek reasoning
 PERMISSION_MODE: strict-read-only
-OBJECTIVE: Inspect the attached assets against <observable criteria>.
+OBJECTIVE: Inspect the authorized assets against <observable criteria>.
+REQUIRED_SKILLS: cli-agent-delegator, vision-analysis, <domain skill when needed>
 ALLOWED_SCOPE: exact image, screenshot, PDF page, or rendered artifact paths
-TESTS_AND_EVIDENCE: attachment load confirmation, visible defects, location, severity, comparison evidence, uncertainty
-STOP_AND_ESCALATE_WHEN: an attachment cannot be loaded or the selected model lacks image input
+TESTS_AND_EVIDENCE: upload authorization, visual acquisition provenance, visible defects, location, severity, comparison evidence, uncertainty, controller spot-check
+STOP_AND_ESCALATE_WHEN: upload is not authorized, an image cannot be loaded, AGNES_API_KEY is absent, or the direct vision backend fails
 ```
 
 ## Pre-Commit Or Completion Review

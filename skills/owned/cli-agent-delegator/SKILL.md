@@ -13,6 +13,7 @@ tags:
   - research
   - review
   - verification
+  - short-task
 compatibility:
   tools: [bash, git, opencode]
   requires: A bounded objective, source of truth, permission mode, allowed scope, forbidden scope, required skills, and expected evidence
@@ -22,7 +23,7 @@ compatibility:
 
 Use external CLI agents as bounded workers while the main Agent keeps the scarce work: requirement reconciliation, product and architecture judgment, risk decisions, result validation, integration, and completion accountability.
 
-OpenCode is the current provider. It can explore, research, inspect images, run checks, produce reports, review work, and perform a small isolated write task when the controller supplies an exact contract. Future CLI agents can implement the same delegation contract under `references/providers/`.
+OpenCode is the current provider. It can explore, research, reason over sanitized visual evidence, run checks, produce reports, review work, and perform a small isolated write task when the controller supplies an exact contract. Pixel understanding is acquired through the owned `vision-analysis` skill before OpenCode reasoning. Future CLI agents can implement the same delegation contract under `references/providers/`.
 
 ## Delegation-First Trigger Gate
 
@@ -70,6 +71,7 @@ Load only the references needed for the delegated role.
 |---|---|
 | Required prompt envelope, skill loading, permissions, child-agent inheritance, status, validation | `references/prompt-contract.md` |
 | Broad repository or source exploration, web research, comparison, visual or image understanding | `references/task-types/discovery-and-research.md` |
+| Direct authorized image understanding and visual evidence provenance | companion skill `vision-analysis` |
 | Git inspection, tests, progress reports, non-destructive checks, bounded isolated writes | `references/task-types/bounded-operations-and-execution.md` |
 | Ready-to-fill contracts for Git/test reports, localized fixes, research, visual inspection, and pre-commit review | `references/task-types/quick-task-recipes.md` |
 | Plan, specification, quality, verification, phase, milestone, or completion review | `references/task-types/independent-review-and-audit.md` |
@@ -124,9 +126,9 @@ The prompt must require the worker to load every named skill before doing substa
 1. **Classify.** Choose discovery/research, bounded operation/execution, or independent review/audit.
 2. **Protect macro reasoning.** Keep unresolved requirements, architecture tradeoffs, risk acceptance, and final decisions with the main Agent.
 3. **Lock the contract.** Define sources, skills, scope, permission mode, commands, evidence, git policy, and escalation.
-4. **Select provider and model.** Read `references/providers/opencode.md`. Every non-visual task, including completion audit, defaults to DeepSeek V4 Flash Free. Visual work defaults to Agnes. If DeepSeek is absent, inspect the live free candidates and let the controller choose for the task; do not maintain or invent a quality ranking.
+4. **Select evidence and reasoning routes.** Read `references/providers/opencode.md`. Visual tasks first load `vision-analysis` and obtain authorized textual evidence through its Agnes backend. Every OpenCode reasoning task, including one using visual evidence or performing completion audit, defaults to DeepSeek V4 Flash Free. If DeepSeek is absent, inspect the live free candidates and let the controller choose for the task; do not maintain or invent a quality ranking.
 5. **Use the known-good fast path.** Prefer `scripts/opencode-run.mjs`, which caches verbose model metadata and uses the current positional prompt syntax. Do not repeat binary, version, model-list, or help probes before routine work.
-6. **Run non-interactively.** Keep logs attached. Automatic Agnes fallback is allowed only for a verified usage, quota, or rate-limit event. Model absence returns free candidates for controller selection. Authentication, permission, syntax, network, and worker-quality failures retain their real classification.
+6. **Run non-interactively.** Keep logs attached. Automatic Agnes reasoning fallback is allowed only for a verified DeepSeek usage, quota, or rate-limit event. Agnes rate limits remain active and retry by events until success or cancellation. Model absence returns free candidates for controller selection. Authentication, permission, syntax, network, and worker-quality failures retain their real classification.
 7. **Wait by events.** Continue while logs, tool calls, stage transitions, file references, session changes, or provider activity show progress. Do not stop an active worker because a fixed number of seconds elapsed.
 8. **Classify failure.** Stop only on process exit, clear command/provider/permission error, user cancellation, or confirmed stale state. Never start a fallback while the first process is alive.
 9. **Validate.** Check scope compliance and spot-check claims that affect design or completion, including paths, symbols, imports, “no tests” claims, Blocker/Important findings, and the decisive verification command.
@@ -148,7 +150,7 @@ Review findings use exactly `Blocker`, `Important`, or `Nitpick`. A Blocker stop
 
 ## Mandatory Completion Audit
 
-Use a fresh OpenCode session and the normal model route: DeepSeek for non-visual audit reasoning, Agnes for direct visual evidence, another controller-selected free model only when DeepSeek is absent, and Agnes fallback only after an explicit usage, quota, or rate-limit event. For visual deliverables, obtain observable evidence from a vision-capable worker and include it in the fresh final audit. Freeze the exact commit, diff, task record, phase, or milestone under review. Include the original request or PRD, accepted decisions, `.planning/REQUESTS.md`, requirement IDs, implementation, verification, UAT, documentation, installation state, and existing findings.
+Use a fresh OpenCode session and the normal reasoning route: DeepSeek for audit reasoning, including audits that consume a `vision-analysis` report; another controller-selected free reasoning model only when DeepSeek is absent; and Agnes text fallback only after an explicit DeepSeek usage, quota, or rate-limit event. For visual deliverables, obtain authorized observable evidence through `vision-analysis` and include its sanitized report in the fresh final audit. Freeze the exact commit, diff, task record, phase, or milestone under review. Include the original request or PRD, accepted decisions, `.planning/REQUESTS.md`, requirement IDs, implementation, verification, UAT, documentation, installation state, and existing findings.
 
 The auditor returns:
 

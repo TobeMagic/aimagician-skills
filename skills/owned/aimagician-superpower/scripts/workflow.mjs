@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const SCRIPT_DIR = fileURLToPath(new URL(".", import.meta.url));
 const TEMPLATE_DIR = resolve(SCRIPT_DIR, "..", "assets", "templates");
 const COMMANDS = new Set(["init", "status", "validate", "trace", "next", "help"]);
-const GATES = new Set(["spec", "plan", "execute", "complete"]);
+const GATES = new Set(["align", "spec", "plan", "execute", "complete"]);
 const FORMATS = new Set(["text", "json"]);
 const RISKS = new Set(["low", "medium", "high"]);
 const EXTENSIONS = new Set(["ui", "ai", "security-ops"]);
@@ -30,6 +30,11 @@ const PHASE_TEMPLATES = [
   ["phase-uat.md", "{prefix}-UAT.md"],
   ["phase-audit.md", "{prefix}-AUDIT.md"],
   ["phase-summary.md", "{prefix}-SUMMARY.md"]
+];
+
+const MILESTONE_TEMPLATES = [
+  ["milestone-audit.md", "MILESTONE-AUDIT.md"],
+  ["milestone-summary.md", "MILESTONE-SUMMARY.md"]
 ];
 
 const EXTENSION_TEMPLATES = {
@@ -63,6 +68,7 @@ function parseArgs(argv) {
     project: process.cwd(),
     phase: undefined,
     task: undefined,
+    milestone: undefined,
     format: "text",
     gate: "spec",
     risk: "medium",
@@ -78,7 +84,7 @@ function parseArgs(argv) {
     }
 
     const next = argv[index + 1];
-    if (["--project", "--phase", "--task", "--format", "--gate", "--risk", "--extensions"].includes(token)) {
+    if (["--project", "--phase", "--task", "--milestone", "--format", "--gate", "--risk", "--extensions"].includes(token)) {
       if (!next || next.startsWith("--")) {
         throw new WorkflowError("USAGE_MISSING_VALUE", `${token} requires a value`);
       }
@@ -86,6 +92,7 @@ function parseArgs(argv) {
       if (token === "--project") options.project = next;
       if (token === "--phase") options.phase = next;
       if (token === "--task") options.task = next;
+      if (token === "--milestone") options.milestone = next;
       if (token === "--format") options.format = next;
       if (token === "--gate") options.gate = next;
       if (token === "--risk") options.risk = next;
@@ -116,10 +123,11 @@ function parseArgs(argv) {
       throw new WorkflowError("USAGE_INVALID_EXTENSION", `Unsupported extension: ${extension}`);
     }
   }
-  if (options.phase && options.task) {
-    throw new WorkflowError("USAGE_SCOPE_CONFLICT", "--phase and --task are mutually exclusive");
+  if ([options.phase, options.task, options.milestone].filter(Boolean).length > 1) {
+    throw new WorkflowError("USAGE_SCOPE_CONFLICT", "--phase, --task, and --milestone are mutually exclusive");
   }
   if (options.task) assertSafeTaskToken(options.task);
+  if (options.milestone) assertSafeMilestoneToken(options.milestone);
 
   options.project = resolve(options.project);
   return options;
@@ -143,6 +151,12 @@ function assertSafePhaseToken(value) {
 function assertSafeTaskToken(value) {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value) || value.includes("..")) {
     throw new WorkflowError("TASK_INVALID", `Unsafe task identifier: ${value}`);
+  }
+}
+
+function assertSafeMilestoneToken(value) {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value) || value.includes("..")) {
+    throw new WorkflowError("MILESTONE_INVALID", `Unsafe milestone identifier: ${value}`);
   }
 }
 
@@ -180,6 +194,15 @@ function extractScalar(content, label) {
 function extractStatePhase(content) {
   const yaml = content.match(/^current_phase:\s*["']?([^\n"']+)/m)?.[1]?.trim();
   return yaml ?? extractScalar(content, "Current phase")?.split(/\s+/)[0];
+}
+
+function extractYamlScalar(content, key) {
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return content.match(new RegExp(`^${escaped}:\\s*["']?([^\\n"']+)`, "m"))?.[1]?.trim();
+}
+
+function extractStateMilestone(content) {
+  return extractYamlScalar(content, "milestone") ?? extractScalar(content, "Milestone")?.split(/\s+/)[0];
 }
 
 async function findPhase(project, requested, allowCreate = false) {
@@ -235,6 +258,7 @@ function phaseInfo(phasesDir, name) {
 function replaceTokens(content, context) {
   return content
     .replaceAll("{{PROJECT_NAME}}", context.projectName)
+    .replaceAll("{{MILESTONE}}", context.milestone ?? "TBD")
     .replaceAll("{{PHASE}}", context.phase?.name ?? "TBD")
     .replaceAll("{{PHASE_PREFIX}}", context.phase?.prefix ?? "TBD")
     .replaceAll("{{PHASE_NAME}}", context.phase?.displayName ?? "TBD")
@@ -250,6 +274,8 @@ async function initArtifacts(options) {
   const planningDir = join(options.project, ".planning");
   const phase = options.task
     ? null
+    : options.milestone
+      ? null
     : options.phase
       ? await findPhase(options.project, options.phase, true)
       : await findPhase(options.project, undefined, false).catch(() => null);
@@ -257,6 +283,7 @@ async function initArtifacts(options) {
     projectName: basename(options.project),
     phase,
     task: options.task,
+    milestone: options.milestone,
     risk: options.risk,
     date: new Date().toISOString().slice(0, 10)
   };
@@ -286,6 +313,15 @@ async function initArtifacts(options) {
       destination: join(planningDir, "tasks", `${options.task}.md`)
     });
   }
+  if (options.milestone) {
+    const milestoneDir = join(planningDir, "milestones", options.milestone);
+    for (const [template, destination] of MILESTONE_TEMPLATES) {
+      candidates.push({
+        template: join(TEMPLATE_DIR, template),
+        destination: join(milestoneDir, destination)
+      });
+    }
+  }
 
   const planned = [];
   const skipped = [];
@@ -309,9 +345,24 @@ async function initArtifacts(options) {
     project: options.project,
     phase: phase?.name ?? null,
     task: options.task ?? null,
+    milestone: options.milestone ?? null,
     planned,
     skipped,
     findings: []
+  };
+}
+
+async function loadPlanningSources(project) {
+  const planningDir = join(project, ".planning");
+  const readOptional = async (name) => {
+    const path = join(planningDir, name);
+    return await exists(path) ? { path, content: await readFile(path, "utf8") } : null;
+  };
+  return {
+    state: await readOptional("STATE.md"),
+    roadmap: await readOptional("ROADMAP.md"),
+    requirements: await readOptional("REQUIREMENTS.md"),
+    requests: await readOptional("REQUESTS.md")
   };
 }
 
@@ -348,11 +399,8 @@ async function loadPhase(project, requested) {
       contents[key] = value ? { path: value, content: await readFile(value, "utf8") } : null;
     }
   }
-  const requestsPath = join(project, ".planning", "REQUESTS.md");
-  const requests = await exists(requestsPath)
-    ? { path: requestsPath, content: await readFile(requestsPath, "utf8") }
-    : null;
-  return { project, phase, artifacts, contents, requests };
+  const planning = await loadPlanningSources(project);
+  return { project, phase, artifacts, contents, planning, requests: planning.requests };
 }
 
 async function loadTask(project, taskId) {
@@ -368,16 +416,43 @@ async function loadTask(project, taskId) {
   if (!await exists(taskPath)) {
     throw new WorkflowError("TASK_NOT_FOUND", `Task record not found: ${taskId}`);
   }
-  const requestsPath = join(project, ".planning", "REQUESTS.md");
-  const requests = await exists(requestsPath)
-    ? { path: requestsPath, content: await readFile(requestsPath, "utf8") }
-    : null;
+  const planning = await loadPlanningSources(project);
   return {
     project,
     task: taskId,
     path: taskPath,
     content: await readFile(taskPath, "utf8"),
-    requests
+    planning,
+    requests: planning.requests
+  };
+}
+
+async function loadMilestone(project, milestoneId) {
+  if (!await exists(project)) {
+    throw new WorkflowError("PROJECT_NOT_FOUND", `Project directory not found: ${project}`);
+  }
+  assertSafeMilestoneToken(milestoneId);
+  const planning = await loadPlanningSources(project);
+  const milestoneDir = join(project, ".planning", "milestones", milestoneId);
+  const readOptional = async (name) => {
+    const path = join(milestoneDir, name);
+    return await exists(path) ? { path, content: await readFile(path, "utf8") } : null;
+  };
+  const allPhases = planning.roadmap ? parseRoadmapPhases(planning.roadmap.content) : [];
+  const explicit = allPhases.filter((phase) => phase.milestone?.toLowerCase() === milestoneId.toLowerCase());
+  const phases = explicit.length > 0
+    ? explicit
+    : extractStateMilestone(planning.state?.content ?? "")?.toLowerCase() === milestoneId.toLowerCase()
+      ? allPhases.filter((phase) => !phase.milestone)
+      : [];
+  return {
+    project,
+    milestone: milestoneId,
+    milestoneDir,
+    planning,
+    phases,
+    audit: await readOptional("MILESTONE-AUDIT.md"),
+    summary: await readOptional("MILESTONE-SUMMARY.md")
   };
 }
 
@@ -471,6 +546,209 @@ function extractIds(content, prefix) {
 
 function extractRequestIds(content) {
   return new Set(extractIds(content, "USR"));
+}
+
+function normalizeText(value) {
+  return value
+    ?.replace(/[`*_]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/[.。]\s*$/, "")
+    .trim()
+    .toLowerCase();
+}
+
+function normalizePhaseId(value) {
+  const normalized = String(value ?? "").replace(/^phase\s+/i, "").trim();
+  return /^\d+$/.test(normalized) ? String(Number(normalized)) : normalized.toLowerCase();
+}
+
+function parseRoadmapPhases(content) {
+  const phasePattern = /^###\s+Phase\s+([A-Za-z0-9._-]+)(?::|\s+-)\s*(.+?)\s*$/gmi;
+  const milestoneMatches = [...content.matchAll(/^##\s+Milestone\s+([A-Za-z0-9._-]+)\b.*$/gmi)];
+  const matches = [...content.matchAll(phasePattern)];
+  return matches.map((match, index) => {
+    const start = match.index ?? 0;
+    const end = matches[index + 1]?.index ?? content.length;
+    const block = content.slice(start, end);
+    const milestone = milestoneMatches.filter((candidate) => (candidate.index ?? 0) < start).at(-1);
+    const criteriaBlock = block.match(/\*\*Success Criteria\*\*\s*:\s*\n([\s\S]*?)(?=\n(?:#{2,4}\s|\*\*[A-Z][^*]*:\*\*)|$)/i)?.[1] ?? "";
+    const criteria = criteriaBlock
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .map((line) => line.match(/^(?:\d+\.|-\s+)(?:\*\*(GOAL-[A-Z0-9._-]+):?\*\*\s*)?(.+)$/i))
+      .filter(Boolean)
+      .map((criterion, criterionIndex) => ({
+        id: criterion[1]?.toUpperCase() ?? `GOAL-${String(match[1]).toUpperCase()}-${String(criterionIndex + 1).padStart(2, "0")}`,
+        text: criterion[2].trim()
+      }));
+    const requirementValue = extractScalar(block, "Requirements") ?? "";
+    const requirementIds = new Set(
+      requirementValue.match(/\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b/g) ?? []
+    );
+    return {
+      id: match[1],
+      name: match[2].trim(),
+      milestone: milestone?.[1] ?? null,
+      goal: extractScalar(block, "Goal"),
+      status: extractScalar(block, "Status"),
+      requirementIds,
+      criteria,
+      block
+    };
+  });
+}
+
+function parseRequirementPhaseMap(content) {
+  const mapping = new Map();
+  for (const line of content.split(/\r?\n/)) {
+    const cells = parsePipeCells(line);
+    const requirement = cells[0];
+    const phase = cells[1];
+    if (!/^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$/.test(requirement ?? "") || !phase) continue;
+    mapping.set(requirement, normalizePhaseId(phase));
+  }
+  return mapping;
+}
+
+function validatePhaseAlignment(loaded) {
+  const findings = [];
+  const state = loaded.planning.state;
+  const roadmap = loaded.planning.roadmap;
+  const projectRequirements = loaded.planning.requirements;
+  if (!state) findings.push(finding("ALIGN_STATE_MISSING", "STATE.md is required for active phase alignment"));
+  if (!roadmap) findings.push(finding("ALIGN_ROADMAP_MISSING", "ROADMAP.md is required for active phase alignment"));
+  if (!projectRequirements) findings.push(finding("ALIGN_REQUIREMENTS_MISSING", "REQUIREMENTS.md is required for active phase alignment"));
+  if (!state || !roadmap || !projectRequirements) {
+    return { findings, milestone: null, phase: loaded.phase.prefix, goal: null, criteria: [] };
+  }
+
+  const activePhase = extractStatePhase(state.content);
+  const milestone = extractStateMilestone(state.content);
+  if (!activePhase || hasPlaceholder(activePhase)) {
+    findings.push(finding("ALIGN_ACTIVE_PHASE_MISSING", "STATE.md must identify one active phase", relative(loaded.project, state.path)));
+  } else if (normalizePhaseId(activePhase) !== normalizePhaseId(loaded.phase.prefix)) {
+    findings.push(finding(
+      "ALIGN_PHASE_DRIFT",
+      `Selected phase ${loaded.phase.prefix} does not match active phase ${activePhase}`,
+      relative(loaded.project, state.path)
+    ));
+  }
+
+  const roadmapPhase = parseRoadmapPhases(roadmap.content)
+    .find((candidate) => normalizePhaseId(candidate.id) === normalizePhaseId(loaded.phase.prefix));
+  if (!roadmapPhase) {
+    findings.push(finding(
+      "ALIGN_ROADMAP_PHASE_MISSING",
+      `ROADMAP.md does not define Phase ${loaded.phase.prefix}`,
+      relative(loaded.project, roadmap.path)
+    ));
+    return { findings, milestone, phase: loaded.phase.prefix, goal: null, criteria: [] };
+  }
+  if (roadmapPhase.milestone && milestone && roadmapPhase.milestone.toLowerCase() !== milestone.toLowerCase()) {
+    findings.push(finding(
+      "ALIGN_MILESTONE_DRIFT",
+      `Phase ${loaded.phase.prefix} belongs to ${roadmapPhase.milestone}, not active milestone ${milestone}`,
+      relative(loaded.project, roadmap.path)
+    ));
+  }
+  if (!/^(?:in progress|active)$/i.test(roadmapPhase.status ?? "")) {
+    findings.push(finding(
+      "ALIGN_ROADMAP_STATUS_INVALID",
+      `Active phase roadmap status must be In Progress or Active, found ${roadmapPhase.status ?? "missing"}`,
+      relative(loaded.project, roadmap.path)
+    ));
+  }
+  if (!roadmapPhase.goal || hasPlaceholder(roadmapPhase.goal)) {
+    findings.push(finding("ALIGN_ROADMAP_GOAL_MISSING", "Active roadmap phase requires a concrete goal", relative(loaded.project, roadmap.path)));
+  }
+  if (roadmapPhase.criteria.length === 0 || roadmapPhase.criteria.some((criterion) => hasPlaceholder(criterion.text))) {
+    findings.push(finding(
+      "ALIGN_GOAL_CRITERIA_MISSING",
+      "Active roadmap phase requires concrete success criteria",
+      relative(loaded.project, roadmap.path)
+    ));
+  }
+
+  const specGoal = getSection(loaded.contents.spec?.content ?? "", "Goal");
+  if (!specGoal || hasPlaceholder(specGoal)) {
+    findings.push(finding("ALIGN_SPEC_GOAL_MISSING", "Phase specification requires a concrete Goal section", loaded.artifacts.spec ? relative(loaded.project, loaded.artifacts.spec) : null));
+  } else if (normalizeText(specGoal) !== normalizeText(roadmapPhase.goal)) {
+    findings.push(finding(
+      "ALIGN_GOAL_DRIFT",
+      "Phase specification goal must match the active roadmap goal",
+      loaded.artifacts.spec ? relative(loaded.project, loaded.artifacts.spec) : null
+    ));
+  }
+
+  const specRequirementIds = new Set(extractRequirements(loaded.contents.spec?.content ?? "").map((item) => item.id));
+  for (const id of roadmapPhase.requirementIds) {
+    if (!specRequirementIds.has(id)) {
+      findings.push(finding("ALIGN_ROADMAP_REQUIREMENT_MISSING", `${id} is absent from the phase specification`, null, id));
+    }
+  }
+  for (const id of specRequirementIds) {
+    if (!roadmapPhase.requirementIds.has(id)) {
+      findings.push(finding("ALIGN_SPEC_REQUIREMENT_EXTRA", `${id} is absent from the active roadmap phase`, null, id));
+    }
+  }
+
+  const phaseMap = parseRequirementPhaseMap(projectRequirements.content);
+  for (const id of roadmapPhase.requirementIds) {
+    if (phaseMap.get(id) !== normalizePhaseId(loaded.phase.prefix)) {
+      findings.push(finding(
+        "ALIGN_REQUIREMENT_PHASE_MISMATCH",
+        `${id} is not mapped to Phase ${loaded.phase.prefix} in REQUIREMENTS.md`,
+        relative(loaded.project, projectRequirements.path),
+        id
+      ));
+    }
+  }
+
+  return {
+    findings,
+    milestone: milestone ?? roadmapPhase.milestone,
+    phase: loaded.phase.prefix,
+    goal: roadmapPhase.goal,
+    criteria: roadmapPhase.criteria,
+    roadmapRequirements: [...roadmapPhase.requirementIds]
+  };
+}
+
+function validateTaskAlignment(loaded) {
+  const findings = [];
+  const state = loaded.planning.state;
+  if (!state) return { findings, milestone: null, phase: null };
+  const activePhase = extractStatePhase(state.content);
+  if (!activePhase || hasPlaceholder(activePhase)) return { findings, milestone: null, phase: null };
+  const activeMilestone = extractStateMilestone(state.content);
+  const parentPhase = normalizeScalar(extractScalar(loaded.content, "Parent phase"));
+  const parentMilestone = normalizeScalar(extractScalar(loaded.content, "Parent milestone"));
+  const exceptionStatus = normalizeScalar(extractScalar(loaded.content, "Exception status"))?.toLowerCase();
+  const approvalSource = extractIds(extractScalar(loaded.content, "Approval source") ?? "", "USR")[0];
+  const returnCheckpoint = normalizeScalar(extractScalar(loaded.content, "Return checkpoint"));
+  const artifact = relative(loaded.project, loaded.path);
+
+  if (!parentPhase || hasPlaceholder(parentPhase)) {
+    findings.push(finding("TASK_PARENT_PHASE_MISSING", "Task must record the active parent phase", artifact));
+  } else if (normalizePhaseId(parentPhase) !== normalizePhaseId(activePhase)) {
+    findings.push(finding("TASK_PARENT_PHASE_DRIFT", `Task parent phase ${parentPhase} does not match active phase ${activePhase}`, artifact));
+  }
+  if (activeMilestone && (!parentMilestone || parentMilestone.toLowerCase() !== activeMilestone.toLowerCase())) {
+    findings.push(finding("TASK_PARENT_MILESTONE_DRIFT", "Task parent milestone does not match STATE.md", artifact));
+  }
+  if (!new Set(["approved", "not required"]).has(exceptionStatus)) {
+    findings.push(finding("TASK_EXCEPTION_STATUS_INVALID", "Task exception status must be Approved or Not required", artifact));
+  }
+  if (exceptionStatus === "approved") {
+    const requestIds = loaded.requests ? extractRequestIds(loaded.requests.content) : new Set();
+    if (!approvalSource || !requestIds.has(approvalSource)) {
+      findings.push(finding("TASK_EXCEPTION_APPROVAL_INVALID", "Approved exception must cite a USR-* entry in REQUESTS.md", artifact));
+    }
+    if (!returnCheckpoint || hasPlaceholder(returnCheckpoint)) {
+      findings.push(finding("TASK_RETURN_CHECKPOINT_MISSING", "Approved exception requires a concrete return checkpoint", artifact));
+    }
+  }
+  return { findings, milestone: activeMilestone, phase: activePhase };
 }
 
 function extractRequirementReferences(content) {
@@ -665,7 +943,8 @@ function validatePlan(loaded) {
 
 function validateExecute(loaded) {
   const plan = validatePlan(loaded);
-  const findings = [...validatePreparation(loaded), ...plan.findings];
+  const alignment = validatePhaseAlignment(loaded);
+  const findings = [...alignment.findings, ...validatePreparation(loaded), ...plan.findings];
   for (const document of loaded.contents.plans) {
     const artifact = relative(loaded.project, document.path);
     const status = extractScalar(document.content, "Status")?.toLowerCase();
@@ -673,7 +952,7 @@ function validateExecute(loaded) {
       findings.push(finding("PLAN_NOT_ACCEPTED", "Plan status must be Accepted or Approved before execution", artifact));
     }
   }
-  return { ...plan, findings };
+  return { ...plan, alignment, findings };
 }
 
 function parseEvidence(documents) {
@@ -727,9 +1006,38 @@ function traceLoaded(loaded) {
     if (item.evidenceStatus === "FAIL") findings.push(finding("TRACE_FAILED", `${item.id} has failed evidence`, item.artifact, item.id));
   }
   for (const id of parsed.ids) {
-    if (!known.has(id)) findings.push(finding("TRACE_UNKNOWN_REQUIREMENT", `${id} has evidence but is absent from the specification`, null, id));
+    if (!known.has(id) && !id.startsWith("GOAL-")) {
+      findings.push(finding("TRACE_UNKNOWN_REQUIREMENT", `${id} has evidence but is absent from the specification`, null, id));
+    }
   }
   return { findings, items, specFindings: spec.findings, userFacing: spec.userFacing };
+}
+
+function traceGoals(loaded, alignment = validatePhaseAlignment(loaded)) {
+  const parsed = parseEvidence(loaded.contents.validation);
+  const items = alignment.criteria.map((criterion) => {
+    const record = parsed.evidence.get(criterion.id);
+    return {
+      id: criterion.id,
+      criterion: criterion.text,
+      evidenceStatus: record?.status ?? "NOT_RUN",
+      evidence: record?.evidence ?? "",
+      observed: record?.observed ?? "",
+      artifact: record ? relative(loaded.project, record.artifact) : null
+    };
+  });
+  const findings = [];
+  for (const item of items) {
+    if (item.evidenceStatus !== "PASS" || !item.evidence || !item.observed || /NOT_RUN|TBD|Pending/i.test(`${item.evidence} ${item.observed}`)) {
+      findings.push(finding(
+        "GOAL_EVIDENCE_NOT_PASSED",
+        `${item.id} requires concrete PASS evidence and an observed result`,
+        item.artifact,
+        item.id
+      ));
+    }
+  }
+  return { findings, items };
 }
 
 function normalizeScalar(value) {
@@ -838,7 +1146,7 @@ function auditCoversRequirement(content, requirementId) {
   return false;
 }
 
-function validatePhaseAudit(loaded, requirements) {
+function validatePhaseAudit(loaded, requirements, goalCriteria = []) {
   const content = loaded.contents.audit.content;
   const artifact = relative(loaded.project, loaded.contents.audit.path);
   const findings = validateOpenCodeAudit(content, artifact);
@@ -852,13 +1160,24 @@ function validatePhaseAudit(loaded, requirements) {
       ));
     }
   }
+  for (const criterion of goalCriteria) {
+    if (!auditCoversRequirement(content, criterion.id)) {
+      findings.push(finding(
+        "AUDIT_GOAL_NOT_PASSED",
+        `${criterion.id} requires passing observable evidence and an independent audit PASS decision`,
+        artifact,
+        criterion.id
+      ));
+    }
+  }
   return findings;
 }
 
 function validateComplete(loaded) {
   const plan = validateExecute(loaded);
   const trace = traceLoaded(loaded);
-  const findings = [...plan.findings, ...trace.findings];
+  const goalTrace = traceGoals(loaded, plan.alignment);
+  const findings = [...plan.findings, ...trace.findings, ...goalTrace.findings];
   if (loaded.contents.validation.length === 0) {
     findings.push(finding("VALIDATION_MISSING", "Completion requires validation or verification evidence"));
   }
@@ -870,7 +1189,7 @@ function validateComplete(loaded) {
     if (extractScalar(loaded.contents.audit.content, "Status")?.toLowerCase() !== "complete") {
       findings.push(finding("AUDIT_NOT_COMPLETE", "Audit status must be Complete", artifact));
     }
-    findings.push(...validatePhaseAudit(loaded, plan.requirements));
+    findings.push(...validatePhaseAudit(loaded, plan.requirements, plan.alignment.criteria));
   }
   if (!loaded.contents.summary) {
     findings.push(finding("SUMMARY_MISSING", "Completion requires a summary artifact"));
@@ -891,7 +1210,7 @@ function validateComplete(loaded) {
       }
     }
   }
-  return { findings, items: trace.items };
+  return { findings, items: trace.items, goalItems: goalTrace.items, alignment: plan.alignment };
 }
 
 function taskEvidence(content) {
@@ -912,7 +1231,8 @@ function taskEvidence(content) {
 function validateTaskComplete(loaded) {
   const artifact = relative(loaded.project, loaded.path);
   const content = loaded.content;
-  const findings = [];
+  const alignment = validateTaskAlignment(loaded);
+  const findings = [...alignment.findings];
 
   for (const section of ["Original Request", "Accepted Decisions", "Checklist", "Evidence", "Final Decision"]) {
     if (!getSection(content, section)) {
@@ -966,15 +1286,138 @@ function validateTaskComplete(loaded) {
     findings.push(finding("TASK_AUDIT_MATRIX_NOT_PASSED", "Independent audit requirement matrix must be PASS", artifact));
   }
 
-  return { findings, items };
+  return { findings, items, alignment };
+}
+
+async function validateMilestoneComplete(loaded) {
+  const findings = [];
+  const state = loaded.planning.state;
+  const roadmap = loaded.planning.roadmap;
+  const requirementsDocument = loaded.planning.requirements;
+  if (!state) findings.push(finding("MILESTONE_STATE_MISSING", "Milestone completion requires STATE.md"));
+  if (!roadmap) findings.push(finding("MILESTONE_ROADMAP_MISSING", "Milestone completion requires ROADMAP.md"));
+  if (!requirementsDocument) findings.push(finding("MILESTONE_REQUIREMENTS_MISSING", "Milestone completion requires REQUIREMENTS.md"));
+  const activeMilestone = extractStateMilestone(state?.content ?? "");
+  if (!activeMilestone || activeMilestone.toLowerCase() !== loaded.milestone.toLowerCase()) {
+    findings.push(finding(
+      "MILESTONE_ACTIVE_MISMATCH",
+      `Requested milestone ${loaded.milestone} does not match active milestone ${activeMilestone ?? "missing"}`,
+      state ? relative(loaded.project, state.path) : null
+    ));
+  }
+  if (loaded.phases.length === 0) {
+    findings.push(finding("MILESTONE_PHASES_MISSING", `ROADMAP.md defines no phases for milestone ${loaded.milestone}`));
+  }
+
+  const milestoneRequirements = new Set();
+  const milestoneGoals = [];
+  const phaseMap = requirementsDocument ? parseRequirementPhaseMap(requirementsDocument.content) : new Map();
+  for (const roadmapPhase of loaded.phases) {
+    for (const id of roadmapPhase.requirementIds) {
+      milestoneRequirements.add(id);
+      if (phaseMap.get(id) !== normalizePhaseId(roadmapPhase.id)) {
+        findings.push(finding(
+          "MILESTONE_REQUIREMENT_PHASE_MISMATCH",
+          `${id} is not mapped to Phase ${roadmapPhase.id}`,
+          requirementsDocument ? relative(loaded.project, requirementsDocument.path) : null,
+          id
+        ));
+      }
+    }
+    milestoneGoals.push(...roadmapPhase.criteria);
+    if (!/^complete$/i.test(roadmapPhase.status ?? "")) {
+      findings.push(finding(
+        "MILESTONE_PHASE_NOT_COMPLETE",
+        `Phase ${roadmapPhase.id} roadmap status is ${roadmapPhase.status ?? "missing"}`,
+        roadmap ? relative(loaded.project, roadmap.path) : null
+      ));
+      continue;
+    }
+
+    let phaseLoaded;
+    try {
+      phaseLoaded = await loadPhase(loaded.project, roadmapPhase.id);
+    } catch (error) {
+      findings.push(finding(
+        "MILESTONE_PHASE_ARTIFACTS_MISSING",
+        `Phase ${roadmapPhase.id} artifacts cannot be loaded: ${error instanceof Error ? error.message : String(error)}`
+      ));
+      continue;
+    }
+    const trace = traceLoaded(phaseLoaded);
+    findings.push(...trace.specFindings, ...trace.findings);
+    const goalTrace = traceGoals(phaseLoaded, { criteria: roadmapPhase.criteria });
+    findings.push(...goalTrace.findings);
+    if (!phaseLoaded.contents.audit) {
+      findings.push(finding("MILESTONE_PHASE_AUDIT_MISSING", `Phase ${roadmapPhase.id} has no audit artifact`));
+    } else {
+      findings.push(...validatePhaseAudit(
+        phaseLoaded,
+        extractRequirements(phaseLoaded.contents.spec?.content ?? ""),
+        roadmapPhase.criteria
+      ));
+      if (extractScalar(phaseLoaded.contents.audit.content, "Status")?.toLowerCase() !== "complete") {
+        findings.push(finding(
+          "MILESTONE_PHASE_AUDIT_INCOMPLETE",
+          `Phase ${roadmapPhase.id} audit status must be Complete`,
+          relative(loaded.project, phaseLoaded.contents.audit.path)
+        ));
+      }
+    }
+    if (!phaseLoaded.contents.summary || extractScalar(phaseLoaded.contents.summary.content, "Status")?.toLowerCase() !== "complete") {
+      findings.push(finding(
+        "MILESTONE_PHASE_SUMMARY_INCOMPLETE",
+        `Phase ${roadmapPhase.id} summary must be Complete`,
+        phaseLoaded.contents.summary ? relative(loaded.project, phaseLoaded.contents.summary.path) : null
+      ));
+    }
+  }
+
+  if (!loaded.audit) {
+    findings.push(finding("MILESTONE_AUDIT_MISSING", "Milestone completion requires MILESTONE-AUDIT.md"));
+  } else {
+    const artifact = relative(loaded.project, loaded.audit.path);
+    if (hasPlaceholder(loaded.audit.content)) findings.push(finding("MILESTONE_AUDIT_PLACEHOLDER", "Milestone audit contains unresolved placeholders", artifact));
+    if (extractScalar(loaded.audit.content, "Status")?.toLowerCase() !== "complete") {
+      findings.push(finding("MILESTONE_AUDIT_INCOMPLETE", "Milestone audit status must be Complete", artifact));
+    }
+    findings.push(...validateOpenCodeAudit(loaded.audit.content, artifact));
+    for (const id of [...milestoneRequirements, ...milestoneGoals.map((goal) => goal.id)]) {
+      if (!auditCoversRequirement(loaded.audit.content, id)) {
+        findings.push(finding(
+          "MILESTONE_AUDIT_ITEM_NOT_PASSED",
+          `${id} requires passing evidence and an independent milestone audit PASS decision`,
+          artifact,
+          id
+        ));
+      }
+    }
+  }
+  if (!loaded.summary) {
+    findings.push(finding("MILESTONE_SUMMARY_MISSING", "Milestone completion requires MILESTONE-SUMMARY.md"));
+  } else {
+    const artifact = relative(loaded.project, loaded.summary.path);
+    if (hasPlaceholder(loaded.summary.content)) findings.push(finding("MILESTONE_SUMMARY_PLACEHOLDER", "Milestone summary contains unresolved placeholders", artifact));
+    if (extractScalar(loaded.summary.content, "Status")?.toLowerCase() !== "complete") {
+      findings.push(finding("MILESTONE_SUMMARY_INCOMPLETE", "Milestone summary status must be Complete", artifact));
+    }
+  }
+
+  return {
+    findings,
+    items: [...milestoneRequirements].map((id) => ({ id })),
+    goalItems: milestoneGoals
+  };
 }
 
 async function validateTaskCommand(options) {
-  if (options.gate !== "complete") {
-    throw new WorkflowError("TASK_GATE_INVALID", "Lightweight task records support only the complete gate");
-  }
   const loaded = await loadTask(options.project, options.task);
-  const result = validateTaskComplete(loaded);
+  if (!new Set(["align", "complete"]).has(options.gate)) {
+    throw new WorkflowError("TASK_GATE_INVALID", "Task records support align and complete gates");
+  }
+  const result = options.gate === "align"
+    ? validateTaskAlignment(loaded)
+    : validateTaskComplete(loaded);
   return {
     ok: result.findings.length === 0,
     command: "validate",
@@ -1004,9 +1447,26 @@ async function traceTaskCommand(options) {
 }
 
 async function validateCommand(options) {
+  if (options.milestone) {
+    if (options.gate !== "complete") {
+      throw new WorkflowError("MILESTONE_GATE_INVALID", "Milestone records support only the complete gate");
+    }
+    const loadedMilestone = await loadMilestone(options.project, options.milestone);
+    const milestoneResult = await validateMilestoneComplete(loadedMilestone);
+    return {
+      ok: milestoneResult.findings.length === 0,
+      command: "validate",
+      project: options.project,
+      milestone: loadedMilestone.milestone,
+      gate: options.gate,
+      status: milestoneResult.findings.length === 0 ? "passed" : "failed",
+      findings: milestoneResult.findings
+    };
+  }
   if (options.task) return validateTaskCommand(options);
   const loaded = await loadPhase(options.project, options.phase);
   let result;
+  if (options.gate === "align") result = validatePhaseAlignment(loaded);
   if (options.gate === "spec") result = validateSpec(loaded);
   if (options.gate === "plan") result = validatePlan(loaded);
   if (options.gate === "execute") result = validateExecute(loaded);
@@ -1016,6 +1476,8 @@ async function validateCommand(options) {
     command: "validate",
     project: options.project,
     phase: loaded.phase.name,
+    milestone: result.alignment?.milestone ?? (options.gate === "align" ? result.milestone : null),
+    goal: result.alignment?.goal ?? (options.gate === "align" ? result.goal : null),
     gate: options.gate,
     status: result.findings.length === 0 ? "passed" : "failed",
     findings: result.findings
@@ -1024,16 +1486,24 @@ async function validateCommand(options) {
 
 async function traceCommand(options) {
   if (options.task) return traceTaskCommand(options);
+  if (options.milestone) {
+    throw new WorkflowError("MILESTONE_TRACE_INVALID", "Use milestone complete validation for milestone coverage");
+  }
   const loaded = await loadPhase(options.project, options.phase);
   const result = traceLoaded(loaded);
+  const alignment = validatePhaseAlignment(loaded);
+  const goals = traceGoals(loaded, alignment);
   return {
-    ok: result.findings.length === 0 && result.specFindings.length === 0,
+    ok: result.findings.length === 0 && result.specFindings.length === 0 && alignment.findings.length === 0 && goals.findings.length === 0,
     command: "trace",
     project: options.project,
     phase: loaded.phase.name,
+    milestone: alignment.milestone,
+    goal: alignment.goal,
     status: result.findings.length === 0 ? "covered" : "gaps",
     items: result.items,
-    findings: [...result.specFindings, ...result.findings]
+    goalItems: goals.items,
+    findings: [...alignment.findings, ...result.specFindings, ...result.findings, ...goals.findings]
   };
 }
 
@@ -1047,6 +1517,8 @@ async function determineStatus(options) {
     const result = validateTaskComplete(loaded);
     return {
       task: loaded.task,
+      milestone: result.alignment.milestone,
+      phase: result.alignment.phase,
       status: result.findings.length === 0 ? "complete" : "in-progress",
       nextAction: result.findings.length === 0
         ? "No workflow action remains for this task."
@@ -1066,6 +1538,16 @@ async function determineStatus(options) {
 
   const specContent = loaded.contents.spec?.content;
   if (!specContent) return phaseStatus(loaded, "needs-spec", "Discuss baseline requirements and create a draft specification.");
+  const alignment = validatePhaseAlignment(loaded);
+  if (alignment.findings.length > 0) {
+    return phaseStatus(
+      loaded,
+      "realign",
+      "Reconcile STATE, ROADMAP, REQUIREMENTS, the phase goal, and scope before continuing.",
+      alignment.findings,
+      alignment
+    );
+  }
   const researchFindings = validateResearch(loaded);
   if (researchFindings.length > 0) {
     return phaseStatus(loaded, "research", "Complete grounded research before locking requirements or planning; reopen a locked specification if findings change it.", researchFindings);
@@ -1094,8 +1576,16 @@ async function determineStatus(options) {
   return phaseStatus(loaded, "complete", "No workflow action remains for this phase.");
 }
 
-function phaseStatus(loaded, status, nextAction, findings = []) {
-  return { phase: loaded.phase.name, status, nextAction, findings };
+function phaseStatus(loaded, status, nextAction, findings = [], alignment = validatePhaseAlignment(loaded)) {
+  return {
+    phase: loaded.phase.name,
+    milestone: alignment.milestone,
+    goal: alignment.goal,
+    goalCriteria: alignment.criteria,
+    status,
+    nextAction,
+    findings
+  };
 }
 
 async function statusCommand(options, command) {
@@ -1105,12 +1595,15 @@ async function statusCommand(options, command) {
   const state = await determineStatus(options);
   return {
     ok: !state.findings?.some((item) => item.severity === "error") || [
-      "in-progress", "research", "re-discuss", "repair-spec", "repair-plan", "review-plan", "verify", "repair-closure"
+      "in-progress", "realign", "research", "re-discuss", "repair-spec", "repair-plan", "review-plan", "verify", "repair-closure"
     ].includes(state.status),
     command,
     project: options.project,
     phase: state.phase ?? null,
     task: state.task ?? null,
+    milestone: state.milestone ?? null,
+    goal: state.goal ?? null,
+    goalCriteria: state.goalCriteria ?? [],
     status: state.status,
     nextAction: state.nextAction,
     findings: state.findings ?? []
@@ -1123,15 +1616,18 @@ function usage() {
 Usage:
   node scripts/workflow.mjs init [--project PATH] [--phase ID] [--risk LEVEL] [--extensions ui,ai,security-ops] [--write] [--format text|json]
   node scripts/workflow.mjs init --task ID [--project PATH] [--write] [--format text|json]
+  node scripts/workflow.mjs init --milestone ID [--project PATH] [--write] [--format text|json]
   node scripts/workflow.mjs status [--project PATH] [--phase ID] [--format text|json]
   node scripts/workflow.mjs status --task ID [--project PATH] [--format text|json]
   node scripts/workflow.mjs next [--project PATH] [--phase ID] [--format text|json]
-  node scripts/workflow.mjs validate --gate spec|plan|execute|complete [--project PATH] [--phase ID] [--format text|json]
-  node scripts/workflow.mjs validate --gate complete --task ID [--project PATH] [--format text|json]
+  node scripts/workflow.mjs validate --gate align|spec|plan|execute|complete [--project PATH] [--phase ID] [--format text|json]
+  node scripts/workflow.mjs validate --gate align|complete --task ID [--project PATH] [--format text|json]
+  node scripts/workflow.mjs validate --gate complete --milestone ID [--project PATH] [--format text|json]
   node scripts/workflow.mjs trace [--project PATH] [--phase ID] [--format text|json]
   node scripts/workflow.mjs trace --task ID [--project PATH] [--format text|json]
 
 Gate semantics:
+  align     Active milestone, phase, roadmap goal, requirements, and task-exception alignment
   spec      Locked requirements, sections, scores, boundaries, and ambiguity
   plan      Specification validity, plan structure, and requirement mapping
   execute   Plan gate plus completed research, discussion, context, and plan acceptance
@@ -1143,12 +1639,14 @@ init previews by default. Add --write to create missing files; existing files ar
 function renderText(result) {
   if (result.command === "help") return result.usage;
   const lines = [`Workflow ${result.command}`, `Project: ${result.project}`];
+  if (result.milestone) lines.push(`Milestone: ${result.milestone}`);
   if (result.phase) lines.push(`Phase: ${result.phase}`);
   if (result.task) lines.push(`Task: ${result.task}`);
   if (result.mode) lines.push(`Mode: ${result.mode}`);
   if (result.gate) lines.push(`Gate: ${result.gate}`);
   if (result.status) lines.push(`Status: ${result.status}`);
   if (result.nextAction) lines.push(`Next: ${result.nextAction}`);
+  if (result.goal) lines.push(`Goal: ${result.goal}`);
   if (result.planned) {
     lines.push(`Planned: ${result.planned.length}`);
     for (const path of result.planned) lines.push(`  + ${path}`);
@@ -1159,6 +1657,12 @@ function renderText(result) {
     lines.push("Trace:");
     for (const item of result.items) {
       lines.push(`  ${item.id}: planned=${item.planned ? "yes" : "no"}, evidence=${item.evidenceStatus}`);
+    }
+  }
+  if (result.goalItems?.length) {
+    lines.push("Goal evidence:");
+    for (const item of result.goalItems) {
+      lines.push(`  ${item.id}: evidence=${item.evidenceStatus ?? "unknown"}`);
     }
   }
   if (result.findings?.length) {

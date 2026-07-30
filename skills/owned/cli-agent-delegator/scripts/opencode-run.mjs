@@ -7,19 +7,13 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { pathToFileURL } from "node:url";
+import { analyzeImages } from "../../vision-analysis/scripts/analyze.mjs";
 
 const execFileAsync = promisify(execFile);
 
 export const DEFAULT_TEXT_MODEL = "opencode/deepseek-v4-flash-free";
-export const DEFAULT_VISION_MODEL = "agnes/agnes-2.0-flash";
+export const DEFAULT_QUOTA_FALLBACK_MODEL = "agnes/agnes-2.0-flash";
 export const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-
-const VERIFIED_CAPABILITY_OVERRIDES = {
-  [DEFAULT_VISION_MODEL]: {
-    imageInput: true,
-    reason: "User-verified Agnes vision support; custom provider metadata is incomplete."
-  }
-};
 
 const ANSI_PATTERN = /\u001b\[[0-?]*[ -/]*[@-~]/g;
 const MODEL_ID_PATTERN = /^([a-z0-9._-]+\/[a-z0-9._-]+)\s*$/gim;
@@ -70,7 +64,6 @@ function numericLeaves(value) {
 }
 
 function normalizeModel(fullId, metadata) {
-  const override = VERIFIED_CAPABILITY_OVERRIDES[fullId];
   const input = metadata.capabilities?.input ?? {};
   const costValues = numericLeaves(metadata.cost);
   return {
@@ -84,9 +77,9 @@ function normalizeModel(fullId, metadata) {
     reasoning: metadata.capabilities?.reasoning === true,
     toolcall: metadata.capabilities?.toolcall === true,
     textInput: input.text !== false,
-    imageInput: override?.imageInput ?? input.image === true,
-    capabilitySource: override ? "verified-override" : "provider-metadata",
-    capabilityNote: override?.reason ?? null
+    imageInput: input.image === true,
+    capabilitySource: "provider-metadata",
+    capabilityNote: null
   };
 }
 
@@ -115,60 +108,56 @@ function isUsableFreeModel(model) {
   return model.free && !new Set(["deprecated", "inactive", "disabled"]).has(model.status);
 }
 
-export function freeCandidates(models, { modality = "text", exclude = [] } = {}) {
+export function freeCandidates(models, { exclude = [] } = {}) {
   const excluded = new Set(exclude);
   return models
     .filter((model) => isUsableFreeModel(model))
     .filter((model) => model.textInput)
-    .filter((model) => modality === "vision" || model.provider === "opencode")
-    .filter((model) => modality !== "vision" || model.imageInput)
+    .filter((model) => model.provider === "opencode")
     .filter((model) => !excluded.has(model.id))
     .sort((left, right) => left.id.localeCompare(right.id));
 }
 
 export function resolveModelRoute({
   models,
-  modality = "text",
   requestedModel,
-  textDefault = process.env.AIMAGICIAN_OPENCODE_TEXT_MODEL || DEFAULT_TEXT_MODEL,
-  visionDefault = process.env.AIMAGICIAN_OPENCODE_VISION_MODEL || DEFAULT_VISION_MODEL
+  textDefault = process.env.AIMAGICIAN_OPENCODE_TEXT_MODEL || DEFAULT_TEXT_MODEL
 }) {
-  const candidates = freeCandidates(models, { modality });
+  const candidates = freeCandidates(models);
   const byId = new Map(candidates.map((model) => [model.id, model]));
-  const defaultId = modality === "vision" ? visionDefault : textDefault;
 
   if (requestedModel) {
     const selected = byId.get(requestedModel);
     if (!selected) {
       return {
         status: "invalid-selection",
-        reason: `${requestedModel} is not an active free ${modality} model`,
+        reason: `${requestedModel} is not an active free OpenCode reasoning model`,
         candidates
       };
     }
-    if (modality === "text" && byId.has(textDefault) && requestedModel !== textDefault) {
+    if (byId.has(textDefault) && requestedModel !== textDefault) {
       return {
         status: "invalid-selection",
-        reason: `${textDefault} is available and remains the required non-visual default`,
+        reason: `${textDefault} is available and remains the required reasoning default`,
         candidates
       };
     }
     return { status: "selected", model: selected, reason: "controller-selection", candidates };
   }
 
-  const selected = byId.get(defaultId);
+  const selected = byId.get(textDefault);
   if (selected) {
     return {
       status: "selected",
       model: selected,
-      reason: modality === "vision" ? "default-vision-model" : "default-text-model",
+      reason: "default-text-model",
       candidates
     };
   }
 
   return {
     status: "selection-required",
-    reason: `${defaultId} is not available; the controller must choose a task-appropriate free model`,
+    reason: `${textDefault} is not available; the controller must choose a task-appropriate free reasoning model`,
     candidates
   };
 }
@@ -248,7 +237,7 @@ function extractSessionId(output) {
   return matches.at(-1)?.[1] ?? null;
 }
 
-async function runOnce({ directory, model, prompt, files }) {
+async function runOnce({ directory, model, prompt }) {
   const args = [
     "run",
     "--dir", directory,
@@ -256,7 +245,6 @@ async function runOnce({ directory, model, prompt, files }) {
     "--print-logs",
     "--log-level", "INFO"
   ];
-  for (const file of files) args.push("-f", file);
   args.push(prompt);
 
   return await new Promise((resolveResult) => {
@@ -305,13 +293,67 @@ async function runOnce({ directory, model, prompt, files }) {
   });
 }
 
+function fallbackWaitMs(attempt) {
+  return Math.min(1_000 * (2 ** Math.min(Math.max(attempt - 1, 0), 6)), 60_000);
+}
+
+async function runQuotaFallback({ directory, model, prompt, attempts }) {
+  let rateLimitEvents = 0;
+  let transientRetries = 0;
+  while (true) {
+    const result = await runOnce({ directory, model, prompt });
+    attempts.push(result);
+    if (result.classification === "usage-limit") {
+      rateLimitEvents += 1;
+      const waitMs = fallbackWaitMs(rateLimitEvents);
+      process.stderr.write(`OPENCODE_DELEGATION_EVENT ${JSON.stringify({
+        type: "fallback-rate-limit",
+        model,
+        rateLimitEvents,
+        waitMs
+      })}\n`);
+      await new Promise((resolveWait) => setTimeout(resolveWait, waitMs));
+      continue;
+    }
+    if (result.classification === "network" && transientRetries < 3) {
+      transientRetries += 1;
+      const waitMs = [1_000, 2_000, 4_000][transientRetries - 1];
+      process.stderr.write(`OPENCODE_DELEGATION_EVENT ${JSON.stringify({
+        type: "fallback-transient-retry",
+        model,
+        transientRetries,
+        waitMs
+      })}\n`);
+      await new Promise((resolveWait) => setTimeout(resolveWait, waitMs));
+      continue;
+    }
+    return { result, rateLimitEvents, transientRetries };
+  }
+}
+
+export function buildVisualReasoningPrompt(prompt, visualEvidence) {
+  return `${prompt.trim()}
+
+# Controller-Provided Visual Evidence
+
+The controller loaded the owned \`vision-analysis\` skill and used its authorized direct API path.
+Treat the following report as visual evidence. Do not claim that OpenCode or the reasoning model read the original files.
+Separate facts in the report from your own inference and preserve any uncertainty.
+
+\`\`\`json
+${JSON.stringify(visualEvidence, null, 2)}
+\`\`\`
+`;
+}
+
 function parseArgs(argv) {
   const options = {
     files: [],
     taskType: "quick",
     modality: "text",
     refreshModels: false,
-    dryRun: false
+    dryRun: false,
+    allowExternalUpload: false
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -328,6 +370,7 @@ function parseArgs(argv) {
     else if (argument === "--prompt-file") options.promptFile = value();
     else if (argument === "--model") options.model = value();
     else if (argument === "--file") options.files.push(value());
+    else if (argument === "--allow-external-upload") options.allowExternalUpload = true;
     else if (argument === "--refresh-models") options.refreshModels = true;
     else if (argument === "--dry-run") options.dryRun = true;
     else if (argument === "--help" || argument === "-h") options.help = true;
@@ -344,7 +387,8 @@ Options:
   --task-type <quick|discovery|research|review|audit>
   --modality <text|vision>
   --model <id>              Controller choice when the default is unavailable
-  --file <path>             Repeat for visual inputs
+  --file <path-or-url>      Repeat for visual inputs
+  --allow-external-upload  Required for vision-analysis API calls
   --refresh-models          Refresh cached opencode models --verbose metadata
   --dry-run                 Resolve and print the route without running OpenCode
 `;
@@ -379,7 +423,13 @@ async function main(argv) {
     throw new Error("--task-type must be quick, discovery, research, review, or audit");
   }
   if (options.modality === "vision" && options.files.length === 0) {
-    throw new Error("Vision work requires at least one --file attachment");
+    throw new Error("Vision work requires at least one --file image");
+  }
+  if (options.modality === "vision" && !options.allowExternalUpload) {
+    throw new Error("Vision work requires --allow-external-upload");
+  }
+  if (options.modality === "text" && options.files.length > 0) {
+    throw new Error("--file is only valid with --modality vision");
   }
 
   const directory = resolve(options.directory);
@@ -387,7 +437,6 @@ async function main(argv) {
   const inventory = await discoverModels({ refresh: options.refreshModels });
   const route = resolveModelRoute({
     models: inventory.models,
-    modality: options.modality,
     requestedModel: options.model
   });
 
@@ -408,33 +457,54 @@ async function main(argv) {
     process.stdout.write(`${JSON.stringify({
       ...baseReport,
       selectedModel: route.model.id,
-      commandShape: "opencode run --dir <path> -m <model> --print-logs --log-level INFO [files] <positional-prompt>"
+      visualAcquisition: options.modality === "vision"
+        ? { skill: "vision-analysis", backend: "agnes", status: "planned" }
+        : null,
+      commandShape: options.modality === "vision"
+        ? "vision-analysis -> text evidence -> opencode run --dir <path> -m <reasoning-model> --print-logs --log-level INFO <positional-prompt>"
+        : "opencode run --dir <path> -m <reasoning-model> --print-logs --log-level INFO <positional-prompt>"
     }, null, 2)}\n`);
     return 0;
+  }
+
+  let workerPrompt = prompt;
+  let visualAcquisition = null;
+  if (options.modality === "vision") {
+    visualAcquisition = await analyzeImages({
+      imageInputs: options.files,
+      prompt: `Act as a visual evidence extractor for a downstream CLI agent.\n\n${prompt}`,
+      allowExternalUpload: options.allowExternalUpload,
+      onEvent: (event) => process.stderr.write(`VISION_ANALYSIS_EVENT ${JSON.stringify(event)}\n`)
+    });
+    workerPrompt = buildVisualReasoningPrompt(prompt, visualAcquisition);
   }
 
   const attempts = [];
   const primary = await runOnce({
     directory,
     model: route.model.id,
-    prompt,
-    files: options.files.map(resolve)
+    prompt: workerPrompt
   });
   attempts.push(primary);
 
   let final = primary;
   let fallbackReason = null;
-  if (primary.classification === "usage-limit" && primary.model !== DEFAULT_VISION_MODEL) {
-    const agnes = inventory.models.find((model) => model.id === DEFAULT_VISION_MODEL && isUsableFreeModel(model));
+  let fallbackRateLimitEvents = 0;
+  let fallbackTransientRetries = 0;
+  const fallbackModel = process.env.AIMAGICIAN_OPENCODE_QUOTA_FALLBACK_MODEL || DEFAULT_QUOTA_FALLBACK_MODEL;
+  if (primary.classification === "usage-limit" && primary.model !== fallbackModel) {
+    const agnes = inventory.models.find((model) => model.id === fallbackModel && isUsableFreeModel(model));
     if (agnes) {
       fallbackReason = "explicit-usage-limit";
-      final = await runOnce({
+      const fallback = await runQuotaFallback({
         directory,
-        model: DEFAULT_VISION_MODEL,
-        prompt,
-        files: options.files.map(resolve)
+        model: fallbackModel,
+        prompt: workerPrompt,
+        attempts
       });
-      attempts.push(final);
+      final = fallback.result;
+      fallbackRateLimitEvents = fallback.rateLimitEvents;
+      fallbackTransientRetries = fallback.transientRetries;
     } else {
       fallbackReason = "agnes-unavailable-after-usage-limit";
     }
@@ -442,7 +512,7 @@ async function main(argv) {
 
   if (primary.classification === "model-unavailable" && primary.model === DEFAULT_TEXT_MODEL) {
     const refreshed = await discoverModels({ refresh: true });
-    const candidates = freeCandidates(refreshed.models, { modality: options.modality, exclude: [DEFAULT_TEXT_MODEL] });
+    const candidates = freeCandidates(refreshed.models, { exclude: [DEFAULT_TEXT_MODEL] });
     process.stderr.write(`OPENCODE_DELEGATION_RESULT ${JSON.stringify({
       ...baseReport,
       routeStatus: "selection-required",
@@ -462,6 +532,9 @@ async function main(argv) {
     finalModel: final.model,
     attemptChain: attempts.map(({ output, ...attempt }) => attempt),
     fallbackReason,
+    visualAcquisition,
+    fallbackRateLimitEvents,
+    fallbackTransientRetries,
     session: final.session,
     runStatus: final.exitCode === 0 ? "DONE" : "BLOCKED"
   };

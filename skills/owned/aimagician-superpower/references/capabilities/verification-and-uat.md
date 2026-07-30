@@ -9,7 +9,7 @@ Use this module before any completion claim and whenever work changes behavior, 
 3. Broaden to typecheck, lint, build, browser, document, security, package, or smoke verification according to blast radius.
 4. Inspect generated or installed artifacts directly when tests cannot prove their real shape.
 5. Exercise UAT for user-facing outcomes.
-6. Trace every accepted requirement to passing evidence.
+6. Trace every accepted request, requirement, and roadmap goal criterion to passing evidence.
 
 For substantial work, load `cli-agent-delegator` and dispatch a fresh OpenCode verifier after implementation review. Give it the locked requirements, exact review point, required skills, allowed commands, and claimed evidence. The main Agent reruns or directly inspects the narrow result that determines completion; verifier prose alone is not proof.
 
@@ -17,7 +17,7 @@ Fresh command output and inspected artifacts outrank an agent's summary or a pre
 
 ## Evidence Record
 
-For every requirement ID, record:
+For every requirement and `GOAL-*` criterion, record:
 
 - status: `PASS`, `FAIL`, or `NOT_RUN`;
 - command, scenario, inspection, or artifact path;
@@ -37,12 +37,14 @@ Use `interface-design` and `webapp-testing` for visual, responsive, accessibilit
 
 Run `workflow.mjs trace` to detect:
 
+- active milestone, phase, or literal goal drift;
 - an accepted requirement absent from all plans;
 - a planned requirement with no validation evidence;
+- a roadmap goal criterion with no concrete validation evidence;
 - failed or not-run evidence;
 - evidence that names an unknown requirement.
 
-Before execution, `validate --gate plan` must pass. Before closure, `validate --gate complete` must pass unless the user explicitly accepts and records an exception.
+Before mutation, `validate --gate align` must pass. Before execution, `validate --gate plan` must pass. Before closure, `validate --gate complete` must pass unless the user explicitly accepts and records an exception.
 
 ## Failed Verification
 
