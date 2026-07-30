@@ -384,6 +384,46 @@ describe("runCli", () => {
     });
   }, 15000);
 
+  it("makes doctor fail when a managed install exists but its content drifted", async () => {
+    const fixture = await createBootstrapFixture();
+    const installedSkill = join(fixture.homeDir, ".claude", "skills", "gsd", "SKILL.md");
+
+    await withFixtureEnv(fixture, async () => {
+      const applied = await runCli([
+        "install",
+        "gsd",
+        "--scope",
+        "global",
+        "--target",
+        "claude",
+        "--agent",
+        "--yes"
+      ]);
+      expect(applied.exitCode).toBe(0);
+      await writeFile(installedSkill, "# Drifted GSD\n", "utf8");
+
+      const doctor = await runCli([
+        "doctor",
+        "--scope",
+        "global",
+        "--target",
+        "claude",
+        "--agent"
+      ]);
+      expect(doctor.exitCode).toBe(1);
+      expect(JSON.parse(doctor.stdout)).toMatchObject({
+        status: "error",
+        errors: [
+          expect.objectContaining({
+            code: "doctor-issue",
+            target: "claude",
+            message: expect.stringContaining("Content drift")
+          })
+        ]
+      });
+    });
+  }, 15000);
+
   it("keeps Agent uninstall preview idempotent and makes unhealthy doctor non-zero", async () => {
     const fixture = await createInspectionFixture();
     const managedSkill = join(fixture.homeDir, ".codex", "skills", "daily-ops", "SKILL.md");

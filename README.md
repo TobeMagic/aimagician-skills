@@ -64,12 +64,14 @@ Skillbird keeps one risk-scaled workflow model:
 4. Research local evidence and current external facts, then compare viable approaches.
 5. Re-discuss changed boundaries and assumptions; lock falsifiable requirements only after ambiguity passes.
 6. Plan atomic requirement-backed tasks and independently review substantial plans.
-7. Execute with test-first slices, checkpoints, and bounded Agent roles.
+7. Build a full-chain context map, then execute with test-first slices, checkpoints, and bounded Agent roles.
 8. Delegate broad discovery, deep research, eligible simple short execution tasks, bounded checks, and fresh independent reviews to OpenCode while the main Agent keeps macro decisions.
 9. Review specification compliance before code quality.
-10. Verify request-to-requirement-to-roadmap-goal-to-evidence traceability and run user-facing UAT.
-11. Run a fresh independent OpenCode completion audit against the original request, implementation, goal criteria, and evidence.
-12. Hand off and close only when every accepted requirement and goal criterion passes and no `Blocker` or unresolved `Important` remains.
+10. Complete all practical local checks before CI; reserve preview and online checks for behavior that cannot be proven locally.
+11. Verify request-to-requirement-to-roadmap-goal-to-evidence traceability and run user-facing UAT.
+12. Run a fresh independent OpenCode audit against a frozen commit or stable worktree.
+13. For deployable work, keep the checklist open through merge, artifact provenance, and postmerge online verification.
+14. Hand off and close only when every accepted requirement and goal criterion passes and no `Blocker` or unresolved `Important` remains.
 
 The workflow stays light for a reversible one- or two-file edit. Public APIs, schema/data changes, security, integrations, UI/AI contracts, production state, cross-module work, and multi-Agent execution use a formal `SPEC.md` with an ambiguity gate.
 
@@ -77,19 +79,30 @@ The installed skill includes a dependency-free runtime:
 
 ```bash
 node scripts/workflow.mjs status --project <path> --phase <phase>
+node scripts/workflow.mjs planning --project <path> --action status
+node scripts/workflow.mjs planning --project <path> --action init --mode local-private --write
+node scripts/workflow.mjs planning --project <worktree> --action attach --write
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate align
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate spec
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate execute
+node scripts/workflow.mjs validate --project <path> --phase <phase> --gate premerge
+node scripts/workflow.mjs validate --project <path> --phase <phase> --gate postmerge
 node scripts/workflow.mjs trace --project <path> --phase <phase> --format json
 node scripts/workflow.mjs next --project <path> --phase <phase>
 node scripts/workflow.mjs init --project <path> --task <task-id> --write
 node scripts/workflow.mjs validate --project <path> --task <task-id> --gate align
+node scripts/workflow.mjs validate --project <path> --task <task-id> --gate premerge
+node scripts/workflow.mjs validate --project <path> --task <task-id> --gate postmerge
 node scripts/workflow.mjs validate --project <path> --task <task-id> --gate complete
 node scripts/workflow.mjs init --project <path> --milestone <milestone-id> --write
 node scripts/workflow.mjs validate --project <path> --milestone <milestone-id> --gate complete
 ```
 
-The `align` gate prevents work from drifting away from the active milestone, phase, literal roadmap goal, and requirements. The `execute` gate additionally requires completed research, renewed discussion, implementation context, requirement-mapped plans, and explicit plan acceptance. Lightweight work uses `.planning/tasks/<task-id>.md`; phase completion requires requirement and `GOAL-*` evidence, while milestone completion rechecks every member phase and runs a milestone-wide audit. Every completion claim requires a frozen independent OpenCode review point, model attempt provenance, and a main-Agent spot-check. Visual evidence is acquired directly by `vision-analysis` with explicit upload authorization and passed as text to DeepSeek reasoning. Agnes is the OpenCode text fallback only after a verified DeepSeek usage or quota limit. `init` previews project, phase, task, or milestone artifacts and writes only with `--write`; it never overwrites existing files or follows a planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
+The `align` gate prevents work from drifting away from the active milestone, phase, literal roadmap goal, and requirements. The `execute` gate additionally requires completed research, renewed discussion, full-chain implementation context, requirement-mapped plans, and explicit plan acceptance. `premerge` requires local and CI evidence, resolved online-only exceptions, artifact provenance, and `MERGE_READY`; `postmerge` additionally requires the implementation merge SHA, deployed artifact match, online evidence, recovery status, and `ONLINE_CONFIRMED`. Deployable work is not complete at merge.
+
+Planning can remain tracked or use one local-private store shared by every worktree under the repository's Git common directory. The runtime attaches worktrees, excludes `/.planning` through Git's local exclude file, and provides short write leases with revision conflict detection. Local-private planning has no automatic backup and is lost with the clone.
+
+Lightweight work uses `.planning/tasks/<task-id>.md`; phase completion requires requirement and `GOAL-*` evidence, while milestone completion rechecks every member phase and runs a milestone-wide audit. Every completion claim requires a frozen independent OpenCode review point, model attempt provenance, and a main-Agent spot-check. Visual evidence is acquired directly by `vision-analysis` with explicit upload authorization and passed as text to DeepSeek reasoning. Agnes is the OpenCode text fallback only after a verified DeepSeek usage or quota limit. `init` previews project, phase, task, or milestone artifacts and writes only with `--write`; it never overwrites existing files or follows an unapproved planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
 
 The delegated runtime caches `opencode models --verbose`, uses the current positional prompt syntax, streams progress until the worker exits, and returns free candidates for controller judgment when DeepSeek is absent:
 
@@ -107,6 +120,13 @@ node skills/owned/cli-agent-delegator/scripts/opencode-run.mjs \
   --file <image-or-https-url> \
   --allow-external-upload \
   --prompt-file <prompt-file>
+
+node skills/owned/cli-agent-delegator/scripts/opencode-run.mjs \
+  --dir <project> \
+  --task-type audit \
+  --modality text \
+  --prompt-file <audit-prompt-file> \
+  --review-ref <exact-commit>
 ```
 
 Engineering work also has a deterministic advisor for codebase analysis, progressive discovery, bounded prototypes, feature delivery, root-cause repair, refactoring, performance, and architecture changes:
@@ -120,6 +140,8 @@ The route selects the required context map, design record, vertical slices, test
 The combined trigger, capability, boundary, and real-project validation is recorded in [`docs/audits/skill-capability-audit-2026-07-21.md`](docs/audits/skill-capability-audit-2026-07-21.md).
 
 OpenCode delegation triggers, bounded permissions, model routing, independent reviewer gates, and migration evidence are recorded in [`docs/audits/cli-agent-delegator-upgrade-2026-07-22.md`](docs/audits/cli-agent-delegator-upgrade-2026-07-22.md).
+
+Local-first delivery gates, shared private planning, frozen review points, and Skillbird content-drift validation are recorded in [`docs/audits/local-first-delivery-and-planning-storage-2026-07-30.md`](docs/audits/local-first-delivery-and-planning-storage-2026-07-30.md).
 
 The central owned skill is:
 
@@ -200,12 +222,14 @@ See [`docs/design/html-universal-design-capability-merge.md`](docs/design/html-u
 | `skillbird uninstall <id> --scope global` | Remove managed installs |
 | `skillbird list --scope global` | List detected target installs |
 | `skillbird inspect --scope project` | Inspect target paths and manifest state |
-| `skillbird doctor --scope global` | Health check managed installs |
+| `skillbird doctor --scope global` | Detect missing installs and content drift from managed sources |
 | `skillbird reset --target claude --scope project --install-all --yes` | Rebuild a target scope |
 | `skillbird bootstrap` | Legacy all-selected bootstrap workflow |
 | `skillbird --agent capabilities` | Return the versioned Agent command contract |
 
 `install` is additive: installing one skill or selected bundle preserves other managed skills. Use `bootstrap` or `reset` when the target should be reconciled to the full active owner-skill set.
+
+Bootstrap manifests record each managed source path and deterministic content digest. `doctor` compares the current source with Codex, OpenCode, and other managed destinations, so an existing but stale or manually modified Skill is reported as `content drift` instead of healthy.
 
 ### Agent Mode
 

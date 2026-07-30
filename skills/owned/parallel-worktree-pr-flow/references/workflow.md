@@ -113,6 +113,8 @@ python scripts/bootstrap_parallel_worktrees.py --registry-file <path> --repo-roo
 python scripts/bootstrap_parallel_worktrees.py --registry-file <path> --group <group> --limit 3 --execute
 ```
 
+如果 `planning --action status` 返回 local-private，bootstrap 会自动 attach 新 worktree 到共享规划存储。不要手工复制 `.planning`。
+
 ### Step 5. execution
 
 每个 provider/workstream worktree：
@@ -121,6 +123,7 @@ python scripts/bootstrap_parallel_worktrees.py --registry-file <path> --group <g
 - 写 manifest
 - 交最小验证命令
 - 如果没 live 打通，明确 blocker
+- 不持有 integration owner 明确授予的 planning lease 时，不直接写共享 `.planning`
 
 ### Step 6. integration acceptance
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import fnmatch
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -220,6 +221,69 @@ def git(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def workflow_script() -> Path:
+    return Path(__file__).resolve().parents[2] / "aimagician-superpower" / "scripts" / "workflow.mjs"
+
+
+def planning_status(repo_root: Path) -> dict[str, Any] | None:
+    script = workflow_script()
+    node = shutil.which("node")
+    if not script.exists() or not node:
+        return None
+    result = subprocess.run(
+        [
+            node,
+            str(script),
+            "planning",
+            "--project",
+            str(repo_root),
+            "--action",
+            "status",
+            "--format",
+            "json",
+        ],
+        cwd=str(repo_root),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    try:
+        parsed = json.loads(result.stdout or "{}")
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def attach_local_private_planning(worktree: Path) -> subprocess.CompletedProcess[str]:
+    script = workflow_script()
+    node = shutil.which("node")
+    if not script.exists() or not node:
+        return subprocess.CompletedProcess(
+            args=[],
+            returncode=2,
+            stdout="",
+            stderr="aimagician-superpower workflow runtime or Node.js is unavailable",
+        )
+    return subprocess.run(
+        [
+            node,
+            str(script),
+            "planning",
+            "--project",
+            str(worktree),
+            "--action",
+            "attach",
+            "--write",
+            "--format",
+            "json",
+        ],
+        cwd=str(worktree),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+
 def branch_exists(repo_root: Path, branch: str) -> bool:
     result = git(["branch", "--list", branch], repo_root)
     return bool((result.stdout or "").strip())
@@ -254,6 +318,8 @@ def print_streams(streams: list[dict[str, Any]], base_branch: str) -> None:
 
 def create_worktrees(repo_root: Path, streams: list[dict[str, Any]], base_branch: str) -> int:
     exit_code = 0
+    planning = planning_status(repo_root)
+    local_private_planning = planning is not None and planning.get("mode") == "local-private"
     for item in streams:
         branch = str(item.get("branch", "")).strip()
         worktree_raw = str(item.get("worktree", "")).strip()
@@ -273,6 +339,16 @@ def create_worktrees(repo_root: Path, streams: list[dict[str, Any]], base_branch
         result = git(command, repo_root)
         if result.returncode == 0:
             print(f"[ok] {item.get('id', '')}: created {target} on {branch}")
+            if local_private_planning:
+                attach = attach_local_private_planning(target)
+                if attach.returncode == 0:
+                    print(f"[ok] {item.get('id', '')}: attached shared local-private planning")
+                else:
+                    print(f"[error] {item.get('id', '')}: worktree created but planning attach failed")
+                    details = (attach.stderr or attach.stdout or "").strip()
+                    if details:
+                        print(details)
+                    exit_code = 1
         else:
             print(f"[error] {item.get('id', '')}: {' '.join(command)}")
             stderr = (result.stderr or result.stdout or "").strip()

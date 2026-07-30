@@ -1,4 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { execFile } from "node:child_process";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   DEFAULT_QUOTA_FALLBACK_MODEL,
   DEFAULT_TEXT_MODEL,
@@ -7,8 +12,16 @@ import {
   freeCandidates,
   isTerminalUsageEvent,
   parseVerboseModels,
+  prepareFrozenReview,
   resolveModelRoute
 } from "../../skills/owned/cli-agent-delegator/scripts/opencode-run.mjs";
+
+const execFileAsync = promisify(execFile);
+const tempDirectories: string[] = [];
+
+afterEach(async () => {
+  await Promise.allSettled(tempDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
+});
 
 const verboseModels = `
 opencode/deepseek-v4-flash-free
@@ -141,5 +154,33 @@ describe("OpenCode dynamic model runner", () => {
     expect(prompt).toContain("Controller-Provided Visual Evidence");
     expect(prompt).toContain("Do not claim that OpenCode or the reasoning model read the original files");
     expect(prompt).toContain('"analysis": "A blue button is clipped."');
+  });
+
+  it("reviews an exact commit in a disposable worktree and detects review-point drift", async () => {
+    const repository = await mkdtemp(join(tmpdir(), "opencode-frozen-review-"));
+    tempDirectories.push(repository);
+    await execFileAsync("git", ["init"], { cwd: repository });
+    await execFileAsync("git", ["config", "user.name", "Review Test"], { cwd: repository });
+    await execFileAsync("git", ["config", "user.email", "review@example.invalid"], { cwd: repository });
+    await writeFile(join(repository, "README.md"), "# Frozen\n", "utf8");
+    await execFileAsync("git", ["add", "README.md"], { cwd: repository });
+    await execFileAsync("git", ["commit", "-m", "test: frozen review"], { cwd: repository });
+
+    const review = await prepareFrozenReview({
+      directory: repository,
+      reviewRef: "HEAD",
+      reviewWorktree: undefined
+    });
+    expect(review.kind).toBe("commit");
+    expect(review.commit).toMatch(/^[0-9a-f]{40}$/);
+    expect((await review.verify()).stable).toBe(true);
+
+    await writeFile(join(review.directory, "README.md"), "# Mutated during review\n", "utf8");
+    expect((await review.verify()).stable).toBe(false);
+    const temporary = review.directory;
+    await review.cleanup();
+
+    const worktrees = await execFileAsync("git", ["worktree", "list", "--porcelain"], { cwd: repository });
+    expect(worktrees.stdout).not.toContain(temporary);
   });
 });

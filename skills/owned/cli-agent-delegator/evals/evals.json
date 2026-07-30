@@ -80,6 +80,13 @@
       "forbidden": ["complete from test success alone", "implementer self-approval"]
     },
     {
+      "id": "frozen-commit-audit",
+      "prompt": "Audit the exact commit proposed for merge while development continues elsewhere.",
+      "should_trigger": true,
+      "expected": ["--review-ref", "resolved commit", "temporary detached worktree", "initial and final fingerprint", "fresh OpenCode session"],
+      "forbidden": ["review a moving branch checkout", "accept a free-form review label as frozen evidence", "modify the review point"]
+    },
+    {
       "id": "trigger-regression-main-agent-multifile-scan",
       "prompt": "Check all relevant skill, docs, and test files to determine which uncommitted capabilities must be preserved.",
       "should_trigger": true,

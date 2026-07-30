@@ -58,6 +58,7 @@ tags:
 4. provider PR 先合到 `integration`，不要直接互撞 `master`。
 5. integration 先验收 provider，再做共享面注册、planning 回写和总 smoke test。
 6. 在 GSD 仓库里，并行流是 `phase execution strategy`，不是平行于 GSD 的另一套项目管理。
+7. 如果 `.planning` 使用 local-private 模式，所有 worktree 必须指向 Git common dir 下同一份共享规划存储；写入需要短租约和 revision 匹配。
 
 ## 先判断：仓库属于哪条路径
 
@@ -138,6 +139,7 @@ GSD 结合方式见：
 - provider 验收
 - PR 创建 / 合并
 - planning / roadmap / state 回写
+- local-private planning 的锁、revision 和最终状态回写
 - 总 smoke test
 - 最终把 `integration` 合回主分支
 
@@ -149,6 +151,7 @@ GSD 结合方式见：
 - 自己的 branch push
 
 默认不要让 provider 直接改共享文件。
+local-private planning 下也不要让 provider 绕过锁直接写共享 `.planning`；默认由 integration owner 持有写租约。
 
 ## shared surfaces 的默认定义
 
@@ -298,6 +301,8 @@ GSD 仓库：
 - `--validate`：查重、查 write_scope 冲突、查 manifest 冲突
 - `--list`：看首批要开的 lane
 - `--execute`：真正创建 worktree
+
+当当前仓库已启用 local-private planning 时，`--execute` 会在每个成功创建的 worktree 中自动执行 planning attach。attach 失败会明确报错并保留已创建的 worktree供人工检查，不会静默继续。
 
 如果 registry 不在目标仓库内，再补：
 

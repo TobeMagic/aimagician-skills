@@ -237,7 +237,7 @@ function createManifest(
   commandReports: CommandSourceReport[]
 ): BootstrapManifest {
   return {
-    version: 3,
+    version: 4,
     updatedAt: now ?? new Date().toISOString(),
     selectedTargets: plan.selectedTargets,
     assets: plan.assets.map((asset) => ({

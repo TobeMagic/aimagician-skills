@@ -89,7 +89,8 @@ describe("cli-agent-delegator capability contract", () => {
     expect(provider).toContain('-m "opencode/deepseek-v4-flash-free"');
     expect(provider).toContain('-m "agnes/agnes-2.0-flash"');
     expect(provider).toContain('"<same_detailed_prompt>"');
-    expect(provider).toContain('"<completion_audit_prompt>"');
+    expect(provider).toContain('--prompt-file "<completion_audit_prompt_file>"');
+    expect(provider).toContain('--review-ref "<exact_commit>"');
     expect(provider).toContain("--allow-external-upload");
     expect(provider).toContain("never attach the image to OpenCode for Agnes");
     expect(provider).not.toContain('-f "<image_path>"');

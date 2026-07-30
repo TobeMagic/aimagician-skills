@@ -22,6 +22,25 @@ When these disagree, do not silently choose the convenient source. Resolve mater
 
 Follow an existing repository convention instead of creating a competing structure. The runtime accepts `PLAN.md` and `*-PLAN.md`, and accepts both `*-VALIDATION.md` and legacy `*-VERIFICATION.md`.
 
+## Planning Storage Modes
+
+Choose one planning mode per Git repository:
+
+- **Tracked:** `.planning/` is ordinary versioned project state. Use this when planning history should travel with clones and reviews.
+- **Local-private:** every worktree's `.planning` points to one shared store under the repository's Git common directory. The runtime adds `/.planning` to the common `info/exclude`, so the planning state stays local and does not appear in commits.
+
+Local-private mode deliberately has no automatic backup. Warn that deleting the clone or Git common directory deletes the planning history. If durability is needed, select tracked mode or explicitly export approved records.
+
+Use the runtime instead of constructing links by hand:
+
+```bash
+node scripts/workflow.mjs planning --project <path> --action init --mode local-private --write
+node scripts/workflow.mjs planning --project <worktree> --action attach --write
+node scripts/workflow.mjs planning --project <path> --action status
+```
+
+All worktrees resolve to the same local-private root. Before a writer changes shared planning state, acquire a short lease with the observed revision. Unlock with `outcome=updated` to advance the revision, or `outcome=unchanged` when no durable state changed. A revision mismatch or existing live lock stops the write; reread and reconcile rather than overwriting concurrent updates.
+
 ## Resume Protocol
 
 1. Reload the main skill.
@@ -32,6 +51,8 @@ Follow an existing repository convention instead of creating a competing structu
 6. Run `node scripts/workflow.mjs validate ... --gate align`, then `status ...` or `next ...` when the work uses supported artifacts.
 7. State known facts, unavailable sources, conflicts, blockers, and the next safe action.
 8. Continue from the checkpoint; do not repeat solved research or skip an incomplete gate.
+
+When planning is local-private, run `planning --action attach --write` after creating or entering a new worktree, then acquire a lease before updating shared planning records.
 
 ## Checkpoint Contract
 

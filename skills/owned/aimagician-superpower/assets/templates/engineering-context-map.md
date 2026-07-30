@@ -31,6 +31,19 @@
 - Deployment or operational impact: TBD
 - User workflows: TBD
 
+## Full-Chain Coverage
+
+| Surface | Status | Relevant path / system | Evidence | Unknown-resolution probe |
+|---|---|---|---|---|
+| Entry | UNKNOWN | TBD | TBD | TBD |
+| Orchestration | UNKNOWN | TBD | TBD | TBD |
+| Domain behavior | UNKNOWN | TBD | TBD | TBD |
+| State, cache, migration, and cleanup | UNKNOWN | TBD | TBD | TBD |
+| External services, permissions, and secrets | UNKNOWN | TBD | TBD | TBD |
+| Build, packaging, CI, and deployment | UNKNOWN | TBD | TBD | TBD |
+| Observability and operator controls | UNKNOWN | TBD | TBD | TBD |
+| User-visible result and compatibility | UNKNOWN | TBD | TBD | TBD |
+
 ## Existing Patterns To Preserve
 
 - TBD

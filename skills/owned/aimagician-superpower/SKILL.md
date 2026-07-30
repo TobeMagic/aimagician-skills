@@ -26,6 +26,7 @@ metadata:
     - references/capabilities/agent-orchestration.md
     - references/capabilities/execution-modes.md
     - references/capabilities/engineering-delivery.md
+    - references/capabilities/local-first-delivery.md
     - references/capabilities/debugging-and-forensics.md
     - references/capabilities/engineering-review.md
     - references/capabilities/verification-and-uat.md
@@ -96,6 +97,7 @@ Load the smallest set of modules needed for the current stage.
 | Provider-neutral agent roles, prompts, status, independent reviews | `references/capabilities/agent-orchestration.md` |
 | Sequential, autonomous, parallel, and worktree execution | `references/capabilities/execution-modes.md` |
 | Feature, bug, refactor, performance, architecture, prototype, merge playbooks | `references/capabilities/engineering-delivery.md` |
+| Local-first context, CI, preview, deployment, artifact provenance, and postmerge closure | `references/capabilities/local-first-delivery.md` |
 | Reproduction, root-cause tracing, waiting, pollution, defense in depth | `references/capabilities/debugging-and-forensics.md` |
 | Specification review, engineering quality review, severity, remediation | `references/capabilities/engineering-review.md` |
 | Tests, validation, UAT, evidence, requirement traceability | `references/capabilities/verification-and-uat.md` |
@@ -109,9 +111,9 @@ Role prompt templates live under `references/roles/`. Planning templates live un
 For any change beyond a known one-file edit, do not move from request directly to code. Establish five engineering artifacts, inline for small work or from `assets/templates/` for substantial work:
 
 1. **Behavior contract:** observable current and target behavior, acceptance examples, invariants, and failure behavior.
-2. **Context map:** active milestone, phase, literal roadmap goal, acceptance criteria, entry points, ownership boundaries, dependency direction, data/control flow, persisted state, and likely blast radius.
+2. **Context map:** active milestone, phase, literal roadmap goal, acceptance criteria, entry points, ownership boundaries, dependency direction, data/control flow, persisted state, external boundaries, build and delivery path, observability, user-visible result, and likely blast radius.
 3. **Design record:** at least two materially viable designs when tradeoffs exist, chosen interfaces and test seams, compatibility, migration, rollback, security, performance, and operability.
-4. **Change brief:** ordered vertical slices, exact file scope, integration points, and evidence expected after each slice.
+4. **Change brief:** ordered vertical slices, exact file scope, integration points, delivery class, local-to-online verification ladder, recovery path, and evidence expected after each slice.
 5. **Review record:** specification findings first, then correctness, tests, security, maintainability, extensibility, performance, operability, and diff hygiene.
 
 Scale the detail to risk; do not skip the reasoning category. Facts need file, command, runtime, or primary-source evidence. Mark inference and unknowns explicitly. Prefer a deep module with a small stable interface over knowledge spread across many callers, but do not introduce abstraction without demonstrated leverage.
@@ -150,7 +152,7 @@ Ask only questions that change behavior, scope, acceptance, risk, data handling,
 
 ### 4. Research And Brainstorm
 
-Inspect known local sources directly, but do not spend the main context window on a broad multi-file or multi-source scan. Build the objective-sized context map: entry points, module boundaries, data/control flow, side effects, dependency direction, patterns, and blast radius. Use `assets/templates/engineering-context-map.md` when the map must survive the current context. For very large or uncertainty-heavy work, also map the destination, known decisions, current frontier, fog, blockers, and smallest next probe; do not fabricate a full plan through unknown territory. Compare multiple viable approaches. Before broad repository exploration, deep web research, large evidence collection, or visual inspection, load `cli-agent-delegator` and delegate the bounded evidence task to OpenCode. Supply the relevant owned skills and source of truth, then spot-check claims that affect design. Record facts, inference, unknowns, compatibility, risks, and recommendation.
+Inspect known local sources directly, but do not spend the main context window on a broad multi-file or multi-source scan. Build the objective-sized context map: entry points, module boundaries, data/control flow, side effects, dependency direction, state, external boundaries, build and deployment path, observability, user-visible result, patterns, and blast radius. Mark every full-chain surface `APPLICABLE`, `NOT_APPLICABLE`, or `UNKNOWN`; resolve unknowns that can change scope, design, migration, security, deployment, or acceptance before planning. Use `assets/templates/engineering-context-map.md` when the map must survive the current context. For very large or uncertainty-heavy work, also map the destination, known decisions, current frontier, fog, blockers, and smallest next probe; do not fabricate a full plan through unknown territory. Compare multiple viable approaches. Before broad repository exploration, deep web research, large evidence collection, or visual inspection, load `cli-agent-delegator` and delegate the bounded evidence task to OpenCode. Supply the relevant owned skills and source of truth, then spot-check claims that affect design. Record facts, inference, unknowns, compatibility, risks, and recommendation.
 
 ### 5. Re-Discuss And Lock
 
@@ -158,7 +160,7 @@ Bring back findings that affect scope, dependencies, risk, UX, data, schedule, o
 
 ### 6. Plan And Review
 
-Define the behavior contract, durable domain vocabulary, invariants, interfaces, failure semantics, and highest observable test seams. For meaningful design choices, compare at least two structurally different options before committing. Map every requirement ID to vertical slices and exact verification. Order dependency waves, define file scopes, checkpoints, migration, rollback, and integration. If one material uncertainty remains, route it to a disposable logic, integration, UI, or operations prototype with an evidence stop condition before production planning. For substantial work, use `cli-agent-delegator` to run a fresh independent plan reviewer; revise until no Blocker or Important finding remains.
+Define the behavior contract, durable domain vocabulary, invariants, interfaces, failure semantics, and highest observable test seams. For meaningful design choices, compare at least two structurally different options before committing. Map every requirement ID to vertical slices and exact verification. Classify delivery as `Deployable` or `Non-deployable`; define LOCAL, CI/PREMERGE, risk-based PREVIEW, and POSTMERGE evidence, plus every `ONLINE_ONLY` exception and its failure response. Order dependency waves, define file scopes, checkpoints, migration, rollback or roll-forward, and integration. If one material uncertainty remains, route it to a disposable logic, integration, UI, or operations prototype with an evidence stop condition before production planning. For substantial work, use `cli-agent-delegator` to run a fresh independent plan reviewer; revise until no Blocker or Important finding remains.
 
 ### 7. Execute And Checkpoint
 
@@ -166,11 +168,11 @@ Run the alignment gate before editing. Read before editing, preserve user change
 
 ### 8. Verify And UAT
 
-Run narrow checks first, then the broader suite justified by blast radius. Trace original request to requirement, roadmap goal criterion, task, and evidence. Exercise observable UAT for user-facing behavior. Record commands, outputs, inspected artifacts, failures, skipped checks, and residual risk. For substantial work, delegate an independent verifier through `cli-agent-delegator`, then rerun or inspect the decisive evidence yourself.
+Run all practical LOCAL checks first, narrow before broad, based on the full-chain context and blast radius. Do not use repeated CI or deployment cycles to discover locally observable failures. Trace original request to requirement, roadmap goal criterion, task, and evidence. Exercise observable UAT for user-facing behavior. Record commands, outputs, inspected artifacts, failures, skipped checks, revision provenance, and residual risk. For substantial work, delegate an independent verifier through `cli-agent-delegator`, then rerun or inspect the decisive evidence yourself. For deployable work, this stage establishes premerge readiness; it is not final completion.
 
 ### 9. Audit
 
-Compare the result with the locked specification, original request, non-goals, plan, and evidence. Check integration wiring, regression risk, capability preservation, stale placeholders, security, cleanup, documentation, and installation state. Use a fresh OpenCode reviewer through `cli-agent-delegator` for phase audit and for milestone or complete closure. Reconcile its findings against primary evidence and classify every gap.
+Compare the result with the locked specification, original request, non-goals, plan, and evidence. Check integration wiring, regression risk, capability preservation, stale placeholders, security, cleanup, documentation, installation state, delivery provenance, and recovery readiness. Use a fresh OpenCode reviewer through `cli-agent-delegator` against a frozen commit or frozen worktree for premerge review, phase audit, and milestone or completion closure. Reconcile its findings against primary evidence and classify every gap.
 
 Every completion claim, including a bounded quick task, must use a fresh independent OpenCode session. Visual evidence is acquired through `vision-analysis` with explicit upload authorization, then passed as text to the reviewer. Audit reasoning follows the DeepSeek-first route; Agnes is a text-reasoning fallback only after a verified DeepSeek usage or quota limit. The audit freezes the reviewed commit or diff and maps `USR-* -> REQ-* -> implementation -> evidence -> audit decision`. Record provider, primary model, final model, attempt chain, fallback reason, session, run status, review point, requirement matrix, Blocker/Important/Nitpick counts, and main-Agent spot-check evidence. Tests passing alone never satisfies this gate.
 
@@ -178,7 +180,7 @@ Any `FAIL`, `NOT_RUN`, unresolved `Blocker`, or unresolved `Important` keeps the
 
 ### 10. Handoff And Complete
 
-Update durable state and summarize what changed, what passed, what was not verified, residual risk, current git state, and the exact next action. Completion requires accepted requirements to have passing evidence or an explicit user-approved exclusion.
+Update durable state and summarize what changed, what passed, what was not verified, residual risk, current git state, and the exact next action. Non-deployable work may close after its explicit `N/A` delivery fields and independent audit pass. Deployable work remains open after merge until the implementation merge SHA, deployed artifact match, required online checks, recovery status, and a fresh postmerge independent audit are recorded. A metadata-only planning closure commit may follow; identify it separately from the implementation artifact.
 
 ## Runtime Assistance
 
@@ -187,13 +189,23 @@ From the installed skill directory:
 ```bash
 node scripts/workflow.mjs status --project <path> --phase <phase>
 node scripts/workflow.mjs next --project <path> --phase <phase>
+node scripts/workflow.mjs planning --project <path> --action status
+node scripts/workflow.mjs planning --project <path> --action init --mode tracked --write
+node scripts/workflow.mjs planning --project <path> --action init --mode local-private --write
+node scripts/workflow.mjs planning --project <worktree> --action attach --write
+node scripts/workflow.mjs planning --project <path> --action lock --owner <owner> --expected-revision <n> --write
+node scripts/workflow.mjs planning --project <path> --action unlock --lease <lease> --outcome updated --write
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate align
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate spec
 node scripts/workflow.mjs validate --project <path> --phase <phase> --gate execute
+node scripts/workflow.mjs validate --project <path> --phase <phase> --gate premerge
+node scripts/workflow.mjs validate --project <path> --phase <phase> --gate postmerge
 node scripts/workflow.mjs trace --project <path> --phase <phase> --format json
 node scripts/workflow.mjs init --project <path> --task <task-id> --write
 node scripts/workflow.mjs status --project <path> --task <task-id>
 node scripts/workflow.mjs validate --project <path> --task <task-id> --gate align
+node scripts/workflow.mjs validate --project <path> --task <task-id> --gate premerge
+node scripts/workflow.mjs validate --project <path> --task <task-id> --gate postmerge
 node scripts/workflow.mjs validate --project <path> --task <task-id> --gate complete
 node scripts/workflow.mjs init --project <path> --milestone <milestone-id> --write
 node scripts/workflow.mjs validate --project <path> --milestone <milestone-id> --gate complete
@@ -203,7 +215,7 @@ node scripts/engineering-route.mjs --kind discovery --risk high --format json
 node scripts/engineering-route.mjs --kind prototype --risk medium
 ```
 
-`align` proves the selected work matches the active milestone, phase, literal roadmap goal, requirement mapping, and any controlled exception. `spec` checks locked requirements, USR source mapping, and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires alignment plus completed research, discussion, context, and accepted plans. Phase `complete` requires requirement and goal-criterion evidence, a passing phase audit, summary, and no unresolved Blocker or Important. Milestone `complete` additionally requires every member phase complete plus a milestone-wide requirement and goal audit. Task mode supports alignment and complete gates. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the minimum engineering stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
+`align` proves the selected work matches the active milestone, phase, literal roadmap goal, requirement mapping, and any controlled exception. `spec` checks locked requirements, USR source mapping, and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires alignment plus completed research, discussion, context, and accepted plans. `premerge` checks the delivery contract through frozen-review readiness. `postmerge` additionally checks implementation merge SHA, deployed artifact provenance, online evidence, recovery, and closure decision. Phase `complete` requires requirement and goal-criterion evidence, a passing phase audit, summary, no unresolved Blocker or Important, and postmerge evidence when a delivery contract is present. Milestone `complete` additionally requires every member phase complete plus a milestone-wide requirement and goal audit. Task mode supports alignment, premerge, postmerge, and complete gates. `planning` supports tracked storage or a worktree-shared local-private store with explicit lock and revision control; local-private state is excluded from Git and has no automatic backup. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the minimum engineering stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
 
 ## Companion Routing
 

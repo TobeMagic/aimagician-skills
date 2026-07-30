@@ -23,6 +23,8 @@ Use this module after the specification and plan gates appropriate to the task h
 - **Parallel:** independent write scopes in isolated workers with one integration owner.
 - **Branch/worktree:** isolate large, risky, interrupting, or parallel work from the user's active tree.
 
+When `.planning` uses local-private mode, every created worktree attaches to the repository's shared planning root. Planning writes are coordination events: only the integration owner or a worker with an explicit short lease and matching revision may update shared state. Provider lanes report evidence through their scoped handoff and must not race global planning files.
+
 ## Test-First Discipline
 
 Use red-green-refactor for changed behavior when a reliable test boundary exists:
@@ -38,7 +40,7 @@ Do not write tests that merely search source text when behavior can be executed.
 
 ## Parallel Worker Brief
 
-Every worker receives objective, requirement and task IDs, context, allowed and forbidden files, mutation permission, dependencies, exact tests, expected output, status protocol, and handoff format. Shared files, migrations, registries, and integration tests have one owner.
+Every worker receives objective, requirement and task IDs, context, allowed and forbidden files, mutation permission, dependencies, exact tests, expected output, status protocol, planning storage mode, and handoff format. Shared files, migrations, registries, planning records, and integration tests have one owner.
 
 Use `cli-agent-delegator` when OpenCode can run a short locked implementation, git inspection, named test set, non-destructive check, or progress report. Supply required owned skills and a complete prompt contract. `read-and-run` work records before/after git status and reports generated pollution. `bounded-write` work runs only in a clean isolated worktree with exact allowed files; it stops rather than expanding scope. Local commit is opt-in after review, and push is separately authorized.
 
