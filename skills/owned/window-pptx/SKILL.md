@@ -236,6 +236,24 @@ Generate the complete editable suite with
 fonts, colors, template IDs, implementation code, quality scores, or release
 decisions.
 
+The fifteen-scenario renderer deliberately varies semantic signatures and
+cover identities instead of selecting layouts at random. Registered scenario
+signatures include architecture, calendar, constellation, funnel, governance,
+horizon, investor, journey, product, quadrant, ranking, and staircase. Supply
+scenario-specific raster media through `--asset-dir` only as an ordinary
+cropped image layer; text, diagrams, tables, charts, notes, and layout remain
+native editable. If an optional scenario image is absent, generation falls
+back to the governed theme hero instead of failing or exposing a placeholder.
+
+Final portfolio acceptance must inspect the whole deck, not a cherry-picked
+montage. Build three consecutive high-resolution contact sheets per deck so
+every page appears exactly once, then use one fresh image-capable context per
+deck. Run separate one-image cover walls for cross-scenario distinction.
+Multi-deck multi-image prompts are diagnostic only because image overload can
+produce false missing-input reports. A release review passes only when every
+accepted context reports reference-grade craft, mean score at least 4.2, and
+zero Blocker or Important finding.
+
 Export reviewable JSON files outside the tracked source:
 
 ```bash

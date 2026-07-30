@@ -4,16 +4,16 @@ milestone: v6.0
 milestone_name: Window-PPTX Template-Intelligence Quality Reset
 current_phase: 48
 current_phase_name: Blind Acceptance and Closure
-status: in_progress
-stopped_at: Phase 47 complete; Phase 48 milestone closure active
-last_updated: "2026-07-31T04:12:00+08:00"
-last_activity: 2026-07-30
+status: completed
+stopped_at: v6.0 milestone complete; Phase 48 GO
+last_updated: "2026-07-31T05:45:00+08:00"
+last_activity: 2026-07-31
 progress:
   total_phases: 50
-  completed_phases: 44
+  completed_phases: 45
   total_plans: 49
-  completed_plans: 47
-  percent: 88
+  completed_plans: 48
+  percent: 90
 ---
 
 # Project State
@@ -26,9 +26,10 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v6 is reopened after the user rejected the generated visual
-quality and the template-reuse claim. The previous Phase 41 GO is invalid.
-Phase 42 restores ground truth; Phases 43–48 must implement real private
+**Current focus:** v6.0 is complete after the user rejected the former
+generated visual quality and template-reuse claim. The previous Phase 41 GO
+remains invalid historical evidence. Phase 42 restored ground truth; Phases
+43–48 implemented real private
 catalog acquisition, template mining, selection-to-materialization, three
 reference-grade anchors, fifteen-scenario/ordinary-model coverage, and fresh
 independent visual acceptance. Authenticated commercial sync is a mandatory
@@ -45,7 +46,8 @@ now consumes candidate selection/blueprint sidecars and proves exact native or
 physical materialization. Phase 46 is complete with three editable
 reference-grade anchors, isolated AI-only visual parity scores of
 4.75/4.55/4.45, and a fresh independent OpenCode audit returning DONE with
-zero Blocker or Important. Phase 47 is now active.
+zero Blocker or Important. Phase 47 completed fifteen-scenario ordinary-model
+coverage. Phase 48 accepted R16 across all 292 pages and closed the milestone.
 
 The v5.1 work is preserved at archive commit
 `e4ed78c7b31beebdb94f0f37c6c412012dfec085` and annotated tag
@@ -62,10 +64,10 @@ fully independent AI blind-review contexts for v6 acceptance.
 ## Current Position
 
 Milestone: v6.0 Window-PPTX Template-Intelligence Quality Reset
-Current Phase: 47
-Current Phase Name: Fifteen Scenarios and Ordinary-Model Mode
-Status: In progress — scenario expansion and ordinary-model reliability
-Last Activity: 2026-07-30
+Current Phase: 48
+Current Phase Name: Blind Acceptance and Closure
+Status: Complete — v6.0 milestone GO
+Last Activity: 2026-07-31
 
 Foundation completed:
 

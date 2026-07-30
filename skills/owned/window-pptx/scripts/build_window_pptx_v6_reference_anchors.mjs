@@ -90,6 +90,26 @@ Object.assign(themes, {
     accent: "E2A71B", surface: "FFFEFA", pale: "F2E5B8", muted: "7F7359",
     hero: themes.academic.hero,
   },
+  aqua: {
+    ...themes.academic, bg: "F2FBFA", ink: "123B42", deep: "082E36",
+    accent: "008F86", surface: "FFFFFF", pale: "C9E7E4", muted: "496A6E",
+    hero: themes.academic.hero,
+  },
+  navy: {
+    ...themes.academic, bg: "F1F5F9", ink: "17324D", deep: "102A43",
+    accent: "1D8FE1", surface: "FFFFFF", pale: "D8E7F3", muted: "60758A",
+    hero: themes.academic.hero,
+  },
+  terra: {
+    ...themes.work, bg: "F8F0EA", ink: "65372D", deep: "3B2325",
+    accent: "C96F4A", surface: "FFFDFC", pale: "EFD8CC", muted: "7A665E",
+    hero: themes.work.hero,
+  },
+  slate: {
+    ...themes.academic, bg: "F2F5F6", ink: "243642", deep: "192A33",
+    accent: "2E9B91", surface: "FFFFFF", pale: "D8E7E6", muted: "667982",
+    hero: themes.academic.hero,
+  },
 });
 
 for (const theme of Object.values(themes)) {
@@ -224,6 +244,331 @@ function heroCover(pptx, theme, eyebrow, titleValue, subtitle, meta, dark = fals
   text(slide, meta, 0.8, 6.08, 5.4, 0.4, dark ? 10 : 8, dark ? theme.white : theme.ink, { fontFace: MONO, charSpacing: 1, bold: dark });
   text(slide, "2026", 11.2, 6.35, 1.4, 0.46, 16, theme.accent, { fontFace: MONO, bold: true, align: "right" });
   notes(slide, [], "hero-cover");
+}
+
+function signatureMotif(slide, theme, signature, x = 8.25, y = 1.25, w = 4.25, h = 4.75, dark = false) {
+  const ink = dark ? theme.white : theme.ink;
+  const surface = dark ? theme.surface : theme.white;
+  const muted = dark ? theme.pale : theme.muted;
+  if (signature === "architecture") {
+    [0, 1, 2, 3].forEach((item) => {
+      const inset = item * 0.32;
+      box(slide, x + inset, y + h - 1.0 - item * 0.92, w - inset * 2, 0.64, item === 3 ? theme.accent : surface, 0.06, { color: theme.accent, width: 1, transparency: 25 });
+      text(slide, ["SOURCE", "FACT", "SERVICE", "GOVERN"][item], x + inset + 0.18, y + h - 0.88 - item * 0.92, 1.6, 0.25, 7, item === 3 ? theme.white : ink, { fontFace: MONO, bold: true, charSpacing: 1.2 });
+    });
+  } else if (signature === "product") {
+    [0, 1, 2].forEach((item) => {
+      const px = x + item * 0.52;
+      const py = y + item * 0.45;
+      box(slide, px, py, 3.15, 3.55, item === 1 ? theme.deep : surface, 0.12, { color: theme.accent, width: 1.2, transparency: 15 });
+      box(slide, px + 0.25, py + 0.35, 2.65, 0.28, theme.accent, 0.04);
+      [0, 1, 2].forEach((row) => box(slide, px + 0.25, py + 0.88 + row * 0.55, 2.25 - row * 0.28, 0.22, item === 1 ? theme.surface : theme.pale, 0.04));
+    });
+  } else if (signature === "funnel") {
+    [0, 1, 2].forEach((item) => {
+      const fw = 4.0 - item * 0.9;
+      slide.addShape(SHAPE.chevron, {
+        x: x + (w - fw) / 2, y: y + 0.5 + item * 1.15, w: fw, h: 0.78,
+        fill: { color: item === 2 ? theme.accent : item === 1 ? surface : theme.deep },
+        line: { color: theme.accent, transparency: item === 1 ? 20 : 100 },
+      });
+    });
+  } else if (signature === "quadrant") {
+    slide.addShape(SHAPE.line, { x: x + 0.4, y: y + h - 0.45, w: w - 0.65, h: 0, line: { color: ink, width: 1.3, endArrowType: "triangle" } });
+    slide.addShape(SHAPE.line, { x: x + w / 2, y: y + h - 0.3, w: 0, h: -(h - 0.65), line: { color: ink, width: 1.3, endArrowType: "triangle" } });
+    [[0.9, 2.8, 0.55], [2.6, 0.7, 0.88], [3.15, 2.9, 0.65], [1.05, 1.05, 0.48]].forEach(([dx, dy, d], item) => {
+      slide.addShape(SHAPE.ellipse, { x: x + dx, y: y + dy, w: d, h: d, fill: { color: item === 1 ? theme.accent : theme.deep, transparency: 5 }, line: { color: theme.white, width: 1 } });
+    });
+  } else if (signature === "flywheel" || signature === "constellation") {
+    addRings(slide, theme, x + w / 2, y + h / 2, signature === "flywheel" ? 5 : 7);
+    const points = [[2.0, 0.45], [3.5, 1.85], [2.8, 3.65], [0.7, 3.2], [0.35, 1.2]];
+    points.forEach(([dx, dy], item) => {
+      if (signature === "flywheel" && item > 0) {
+        const [px, py] = points[item - 1];
+        slide.addShape(SHAPE.line, { x: x + px + 0.25, y: y + py + 0.25, w: dx - px, h: dy - py, line: { color: theme.accent, width: 1.7, endArrowType: "triangle" } });
+      }
+      slide.addShape(SHAPE.ellipse, { x: x + dx, y: y + dy, w: 0.52, h: 0.52, fill: { color: item === 0 ? theme.accent : theme.deep }, line: { color: theme.white, width: 1 } });
+    });
+  } else if (signature === "ranking") {
+    [0.92, 0.76, 0.62, 0.48, 0.34].forEach((ratio, item) => {
+      text(slide, `0${item + 1}`, x, y + 0.45 + item * 0.72, 0.42, 0.25, 7, muted, { fontFace: MONO, bold: true });
+      box(slide, x + 0.55, y + 0.45 + item * 0.72, (w - 0.65) * ratio, 0.27, item < 2 ? theme.accent : surface, 0.04);
+    });
+  } else if (signature === "investor") {
+    [0.42, 0.66, 0.88, 1.0].forEach((ratio, item) => {
+      const barH = 0.6 + ratio * 2.5;
+      box(slide, x + 0.35 + item * 0.9, y + h - barH - 0.45, 0.62, barH, item === 3 ? theme.accent : surface, 0.04);
+      text(slide, `Y${item + 1}`, x + 0.35 + item * 0.9, y + h - 0.32, 0.62, 0.2, 7, muted, { fontFace: MONO, bold: true, align: "center" });
+    });
+    slide.addShape(SHAPE.line, { x: x + 0.55, y: y + h - 1.7, w: 3.15, h: -2.15, line: { color: theme.accent, width: 2.2, endArrowType: "triangle" } });
+  } else if (signature === "calendar") {
+    text(slide, "28-DAY CAMPAIGN", x + 0.15, y + 0.05, w - 0.3, 0.3, 8, ink, { fontFace: MONO, bold: true, align: "center", charSpacing: 1.2 });
+    for (let week = 0; week < 4; week += 1) {
+      const py = y + 0.65 + week * 0.82;
+      text(slide, `W${week + 1}`, x + 0.05, py + 0.15, 0.42, 0.22, 7, muted, { fontFace: MONO, bold: true });
+      for (let day = 0; day < 7; day += 1) {
+        box(slide, x + 0.55 + day * 0.5, py, 0.38, 0.5, day <= week + 2 ? theme.accent : surface, 0.03, { color: theme.accent, width: 0.6, transparency: 35 });
+      }
+    }
+  } else if (signature === "horizon") {
+    [["2027", 3.3], ["2028", 2.5], ["2029", 1.7]].forEach(([year, py], item) => {
+      slide.addShape(SHAPE.line, { x: x + 0.35, y: y + py, w: w - 0.7, h: 0, line: { color: item === 2 ? theme.accent : ink, width: item === 2 ? 3 : 1.2, transparency: item === 2 ? 0 : 45 } });
+      text(slide, year, x + 0.35, y + py - 0.42, 0.7, 0.25, 8, item === 2 ? theme.accent : muted, { fontFace: MONO, bold: true });
+      slide.addShape(SHAPE.ellipse, { x: x + 1.35 + item * 0.9, y: y + py - 0.13, w: 0.26, h: 0.26, fill: { color: item === 2 ? theme.accent : theme.deep }, line: { color: theme.white, width: 0.8 } });
+    });
+  } else if (signature === "journey") {
+    slide.addShape(SHAPE.line, { x: x + 0.35, y: y + h / 2, w: w - 0.7, h: 0, line: { color: theme.accent, width: 3, endArrowType: "triangle" } });
+    ["SEGMENT", "TRIGGER", "OFFER", "REVIEW"].forEach((labelValue, item) => {
+      const px = x + 0.45 + item * 1.0;
+      slide.addShape(SHAPE.ellipse, { x: px, y: y + h / 2 - 0.28, w: 0.56, h: 0.56, fill: { color: item === 3 ? theme.accent : theme.deep }, line: { color: theme.white, width: 1 } });
+      text(slide, labelValue, px - 0.25, y + h / 2 + 0.48, 1.05, 0.24, 6, muted, { fontFace: MONO, bold: true, align: "center" });
+    });
+  } else if (signature === "governance") {
+    box(slide, x + 0.85, y + 0.25, 2.55, 0.62, theme.accent, 0.06);
+    [0, 1, 2].forEach((item) => {
+      const px = x + item * 1.45;
+      box(slide, px, y + 2.65, 1.2, 0.78, item === 1 ? theme.accent : surface, 0.06, { color: theme.accent, width: 1, transparency: 20 });
+      slide.addShape(SHAPE.line, { x: x + 2.12, y: y + 0.87, w: px + 0.6 - (x + 2.12), h: 1.78, line: { color: theme.accent, width: 1.4 } });
+    });
+  } else {
+    [0, 1, 2, 3].forEach((item) => {
+      const px = x + item * 0.93;
+      const py = signature === "staircase" ? y + 3.4 - item * 0.75 : y + 1.1 + (item % 2) * 1.15;
+      const ph = signature === "staircase" ? 0.65 + item * 0.75 : 0.78;
+      box(slide, px, py, 0.75, ph, item === 3 ? theme.accent : surface, 0.05, { color: theme.accent, width: 1, transparency: 20 });
+      if (item < 3) slide.addShape(SHAPE.line, { x: px + 0.75, y: py + ph / 2, w: 0.2, h: 0, line: { color: theme.accent, width: 1.4, endArrowType: "triangle" } });
+    });
+  }
+}
+
+function scenarioCover(pptx, theme, config, brief) {
+  const dark = ["violet"].includes(config.themeKey);
+  const slide = pptx.addSlide();
+  const requestedHero = config.heroAsset ? path.join(assetDir, config.heroAsset) : null;
+  const scenarioHero = requestedHero && fs.existsSync(requestedHero) ? requestedHero : null;
+  const centered = ["product", "flywheel", "constellation"].includes(config.signature);
+  const banded = ["funnel", "ranking", "calendar", "investor", "governance"].includes(config.signature);
+  const journey = ["journey", "horizon", "staircase"].includes(config.signature);
+  slide.background = { color: dark || centered && config.signature === "flywheel" ? theme.deep : theme.bg };
+  if (centered) {
+    const centeredDark = dark || config.signature === "flywheel" || Boolean(scenarioHero);
+    if (scenarioHero) {
+      slide.addImage({ path: scenarioHero, x: 0, y: 0, w: W, h: H, sizing: { type: "cover", w: W, h: H } });
+      veil(slide, theme.deep, 35);
+    }
+    addRings(slide, theme, 6.65, 3.75, config.signature === "constellation" ? 8 : 6);
+    text(slide, "WINDOW-PPTX / SCENARIO EDITION", 4.1, 0.48, 5.1, 0.26, 7, theme.accent, { fontFace: MONO, bold: true, align: "center", charSpacing: 2.4 });
+    text(slide, config.title, 1.2, 1.05, 10.9, 1.5, 42, centeredDark ? theme.white : theme.ink, { bold: true, align: "center" });
+    if (!scenarioHero) signatureMotif(slide, theme, config.signature, 4.55, 2.55, 4.25, 3.25, centeredDark);
+    text(slide, config.subtitle, 2.2, 5.72, 8.9, 0.52, 13, centeredDark ? theme.pale : theme.muted, { bold: true, align: "center" });
+    text(slide, `${brief.audience.primary} · ${brief.timing.presentation_minutes} MIN · 2026`, 3.2, 6.55, 6.9, 0.28, 8, theme.accent, { fontFace: MONO, bold: true, align: "center", charSpacing: 1 });
+  } else if (banded) {
+    if (scenarioHero) {
+      slide.addImage({ path: scenarioHero, x: 7.15, y: 0, w: 6.18, h: 4.62, sizing: { type: "cover", w: 6.18, h: 4.62 } });
+      veil(slide, theme.bg, 58, 7.15, 0, 6.18, 4.62);
+    }
+    slide.addShape(SHAPE.rect, { x: 0, y: 4.62, w: W, h: 2.88, fill: { color: theme.deep }, line: { color: theme.deep, transparency: 100 } });
+    text(slide, config.signature.toUpperCase(), 9.1, 0.52, 3.45, 0.28, 8, theme.accent, { fontFace: MONO, bold: true, align: "right", charSpacing: 2 });
+    text(slide, config.title, 0.72, 0.8, 7.45, 2.0, 43, theme.ink, { bold: true });
+    if (!scenarioHero) signatureMotif(slide, theme, config.signature, 8.25, 0.95, 4.15, 3.25, false);
+    text(slide, config.subtitle, 0.78, 5.05, 7.25, 0.72, 14, theme.white, { bold: true });
+    text(slide, `${brief.audience.primary} · ${brief.timing.presentation_minutes} MIN`, 0.78, 6.42, 6.1, 0.28, 8, theme.pale, { fontFace: MONO, bold: true, charSpacing: 1 });
+    text(slide, "2026", 11.1, 6.22, 1.3, 0.45, 16, theme.accent, { fontFace: MONO, bold: true, align: "right" });
+  } else if (journey) {
+    if (scenarioHero) {
+      slide.addImage({ path: scenarioHero, x: 4.85, y: 0, w: 8.48, h: H, sizing: { type: "cover", w: 8.48, h: H } });
+      veil(slide, theme.bg, 42, 4.85, 0, 8.48, H);
+    }
+    slide.addShape(SHAPE.rect, { x: 0, y: 0, w: 4.85, h: H, fill: { color: theme.deep }, line: { color: theme.deep, transparency: 100 } });
+    text(slide, "WINDOW-PPTX / PATH EDITION", 0.65, 0.62, 3.55, 0.26, 7, theme.accent, { fontFace: MONO, bold: true, charSpacing: 2 });
+    text(slide, config.title, 0.65, 1.2, 3.7, 2.35, 36, theme.white, { bold: true });
+    text(slide, config.subtitle, 0.68, 4.05, 3.55, 1.0, 12, theme.pale, { bold: true });
+    if (!scenarioHero) signatureMotif(slide, theme, config.signature, 6.0, 1.15, 5.7, 4.9, false);
+    text(slide, `${brief.audience.primary} · ${brief.timing.presentation_minutes} MIN`, 5.95, 6.35, 4.9, 0.28, 8, theme.ink, { fontFace: MONO, bold: true, charSpacing: 1 });
+    text(slide, "2026", 11.25, 6.17, 1.1, 0.45, 15, theme.accent, { fontFace: MONO, bold: true, align: "right" });
+  } else {
+    if (scenarioHero) {
+      slide.addImage({ path: scenarioHero, x: 7.75, y: 0, w: 5.58, h: H, sizing: { type: "cover", w: 5.58, h: H } });
+    }
+    slide.addShape(SHAPE.rect, { x: 0, y: 0, w: 0.18, h: H, fill: { color: theme.accent }, line: { color: theme.accent, transparency: 100 } });
+    slide.addShape(SHAPE.rect, { x: 7.75, y: 0, w: 5.58, h: H, fill: { color: dark ? theme.deep : theme.pale, transparency: dark ? 0 : 22 }, line: { color: theme.accent, transparency: 100 } });
+    text(slide, "WINDOW-PPTX / SCENARIO EDITION", 0.72, 0.62, 4.8, 0.26, 7, theme.accent, { fontFace: MONO, bold: true, charSpacing: 2.4 });
+    text(slide, config.title, 0.72, 1.2, 6.5, 2.15, dark ? 39 : 42, dark ? theme.white : theme.ink, { bold: true });
+    slide.addShape(SHAPE.line, { x: 0.75, y: 3.75, w: 1.15, h: 0, line: { color: theme.accent, width: 4 } });
+    text(slide, config.subtitle, 0.75, 4.02, 6.15, 0.84, 14, dark ? theme.pale : theme.muted, { bold: true });
+    text(slide, `${brief.audience.primary} · ${brief.timing.presentation_minutes} MIN`, 0.75, 6.18, 5.8, 0.3, 8, dark ? theme.white : theme.ink, { fontFace: MONO, bold: true, charSpacing: 1 });
+    text(slide, config.signature.toUpperCase(), 8.18, 0.62, 4.25, 0.28, 8, theme.accent, { fontFace: MONO, bold: true, align: "right", charSpacing: 2 });
+    if (!scenarioHero) signatureMotif(slide, theme, config.signature, 8.2, 1.25, 4.3, 4.85, dark);
+    text(slide, "2026", 10.95, 6.35, 1.45, 0.4, 15, theme.accent, { fontFace: MONO, bold: true, align: "right" });
+  }
+  notes(slide, [], `scenario-cover-${config.signature}`);
+}
+
+function scenarioSummary(pptx, theme, index, config, metrics, factIds) {
+  const slide = pptx.addSlide("BODY");
+  header(slide, theme, index, "Executive readout / scenario grammar", `${config.sections[0][0]}：${config.sections[0][1]}`);
+  const metric = (item) => metrics[item % metrics.length];
+  const metricText = (item, x, y, w, color = theme.ink, align = "left") => {
+    const current = metric(item);
+    text(slide, current.value, x, y, w, 0.52, 24, color, { bold: true, align });
+    text(slide, current.label, x, y + 0.55, w, 0.28, 9, color, { bold: true, align });
+    text(slide, current.detail, x, y + 0.87, w, 0.24, 7, color === theme.white ? theme.pale : theme.muted, { align });
+  };
+  if (config.signature === "architecture") {
+    [0, 1, 2, 3].forEach((item) => {
+      const y = 1.65 + item * 1.22;
+      const inset = item * 0.42;
+      box(slide, 0.85 + inset, y, 11.55 - inset * 2, 0.9, item === 3 ? theme.accent : item === 0 ? theme.deep : theme.surface, 0.07, { color: theme.accent, width: 1, transparency: 25 });
+      text(slide, ["01 · 数据范围", "02 · 事实底座", "03 · 服务能力", "04 · 治理决策"][item], 1.12 + inset, y + 0.17, 2.5, 0.3, 11, item === 0 || item === 3 ? theme.white : theme.ink, { bold: true });
+      text(slide, metric(item).value, 9.1 - inset, y + 0.12, 2.6, 0.4, 20, item === 0 || item === 3 ? theme.white : theme.ink, { bold: true, align: "right" });
+      text(slide, metric(item).label, 8.0 - inset, y + 0.53, 3.7, 0.22, 8, item === 0 || item === 3 ? theme.pale : theme.muted, { align: "right" });
+    });
+  } else if (config.signature === "funnel") {
+    [0, 1, 2, 3].forEach((item) => {
+      const fw = 10.7 - item * 1.65;
+      const x = 6.65 - fw / 2;
+      const y = 1.65 + item * 1.13;
+      slide.addShape(SHAPE.chevron, { x, y, w: fw, h: 0.82, fill: { color: item === 3 ? theme.accent : item === 0 ? theme.deep : theme.surface }, line: { color: theme.accent, width: 1, transparency: 25 } });
+      text(slide, metric(item).label, x + 0.35, y + 0.22, fw - 3.2, 0.3, 11, item === 0 || item === 3 ? theme.white : theme.ink, { bold: true });
+      text(slide, metric(item).value, x + fw - 2.7, y + 0.13, 2.0, 0.42, 18, item === 0 || item === 3 ? theme.white : theme.ink, { bold: true, align: "right" });
+    });
+  } else if (config.signature === "quadrant") {
+    [[0.85, 1.65], [6.75, 1.65], [0.85, 4.05], [6.75, 4.05]].forEach(([x, y], item) => {
+      box(slide, x, y, 5.7, 1.95, item === 1 ? theme.deep : item === 2 ? theme.accent : theme.surface, 0.1, { color: theme.accent, width: 1, transparency: 25 });
+      metricText(item, x + 0.35, y + 0.32, 4.95, item === 1 || item === 2 ? theme.white : theme.ink);
+    });
+  } else if (config.signature === "product") {
+    box(slide, 4.45, 1.65, 4.45, 4.8, theme.deep, 0.12, { color: theme.accent, width: 1.2, transparency: 15 });
+    text(slide, "TRUSTED ANSWER", 4.82, 2.0, 3.7, 0.28, 7, theme.pale, { fontFace: MONO, bold: true, charSpacing: 1.4 });
+    box(slide, 4.82, 2.52, 3.72, 0.45, theme.accent, 0.07);
+    [2.9, 3.35, 2.25].forEach((width, row) => box(slide, 4.82, 3.28 + row * 0.55, width, 0.23, theme.surface, 0.04));
+    [[0.75, 1.85], [9.3, 1.85], [0.75, 4.4], [9.3, 4.4]].forEach(([x, y], item) => {
+      box(slide, x, y, 3.05, 1.75, item < 2 ? theme.surface : theme.pale, 0.09, { color: theme.accent, width: 1, transparency: 30 });
+      const current = metric(item);
+      text(slide, current.label, x + 0.25, y + 0.22, 2.55, 0.28, 9, theme.accent, { fontFace: MONO, bold: true, charSpacing: 0.8 });
+      text(slide, current.value, x + 0.25, y + 0.58, 2.55, 0.5, 24, theme.ink, { bold: true });
+      text(slide, current.detail, x + 0.25, y + 1.18, 2.55, 0.24, 8, theme.muted, { bold: true });
+    });
+  } else if (config.signature === "flywheel" || config.signature === "constellation") {
+    addRings(slide, theme, 6.65, 4.05, config.signature === "flywheel" ? 5 : 7);
+    const nodes = [[5.98, 1.62], [9.75, 3.15], [7.42, 5.35], [2.25, 4.5]];
+    nodes.forEach(([x, y], item) => {
+      box(slide, x, y, 2.25, 1.05, item === 0 ? theme.accent : theme.deep, 0.1);
+      text(slide, metric(item).value, x + 0.18, y + 0.12, 1.88, 0.38, 18, theme.white, { bold: true, align: "center" });
+      text(slide, metric(item).label, x + 0.18, y + 0.55, 1.88, 0.24, 8, theme.pale, { bold: true, align: "center" });
+    });
+  } else if (config.signature === "investor") {
+    box(slide, 0.85, 1.65, 4.05, 4.75, theme.deep, 0.1);
+    text(slide, "GROWTH PROOF", 1.15, 2.02, 3.45, 0.28, 7, theme.pale, { fontFace: MONO, bold: true, charSpacing: 1.4 });
+    text(slide, metric(0).value, 1.12, 2.55, 3.5, 0.8, 38, theme.white, { bold: true });
+    text(slide, metric(0).label, 1.15, 3.42, 3.3, 0.32, 11, theme.pale, { bold: true });
+    [0.38, 0.58, 0.78, 1.0].forEach((ratio, item) => {
+      const barH = 0.45 + ratio * 1.65;
+      box(slide, 1.2 + item * 0.78, 5.78 - barH, 0.5, barH, item === 3 ? theme.accent : theme.surface, 0.03);
+    });
+    [1, 2, 3].forEach((item) => {
+      const y = 1.72 + (item - 1) * 1.55;
+      box(slide, 5.45, y, 6.85, 1.2, item === 2 ? theme.accent : theme.surface, 0.08, { color: theme.accent, width: 1, transparency: 25 });
+      metricText(item, 5.78, y + 0.14, 5.95, item === 2 ? theme.white : theme.ink);
+    });
+  } else if (config.signature === "ranking") {
+    metrics.forEach((current, item) => {
+      const y = 1.75 + item * 1.2;
+      text(slide, `0${item + 1}`, 0.85, y + 0.08, 0.55, 0.32, 12, theme.accent, { fontFace: MONO, bold: true });
+      text(slide, current.label, 1.55, y, 2.5, 0.34, 12, theme.ink, { bold: true });
+      slide.addShape(SHAPE.line, { x: 4.15, y: y + 0.25, w: 4.65, h: 0, line: { color: theme.pale, width: 12, beginArrowType: "none" } });
+      slide.addShape(SHAPE.line, { x: 4.15, y: y + 0.25, w: 4.65 - item * 0.72, h: 0, line: { color: item < 2 ? theme.accent : theme.deep, width: 12 } });
+      text(slide, current.value, 9.15, y - 0.08, 2.15, 0.5, 22, theme.ink, { bold: true, align: "right" });
+      text(slide, current.detail, 11.45, y + 0.03, 1.0, 0.3, 7, theme.muted, { align: "right" });
+    });
+  } else if (config.signature === "governance") {
+    box(slide, 4.35, 1.55, 4.65, 0.9, theme.deep, 0.08);
+    text(slide, "SCOPE / SUCCESS / ESCALATION", 4.65, 1.83, 4.05, 0.3, 10, theme.white, { fontFace: MONO, bold: true, align: "center", charSpacing: 1 });
+    metrics.slice(0, 3).forEach((current, item) => {
+      const x = 0.85 + item * 4.02;
+      box(slide, x, 3.15, 3.55, 2.35, item === 1 ? theme.accent : theme.surface, 0.1, { color: theme.accent, width: 1, transparency: 25 });
+      metricText(item, x + 0.3, 3.55, 2.95, item === 1 ? theme.white : theme.ink, "center");
+      slide.addShape(SHAPE.line, { x: 6.67, y: 2.45, w: x + 1.78 - 6.67, h: 0.7, line: { color: theme.accent, width: 1.5 } });
+    });
+    metricText(3, 4.8, 5.83, 3.7, theme.ink, "center");
+  } else if (config.signature === "staircase") {
+    const learningStages = ["案例拆解", "小组练习", "观察反馈", "迁移任务"];
+    metrics.forEach((current, item) => {
+      const x = 0.85 + item * 3.02;
+      const y = 5.35 - item * 0.82;
+      const h = 0.9 + item * 0.82;
+      box(slide, x, y, 2.55, h, item === 3 ? theme.accent : item === 2 ? theme.deep : theme.surface, 0.08, { color: theme.accent, width: 1, transparency: 25 });
+      text(slide, `0${item + 1} / ${learningStages[item]}`, x + 0.2, y + 0.18, 2.15, 0.3, 10, item >= 2 ? theme.white : theme.ink, { bold: true });
+      text(slide, current.value, x + 0.2, y + 0.62, 2.15, 0.48, 22, item >= 2 ? theme.white : theme.ink, { bold: true });
+      text(slide, current.label, x + 0.2, y + h - 0.48, 2.15, 0.25, 8, item >= 2 ? theme.pale : theme.muted, { bold: true });
+    });
+  } else {
+    metrics.forEach((current, item) => {
+      const x = 0.85 + item * 3.02;
+      const y = config.signature === "staircase" ? 5.35 - item * 0.82 : 2.0 + (item % 2) * 1.5;
+      const h = config.signature === "staircase" ? 0.9 + item * 0.82 : 1.25;
+      box(slide, x, y, 2.55, h, item === 3 ? theme.accent : item === 2 ? theme.deep : theme.surface, 0.08, { color: theme.accent, width: 1, transparency: 25 });
+      text(slide, current.value, x + 0.2, y + 0.15, 2.15, 0.42, 19, item >= 2 ? theme.white : theme.ink, { bold: true });
+      text(slide, current.label, x + 0.2, y + h - 0.48, 2.15, 0.25, 8, item >= 2 ? theme.pale : theme.muted, { bold: true });
+      if (item < 3) slide.addShape(SHAPE.line, { x: x + 2.55, y: y + h / 2, w: 0.48, h: 0, line: { color: theme.accent, width: 2, endArrowType: "triangle" } });
+    });
+  }
+  notes(slide, factIds, `scenario-summary-${config.signature}`);
+}
+
+function scenarioClosing(pptx, theme, config, brief) {
+  const slide = pptx.addSlide();
+  slide.background = { color: theme.deep };
+  const centered = ["product", "flywheel", "constellation"].includes(config.signature);
+  const banded = ["funnel", "ranking", "calendar", "investor", "governance", "quadrant", "horizon"].includes(config.signature);
+  const journey = ["journey", "staircase"].includes(config.signature);
+  if (centered) {
+    addRings(slide, theme, 6.65, 3.65, 7);
+    text(slide, `NEXT / ${config.sections[2][0]}`, 4.2, 0.62, 4.9, 0.3, 8, theme.accent, { fontFace: MONO, bold: true, align: "center", charSpacing: 2.2 });
+    text(slide, config.decision, 1.25, 1.55, 10.85, 2.45, 38, theme.white, { bold: true, align: "center" });
+    text(slide, config.subtitle, 2.15, 4.55, 9.05, 0.7, 12, theme.pale, { bold: true, align: "center" });
+    text(slide, `${brief.audience.primary} · DECISION READY`, 3.3, 6.35, 6.75, 0.28, 8, theme.accent, { fontFace: MONO, bold: true, align: "center", charSpacing: 1.5 });
+  } else if (banded) {
+    text(slide, `NEXT / ${config.sections[2][0]}`, 0.75, 0.62, 4.8, 0.3, 8, theme.accent, { fontFace: MONO, bold: true, charSpacing: 2.2 });
+    text(slide, config.decision, 0.72, 1.25, 11.4, 2.0, 39, theme.white, { bold: true });
+    if (config.signature === "investor") {
+      box(slide, 9.25, 0.68, 3.0, 0.62, theme.accent, 0.08);
+      text(slide, "¥30M / PRE-A", 9.55, 0.83, 2.42, 0.3, 13, theme.white, { fontFace: MONO, bold: true, align: "center", charSpacing: 1 });
+    }
+    config.sections.forEach(([titleValue], item) => {
+      const x = 0.75 + item * 4.05;
+      box(slide, x, 4.45, 3.55, 1.2, item === 2 ? theme.accent : theme.surface, 0.08);
+      text(slide, `0${item + 1}`, x + 0.22, 4.68, 0.45, 0.28, 9, item === 2 ? theme.white : theme.accent, { fontFace: MONO, bold: true });
+      text(slide, titleValue, x + 0.78, 4.58, 2.45, 0.45, 14, item === 2 ? theme.white : theme.ink, { bold: true });
+    });
+    text(slide, `${brief.audience.primary} · DECISION READY`, 0.78, 6.48, 5.8, 0.28, 8, theme.pale, { fontFace: MONO, bold: true, charSpacing: 1 });
+  } else if (journey) {
+    slide.addShape(SHAPE.rect, { x: 0, y: 0, w: 4.55, h: H, fill: { color: theme.accent }, line: { color: theme.accent, transparency: 100 } });
+    config.sections.forEach(([titleValue], item) => {
+      const y = 1.3 + item * 1.55;
+      text(slide, `0${item + 1}`, 0.62, y, 0.52, 0.32, 10, theme.white, { fontFace: MONO, bold: true });
+      text(slide, titleValue, 1.35, y - 0.1, 2.55, 0.5, 16, theme.white, { bold: true });
+      if (item < 2) slide.addShape(SHAPE.line, { x: 0.88, y: y + 0.48, w: 0, h: 1.05, line: { color: theme.white, width: 2, transparency: 25 } });
+    });
+    text(slide, `NEXT / ${config.sections[2][0]}`, 5.15, 0.72, 4.9, 0.3, 8, theme.accent, { fontFace: MONO, bold: true, charSpacing: 2.2 });
+    text(slide, config.decision, 5.12, 1.55, 7.15, 2.65, 36, theme.white, { bold: true });
+    text(slide, `${config.subtitle}\n目标受众：${brief.audience.primary}`, 5.18, 4.72, 6.6, 1.0, 12, theme.pale, { bold: true });
+  } else {
+    slide.addShape(SHAPE.rect, { x: 0, y: 0, w: 0.2, h: H, fill: { color: theme.accent }, line: { color: theme.accent, transparency: 100 } });
+    text(slide, `NEXT / ${config.sections[2][0]}`, 0.75, 0.7, 4.8, 0.3, 8, theme.accent, { fontFace: MONO, bold: true, charSpacing: 2.2 });
+    text(slide, config.decision, 0.72, 1.45, 7.0, 2.45, 36, theme.white, { bold: true });
+    slide.addShape(SHAPE.line, { x: 0.78, y: 4.42, w: 1.2, h: 0, line: { color: theme.accent, width: 4 } });
+    text(slide, `${config.subtitle}\n目标受众：${brief.audience.primary}`, 0.78, 4.75, 6.55, 0.95, 12, theme.pale, { bold: true });
+    text(slide, config.signature.toUpperCase(), 8.45, 1.45, 3.85, 0.34, 8, theme.accent, { fontFace: MONO, bold: true, align: "right", charSpacing: 2 });
+    config.sections.forEach(([titleValue], item) => {
+      const y = 2.15 + item * 1.2;
+      text(slide, `0${item + 1}`, 8.45, y, 0.5, 0.3, 10, theme.accent, { fontFace: MONO, bold: true });
+      slide.addShape(SHAPE.line, { x: 9.05, y: y + 0.17, w: 0.65, h: 0, line: { color: theme.accent, width: 2 } });
+      text(slide, titleValue, 9.95, y - 0.06, 2.35, 0.4, 15, theme.white, { bold: true, align: "right" });
+    });
+    text(slide, "THANK YOU / DECISION READY", 8.4, 6.38, 3.95, 0.28, 7, theme.accent, { fontFace: MONO, bold: true, align: "right", charSpacing: 1.5 });
+  }
+  notes(slide, [], `scenario-closing-${config.signature}`);
 }
 
 function agenda(pptx, theme, items, dark = false) {
@@ -872,9 +1217,9 @@ function buildCampus(brief) {
   add("agenda", "agenda-editorial", "medium", "native:agenda.grid-four");
   bigMetrics(pptx, light, 3, "84 天真实试点，把“可演示”推进到“可验证”", [
     { value: `${value(brief, "pilot-days")} 天`, label: "PILOT", detail: "完整覆盖一个校园运行周期" },
-    { value: value(brief, "sensor-nodes"), label: "SENSOR NODES", detail: `${value(brief, "sampling-interval")} 分钟采样一次` },
-    { value: `${value(brief, "valid-rate")}%`, label: "VALID DATA", detail: `${value(brief, "valid-records").toLocaleString()} 条有效记录` },
-    { value: `${value(brief, "lead-time")} min`, label: "LEAD TIME", detail: "为现场处置争取提前量" },
+    { value: value(brief, "sensor-nodes"), label: "传感节点 / SENSOR NODES", detail: `${value(brief, "sampling-interval")} 分钟采样一次` },
+    { value: `${value(brief, "valid-rate")}%`, label: "有效数据率 / VALID DATA", detail: `${value(brief, "valid-records").toLocaleString()} 条有效记录` },
+    { value: `${value(brief, "lead-time")} min`, label: "平均提前量 / LEAD TIME", detail: "为现场处置争取提前量" },
   ], ["pilot-days", "sensor-nodes", "sampling-interval", "valid-rate", "valid-records", "lead-time"], false);
   add("summary", "asymmetric-big-metrics", "medium", "native:focal-statement.editorial-left");
   campusChapter(pptx, light, 1, "为什么现在", "校园水环境的风险不是没有数据，而是没有形成行动链路。", "field");
@@ -1020,73 +1365,73 @@ function buildAcademic(brief) {
 
 const scenarioConfigs = {
   "business-operations-review": {
-    title: "连锁门店季度经营复盘", themeKey: "work", signature: "quadrant",
+    title: "连锁门店季度经营复盘", themeKey: "work", signature: "quadrant", heroAsset: "ops-office.jpeg",
     subtitle: "从增长结果回到门店、库存与会员经营动作",
     sections: [["经营诊断", "先确认增长质量，再定位区域与门店差异"], ["问题拆解", "库存、缺货与低效门店形成同一条因果链"], ["行动决策", "整改、调拨和促销资源按优先级落位"]],
     decision: "批准 14 家低效门店整改、库存调拨与下季度促销优先级",
   },
   "project-proposal": {
-    title: "制造企业质量数据中台项目提案", themeKey: "cobalt", signature: "architecture",
+    title: "制造企业质量数据中台项目提案", themeKey: "cobalt", signature: "architecture", heroAsset: "manufacturing-laser.png",
     subtitle: "16 周建立跨工厂质量事实底座与联合治理机制",
     sections: [["现状与机会", "质量数据分散，人工报表吞噬改进时间"], ["方案与路径", "数据、指标、场景和治理四层协同"], ["范围与决策", "一期范围、预算、里程碑和联合项目组"]],
     decision: "批准 16 周一期范围、360 万元预算和联合项目组",
   },
   "product-launch": {
-    title: "企业知识助手产品发布会", themeKey: "violet", signature: "product",
+    title: "企业知识助手产品发布会", themeKey: "aqua", signature: "product", heroAsset: "ai-product.png",
     subtitle: "让可信知识从文档深处进入每一次业务决策",
     sections: [["为什么现在", "知识资产增长速度已经超过人工检索能力"], ["产品如何工作", "检索、回答、证据与治理形成完整体验"], ["上市行动", "试用、定价和伙伴联合销售同步启动"]],
     decision: "开放 30 天试用，并启动 8 家伙伴联合销售计划",
   },
   "market-analysis": {
-    title: "中国工业视觉质检软件市场分析", themeKey: "coral", signature: "funnel",
+    title: "中国工业视觉质检软件市场分析", themeKey: "coral", signature: "funnel", heroAsset: "market-globe.jpeg",
     subtitle: "在 68 亿元市场中选择最可赢的两条行业线",
     sections: [["市场判断", "规模增长并不等于每个行业都值得进入"], ["竞争与需求", "访谈、付费意愿和竞争密度共同筛选赛道"], ["战略选择", "汽车零部件优先，消费电子同步验证"]],
     decision: "批准汽车零部件与消费电子两条优先行业线",
   },
   "sales-proposal": {
-    title: "区域银行智能营销销售提案", themeKey: "cobalt", signature: "journey",
+    title: "区域银行智能营销销售提案", themeKey: "navy", signature: "journey", heroAsset: "sales-city.png",
     subtitle: "以三个月联合验证，把响应率提升转化为可审计回报",
     sections: [["客户机会", "存量客户规模可观，活动响应仍有结构性空间"], ["联合方案", "数据、分群、触达和复盘形成闭环"], ["商务决策", "明确试点范围、预算、目标与退出条件"]],
     decision: "批准三个月联合验证和 120 万元一期采购预算",
   },
   "investor-pitch": {
-    title: "工业能效 SaaS Pre-A 轮融资演示", themeKey: "violet", signature: "flywheel",
+    title: "工业能效 SaaS Pre-A 轮融资演示", themeKey: "violet", signature: "investor", heroAsset: "investor-tech.jpeg",
     subtitle: "用可复制增长与健康单位经济证明下一阶段规模化",
     sections: [["增长证明", "ARR、客户与留存共同验证产品市场匹配"], ["商业引擎", "高毛利订阅与可控获客形成增长飞轮"], ["融资命题", "资金用途与 24 个月里程碑清晰可验证"]],
     decision: "进入尽调并讨论 3000 万元 Pre-A 轮投资",
   },
   "strategy-planning": {
-    title: "2027–2029 海外增长战略规划", themeKey: "coral", signature: "horizon",
+    title: "2027–2029 海外增长战略规划", themeKey: "terra", signature: "horizon", heroAsset: "strategy-factory.png",
     subtitle: "东南亚优先、欧洲验证：用资源取舍换三年确定性",
     sections: [["战略事实", "海外业务已有基础，但资源仍然分散"], ["区域选择", "增长、进入难度与产品适配决定优先级"], ["三年路径", "市场、产品和组织能力分阶段投入"]],
     decision: "批准东南亚优先、欧洲验证的三年资源配置方案",
   },
   "data-analysis-report": {
-    title: "订阅产品流失驱动因素分析", themeKey: "academic", signature: "ranking",
+    title: "订阅产品流失驱动因素分析", themeKey: "academic", signature: "ranking", heroAsset: "data-isometric.png",
     subtitle: "把 48,200 个账户的信号转化为 90 天增长实验",
     sections: [["问题定义", "总体流失率掩盖了三个高风险人群"], ["驱动证据", "入门、支持与低使用共同解释可干预空间"], ["实验决策", "围绕前三项驱动因素建立可证伪实验"]],
     decision: "批准前三项流失驱动因素的 90 天实验计划",
   },
   "training-course": {
-    title: "一线经理结构化复盘培训", themeKey: "amber", signature: "staircase",
+    title: "一线经理结构化复盘培训", themeKey: "amber", signature: "staircase", heroAsset: "training-presenter.png",
     subtitle: "180 分钟，从讲道理到完成一次可观察的团队复盘",
     sections: [["学习目标", "复盘不是回顾，而是用事实改善下一次行动"], ["课堂体验", "案例、练习、反馈与评估形成学习闭环"], ["迁移落地", "30 天内把方法带回真实团队场景"]],
     decision: "每位学员完成一次可观察、可行动的团队复盘",
   },
   "brand-company-introduction": {
-    title: "新能源材料公司品牌与能力介绍", themeKey: "lime", signature: "constellation",
+    title: "新能源材料公司品牌与能力介绍", themeKey: "lime", signature: "constellation", heroAsset: "brand-green.png",
     subtitle: "从研发、制造到客户验证，建立可信而克制的品牌叙事",
     sections: [["我们是谁", "八年成长形成研发与制造双重底盘"], ["我们能做什么", "专利、产线、产能与市场覆盖共同证明能力"], ["合作下一步", "从能力认知进入客户验证与联合开发"]],
     decision: "推动目标客户进入样品验证或合作洽谈",
   },
   "project-kickoff": {
-    title: "集团 ERP 云迁移项目启动会", themeKey: "cobalt", signature: "governance",
+    title: "集团 ERP 云迁移项目启动会", themeKey: "slate", signature: "governance", heroAsset: "kickoff-digital.png",
     subtitle: "23 家主体、4 个批次、14 个月：先把协同规则说清楚",
     sections: [["共同目标", "范围、成功标准与不可突破约束统一"], ["治理与路径", "决策、交付、升级和批次迁移形成机制"], ["立即行动", "关键里程碑、九项风险与首月任务落位"]],
     decision: "确认范围、治理机制、关键里程碑和风险升级路径",
   },
   "ecommerce-marketing-plan": {
-    title: "双十一全域电商增长方案", themeKey: "magenta", signature: "calendar",
+    title: "双十一全域电商增长方案", themeKey: "magenta", signature: "calendar", heroAsset: "campaign-runner.jpeg",
     subtitle: "28 天战役，把预算、货品、内容和会员经营编成同一节奏",
     sections: [["增长命题", "1.2 亿元目标需要拆成可执行的经营杠杆"], ["战役编排", "渠道、内容、货品与供应链按节奏协同"], ["预算决策", "1800 万元资源绑定 ROAS 与新客目标"]],
     decision: "批准 1800 万元预算分配、货品策略和战役节奏",
@@ -1159,21 +1504,45 @@ function scenarioSignature(pptx, theme, index, config, facts) {
   };
   const darkFill = theme.deep;
   if (config.signature === "architecture") {
+    const layerTitles = [
+      factTitle(facts[0]),
+      factTitle(facts[1]),
+      factTitle(facts[2]),
+      config.sections[2][0],
+    ];
     [0, 1, 2, 3].forEach((item) => {
       const x = 1.0 + item * 0.72;
       const y = 5.5 - item * 1.02;
       const w = 10.9 - item * 1.44;
       box(slide, x, y, w, 0.74, item === 3 ? theme.accent : item === 0 ? darkFill : theme.surface, 0.08, { color: theme.accent, width: 1.1, transparency: 30 });
-      text(slide, ["数据源与质量", "统一事实与指标", "分析服务与场景", "联合治理与决策"][item], x + 0.28, y + 0.16, 3.0, 0.34, 13, item === 0 ? theme.white : theme.ink, { bold: true });
+      text(slide, layerTitles[item], x + 0.28, y + 0.16, 3.6, 0.34, 13, item === 0 ? theme.white : theme.ink, { bold: true });
       text(slide, label(item), x + w - 2.6, y + 0.1, 2.25, 0.48, 9, item === 0 ? theme.pale : theme.muted, { align: "right", bold: true });
     });
   } else if (config.signature === "product") {
     [0, 1, 2].forEach((item) => {
       const x = 0.85 + item * 4.02;
       box(slide, x, 1.8 + item * 0.28, 3.45, 4.45 - item * 0.35, item === 1 ? darkFill : theme.surface, 0.12, { color: theme.accent, width: 1.2, transparency: 25 });
-      box(slide, x + 0.3, 2.28 + item * 0.28, 2.85, 0.38, theme.accent, 0.08);
-      [0, 1, 2, 3].forEach((row) => box(slide, x + 0.3, 2.92 + item * 0.28 + row * 0.55, 2.85 - row * 0.26, 0.28, item === 1 ? theme.surface : theme.pale, 0.05));
-      text(slide, ["可信检索", "证据回答", "管理治理"][item], x + 0.3, 5.55, 2.85, 0.38, 15, item === 1 ? theme.white : theme.ink, { bold: true });
+      text(slide, ["01 / SEARCH", "02 / ANSWER", "03 / GOVERN"][item], x + 0.3, 2.08 + item * 0.28, 2.85, 0.28, 7, item === 1 ? theme.pale : theme.muted, { fontFace: MONO, bold: true, charSpacing: 1.2 });
+      if (item === 0) {
+        box(slide, x + 0.3, 2.62, 2.85, 0.48, theme.pale, 0.08);
+        text(slide, "输入业务问题…", x + 0.52, 2.73, 2.3, 0.24, 9, theme.muted);
+        ["销售政策", "项目复盘", "产品规范"].forEach((labelValue, row) => {
+          box(slide, x + 0.3, 3.35 + row * 0.52, 2.85, 0.34, row === 0 ? theme.accent : theme.surface, 0.05, { color: theme.accent, width: 0.8, transparency: 45 });
+          text(slide, labelValue, x + 0.5, 3.41 + row * 0.52, 2.2, 0.22, 8, row === 0 ? theme.white : theme.ink, { bold: true });
+        });
+      } else if (item === 1) {
+        text(slide, "结论先行", x + 0.3, 2.75, 2.85, 0.34, 13, theme.white, { bold: true });
+        [2.0, 2.45, 1.65].forEach((width, row) => box(slide, x + 0.3, 3.35 + row * 0.45, width, 0.2, theme.surface, 0.03));
+        box(slide, x + 0.3, 4.95, 2.85, 0.56, theme.accent, 0.06);
+        text(slide, "3 条原文证据 · 可追溯", x + 0.48, 5.08, 2.5, 0.25, 8, theme.white, { bold: true });
+      } else {
+        [["权限策略", "24"], ["知识空间", "18"], ["审计事件", "1,284"]].forEach(([labelValue, count], row) => {
+          text(slide, labelValue, x + 0.3, 2.72 + row * 0.72, 1.65, 0.28, 9, theme.ink, { bold: true });
+          text(slide, count, x + 2.0, 2.65 + row * 0.72, 1.1, 0.34, 14, theme.accent, { fontFace: MONO, bold: true, align: "right" });
+          slide.addShape(SHAPE.line, { x: x + 0.3, y: 3.1 + row * 0.72, w: 2.85, h: 0, line: { color: theme.pale, width: 1 } });
+        });
+      }
+      text(slide, ["可信检索", "证据回答", "管理治理"][item], x + 0.3, 5.62, 2.85, 0.38, 15, item === 1 ? theme.white : theme.ink, { bold: true });
     });
   } else if (config.signature === "funnel") {
     const widths = [9.8, 7.2, 4.8];
@@ -1187,8 +1556,12 @@ function scenarioSignature(pptx, theme, index, config, facts) {
   } else if (config.signature === "quadrant") {
     slide.addShape(SHAPE.line, { x: 1.15, y: 5.95, w: 10.4, h: 0, line: { color: theme.ink, width: 1.4, endArrowType: "triangle" } });
     slide.addShape(SHAPE.line, { x: 6.35, y: 6.1, w: 0, h: -4.4, line: { color: theme.ink, width: 1.4, endArrowType: "triangle" } });
-    text(slide, "经营贡献 →", 9.25, 6.18, 2.3, 0.25, 8, theme.muted, { fontFace: MONO, align: "right" });
-    text(slide, "改善紧迫度", 6.55, 1.55, 1.6, 0.25, 8, theme.muted, { fontFace: MONO });
+    text(slide, "经营贡献 →", 9.05, 6.16, 2.5, 0.3, 11, theme.ink, { fontFace: MONO, bold: true, align: "right" });
+    text(slide, "改善紧迫度 ↑", 6.55, 1.48, 2.1, 0.3, 11, theme.ink, { fontFace: MONO, bold: true });
+    text(slide, "立即整改", 6.72, 1.88, 1.25, 0.25, 9, theme.accent, { bold: true });
+    text(slide, "重点放大", 10.1, 1.88, 1.25, 0.25, 9, theme.accent, { bold: true, align: "right" });
+    text(slide, "观察维护", 1.35, 5.52, 1.25, 0.25, 9, theme.muted, { bold: true });
+    text(slide, "效率优化", 9.95, 5.52, 1.4, 0.25, 9, theme.muted, { bold: true, align: "right" });
     [[3.0, 4.35, 0.75], [8.9, 2.2, 1.25], [9.25, 4.62, 0.95], [4.2, 2.75, 0.62]].forEach(([x, y, d], item) => {
       slide.addShape(SHAPE.ellipse, { x, y, w: d, h: d, fill: { color: item === 1 ? theme.accent : darkFill, transparency: 10 }, line: { color: theme.white, width: 1 } });
       text(slide, label(item), x - 0.45, y + d + 0.08, 1.65, 0.5, 9, theme.ink, { align: "center", bold: true });
@@ -1208,20 +1581,72 @@ function scenarioSignature(pptx, theme, index, config, facts) {
       text(slide, item === 0 ? "CORE" : `0${item}`, x - 0.12, y + 0.14, 1.05, 0.28, 9, theme.white, { fontFace: MONO, bold: true, align: "center" });
       if (item > 0) text(slide, factTitle(facts[item % facts.length]), x - 0.6, y + 0.72, 1.8, 0.32, 9, theme.ink, { bold: true, align: "center" });
     });
-  } else if (config.signature === "ranking") {
-    const chosen = facts.filter((fact) => typeof fact.value === "number").slice(0, 6);
-    const max = Math.max(...chosen.map((fact) => Number(fact.value)), 1);
-    chosen.forEach((fact, item) => {
-      const y = 1.85 + item * 0.72;
-      text(slide, factTitle(fact), 0.9, y, 2.35, 0.3, 10, theme.ink, { bold: true });
-      box(slide, 3.25, y + 0.02, 7.65 * (Number(fact.value) / max), 0.34, item < 3 ? theme.accent : theme.pale, 0.06);
-      text(slide, displayFact(fact), 11.2, y - 0.02, 1.1, 0.35, 11, theme.ink, { fontFace: MONO, bold: true, align: "right" });
+  } else if (config.signature === "investor") {
+    const chosen = facts.filter((fact) => typeof fact.value === "number").slice(0, 4);
+    box(slide, 0.85, 1.72, 3.3, 4.6, darkFill, 0.1);
+    text(slide, "ARR", 1.18, 2.12, 2.65, 0.3, 8, theme.pale, { fontFace: MONO, bold: true, charSpacing: 1.5 });
+    text(slide, displayFact(chosen[0]), 1.15, 2.65, 2.7, 0.72, 32, theme.white, { bold: true });
+    text(slide, "增长结果", 1.18, 3.5, 2.6, 0.32, 11, theme.pale, { bold: true });
+    [0.36, 0.55, 0.76, 1.0].forEach((ratio, item) => {
+      const barH = 0.42 + ratio * 1.35;
+      box(slide, 1.2 + item * 0.62, 5.75 - barH, 0.38, barH, item === 3 ? theme.accent : theme.surface, 0.03);
     });
-  } else if (config.signature === "staircase" || config.signature === "horizon" || config.signature === "calendar" || config.signature === "journey") {
+    chosen.slice(1).forEach((fact, item) => {
+      const y = 1.85 + item * 1.42;
+      box(slide, 4.75, y, 7.55, 1.05, item === 1 ? theme.accent : theme.surface, 0.08, { color: theme.accent, width: 1, transparency: 25 });
+      text(slide, factTitle(fact), 5.08, y + 0.18, 3.2, 0.3, 11, item === 1 ? theme.white : theme.ink, { bold: true });
+      text(slide, displayFact(fact), 9.45, y + 0.1, 2.45, 0.45, 20, item === 1 ? theme.white : theme.ink, { bold: true, align: "right" });
+      if (item < 2) slide.addShape(SHAPE.line, { x: 8.45, y: y + 1.05, w: 0, h: 0.37, line: { color: theme.accent, width: 2, endArrowType: "triangle" } });
+    });
+    text(slide, "增长 → 留存 → 毛利：同一条单位经济证据链", 4.78, 6.15, 7.45, 0.3, 9, theme.muted, { bold: true, align: "right" });
+  } else if (config.signature === "ranking") {
+    const rateFacts = facts.filter((fact) => typeof fact.value === "number" && String(fact.unit || "").includes("%"));
+    const chosen = (rateFacts.length >= 3 ? rateFacts : facts.filter((fact) => typeof fact.value === "number")).slice(0, 6);
+    const max = Math.max(...chosen.map((fact) => Number(fact.value)), 1);
+    text(slide, "同口径流失率比较 · BAR LENGTH = 月流失率", 0.9, 1.48, 5.8, 0.24, 7, theme.muted, { fontFace: MONO, bold: true, charSpacing: 1.2 });
+    chosen.forEach((fact, item) => {
+      const y = 2.0 + item * 0.84;
+      text(slide, factTitle(fact), 0.9, y, 2.35, 0.3, 10, theme.ink, { bold: true });
+      box(slide, 3.25, y + 0.02, 7.25, 0.38, theme.pale, 0.06);
+      box(slide, 3.25, y + 0.02, Math.max(0.35, 7.25 * (Number(fact.value) / max)), 0.38, item < 3 ? theme.accent : theme.deep, 0.06);
+      text(slide, displayFact(fact), 10.82, y - 0.02, 1.45, 0.4, 12, theme.ink, { fontFace: MONO, bold: true, align: "right" });
+    });
+  } else if (config.signature === "calendar") {
+    const stages = ["预热蓄水", "内容种草", "爆发转化", "返场复购"];
+    stages.forEach((stage, week) => {
+      const y = 1.72 + week * 1.22;
+      text(slide, `W${week + 1}`, 0.85, y + 0.25, 0.55, 0.3, 10, theme.accent, { fontFace: MONO, bold: true });
+      text(slide, stage, 1.55, y + 0.18, 1.45, 0.34, 12, theme.ink, { bold: true });
+      for (let day = 0; day < 7; day += 1) {
+        const active = day <= week + 2;
+        box(slide, 3.25 + day * 0.78, y, 0.62, 0.78, active ? theme.accent : theme.surface, 0.04, { color: theme.accent, width: 0.7, transparency: 35 });
+        text(slide, String(week * 7 + day + 1).padStart(2, "0"), 3.25 + day * 0.78, y + 0.24, 0.62, 0.22, 7, active ? theme.white : theme.muted, { fontFace: MONO, bold: true, align: "center" });
+      }
+      text(slide, displayFact(facts[(week + 4) % facts.length]), 9.35, y + 0.12, 2.6, 0.42, 16, week === 3 ? theme.accent : theme.ink, { bold: true, align: "right" });
+    });
+  } else if (config.signature === "horizon") {
+    [["2027 / 聚焦", "东南亚优先，建立本地化样板"], ["2028 / 复制", "产品与渠道能力跨市场复用"], ["2029 / 放大", "欧洲验证，海外占比进入目标区间"]].forEach(([year, detail], item) => {
+      const y = 1.8 + item * 1.55;
+      slide.addShape(SHAPE.line, { x: 0.95, y: y + 0.52, w: 10.95, h: 0, line: { color: item === 2 ? theme.accent : theme.pale, width: item === 2 ? 4 : 2 } });
+      slide.addShape(SHAPE.ellipse, { x: 2.4 + item * 2.85, y: y + 0.22, w: 0.6, h: 0.6, fill: { color: item === 2 ? theme.accent : theme.deep }, line: { color: theme.white, width: 1 } });
+      text(slide, year, 0.95, y - 0.08, 2.2, 0.36, 13, theme.ink, { bold: true });
+      text(slide, detail, 6.1, y - 0.08, 5.55, 0.36, 11, theme.muted, { bold: true, align: "right" });
+    });
+  } else if (config.signature === "journey") {
+    const stages = ["客户分群", "意图触发", "个性化触达", "响应复盘"];
+    slide.addShape(SHAPE.line, { x: 1.15, y: 3.62, w: 10.7, h: 0, line: { color: theme.accent, width: 4, endArrowType: "triangle" } });
+    stages.forEach((stage, item) => {
+      const x = 1.15 + item * 2.85;
+      slide.addShape(SHAPE.ellipse, { x, y: 3.2, w: 0.85, h: 0.85, fill: { color: item === 3 ? theme.accent : darkFill }, line: { color: theme.white, width: 1 } });
+      text(slide, `0${item + 1}`, x, 3.45, 0.85, 0.24, 8, theme.white, { fontFace: MONO, bold: true, align: "center" });
+      text(slide, stage, x - 0.55, 2.25, 1.95, 0.42, 13, theme.ink, { bold: true, align: "center" });
+      text(slide, label(item + 4), x - 0.72, 4.45, 2.3, 0.68, 9, theme.muted, { bold: true, align: "center" });
+    });
+  } else if (config.signature === "staircase") {
     [0, 1, 2, 3].forEach((item) => {
       const x = 0.85 + item * 2.95;
-      const y = config.signature === "staircase" ? 5.35 - item * 0.82 : 2.15 + (item % 2) * 1.3;
-      const h = config.signature === "staircase" ? 0.85 + item * 0.82 : 1.05;
+      const y = 5.35 - item * 0.82;
+      const h = 0.85 + item * 0.82;
       box(slide, x, y, 2.5, h, item === 3 ? darkFill : item === 2 ? theme.accent : theme.surface, 0.08, { color: theme.accent, width: 1, transparency: 25 });
       text(slide, ["启动", "验证", "扩展", "复盘"][item], x + 0.2, y + 0.18, 1.2, 0.32, 13, item >= 2 ? theme.white : theme.ink, { bold: true });
       text(slide, label(item + 4), x + 0.2, y + h - 0.62, 2.05, 0.48, 9, item >= 2 ? theme.pale : theme.muted, { bold: true });
@@ -1248,7 +1673,7 @@ function scenarioSignature(pptx, theme, index, config, facts) {
   notes(slide, facts.slice(0, 6).map((fact) => fact.id), `scenario-signature-${config.signature}`);
 }
 
-function semanticPlanScene(pptx, theme, index, brief, facts) {
+function semanticPlanScene(pptx, theme, index, brief, config, facts) {
   const preferredSemanticByScenario = {
     "brand-company-introduction": ["composition", "matrix"],
     "strategy-planning": ["composition", "matrix"],
@@ -1263,9 +1688,12 @@ function semanticPlanScene(pptx, theme, index, brief, facts) {
   const semantic = first?.semantic_hint || "roadmap";
   const refs = first?.fact_refs || facts.slice(0, 4).map((fact) => fact.id);
   const referencedFacts = refs.map((id) => facts.find((fact) => fact.id === id)).filter(Boolean);
-  const selected = referencedFacts.length ? referencedFacts : facts.slice(0, 4);
+  const selected = [
+    ...referencedFacts,
+    ...facts.filter((fact) => !referencedFacts.some((selectedFact) => selectedFact.id === fact.id)),
+  ].slice(0, Math.max(4, referencedFacts.length));
   if (["comparison", "risk"].includes(semantic) && selected.length >= 2) {
-    beforeAfter(pptx, theme, index, "两项关键事实需要放在同一决策坐标中比较", {
+    beforeAfter(pptx, theme, index, `决策对照：${config.sections[2][1]}`, {
       value: displayFact(selected[0]), label: factTitle(selected[0]), detail: displayScope(selected[0]),
     }, {
       value: displayFact(selected[1]), label: factTitle(selected[1]), detail: displayScope(selected[1]),
@@ -1273,18 +1701,18 @@ function semanticPlanScene(pptx, theme, index, brief, facts) {
     return "semantic-comparison";
   }
   if (["matrix", "quadrant", "composition", "funnel"].includes(semantic)) {
-    matrix(pptx, theme, index, "并列证据按影响与行动价值组织成决策矩阵", selected.slice(0, 6).map((fact, item) => ({
+    matrix(pptx, theme, index, `行动矩阵：${config.sections[2][1]}`, selected.slice(0, 6).map((fact, item) => ({
       kicker: `GROUP ${item + 1}`, title: factTitle(fact), detail: displayFact(fact),
     })), refs);
     return "semantic-matrix";
   }
   if (["metrics", "trend", "table"].includes(semantic)) {
-    metricLedger(pptx, theme, index, "关键事实共同定义本轮决策的结果边界", selected.slice(0, 4).map((fact) => ({
+    metricLedger(pptx, theme, index, `结果边界：${config.sections[2][1]}`, selected.slice(0, 4).map((fact) => ({
       value: displayFact(fact), label: factTitle(fact), detail: displayScope(fact),
     })), refs);
     return "semantic-metric-ledger";
   }
-  processFlow(pptx, theme, index, "证据之间存在明确顺序，必须沿路径逐项验证", selected.slice(0, 4).map((fact) => ({
+  processFlow(pptx, theme, index, `验证路径：${config.sections[2][1]}`, selected.slice(0, 4).map((fact) => ({
     title: factTitle(fact), detail: displayFact(fact),
   })), refs);
   return "semantic-process";
@@ -1310,14 +1738,14 @@ function buildScenarioDeck(brief, config) {
     role, family, density, candidate_id: candidate,
   });
 
-  heroCover(pptx, theme, "WINDOW-PPTX / REAL SCENARIO", config.title, config.subtitle, `${brief.audience.primary} · ${brief.timing.presentation_minutes} MIN`, ["violet", "cobalt"].includes(config.themeKey));
-  add("cover", "hero-cover", "sparse", "native:cover.editorial");
+  scenarioCover(pptx, theme, config, brief);
+  add("cover", `scenario-cover-${config.signature}`, "sparse", `native:cover.${config.signature}`);
   agenda(pptx, theme, config.sections.map(([titleValue, detail]) => [titleValue, detail]), ["violet"].includes(config.themeKey));
   add("agenda", "agenda-editorial", "medium", "native:agenda.grid-four");
-  bigMetrics(pptx, theme, 3, "先用四个事实定义这次讨论的尺度与优先级", facts.slice(0, 4).map((fact) => ({
+  scenarioSummary(pptx, theme, 3, config, facts.slice(0, 4).map((fact) => ({
     value: displayFact(fact), label: factTitle(fact), detail: displayScope(fact),
-  })), facts.slice(0, 4).map((fact) => fact.id), false);
-  add("executive-summary", "asymmetric-big-metrics", "medium", "native:focal-statement.editorial-left");
+  })), facts.slice(0, 4).map((fact) => fact.id));
+  add("executive-summary", `scenario-summary-${config.signature}`, "medium", `native:summary.${config.signature}`);
 
   chapter(pptx, theme, 1, config.sections[0][0], config.sections[0][1], ["violet", "cobalt"].includes(config.themeKey));
   add("section", "chapter-reset", "sparse", "native:section.centered");
@@ -1361,7 +1789,7 @@ function buildScenarioDeck(brief, config) {
   add("scenario-signature", `scenario-signature-${config.signature}`, "dense", `native:scenario.${config.signature}`);
   chapter(pptx, theme, 3, config.sections[2][0], config.sections[2][1], ["violet"].includes(config.themeKey));
   add("section", "chapter-reset", "sparse", "native:section.centered");
-  const semanticFamily = semanticPlanScene(pptx, theme, 13, brief, facts);
+  const semanticFamily = semanticPlanScene(pptx, theme, 13, brief, config, facts);
   add("model-semantic", semanticFamily, "medium", `native:${semanticFamily}`);
   processFlow(pptx, theme, 14, "从决定到执行：四个里程碑均绑定负责人和证据", [
     { title: "M1 · 定义", detail: "锁定范围、口径与责任人。" },
@@ -1393,15 +1821,22 @@ function buildScenarioDeck(brief, config) {
   add("appendix", "six-cell-matrix", "dense", "native:asset-role.matrix");
   statement(pptx, theme, 19, "Boundary / prohibited claims", "边界先于修辞，\n未经验证的收益与背书不得进入成稿", brief.prohibitions.join("；"), false);
   add("appendix", "editorial-statement", "sparse", "native:focal-statement.boundary");
-  heroClosing(pptx, theme, "把决定变成行动，\n把行动变成证据", `目标受众：${brief.audience.primary}`, ["violet", "cobalt"].includes(config.themeKey));
-  add("closing", "hero-closing", "sparse", "native:cta.centered");
+  scenarioClosing(pptx, theme, config, brief);
+  add("closing", `scenario-closing-${config.signature}`, "sparse", `native:cta.${config.signature}`);
   return {
     pptx, pages, scenario: brief.scenario_id,
     theme: `${config.themeKey}-scenario-editorial`, heroTheme: config.themeKey,
+    heroAsset: config.heroAsset && fs.existsSync(path.join(assetDir, config.heroAsset))
+      ? config.heroAsset
+      : null,
   };
 }
 
 function manifestFor(result, file, brief) {
+  const defaultThemeKey = result.scenario.startsWith("annual") ? "work" : result.scenario.startsWith("campus") ? "campus" : "academic";
+  const heroPath = result.heroAsset
+    ? path.join(assetDir, result.heroAsset)
+    : themes[result.heroTheme || defaultThemeKey].hero;
   const manifest = {
     schema_version: "anchor-deck-blueprint.v1",
     scenario_id: result.scenario,
@@ -1414,8 +1849,8 @@ function manifestFor(result, file, brief) {
     native_editable: true,
     whole_slide_rasterization: false,
     generated_hero_assets: [{
-      path: path.basename(themes[result.heroTheme || (result.scenario.startsWith("annual") ? "work" : result.scenario.startsWith("campus") ? "campus" : "academic")].hero),
-      sha256: sha256(themes[result.heroTheme || (result.scenario.startsWith("annual") ? "work" : result.scenario.startsWith("campus") ? "campus" : "academic")].hero),
+      path: path.basename(heroPath),
+      sha256: sha256(heroPath),
       policy: "local-project-bound-image",
     }],
     candidate_policy: {

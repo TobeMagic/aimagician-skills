@@ -665,7 +665,7 @@ acquisition-to-delivery architecture, and establish non-bypassable visual
 acceptance.
 **Depends on:** User rejection of Phase 41 output
 **Requirements:** [V6R-GROUND-01]
-**Status:** In progress
+**Status:** Complete — 2026-07-30
 
 ### Phase 43: Real Playwright Acquisition
 
@@ -767,7 +767,7 @@ nonvisual completion audit pass the exact artifacts with no unresolved
 Blocker or Important.
 **Depends on:** Phases 43–47
 **Requirements:** [V6R-UAT-01, V6R-REL-01]
-**Status:** Planned
+**Status:** Complete — 2026-07-31
 
 ## v6.0 Progress
 
@@ -785,4 +785,4 @@ Blocker or Important.
 | 45. Selection-to-Materialization Bridge | Complete | 2026-07-30 |
 | 46. Three Reference-Grade Anchors | Complete | 2026-07-30 |
 | 47. Fifteen Scenarios and Ordinary-Model Mode | Complete | 2026-07-31 |
-| 48. Blind Acceptance and Closure | Planned | — |
+| 48. Blind Acceptance and Closure | Complete | 2026-07-31 |

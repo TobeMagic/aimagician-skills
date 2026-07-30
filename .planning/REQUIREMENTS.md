@@ -523,32 +523,32 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|----------|--------|
 | V6-BRIEF-01 | Phase 36 | Complete |
 | V6-CORPUS-01 | Phase 36 | Complete |
-| V6-ASSET-01 | Phase 37 | Contract foundation; product acquisition reopened |
-| V6-LIB-01 | Phase 37 | Contract foundation; real catalog reopened |
-| V6-DESIGN-01 | Phase 38 | Selection foundation; materialization reopened |
-| V6-DECK-01 | Phase 38 | Reopened after visual rejection |
-| V6-PORT-01 | Phase 39 | Engineering artifact retained; flagship rejected |
-| V6-PORT-02 | Phase 40 | Engineering artifact retained; flagship rejected |
-| V6-QA-01 | Phase 39 | Reopened under stricter independent-finding rule |
-| V6-EVID-01 | Phase 39 | Reopened; metadata-only spine evidence insufficient |
+| V6-ASSET-01 | Phase 37 | Complete via recovery Phase 43 |
+| V6-LIB-01 | Phase 37 | Complete via recovery Phases 43–44 |
+| V6-DESIGN-01 | Phase 38 | Complete via recovery Phases 45–47 |
+| V6-DECK-01 | Phase 38 | Complete via recovery Phases 46–48 |
+| V6-PORT-01 | Phase 39 | Complete via recovery Phases 45–48 |
+| V6-PORT-02 | Phase 40 | Complete via recovery Phase 48 |
+| V6-QA-01 | Phase 39 | Complete via recovery Phases 45–48 |
+| V6-EVID-01 | Phase 39 | Complete via recovery Phases 43–48 |
 | V6-DOC-01 | Phase 36 | Complete |
-| V6-UAT-01 | Phase 41 | Invalidated / reopened |
-| V6-AUDIT-01 | Phase 41 | Invalidated / reopened |
-| V6-REL-01 | Phase 41 | Invalidated / reopened |
+| V6-UAT-01 | Phase 41 | Complete via stricter recovery Phase 48 |
+| V6-AUDIT-01 | Phase 41 | Complete via fresh recovery Phase 48 audit |
+| V6-REL-01 | Phase 41 | Complete via recovery Phase 48 |
 | V6R-GROUND-01 | Phase 42 | Complete |
 | V6R-ACQ-01 | Phase 43 | Complete |
 | V6R-MINE-01 | Phase 44 | Complete |
 | V6R-MAT-01 | Phase 45 | Complete |
 | V6R-ANCHOR-01 | Phase 46 | Complete |
 | V6R-WEAK-01 | Phase 47 | Complete |
-| V6R-UAT-01 | Phase 48 | Planned |
-| V6R-REL-01 | Phase 48 | Planned |
+| V6R-UAT-01 | Phase 48 | Complete |
+| V6R-REL-01 | Phase 48 | Complete |
 
 **V6 Coverage:**
 - v6 requirements: 22 total
 - Mapped to exactly one primary phase: 22
-- Complete and still accepted: 3
-- Reopened/in progress/planned: 19
+- Complete and still accepted, including recovery evidence: 22
+- Reopened/in progress/planned: 0
 - Unmapped: 0
 
 ---

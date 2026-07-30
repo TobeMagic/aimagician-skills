@@ -1,6 +1,6 @@
 # Milestones
 
-## v6.0 Window-PPTX Template-Intelligence Quality Reset (Active)
+## v6.0 Window-PPTX Template-Intelligence Quality Reset (Shipped: 2026-07-31)
 
 **Goal:** Make Codex GPT-5.5 medium produce native-editable,
 reference-grade, customer-delivery PPTX from discussion-locked realistic
@@ -22,10 +22,14 @@ deterministic engineering gates and three independent AI reviews.
 - Phase 47: Fifteen Scenarios and Ordinary-Model Mode
 - Phase 48: Blind Acceptance and Closure
 
-**Status:** Reopened / `NO_GO`. The former Phase 41 GO is invalid after the
-user rejected the actual visual result and template-reuse evidence. Phases
-36–41 remain historical engineering evidence; Phases 42–48 own the real
-acquisition-to-delivery recovery and fresh acceptance.
+**Status:** Complete / `GO`. The former Phase 41 GO remains invalid historical
+evidence. Phases 42–48 performed the real acquisition-to-delivery recovery:
+377 private editable packages, a 288-page certified core, exact
+selection-to-materialization, three accepted anchors, fifteen realistic
+scenario decks across 292 editable pages, 18 fresh blind visual contexts, 96
+focused regression tests, and a stable-worktree OpenCode `DONE` audit with
+zero Blocker or Important. COM is optional diagnostics, not a release
+dependency.
 
 ---
 
