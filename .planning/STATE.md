@@ -36,13 +36,14 @@ Current Phase Name: Window-PPTX Weak-Model Benchmark
 Status: In Progress (current milestone 6/8 phases complete)
 Last Activity: 2026-07-20
 
-### Active Controlled Exception
+### Completed Controlled Exception
 
 - Task: `vision-analysis-phase-goal-guards`
+- Status: Complete
 - Approval source: `USR-20260730-001`
 - Parent milestone/phase: `v5.0` / `28`
 - Boundary: Add direct Agnes image understanding, correct CLI-agent visual routing, and harden workflow goal/closure validation without changing Window-PPTX implementation or phase status.
-- Return checkpoint: Resume Phase 28 at frozen benchmark briefs, manifests, scoring, and ordinary-model trials after this task is independently audited and synchronized.
+- Return checkpoint: Resumed Phase 28 at frozen benchmark briefs, manifests, scoring, and ordinary-model trials after independent audit and synchronization.
 
 Foundation completed:
 

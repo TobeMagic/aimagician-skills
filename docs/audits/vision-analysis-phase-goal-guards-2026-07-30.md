@@ -60,4 +60,22 @@ The second session, `ses_04e44fb68ffeKY1YTwwbkqgEs4`, used controller-selected `
 
 The third session, `ses_04e3e91c7ffejkfpIykhv55vtC`, used controller-selected `opencode/big-pickle`, passed all eight implementation requirements, reran 147 tests and typecheck, and found no Blocker. Its completion decision was rejected because it launched an unapproved child agent. It also identified an Important inconsistency where REQ-SYNC-003 evidence described completed synchronization while the row remained `NOT_RUN`; this document and the task record remediate that finding.
 
-The final accepted audit must use a fresh session, the corrected evidence record, and no child agents.
+## Final Accepted Audit
+
+The final accepted audit used frozen review point `1a309581ee0964daf42b69155e164835f9132729` and no child agents.
+
+- provider: OpenCode;
+- primary model: `opencode/deepseek-v4-flash-free`;
+- primary session: `ses_04e25003dffeozS29oFciNrwgH`;
+- primary result: explicit `Rate limit exceeded`;
+- final model: `agnes/agnes-2.0-flash`;
+- final session: `ses_04e240ec0ffefFsGqK8UF305VD`;
+- fallback reason: `explicit-usage-limit`;
+- final run status: DONE;
+- requirement matrix: nine PASS;
+- Blocker: 0;
+- Important: 0;
+- Nitpick: 0;
+- final decision: PASS.
+
+The final reviewer directly reran all 147 tests and Skillbird doctor for both installed targets. Its prose incorrectly self-reported DeepSeek as the final model even though the authoritative OpenCode process log records `providerID=agnes` and `modelID=agnes-2.0-flash` for the accepted session. The controller corrected that provenance from the execution log and retained the reviewer requirement matrix and findings.

@@ -1,14 +1,14 @@
 # Task: vision-analysis-phase-goal-guards
 
 **Task ID:** vision-analysis-phase-goal-guards
-**Status:** Ready for final independent audit
+**Status:** Complete
 **Source request:** USR-20260730-001
 **Parent milestone:** v5.0
 **Parent phase:** 28
 **Exception status:** Approved
 **Approval source:** USR-20260730-001
 **Return checkpoint:** Resume Phase 28 frozen benchmark briefs, manifests, scoring, and ordinary-model trials.
-**Review point:** NOT_RUN
+**Review point:** `1a309581ee0964daf42b69155e164835f9132729`
 
 ## Original Request
 
@@ -53,19 +53,19 @@ Add a direct Agnes image-understanding skill because OpenCode cannot pass images
 
 - **Provider:** OpenCode
 - **Primary model:** `opencode/deepseek-v4-flash-free`
-- **Model:** Pending final fresh audit
-- **Attempt chain:** DeepSeek provider internal-server failure -> Nemotron streaming failure -> Big Pickle completed with an unapproved child-agent scope violation
-- **Fallback reason:** Provider failures; controller-selected free candidates. Agnes was not used because no verified usage/quota event occurred.
-- **Session:** Pending final fresh audit
-- **Run status:** Previous attempts rejected; final fresh audit pending
-- **Review point:** Pending evidence commit
-- **Requirement matrix:** Eight implementation requirements passed in the rejected review; REQ-SYNC-003 evidence record corrected before final review.
-- **Blocker:** 0 in rejected review
-- **Important:** 1 record-consistency finding, remediated before final review
-- **Nitpick:** 3 non-blocking observations
-- **Controller spot-check:** Live Agnes request, 147-test suite, typecheck, build, formatter, both target doctors, and installed hashes independently reproduced.
+- **Model:** `agnes/agnes-2.0-flash`
+- **Attempt chain:** `opencode/deepseek-v4-flash-free: explicit rate limit -> agnes/agnes-2.0-flash: success`
+- **Fallback reason:** `explicit-usage-limit`
+- **Session:** `ses_04e240ec0ffefFsGqK8UF305VD`
+- **Run status:** DONE
+- **Review point:** `1a309581ee0964daf42b69155e164835f9132729`
+- **Requirement matrix:** All nine requirements PASS with implementation, test, live-smoke, documentation, and installed-state evidence.
+- **Blocker:** 0
+- **Important:** 0
+- **Nitpick:** 0
+- **Controller spot-check:** Reproduced the live Agnes request, 147-test suite, typecheck, build, formatter, both target doctors, and installed hashes. Corrected the reviewer's self-reported model from the authoritative OpenCode execution log, which records `providerID=agnes`, `modelID=agnes-2.0-flash`, after the DeepSeek rate-limit session.
 
 ## Final Decision
 
-**Status:** In progress
-**Reason:** Implementation, live visual smoke testing, full verification, and synchronization passed. A fresh scope-compliant independent completion audit remains required.
+**Status:** Complete
+**Reason:** Every accepted requirement passed implementation, live smoke, regression, installation, and fresh independent completion audit gates with no unresolved finding.
