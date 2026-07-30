@@ -18,6 +18,7 @@ from window_pptx.acquisition import (
 from window_pptx.catalog import CatalogError, DEFAULT_CATALOG, load_catalog, query_catalog
 from window_pptx.quarantine import inspect_package_bytes, validate_quarantine_report
 from window_pptx.rights import RightsError, certification_evidence, load_rights_record
+from window_pptx.gaojie_playwright import GaojieConfig, sync_gaojie
 
 
 PUBLIC_METADATA_SOURCE_ID = "public-metadata-seed"
@@ -55,6 +56,13 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--minimum-slides", type=int)
     parser.add_argument("--include-uncertified", action="store_true")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--source-adapter", choices=["contract", "gaojie"], default="contract")
+    parser.add_argument("--headful", action="store_true")
+    parser.add_argument("--maximum-items", type=int)
+    parser.add_argument("--minimum-free-gb", type=float, default=40.0)
+    parser.add_argument("--allow-insecure-http", action="store_true")
+    parser.add_argument("--minimum-categories", type=int, default=32)
+    parser.add_argument("--maximum-file-bytes", type=int, default=2 * 1024 * 1024 * 1024)
     return parser
 
 
@@ -94,6 +102,34 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         elif not args.credential_file:
             status = "NEEDS_AUTH"
             findings.append({"code": "PRIVATE_CREDENTIAL_REQUIRED"})
+        elif args.source_adapter == "gaojie" and args.apply:
+            try:
+                validate_private_credential_file(
+                    args.credential_file, args.private_root
+                )
+            except AcquisitionError:
+                status = "NEEDS_AUTH"
+                findings.append({"code": "PRIVATE_CREDENTIAL_INVALID"})
+            else:
+                try:
+                    result = sync_gaojie(GaojieConfig(
+                        origin=args.origin,
+                        private_root=private_root,
+                        credential_file=Path(args.credential_file),
+                        headless=not args.headful,
+                        maximum_items=args.maximum_items,
+                        minimum_free_gb=args.minimum_free_gb,
+                        allow_insecure_http=args.allow_insecure_http,
+                        minimum_categories=args.minimum_categories,
+                        maximum_file_bytes=args.maximum_file_bytes,
+                    ))
+                except AcquisitionError:
+                    status = "FAIL"
+                    findings.append({"code": "GAOJIE_ADAPTER_INVALID"})
+                else:
+                    status = result["status"]
+                    findings.extend(result.get("findings", []))
+                    completed.extend(item["sha256"] for item in result.get("artifacts", []))
         else:
             try:
                 validate_private_credential_file(
@@ -200,6 +236,7 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         mode=mode,
         state_path=relative_state_path if args.apply else None,
         findings=findings,
+        allow_insecure_http_hosts=hosts if args.allow_insecure_http else (),
     )
     if args.apply:
         write_resume_state(

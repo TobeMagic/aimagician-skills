@@ -47,23 +47,28 @@ def _validate_private_root(root: Path) -> None:
         raise AcquisitionError("private root must be a non-symlink named .private")
 
 
-def _host(url: str) -> str:
+def _host(url: str, allow_insecure_http_hosts: Iterable[str] = ()) -> str:
     parsed = urlsplit(url)
-    if parsed.scheme != "https" or not parsed.hostname:
+    if not parsed.hostname:
         raise AcquisitionError("acquisition URLs must use https with a hostname")
-    return parsed.hostname.casefold().rstrip(".")
+    host = parsed.hostname.casefold().rstrip(".")
+    insecure = {item.casefold().rstrip(".") for item in allow_insecure_http_hosts}
+    if parsed.scheme != "https" and not (parsed.scheme == "http" and host in insecure):
+        raise AcquisitionError("acquisition URLs must use https unless the source host has an explicit HTTP exception")
+    return host
 
 
 def authorization_scope(
     origin_url: str,
     target_url: str,
     allowlisted_hosts: Iterable[str],
+    allow_insecure_http_hosts: Iterable[str] = (),
 ) -> str:
     """Return attach, strip, or reject without reading any credential."""
 
     allowed = {item.casefold().rstrip(".") for item in allowlisted_hosts}
-    origin = _host(origin_url)
-    target = _host(target_url)
+    origin = _host(origin_url, allow_insecure_http_hosts)
+    target = _host(target_url, allow_insecure_http_hosts)
     if origin not in allowed:
         raise AcquisitionError("origin host is not allowlisted")
     if target not in allowed:
@@ -110,6 +115,7 @@ def build_acquisition_manifest(
     state_path: str | None = None,
     resume_cursor: str | None = None,
     findings: Iterable[dict[str, Any]] = (),
+    allow_insecure_http_hosts: Iterable[str] = (),
 ) -> dict[str, Any]:
     """Build a deterministic metadata-only acquisition manifest."""
 
@@ -145,7 +151,7 @@ def build_acquisition_manifest(
         hosts.append(item.casefold().rstrip("."))
     hosts = sorted(set(hosts))
     if origin:
-        origin_host = _host(origin)
+        origin_host = _host(origin, allow_insecure_http_hosts)
         if hosts and origin_host not in hosts:
             raise AcquisitionError("origin host is not allowlisted")
     normalized_findings: list[dict[str, str]] = []

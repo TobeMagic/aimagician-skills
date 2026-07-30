@@ -270,3 +270,44 @@ organize commits and push.
 ### Exclusions
 
 - Declaring completion from code changes or test summaries alone.
+
+## USR-V6-11: Reopen the rejected v6 result and use the real private catalog
+
+**Status:** Accepted
+**Source:** Latest user visual rejection and acquisition authorization
+
+### Original Request
+
+The current trial quality still does not show the supplied reference or
+excellent commercial works. Use Playwright to download the complete entitled
+catalog for local use, ignore private assets in Git, and implement the actual
+result rather than optimizing portability first.
+
+### Accepted Decisions
+
+- Invalidate the previous v6 GO and reopen the milestone.
+- Acquire all requested categories through the normal authenticated UI.
+- Store credentials, originals, state, and mining artifacts only under the
+  ignored Skill-local `.private/` tree.
+- Certify a 300–500-page core first while full acquisition remains resumable.
+- Actual template selection must be materialized, not written only as manifest
+  metadata.
+- Three realistic anchors must reach the reference art-direction level before
+  fifteen-scenario and ordinary-model expansion.
+- Any independent AI visual `Blocker` or `Important` finding blocks promotion.
+
+### Derived Requirements
+
+- V6R-GROUND-01
+- V6R-ACQ-01
+- V6R-MINE-01
+- V6R-MAT-01
+- V6R-ANCHOR-01
+- V6R-WEAK-01
+- V6R-UAT-01
+- V6R-REL-01
+
+### Exclusions
+
+- Access-control bypass, credential leakage, redistribution, whole-slide
+  raster output, or claiming code variants as downloaded templates.

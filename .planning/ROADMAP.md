@@ -656,7 +656,66 @@ AI reviews, reference-parity thresholds, and a fresh Agnes completion audit.
 **Depends on:** Phases 39–40
 **Requirements:** [V6-PORT-02, V6-EVID-01, V6-DOC-01, V6-UAT-01,
 V6-AUDIT-01, V6-REL-01]
-**Status:** Complete — 2026-07-30
+**Status:** Reopened / former GO invalidated — 2026-07-30
+
+### Phase 42: v6 Reopen and Ground Truth
+
+**Goal:** Correct the former completion claims, freeze the real
+acquisition-to-delivery architecture, and establish non-bypassable visual
+acceptance.
+**Depends on:** User rejection of Phase 41 output
+**Requirements:** [V6R-GROUND-01]
+**Status:** In progress
+
+### Phase 43: Real Playwright Acquisition
+
+**Goal:** Acquire the complete entitled Gaojie taxonomy through a secure,
+resumable, same-origin Playwright adapter with a deterministic local fixture.
+**Depends on:** Phase 42
+**Requirements:** [V6R-ACQ-01]
+**Status:** Planned
+
+### Phase 44: Private Asset Intelligence
+
+**Goal:** Quarantine, inventory, render, deduplicate, classify, and certify a
+300–500-page high-value core from the private catalog.
+**Depends on:** Phase 43 real acquisition
+**Requirements:** [V6R-MINE-01]
+**Status:** Planned
+
+### Phase 45: Selection-to-Materialization Bridge
+
+**Goal:** Make production generation consume TemplateSelectionPlan and
+SlideBlueprint and prove the selected physical/native candidates were actually
+materialized.
+**Depends on:** Phase 44
+**Requirements:** [V6R-MAT-01]
+**Status:** Planned
+
+### Phase 46: Three Reference-Grade Anchors
+
+**Goal:** Regenerate work-report, campus-competition, and academic-defense
+anchors from actual certified candidates at the reference art-direction level.
+**Depends on:** Phase 45
+**Requirements:** [V6R-ANCHOR-01]
+**Status:** Planned
+
+### Phase 47: Fifteen Scenarios and Ordinary-Model Mode
+
+**Goal:** Extend the accepted authoring system to all realistic scenarios and
+measure constrained ordinary-model reliability.
+**Depends on:** Phase 46
+**Requirements:** [V6R-WEAK-01]
+**Status:** Planned
+
+### Phase 48: Blind Acceptance and Closure
+
+**Goal:** Close only after three fresh visual-capable AI contexts and a fresh
+nonvisual completion audit pass the exact artifacts with no unresolved
+Blocker or Important.
+**Depends on:** Phases 43–47
+**Requirements:** [V6R-UAT-01, V6R-REL-01]
+**Status:** Planned
 
 ## v6.0 Progress
 
@@ -667,4 +726,11 @@ V6-AUDIT-01, V6-REL-01]
 | 38. Certified Template Intelligence | Complete | 2026-07-30 |
 | 39. Work-Report Flagship | Complete | 2026-07-30 |
 | 40. Campus and Academic Flagships | Complete | 2026-07-30 |
-| 41. AI-Only Acceptance and Closure | Complete | 2026-07-30 |
+| 41. AI-Only Acceptance and Closure | Reopened / invalidated | — |
+| 42. Reopen and Ground Truth | In progress | — |
+| 43. Real Playwright Acquisition | Planned | — |
+| 44. Private Asset Intelligence | Planned | — |
+| 45. Selection-to-Materialization Bridge | Planned | — |
+| 46. Three Reference-Grade Anchors | Planned | — |
+| 47. Fifteen Scenarios and Ordinary-Model Mode | Planned | — |
+| 48. Blind Acceptance and Closure | Planned | — |

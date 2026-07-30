@@ -5,6 +5,9 @@ import json
 import subprocess
 import sys
 import zipfile
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Thread
+from urllib.parse import parse_qs, urlsplit
 from pathlib import Path
 
 import pytest
@@ -41,6 +44,12 @@ from window_pptx.rights import (  # noqa: E402
     certification_evidence,
     validate_rights_record,
 )
+from window_pptx.gaojie_playwright import (  # noqa: E402
+    GaojieConfig,
+    parse_cookie_header,
+    sync_gaojie,
+)
+import window_pptx.gaojie_playwright as gaojie_module  # noqa: E402
 
 
 def _zip(entries: dict[str, bytes]) -> bytes:
@@ -67,6 +76,302 @@ def _safe_pptx() -> bytes:
             "ppt/presentation.xml": b"<presentation/>",
         }
     )
+
+
+class _GaojieFixture(BaseHTTPRequestHandler):
+    payload = _safe_pptx()
+    mode = "normal"
+
+    def log_message(self, *_args: object) -> None:
+        return
+
+    def _html(self, body: str, status: int = 200) -> None:
+        encoded = body.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def do_GET(self) -> None:  # noqa: N802
+        if self.path.startswith("/login.aspx"):
+            self._html('<input id="txtUserName"><button id="btnSubmit">login</button>')
+            return
+        if "session=fixture-ok" not in self.headers.get("Cookie", ""):
+            self.send_response(302)
+            self.send_header("Location", "/login.aspx")
+            self.end_headers()
+            return
+        if self.path.startswith("/products.aspx"):
+            page_two = "page=2" in self.path
+            item = "2" if page_two else "1"
+            pagination = "" if page_two else '<a href="/products.aspx?category_id=1&page=2">next</a>'
+            self._html(
+                '<a href="/products.aspx?category_id=1">封面模板</a>'
+                '<a href="/products.aspx?category_id=2">目录模板</a>'
+                f'<a href="/product-detail.aspx?id={item}">作品 {item}</a>{pagination}'
+            )
+            return
+        if self.path.startswith("/product-detail.aspx"):
+            item = parse_qs(urlsplit(self.path).query)["id"][0]
+            if self.mode == "missing":
+                self._html("<p>暂无下载</p>")
+                return
+            self._html(f'<a href="/download.ashx?id={item}">下载 PPTX</a>')
+            return
+        if self.path.startswith("/download.ashx"):
+            if self.mode == "http-error":
+                self._html("failed", 503)
+                return
+            if self.mode == "html":
+                self._html("<p>session page</p>")
+                return
+            self.send_response(200)
+            self.send_header(
+                "Content-Type",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            )
+            self.send_header("Content-Disposition", 'attachment; filename="fixture.pptx"')
+            self.send_header("Content-Length", str(len(self.payload)))
+            self.end_headers()
+            self.wfile.write(self.payload)
+            return
+        self._html("not found", 404)
+
+
+@pytest.fixture
+def gaojie_fixture() -> str:
+    _GaojieFixture.mode = "normal"
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _GaojieFixture)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_port}"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()
+        _GaojieFixture.mode = "normal"
+
+
+def test_gaojie_cookie_parser_rejects_empty_or_attribute_only() -> None:
+    assert parse_cookie_header("session=ok; Path=/") == [("session", "ok")]
+    with pytest.raises(AcquisitionError):
+        parse_cookie_header("Path=/; SameSite=Lax")
+
+
+def test_gaojie_playwright_sync_is_authenticated_resumable_and_deduplicated(
+    tmp_path: Path, gaojie_fixture: str
+) -> None:
+    private_root = tmp_path / ".private"
+    credential = private_root / "auth" / "gaojie.cookie"
+    credential.parent.mkdir(parents=True)
+    credential.write_text("session=fixture-ok", encoding="utf-8")
+    config = GaojieConfig(
+        origin=gaojie_fixture,
+        private_root=private_root,
+        credential_file=credential,
+        minimum_free_gb=0,
+        allow_insecure_http=True,
+        minimum_categories=2,
+    )
+
+    first = sync_gaojie(config)
+    second = sync_gaojie(config)
+
+    assert first["status"] == "PASS"
+    assert first["category_count"] == 2
+    assert len(first["visited_pages"]) >= 3
+    assert first["artifact_count"] == 1  # two entitled URLs contain identical bytes
+    assert first["artifacts"][0]["category_ids"] == ["1", "2"]
+    assert "MULTI_CATEGORY_PRODUCT" in {
+        finding["code"] for finding in first["findings"]
+    }
+    assert second["artifact_count"] == 1
+    artifact = private_root / first["artifacts"][0]["path"]
+    assert artifact.read_bytes() == _GaojieFixture.payload
+    artifact.unlink()
+    repaired = sync_gaojie(config)
+    assert repaired["artifact_count"] == 1
+    assert (private_root / repaired["artifacts"][0]["path"]).is_file()
+    assert {"code": "RESUME_ARTIFACT_RECONCILED"} in repaired["findings"]
+    state_text = (private_root / "state" / "gaojie-sync.json").read_text(encoding="utf-8")
+    assert "fixture-ok" not in state_text
+
+
+def test_gaojie_playwright_sync_fails_closed_on_rejected_session(
+    tmp_path: Path, gaojie_fixture: str
+) -> None:
+    private_root = tmp_path / ".private"
+    credential = private_root / "auth" / "gaojie.cookie"
+    credential.parent.mkdir(parents=True)
+    credential.write_text("session=expired", encoding="utf-8")
+
+    result = sync_gaojie(GaojieConfig(
+        origin=gaojie_fixture,
+        private_root=private_root,
+        credential_file=credential,
+        minimum_free_gb=0,
+        allow_insecure_http=True,
+        minimum_categories=2,
+    ))
+
+    assert result["status"] == "NEEDS_AUTH"
+    assert result["artifacts"] == []
+    assert "expired" not in json.dumps(result)
+
+
+def test_gaojie_playwright_sync_rejects_incomplete_taxonomy(
+    tmp_path: Path, gaojie_fixture: str
+) -> None:
+    private_root = tmp_path / ".private"
+    credential = private_root / "auth" / "gaojie.cookie"
+    credential.parent.mkdir(parents=True)
+    credential.write_text("session=fixture-ok", encoding="utf-8")
+
+    result = sync_gaojie(GaojieConfig(
+        origin=gaojie_fixture,
+        private_root=private_root,
+        credential_file=credential,
+        minimum_free_gb=0,
+        allow_insecure_http=True,
+        minimum_categories=3,
+    ))
+
+    assert result["status"] == "FAIL"
+    assert {"code": "CATEGORY_TAXONOMY_INCOMPLETE"} in result["findings"]
+
+
+def test_gaojie_cli_adapter_wiring_is_secret_free(
+    tmp_path: Path, gaojie_fixture: str
+) -> None:
+    private_root = tmp_path / ".private"
+    credential = private_root / "auth" / "gaojie.cookie"
+    credential.parent.mkdir(parents=True)
+    secret = "session=fixture-ok"
+    credential.write_text(secret, encoding="utf-8")
+
+    process = subprocess.run(
+        [
+            sys.executable,
+            str(CLI),
+            "sync",
+            "--private-root",
+            str(private_root),
+            "--source-id",
+            "gaojie-fixture",
+            "--source-adapter",
+            "gaojie",
+            "--origin",
+            gaojie_fixture,
+            "--allow-host",
+            "127.0.0.1",
+            "--allow-insecure-http",
+            "--credential-file",
+            str(credential),
+            "--minimum-categories",
+            "2",
+            "--minimum-free-gb",
+            "0",
+            "--apply",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    result = json.loads(process.stdout)
+
+    assert result["status"] == "PASS"
+    assert len(result["completed_item_ids"]) == 1
+    assert secret not in process.stdout
+    assert secret not in process.stderr
+
+
+@pytest.mark.parametrize(
+    ("mode", "expected"),
+    [
+        ("missing", "DOWNLOAD_LINK_NOT_FOUND"),
+        ("http-error", "DOWNLOAD_HTTP_ERROR"),
+        ("html", "DOWNLOAD_RETURNED_HTML"),
+    ],
+)
+def test_gaojie_download_failures_are_explicit(
+    tmp_path: Path, gaojie_fixture: str, mode: str, expected: str
+) -> None:
+    _GaojieFixture.mode = mode
+    private_root = tmp_path / ".private"
+    credential = private_root / "auth" / "gaojie.cookie"
+    credential.parent.mkdir(parents=True)
+    credential.write_text("session=fixture-ok", encoding="utf-8")
+
+    result = sync_gaojie(GaojieConfig(
+        origin=gaojie_fixture,
+        private_root=private_root,
+        credential_file=credential,
+        minimum_free_gb=0,
+        allow_insecure_http=True,
+        minimum_categories=2,
+    ))
+
+    assert expected in {finding["code"] for finding in result["findings"]}
+
+
+def test_gaojie_download_and_disk_limits_fail_closed(
+    tmp_path: Path, gaojie_fixture: str
+) -> None:
+    private_root = tmp_path / ".private"
+    credential = private_root / "auth" / "gaojie.cookie"
+    credential.parent.mkdir(parents=True)
+    credential.write_text("session=fixture-ok", encoding="utf-8")
+    base = dict(
+        origin=gaojie_fixture,
+        private_root=private_root,
+        credential_file=credential,
+        allow_insecure_http=True,
+        minimum_categories=2,
+    )
+
+    oversized = sync_gaojie(GaojieConfig(
+        **base,
+        minimum_free_gb=0,
+        maximum_file_bytes=1,
+    ))
+    low_disk = sync_gaojie(GaojieConfig(
+        **base,
+        minimum_free_gb=10**9,
+    ))
+
+    assert "DOWNLOAD_TOO_LARGE" in {finding["code"] for finding in oversized["findings"]}
+    assert low_disk["status"] == "FAIL"
+    assert "LOW_DISK_SPACE" in {finding["code"] for finding in low_disk["findings"]}
+
+
+def test_gaojie_unexpected_runtime_failure_is_redacted_and_persisted(
+    tmp_path: Path, gaojie_fixture: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    private_root = tmp_path / ".private"
+    credential = private_root / "auth" / "gaojie.cookie"
+    credential.parent.mkdir(parents=True)
+    credential.write_text("session=fixture-ok", encoding="utf-8")
+
+    def crash(_page: object) -> list[dict[str, str]]:
+        raise RuntimeError("sensitive runtime detail")
+
+    monkeypatch.setattr(gaojie_module, "_links", crash)
+    result = sync_gaojie(GaojieConfig(
+        origin=gaojie_fixture,
+        private_root=private_root,
+        credential_file=credential,
+        minimum_free_gb=0,
+        allow_insecure_http=True,
+        minimum_categories=2,
+    ))
+
+    assert result["status"] == "FAIL"
+    assert {"code": "GAOJIE_SYNC_CRASHED"} in result["findings"]
+    rendered = json.dumps(result)
+    assert "sensitive runtime detail" not in rendered
+    assert "fixture-ok" not in rendered
 
 
 def _allowed_rights(source_id: str = "public-seed", item_id: str = "item") -> dict:
@@ -119,6 +424,18 @@ def test_redirect_policy_is_host_scoped_and_strips_cross_host_auth() -> None:
         )
         == "reject"
     )
+    with pytest.raises(AcquisitionError):
+        authorization_scope(
+            "http://templates.example.com/list",
+            "http://templates.example.com/page/2",
+            allowed,
+        )
+    assert authorization_scope(
+        "http://templates.example.com/list",
+        "http://templates.example.com/page/2",
+        allowed,
+        allow_insecure_http_hosts={"templates.example.com"},
+    ) == "attach"
 
 
 def test_private_credential_path_is_required_and_secret_is_never_returned(

@@ -297,6 +297,19 @@ Completion requires the phase evidence and exit gates named in the traceability 
 | **V6-AUDIT-01** | No v6 completion audit exists | A fresh OpenCode Agnes audit maps original requests through requirements, implementation, tests, artifacts, and UAT | Every requirement is `PASS` and no Blocker or Important remains |
 | **V6-REL-01** | v5.1 remains `NO_GO` | v6.0 closes and becomes merge-ready only after all hard gates pass | Any `FAIL`, `NOT_RUN`, unmapped requirement, Blocker, or Important keeps the milestone open |
 
+### v6 recovery requirements
+
+| Requirement | Acceptance |
+|---|---|
+| **V6R-GROUND-01** | Planning and Skill docs state the actual physical/code/alias inventory, invalidate the former GO, and map Phases 42–48 without contradictory completion claims |
+| **V6R-ACQ-01** | A real Playwright adapter and deterministic browser fixture prove authenticated state, full category/pagination discovery, same-origin download, resume, dedupe, redaction, disk guard, and fail-closed site drift; external sync remains `NEEDS_AUTH` until the private credential file exists |
+| **V6R-MINE-01** | Real private packages are passively quarantined, rendered, page-inventoried, deduplicated, classified, and a rights-bound 300–500-page core is certified |
+| **V6R-MAT-01** | Production consumes TemplateSelectionPlan and SlideBlueprint; every selected physical or registered candidate has exact materializer evidence and unknown/unmaterialized choices fail |
+| **V6R-ANCHOR-01** | Work-report, campus-competition, and academic-defense anchors use actual certified candidates and pass anatomy, editability, artifact, and reference-grade pixel review |
+| **V6R-WEAK-01** | All fifteen realistic scenarios run through the accepted system and ordinary models are measured against the strong-author baseline without raw geometry/style authority |
+| **V6R-UAT-01** | Three fresh independent image-capable AI contexts review full-resolution anonymous artifacts; any unresolved Blocker or Important fails |
+| **V6R-REL-01** | A fresh OpenCode completion audit maps every original/latest user request to implementation and evidence; missing auth, private acquisition, materialization, anchor visual review, or ordinary-model evidence keeps v6 open |
+
 ### Superseded v5 intent
 
 - V5-UAT-01 intent is subsumed by V6-PORT-01; mandatory PowerPoint sampling is
@@ -510,26 +523,34 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|----------|--------|
 | V6-BRIEF-01 | Phase 36 | Complete |
 | V6-CORPUS-01 | Phase 36 | Complete |
-| V6-ASSET-01 | Phase 37 | Complete |
-| V6-LIB-01 | Phase 37 | Complete |
-| V6-DESIGN-01 | Phase 38 | Complete |
-| V6-DECK-01 | Phase 38 | Complete |
-| V6-PORT-01 | Phase 39 | Complete |
-| V6-PORT-02 | Phase 40 | Complete |
-| V6-QA-01 | Phase 39 | Complete |
-| V6-EVID-01 | Phase 39 | Complete |
+| V6-ASSET-01 | Phase 37 | Contract foundation; product acquisition reopened |
+| V6-LIB-01 | Phase 37 | Contract foundation; real catalog reopened |
+| V6-DESIGN-01 | Phase 38 | Selection foundation; materialization reopened |
+| V6-DECK-01 | Phase 38 | Reopened after visual rejection |
+| V6-PORT-01 | Phase 39 | Engineering artifact retained; flagship rejected |
+| V6-PORT-02 | Phase 40 | Engineering artifact retained; flagship rejected |
+| V6-QA-01 | Phase 39 | Reopened under stricter independent-finding rule |
+| V6-EVID-01 | Phase 39 | Reopened; metadata-only spine evidence insufficient |
 | V6-DOC-01 | Phase 36 | Complete |
-| V6-UAT-01 | Phase 41 | Complete |
-| V6-AUDIT-01 | Phase 41 | Complete |
-| V6-REL-01 | Phase 41 | Complete |
+| V6-UAT-01 | Phase 41 | Invalidated / reopened |
+| V6-AUDIT-01 | Phase 41 | Invalidated / reopened |
+| V6-REL-01 | Phase 41 | Invalidated / reopened |
+| V6R-GROUND-01 | Phase 42 | In progress |
+| V6R-ACQ-01 | Phase 43 | Planned |
+| V6R-MINE-01 | Phase 44 | Planned |
+| V6R-MAT-01 | Phase 45 | Planned |
+| V6R-ANCHOR-01 | Phase 46 | Planned |
+| V6R-WEAK-01 | Phase 47 | Planned |
+| V6R-UAT-01 | Phase 48 | Planned |
+| V6R-REL-01 | Phase 48 | Planned |
 
 **V6 Coverage:**
-- v6 requirements: 14 total
-- Mapped to exactly one primary phase: 14
-- Complete: 14
-- Planned: 0
+- v6 requirements: 22 total
+- Mapped to exactly one primary phase: 22
+- Complete and still accepted: 3
+- Reopened/in progress/planned: 19
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-07-30 after v6.0 independent audit and release closure*
+*Last updated: 2026-07-30 after v6 quality rejection and milestone reopening*

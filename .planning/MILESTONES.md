@@ -14,12 +14,18 @@ deterministic engineering gates and three independent AI reviews.
 - Phase 39: Work-Report Flagship Tracer
 - Phase 40: Campus and Academic Flagship Tracers
 - Phase 41: AI-Only Acceptance and Closure
+- Phase 42: Reopen and Ground Truth
+- Phase 43: Real Playwright Acquisition
+- Phase 44: Private Asset Intelligence
+- Phase 45: Selection-to-Materialization Bridge
+- Phase 46: Three Reference-Grade Anchors
+- Phase 47: Fifteen Scenarios and Ordinary-Model Mode
+- Phase 48: Blind Acceptance and Closure
 
-**Status:** Active. The rejected v5.1 work is preserved on
-`archive/window-pptx-v5.1-no-go-20260729` at `e4ed78c`; the original v5
-branch remains unchanged. Phase 36 begins with private-asset safety,
-ProjectBriefPack v1, realistic corpus contracts, and repair of three archived
-regressions.
+**Status:** Reopened / `NO_GO`. The former Phase 41 GO is invalid after the
+user rejected the actual visual result and template-reuse evidence. Phases
+36–41 remain historical engineering evidence; Phases 42–48 own the real
+acquisition-to-delivery recovery and fresh acceptance.
 
 ---
 

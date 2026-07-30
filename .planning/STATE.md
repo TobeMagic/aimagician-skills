@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Window-PPTX Template-Intelligence Quality Reset
-current_phase: 41
-current_phase_name: AI-Only Acceptance and Closure
-status: complete
-stopped_at: Milestone v6.0 complete; exact final commit queued for push
-last_updated: "2026-07-30T06:20:00+08:00"
+current_phase: 43
+current_phase_name: Real Playwright Acquisition
+status: in_progress
+stopped_at: Phase 43 engineering approved; real entitled sync NEEDS_AUTH
+last_updated: "2026-07-30T14:09:00+08:00"
 last_activity: 2026-07-30
 progress:
-  total_phases: 43
-  completed_phases: 39
-  total_plans: 42
+  total_phases: 50
+  completed_phases: 38
+  total_plans: 49
   completed_plans: 42
-  percent: 91
+  percent: 76
 ---
 
 # Project State
@@ -26,11 +26,16 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v6.0 is complete after deterministic regression,
-three-context AI-only blind UAT, independent specification/quality/verification
-audits, and release documentation closure. The exact final commit must retain
-an Agnes completion-audit GO before push. Authenticated commercial sync remains
-optional `NEEDS_AUTH`.
+**Current focus:** v6 is reopened after the user rejected the generated visual
+quality and the template-reuse claim. The previous Phase 41 GO is invalid.
+Phase 42 restores ground truth; Phases 43–48 must implement real private
+catalog acquisition, template mining, selection-to-materialization, three
+reference-grade anchors, fifteen-scenario/ordinary-model coverage, and fresh
+independent visual acceptance. Authenticated commercial sync is a mandatory
+milestone gate and is currently `NEEDS_AUTH`. Phase 42 is complete. Phase 43
+has an independently approved Playwright implementation and fixture, but stays
+open until the real private credential path is supplied and live acquisition
+is exercised.
 
 The v5.1 work is preserved at archive commit
 `e4ed78c7b31beebdb94f0f37c6c412012dfec085` and annotated tag
@@ -47,9 +52,9 @@ fully independent AI blind-review contexts for v6 acceptance.
 ## Current Position
 
 Milestone: v6.0 Window-PPTX Template-Intelligence Quality Reset
-Current Phase: 41
-Current Phase Name: AI-Only Acceptance and Closure
-Status: Complete — release GO
+Current Phase: 42
+Current Phase Name: v6 Reopen and Ground Truth
+Status: In progress — previous release GO invalidated
 Last Activity: 2026-07-30
 
 Foundation completed:
@@ -79,35 +84,32 @@ Foundation completed:
     regression repairs pass;
   - independent specification, post-fix quality, committed verification, and
     fresh Agnes completion audits return PASS with no Blocker or Important.
-- Phase 37 engineering is complete:
+- Phase 37 contract foundation is retained, but its former completion claim is
+  invalid for product acquisition:
   - dry-run-first acquisition manifests, host-scoped auth policy, private
     credential/state confinement, passive quarantine, and evidence-bound
     rights certification pass;
   - Catalog v3 provides strict stable IDs, dedupe/aliases, dependency closure,
     deterministic certified-only query, and legacy-unverified compatibility;
-  - 32 focused, 176 related, and 843 complete Window-PPTX tests pass;
-    authenticated commercial sync remains `NEEDS_AUTH`.
-- Phase 38 is complete:
+  - the live adapter is absent and `sync` returns
+    `SITE_ADAPTER_NOT_CONFIGURED`; Phase 43 owns real Playwright acquisition.
+- Phase 38 contract foundation is retained, but its former product-library
+  claim is invalid:
   - TemplatePack v2, Registry v3, ArtDirectionProfile v2, deterministic
     certified retrieval, and three executable visual spines are implemented;
-  - exactly 84 certified candidates pass compatibility, capacity, dependency,
-    model-boundary, and fail-closed selection tests.
-- Phases 39 and 40 are complete:
+  - “84 candidates” means 15 physical reference pages, 60 registered code
+    compositions, and nine aliases. It is not an 84-template library.
+- Phases 39 and 40 retain engineering artifacts but are visually rejected:
   - annual work report, campus competition defense, and academic thesis
     defense each deliver 32 native-editable slides with exact portable
     PDF/PNG evidence;
-  - the accepted R13 artifacts retain exact hashes, locked-fact lineage,
-    native charts/tables/diagrams, and no whole-slide raster fallback.
-- Phase 41 product UAT passes:
-  - three mutually independent blind AI contexts accept every candidate at
-    reference parity 3/3;
-  - overall mean is 4.484, dimension floor 4.133, candidate floor 4.437, and
-    serious same-slide/same-dimension consensus failures are zero;
-  - 829 non-benchmark and 42 benchmark tests pass, for 871/871 Window-PPTX
-    regression tests.
-  - independent specification, corrected quality, and verification audits
-    contain no unresolved Blocker or Important finding; the final exact commit
-    remains fail closed until the last Agnes completion audit returns GO.
+  - they start from blank PptxGenJS decks and do not consume selected physical
+    templates; spine IDs in manifests are metadata only.
+- Phase 41 is reopened and its product GO is invalid:
+  - the user’s direct visual rejection outranks the former aggregate score;
+  - the former consensus-only serious-finding rule allowed independent
+    Important findings to survive;
+  - Phase 48 will block on any unresolved independent Blocker or Important.
 - Phase 19 deep merge audit completed:
   - GSD state machine remains canonical;
   - Superpowers planning/writing quality gates are folded into `aimagician-superpower`;

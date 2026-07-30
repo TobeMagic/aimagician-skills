@@ -148,11 +148,14 @@ body pages must vary composition and energy while preserving the selected
 complete-work visual spine, theme, grid, typography, motif, imagery language,
 and chart/table system.
 
-After ProjectBriefPack lock, load Registry v3 and select exactly one certified
-complete-work spine. The governed pilot exposes 84 executable candidates: 15
-authorized physical reference pages, 60 registered composition variants, and
-nine specialty aliases for map, awards, people, partner wall, business model,
-architecture, mockup, quote, and six/multi-content pages. A model receives
+After ProjectBriefPack lock, load Registry v3 and select one eligible
+complete-work spine. The current seed exposes 84 candidate IDs, but these are
+not 84 independently sourced templates: they comprise 15 authorized physical
+reference pages, 60 registered code-composition variants, and nine specialty
+aliases for map, awards, people, partner wall, business model, architecture,
+mockup, quote, and six/multi-content pages. Until Phase 43–45 real private
+acquisition, certification, and materialization pass, do not describe this seed
+as a commercial template library or reference-grade production proof. A model receives
 only 3–6 capacity-safe candidate IDs and returns IDs, fact/asset bindings,
 importance, confidence, and reason codes. `TemplateSelectionPlan` and
 `SlideBlueprint` reject geometry, shape IDs, OOXML, HTML, code, arbitrary
@@ -161,8 +164,10 @@ style values, and model-written repair.
 Use `load_registry_v3`, `build_selection_plan`, and
 `compile_slide_blueprints` from `window_pptx.template_intelligence`.
 TemplatePack v1 remains unchanged and loads through
-`adapt_template_pack_v1`; registered-composition candidates materialize
-through the existing native renderer. Any unknown, uncertified,
+`adapt_template_pack_v1`; registered-composition candidates can materialize
+through the existing native renderer. The current v6 flagship script does not
+yet consume this selection plan, so its manifest spine IDs are metadata rather
+than materialization evidence. Any unknown, uncertified,
 over-capacity, missing-asset, cross-family, or unbound-fact choice fails
 closed. The legacy BriefPlan compiler remains runnable for regression and
 compatibility work, but it is not evidence that the v6 reference-grade route
