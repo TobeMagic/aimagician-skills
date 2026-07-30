@@ -282,6 +282,72 @@ def brief(*, scenario: str = "business-report", beat: str = "performance") -> di
     }
 
 
+def test_certified_native_route_adds_anatomy_and_proves_exact_materialization() -> None:
+    payload = copy.deepcopy(facts())
+    payload["project"]["title"] = "Campus Pilot"  # type: ignore[index]
+    payload["project"]["objective"] = "Approve the competition defense."  # type: ignore[index]
+    payload["facts"] = []  # type: ignore[index]
+    groups = []
+    for index in range(1, 6):
+        fact_id = f"proof-{index}"
+        payload["facts"].append(  # type: ignore[index,union-attr]
+            {
+                "id": fact_id,
+                "kind": "claim",
+                "text": (
+                    f"Validated evidence point {index} supports the pilot decision."
+                ),
+                "language": "en-US",
+                "source_id": "request",
+                "locator": f"line:{index}",
+                "required": True,
+            }
+        )
+        groups.append(
+            {
+                "id": f"proof-group-{index}",
+                "fact_refs": [fact_id],
+                "beat_hint": "value-proposition",
+                "semantic_hint": "statement",
+                "importance": "high",
+            }
+        )
+    result = prepare_brief_generation(
+        payload,
+        {
+            "schema_version": "1.0",
+            "scenario_id": "product-launch",
+            "groups": groups,
+            "preferences": {
+                "tone": "professional",
+                "density": "balanced",
+                "audience_mode": "executive",
+                "motion": "off",
+            },
+        },
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        build_render=True,
+        template_selection_mode="required",
+    )
+
+    assert result.template_selection_plan is not None
+    assert result.candidate_materialization is not None
+    assert result.candidate_materialization.status == "pass"
+    assert {slide["role"] for slide in result.effective_deck_plan["slides"]} >= {
+        "cover",
+        "agenda",
+        "section",
+        "closing",
+    }
+    expected = {
+        item.slide_id: item.base_variant_id for item in result.slide_blueprints
+    }
+    assert {
+        item.source_id: item.layout_id for item in result.render_plan.slides
+    } == expected
+
+
 def test_common_role_like_semantic_alias_is_normalized_safely() -> None:
     payload = brief(scenario="business-report", beat="performance")
     payload["groups"][0]["semantic_hint"] = "scope"  # type: ignore[index]
@@ -977,7 +1043,12 @@ def test_missing_image_asset_downgrades_before_layout_selection() -> None:
     assert len(result.pre_render_repair_passes) == 1
     assert result.pre_render_repair_passes[0].accepted is True
     assert result.pre_render_repair_passes[0].rolled_back is False
-    assert result.effective_deck_plan["slides"][1]["blocks"][0]["kind"] == "statement"
+    evidence = next(
+        slide
+        for slide in result.effective_deck_plan["slides"]
+        if slide["id"] == "evidence"
+    )
+    assert evidence["blocks"][0]["kind"] == "statement"
     assert result.compiled_deck["slides"][1]["page_family"] != "image-story"
 
 

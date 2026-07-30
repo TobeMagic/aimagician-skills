@@ -669,36 +669,88 @@ acceptance.
 
 ### Phase 43: Real Playwright Acquisition
 
-**Goal:** Acquire the complete entitled Gaojie taxonomy through a secure,
-resumable, same-origin Playwright adapter with a deterministic local fixture.
+**Goal:** Inventory the complete 32-category Gaojie template taxonomy and acquire a secure, resumable, preview-selected high-diversity private core through a same-origin Playwright adapter with a deterministic local fixture.
+**Success Criteria**:
+
+- **GOAL-43-01:** The authenticated adapter inventories exactly 32 route-aware
+  template categories and records every discovered product with category
+  provenance plus either a validated preview or an explicit failure.
+- **GOAL-43-02:** Diversity-first selection is deterministic, suppresses exact
+  and near duplicates, reaches 12 candidates for sufficiently populated
+  categories, and reports real source shortfalls without inventing coverage.
+- **GOAL-43-03:** At least one valid editable PowerPoint package is promoted
+  atomically, and resume reuses valid bytes while repairing missing or corrupt
+  artifacts.
+- **GOAL-43-04:** Credentials never appear in state, reports, logs, tests, or
+  review evidence; every private byte remains below the ignored `.private/`
+  boundary.
+
 **Depends on:** Phase 42
 **Requirements:** [V6R-ACQ-01]
-**Status:** Planned
+**Status:** Complete — 2026-07-30
 
 ### Phase 44: Private Asset Intelligence
 
-**Goal:** Quarantine, inventory, render, deduplicate, classify, and certify a
-300–500-page high-value core from the private catalog.
+**Goal:** Quarantine, render, structurally inspect, cross-category deduplicate,
+classify, visually review, and certify a 300–500-page high-value core from the
+preview-selected private catalog.
+**Success Criteria**:
+
+- **GOAL-44-01:** Every acquired package is passively quarantined and
+  structurally inspected; every accepted editable package renders every slide
+  into hash-bound normalized evidence.
+- **GOAL-44-02:** Every candidate page receives exactly one full-coverage
+  rendered-pixel disposition: complete layout, named support/specialty pool, or
+  excluded with Blocker/Important reason. Mixed-pool certification is forbidden.
+- **GOAL-44-03:** Cross-package and cross-pool exact/near duplicates have one
+  deterministic canonical page and explicit aliases; every certified page has
+  provenance, private-use rights scope, structure, render, role, pool, and
+  visual-fingerprint evidence.
+- **GOAL-44-04:** The final high-quality usable core contains 300–500 pages, or
+  exhausts every valid acquired candidate with an explicit quality shortfall;
+  full-coverage contact sheets and independent visual review have no unresolved
+  Blocker or Important in the certified pools.
+
 **Depends on:** Phase 43 real acquisition
 **Requirements:** [V6R-MINE-01]
-**Status:** Planned
+**Status:** Complete — 2026-07-30
 
 ### Phase 45: Selection-to-Materialization Bridge
 
-**Goal:** Make production generation consume TemplateSelectionPlan and
-SlideBlueprint and prove the selected physical/native candidates were actually
-materialized.
+**Goal:** Make production generation consume TemplateSelectionPlan and SlideBlueprint and prove the selected physical/native candidates were actually materialized.
 **Depends on:** Phase 44
 **Requirements:** [V6R-MAT-01]
-**Status:** Planned
+**Success Criteria**:
+
+- **GOAL-45-01:** Supported certified spines emit deterministic selection-plan
+  and complete slide-blueprint artifacts.
+- **GOAL-45-02:** Registered-native selections materialize the exact selected
+  variant or fail closed.
+- **GOAL-45-03:** Physical selections execute through the hash-bound
+  TemplatePack adapter and emit per-slide provenance.
+- **GOAL-45-04:** Unknown, uncertified, mixed, drifted, or incomplete
+  materialization evidence fails; focused and regression verification passes.
+**Status:** Complete — 2026-07-30
 
 ### Phase 46: Three Reference-Grade Anchors
 
-**Goal:** Regenerate work-report, campus-competition, and academic-defense
-anchors from actual certified candidates at the reference art-direction level.
+**Goal:** Regenerate work-report, campus-competition, and academic-defense anchors from actual certified candidates at the reference art-direction level.
+**Success Criteria**:
+
+- **GOAL-46-01:** Each anchor has a real locked brief, complete commercial
+  anatomy, and an explicit page-by-page art-direction blueprint.
+- **GOAL-46-02:** Every anchor consumes certified physical/native candidates
+  with exact materialization evidence and uses the private reference-only pool
+  only as non-materialized art-direction guidance.
+- **GOAL-46-03:** The three PPTX files remain editable, open and render
+  portably, and pass structural, geometry, typography, asset, and artifact
+  gates.
+- **GOAL-46-04:** Three fresh independent visual-capable AI contexts find no
+  unresolved Blocker or Important and judge the anchors at reference-grade
+  art-direction quality.
 **Depends on:** Phase 45
 **Requirements:** [V6R-ANCHOR-01]
-**Status:** Planned
+**Status:** Complete — 2026-07-30
 
 ### Phase 47: Fifteen Scenarios and Ordinary-Model Mode
 
@@ -706,7 +758,7 @@ anchors from actual certified candidates at the reference art-direction level.
 measure constrained ordinary-model reliability.
 **Depends on:** Phase 46
 **Requirements:** [V6R-WEAK-01]
-**Status:** Planned
+**Status:** Complete — 2026-07-31
 
 ### Phase 48: Blind Acceptance and Closure
 
@@ -727,10 +779,10 @@ Blocker or Important.
 | 39. Work-Report Flagship | Complete | 2026-07-30 |
 | 40. Campus and Academic Flagships | Complete | 2026-07-30 |
 | 41. AI-Only Acceptance and Closure | Reopened / invalidated | — |
-| 42. Reopen and Ground Truth | In progress | — |
-| 43. Real Playwright Acquisition | Planned | — |
-| 44. Private Asset Intelligence | Planned | — |
-| 45. Selection-to-Materialization Bridge | Planned | — |
-| 46. Three Reference-Grade Anchors | Planned | — |
-| 47. Fifteen Scenarios and Ordinary-Model Mode | Planned | — |
+| 42. Reopen and Ground Truth | Complete | 2026-07-30 |
+| 43. Real Playwright Acquisition | Complete | 2026-07-30 |
+| 44. Private Asset Intelligence | Complete | 2026-07-30 |
+| 45. Selection-to-Materialization Bridge | Complete | 2026-07-30 |
+| 46. Three Reference-Grade Anchors | Complete | 2026-07-30 |
+| 47. Fifteen Scenarios and Ordinary-Model Mode | Complete | 2026-07-31 |
 | 48. Blind Acceptance and Closure | Planned | — |

@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Window-PPTX Template-Intelligence Quality Reset
-current_phase: 43
-current_phase_name: Real Playwright Acquisition
+current_phase: 48
+current_phase_name: Blind Acceptance and Closure
 status: in_progress
-stopped_at: Phase 43 engineering approved; real entitled sync NEEDS_AUTH
-last_updated: "2026-07-30T14:09:00+08:00"
+stopped_at: Phase 47 complete; Phase 48 milestone closure active
+last_updated: "2026-07-31T04:12:00+08:00"
 last_activity: 2026-07-30
 progress:
   total_phases: 50
-  completed_phases: 38
+  completed_phases: 44
   total_plans: 49
-  completed_plans: 42
-  percent: 76
+  completed_plans: 47
+  percent: 88
 ---
 
 # Project State
@@ -32,10 +32,20 @@ Phase 42 restores ground truth; Phases 43–48 must implement real private
 catalog acquisition, template mining, selection-to-materialization, three
 reference-grade anchors, fifteen-scenario/ordinary-model coverage, and fresh
 independent visual acceptance. Authenticated commercial sync is a mandatory
-milestone gate and is currently `NEEDS_AUTH`. Phase 42 is complete. Phase 43
-has an independently approved Playwright implementation and fixture, but stays
-open until the real private credential path is supplied and live acquisition
-is exercised.
+milestone gate. Phases 42 and 43 are complete. The user-supplied private
+request-header file enabled the final authenticated acquisition: exactly 32
+route-aware `products.aspx` template categories, 6,134 inventory items, 6,086
+validated previews, 372 selected IDs, and 377 unique validated package
+artifacts. The adapter now performs preview-first diversity selection,
+direct-package validation, and real resumable reconciliation. Phase 44 is
+complete: 391 quality-floor candidates were exhaustively dispositioned into a
+288-page rights-bound core with 129 fresh-blind-reviewed direct-use pages and
+159 non-materializable reference-only pages. Phase 45 is complete: production
+now consumes candidate selection/blueprint sidecars and proves exact native or
+physical materialization. Phase 46 is complete with three editable
+reference-grade anchors, isolated AI-only visual parity scores of
+4.75/4.55/4.45, and a fresh independent OpenCode audit returning DONE with
+zero Blocker or Important. Phase 47 is now active.
 
 The v5.1 work is preserved at archive commit
 `e4ed78c7b31beebdb94f0f37c6c412012dfec085` and annotated tag
@@ -52,9 +62,9 @@ fully independent AI blind-review contexts for v6 acceptance.
 ## Current Position
 
 Milestone: v6.0 Window-PPTX Template-Intelligence Quality Reset
-Current Phase: 42
-Current Phase Name: v6 Reopen and Ground Truth
-Status: In progress — previous release GO invalidated
+Current Phase: 47
+Current Phase Name: Fifteen Scenarios and Ordinary-Model Mode
+Status: In progress — scenario expansion and ordinary-model reliability
 Last Activity: 2026-07-30
 
 Foundation completed:

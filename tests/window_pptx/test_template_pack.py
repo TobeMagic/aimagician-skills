@@ -246,6 +246,40 @@ def test_template_pack_cli_is_portable_and_reports_all_dry_run_outputs(
     )
 
 
+def test_template_pack_cli_accepts_paired_selection_sidecars_only(
+    tmp_path: Path,
+) -> None:
+    common = [
+        "--project-dir",
+        str(tmp_path),
+        "--render-template-pack",
+        "--template-pack",
+        "institutional-work-summary-v1",
+        "--template-bindings",
+        "bindings.json",
+        "--output",
+        "output/work-summary.pptx",
+        "--dry-run",
+    ]
+    with pytest.raises(SystemExit):
+        parse_args([*common, "--template-selection-plan", "selection.json"])
+
+    args = parse_args(
+        [
+            *common,
+            "--template-selection-plan",
+            "selection.json",
+            "--slide-blueprints",
+            "blueprints.json",
+        ]
+    )
+    result = build_dry_run_result(args, tmp_path)
+    assert any(
+        value.endswith("candidate-materialization-report.json")
+        for value in result["would_write"]
+    )
+
+
 def test_golden_replay_is_semantically_reproducible_with_one_renderer_fingerprint(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

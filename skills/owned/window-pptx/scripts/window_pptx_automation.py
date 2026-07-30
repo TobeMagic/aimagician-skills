@@ -69,6 +69,16 @@ from window_pptx.template_pack import (
     load_template_pack,
     write_adaptation_report,
 )
+from window_pptx.template_intelligence import (
+    SlideBlueprint,
+    TemplateSelectionPlan,
+    load_registry_v3,
+    selection_plan_from_payload,
+    slide_blueprints_from_payload,
+)
+from window_pptx.selection_materialization import (
+    materialize_physical_selection,
+)
 from window_pptx.transaction import save_candidate
 from window_pptx.weak_model import load_fact_store, normalize_brief_plan
 
@@ -2140,6 +2150,14 @@ def write_brief_generation_artifacts(
         "generation_manifest": audit_dir / "generation-manifest.json",
         "repair_log_v2": audit_dir / "repair-log.v2.json",
     }
+    if generation.template_selection_plan is not None:
+        artifacts["template_selection_plan"] = (
+            audit_dir / "template-selection-plan.json"
+        )
+        artifacts["slide_blueprints"] = audit_dir / "slide-blueprints.json"
+        artifacts["candidate_materialization"] = (
+            audit_dir / "candidate-materialization-report.json"
+        )
     artifacts["narrative_plan"].write_text(
         json.dumps(
             generation.compilation.narrative.to_dict(),
@@ -2181,6 +2199,43 @@ def write_brief_generation_artifacts(
         + "\n",
         encoding="utf-8",
     )
+    if generation.template_selection_plan is not None:
+        artifacts["template_selection_plan"].write_text(
+            json.dumps(
+                generation.template_selection_plan.to_dict(),
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        artifacts["slide_blueprints"].write_text(
+            json.dumps(
+                {
+                    "schema_version": "1.0",
+                    "blueprints": [
+                        item.to_dict() for item in generation.slide_blueprints
+                    ],
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        artifacts["candidate_materialization"].write_text(
+            json.dumps(
+                (
+                    generation.candidate_materialization.to_dict()
+                    if generation.candidate_materialization is not None
+                    else None
+                ),
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
     artifacts["quality_report_v3"].write_text(
         json.dumps(
             inspect_generation_quality_v3(generation).to_dict(),
@@ -2268,6 +2323,8 @@ def main(
     prepared_backend: BackendSelection | None = None
     prepared_template_pack: TemplatePack | None = None
     prepared_template_bindings: dict[str, str] | None = None
+    prepared_template_selection: TemplateSelectionPlan | None = None
+    prepared_slide_blueprints: tuple[SlideBlueprint, ...] = ()
     if args.render_template_pack:
         binding_path = resolve_path(project_dir, args.template_bindings)
         if binding_path is None:
@@ -2285,6 +2342,33 @@ def main(
                 "TemplatePack binding id does not match the selected pack: "
                 f"{binding_pack_id} != {prepared_template_pack.id}"
             )
+        if args.template_selection_plan:
+            selection_path = resolve_path(
+                project_dir, args.template_selection_plan
+            )
+            blueprint_path = resolve_path(project_dir, args.slide_blueprints)
+            if (
+                selection_path is None
+                or blueprint_path is None
+                or not selection_path.is_file()
+                or not blueprint_path.is_file()
+            ):
+                die("Template selection sidecar path is missing")
+            prepared_template_selection = selection_plan_from_payload(
+                json.loads(selection_path.read_text(encoding="utf-8"))
+            )
+            prepared_slide_blueprints = slide_blueprints_from_payload(
+                json.loads(blueprint_path.read_text(encoding="utf-8"))
+            )
+            registry = load_registry_v3()
+            spine = registry.spines.get(prepared_template_selection.spine_id)
+            if (
+                spine is None
+                or spine.pack.v1_pack.id != prepared_template_pack.id
+            ):
+                die(
+                    "Template selection spine does not match --template-pack"
+                )
         template = prepared_template_pack.template_path
         validate_output_policy(
             OutputPolicy(
@@ -2533,11 +2617,20 @@ def main(
         if prepared_template_pack is None or prepared_template_bindings is None:
             raise RuntimeError("TemplatePack preflight did not produce an adaptation plan")
         audit_dir = project_dir / ".window-pptx" / "audits"
-        report = adapt_template_pack(
-            prepared_template_pack,
-            prepared_template_bindings,
-            output_path,
-        )
+        candidate_materialization = None
+        if prepared_template_selection is not None:
+            candidate_materialization, report = materialize_physical_selection(
+                prepared_template_selection,
+                prepared_slide_blueprints,
+                prepared_template_bindings,
+                output_path,
+            )
+        else:
+            report = adapt_template_pack(
+                prepared_template_pack,
+                prepared_template_bindings,
+                output_path,
+            )
         report_path = write_adaptation_report(
             report,
             audit_dir / "template-adaptation-report.json",
@@ -2565,6 +2658,20 @@ def main(
             raise RuntimeError(
                 "TemplatePack candidate failed the reference-grade visual complexity gate"
             )
+        candidate_materialization_path: Path | None = None
+        if candidate_materialization is not None:
+            candidate_materialization_path = (
+                audit_dir / "candidate-materialization-report.json"
+            )
+            candidate_materialization_path.write_text(
+                json.dumps(
+                    candidate_materialization.to_dict(),
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
         exported_pdf: str | None = None
         if args.export_pdf:
             pdf_output = output_path.with_suffix(".pdf")
@@ -2584,6 +2691,16 @@ def main(
                 "portable_verification": proof.to_dict(),
                 "reference_quality": reference_quality.to_dict(),
                 "reference_quality_report": str(reference_quality_path),
+                "candidate_materialization": (
+                    candidate_materialization.to_dict()
+                    if candidate_materialization is not None
+                    else None
+                ),
+                "candidate_materialization_report": (
+                    str(candidate_materialization_path)
+                    if candidate_materialization_path is not None
+                    else None
+                ),
                 "exported_pdf": exported_pdf,
             },
             args.json,

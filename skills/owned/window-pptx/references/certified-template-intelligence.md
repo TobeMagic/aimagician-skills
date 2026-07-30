@@ -46,7 +46,9 @@ Hard filters run before scoring: certification and rights, source/materializer
 compatibility, deck/style family, role, capacity, assets, and dependency
 closure. Semantic and role fit, capacity headroom, specialty fit, and stable
 ID ordering then determine a deterministic shortlist. A section resets page
-rhythm; more than two consecutive ordinary pages from one family is rejected.
+rhythm; more than two consecutive ordinary pages using the same exact
+candidate is rejected. Same-family variant alternation is preferred to a
+semantically unrelated family.
 
 ## Materialization
 
@@ -54,6 +56,14 @@ rhythm; more than two consecutive ordinary pages from one family is rejected.
 the source package. `registered_composition` blueprints route to the native
 editable renderer. Neither route may rasterize a whole slide. COM remains
 optional diagnostics and HTML remains proof-only.
+
+Registered blueprints carry `base_variant_id`; production binds that exact
+layout before compilation and compares it with the observed rendered layout.
+Physical production consumes paired selection/blueprint sidecars, verifies the
+pack/source digest and physical slide IDs, then records output digest and slide
+evidence. `candidate-materialization-report.json` is `planned` before an engine
+runs and `pass` only after exact one-to-one observation. Unknown, mixed,
+fallback, mismatched, or incomplete evidence fails closed.
 
 On no fit, stop with `NO_FIT`. The bounded recovery budget is one same-family
 capacity-safe alternative, one deterministic local repair, and one visual

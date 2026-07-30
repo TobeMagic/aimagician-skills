@@ -535,12 +535,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | V6-UAT-01 | Phase 41 | Invalidated / reopened |
 | V6-AUDIT-01 | Phase 41 | Invalidated / reopened |
 | V6-REL-01 | Phase 41 | Invalidated / reopened |
-| V6R-GROUND-01 | Phase 42 | In progress |
-| V6R-ACQ-01 | Phase 43 | Planned |
-| V6R-MINE-01 | Phase 44 | Planned |
-| V6R-MAT-01 | Phase 45 | Planned |
-| V6R-ANCHOR-01 | Phase 46 | Planned |
-| V6R-WEAK-01 | Phase 47 | Planned |
+| V6R-GROUND-01 | Phase 42 | Complete |
+| V6R-ACQ-01 | Phase 43 | Complete |
+| V6R-MINE-01 | Phase 44 | Complete |
+| V6R-MAT-01 | Phase 45 | Complete |
+| V6R-ANCHOR-01 | Phase 46 | Complete |
+| V6R-WEAK-01 | Phase 47 | Complete |
 | V6R-UAT-01 | Phase 48 | Planned |
 | V6R-REL-01 | Phase 48 | Planned |
 

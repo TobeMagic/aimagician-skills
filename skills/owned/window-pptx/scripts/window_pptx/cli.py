@@ -111,6 +111,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="TemplatePack binding JSON path, relative to --project-dir unless absolute.",
     )
     parser.add_argument(
+        "--template-selection-plan",
+        help=(
+            "Optional production template-selection-plan.json. Must be paired "
+            "with --slide-blueprints on --render-template-pack."
+        ),
+    )
+    parser.add_argument(
+        "--slide-blueprints",
+        help=(
+            "Optional production slide-blueprints.json. Must be paired with "
+            "--template-selection-plan on --render-template-pack."
+        ),
+    )
+    parser.add_argument(
         "--brand-spec",
         help="Optional trusted BrandSpec v1 JSON path for governed rendering.",
     )
@@ -407,6 +421,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error(
             "--template-pack/--template-bindings require --render-template-pack"
         )
+    selection_sidecars = bool(args.template_selection_plan), bool(args.slide_blueprints)
+    if selection_sidecars[0] != selection_sidecars[1]:
+        parser.error(
+            "--template-selection-plan and --slide-blueprints must be supplied together"
+        )
+    if any(selection_sidecars) and not template_pack_route:
+        parser.error(
+            "template selection sidecars require --render-template-pack"
+        )
     if len(args.brief_retry_plan) > 2:
         parser.error("--brief-retry-plan may be repeated at most twice")
     if args.brief_retry_plan and (
@@ -654,6 +677,15 @@ def build_dry_run_result(args: argparse.Namespace, project_dir: str | Path) -> d
                 str(base / ".window-pptx" / "audits" / "template-portable-proof"),
             ]
         )
+        if args.template_selection_plan:
+            would_write.append(
+                str(
+                    base
+                    / ".window-pptx"
+                    / "audits"
+                    / "candidate-materialization-report.json"
+                )
+            )
     if args.render_brief_plan:
         would_write.extend(
             [
@@ -668,6 +700,14 @@ def build_dry_run_result(args: argparse.Namespace, project_dir: str | Path) -> d
                     / "asset-materialization.json"
                 ),
                 str(base / ".window-pptx" / "audits" / "generation-manifest.json"),
+                str(base / ".window-pptx" / "audits" / "template-selection-plan.json"),
+                str(base / ".window-pptx" / "audits" / "slide-blueprints.json"),
+                str(
+                    base
+                    / ".window-pptx"
+                    / "audits"
+                    / "candidate-materialization-report.json"
+                ),
             ]
         )
         if args.generate_assets_with_agnes:

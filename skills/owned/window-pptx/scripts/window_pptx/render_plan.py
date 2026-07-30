@@ -3987,16 +3987,22 @@ def _build_render_plan_from_compiled(
             if valid_image_sources
             else None
         )
-        layout_selector = (
-            slide.get("composition_layout_id")
-            if slide.get("composition_layout_enforced")
-            else "cards.compact-three"
-            if slide["page_family"] == "cards"
+        if slide.get("materializer_layout_id"):
+            layout_selector = slide["materializer_layout_id"]
+        elif slide.get("composition_layout_enforced"):
+            layout_selector = slide["composition_layout_id"]
+        elif (
+            slide["page_family"] == "cards"
             and _uses_compact_three_cards(basis_block)
-            else slide["page_family"]
-        )
+        ):
+            layout_selector = "cards.compact-three"
+        else:
+            layout_selector = slide["page_family"]
         resolved_item_count = (
-            None if slide.get("composition_layout_enforced") else item_count
+            None
+            if slide.get("composition_layout_enforced")
+            or slide.get("materializer_layout_id")
+            else item_count
         )
         try:
             layout = resolve_layout(
@@ -4012,6 +4018,7 @@ def _build_render_plan_from_compiled(
         except ValueError as exc:
             if (
                 slide.get("composition_layout_enforced")
+                and slide.get("materializer_layout_id") is None
                 and slide.get("composition_layout_id") is not None
                 and layout_selector != slide["page_family"]
             ):
@@ -4662,6 +4669,7 @@ def compile_render_plan(
     visual_family_by_slide: Mapping[str, str] | None = None,
     visual_recipe_by_slide: Mapping[str, str] | None = None,
     composition_by_slide: Mapping[str, Mapping[str, Any]] | None = None,
+    template_layout_by_slide: Mapping[str, str] | None = None,
     art_direction_id: str | None = None,
 ) -> tuple[dict[str, Any], RenderPlan]:
     """Compile semantic input exactly once and build its governed render plan."""
@@ -4672,6 +4680,7 @@ def compile_render_plan(
         visual_family_by_slide=visual_family_by_slide,
         visual_recipe_by_slide=visual_recipe_by_slide,
         composition_by_slide=composition_by_slide,
+        template_layout_by_slide=template_layout_by_slide,
     )
     plan = _build_render_plan_from_compiled(
         compiled,
@@ -4697,6 +4706,7 @@ def build_render_plan(
     visual_family_by_slide: Mapping[str, str] | None = None,
     visual_recipe_by_slide: Mapping[str, str] | None = None,
     composition_by_slide: Mapping[str, Mapping[str, Any]] | None = None,
+    template_layout_by_slide: Mapping[str, str] | None = None,
     art_direction_id: str | None = None,
 ) -> RenderPlan:
     """Compile semantic input and join it to exact governed render commands."""
@@ -4712,6 +4722,7 @@ def build_render_plan(
         visual_family_by_slide=visual_family_by_slide,
         visual_recipe_by_slide=visual_recipe_by_slide,
         composition_by_slide=composition_by_slide,
+        template_layout_by_slide=template_layout_by_slide,
         art_direction_id=art_direction_id,
     )[1]
 

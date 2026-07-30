@@ -54,6 +54,23 @@ from .quality_v2 import (
     execute_two_stage_repair,
 )
 from .themes import BrandOverrides, select_theme
+from .template_intelligence import (
+    SlideBlueprint,
+    TemplateIntelligenceError,
+    TemplateSelectionPlan,
+    build_selection_plan,
+    choose_spine,
+    compile_slide_blueprints,
+    load_registry_v3,
+    retrieve_candidates,
+)
+from .selection_materialization import (
+    CandidateMaterializationReport,
+    SelectionMaterializationError,
+    planned_materialization_report,
+    registered_layout_bindings,
+    verify_registered_materialization,
+)
 from .weak_model import (
     BriefAttempt,
     BriefCompilation,
@@ -64,6 +81,7 @@ from .weak_model import (
 from .visual_plan import (
     AssetPlan,
     VisualPlan,
+    VisualSlide,
     compile_visual_plan,
     governed_runtime_family,
 )
@@ -97,6 +115,9 @@ class BriefGeneration:
     brand_spec_evidence: Mapping[str, Any] | None
     font_inventory_evidence: Mapping[str, Any]
     asset_manifest_evidence: Mapping[str, Any]
+    template_selection_plan: TemplateSelectionPlan | None
+    slide_blueprints: tuple[SlideBlueprint, ...]
+    candidate_materialization: CandidateMaterializationReport | None
 
     def to_dict(self, *, include_render_plan: bool = True) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -113,6 +134,19 @@ class BriefGeneration:
             "composition_plan": self.composition_plan.to_dict(),
             "deck_plan": copy.deepcopy(self.effective_deck_plan),
             "compiled_deck": copy.deepcopy(self.compiled_deck),
+            "template_selection_plan": (
+                self.template_selection_plan.to_dict()
+                if self.template_selection_plan is not None
+                else None
+            ),
+            "slide_blueprints": [
+                item.to_dict() for item in self.slide_blueprints
+            ],
+            "candidate_materialization": (
+                self.candidate_materialization.to_dict()
+                if self.candidate_materialization is not None
+                else None
+            ),
             "direction_decision": (
                 self.direction.to_dict() if self.direction is not None else None
             ),
@@ -334,6 +368,239 @@ def _ensure_fact_safety(fact_store: FactStore, deck_plan: Mapping[str, Any]) -> 
         )
 
 
+def _selection_brief(
+    compilation: BriefCompilation,
+    deck_plan: Mapping[str, Any],
+    asset_bindings: Mapping[str, AssetBinding],
+) -> dict[str, Any]:
+    """Derive the bounded selection surface from governed production intent."""
+
+    narrative = {item.id: item for item in compilation.narrative.slides}
+    slides: list[dict[str, Any]] = []
+    for slide in deck_plan.get("slides", []):
+        slide_id = str(slide.get("id", "")).strip()
+        narrative_slide = narrative.get(slide_id)
+        role = (
+            narrative_slide.role
+            if narrative_slide is not None
+            else str(slide.get("role", "body"))
+        )
+        role = {
+            "directory": "agenda",
+            "chapter": "section",
+            "section-divider": "section",
+        }.get(role, role)
+        if role not in {
+            "cover", "agenda", "section", "body", "decision",
+            "closing", "appendix",
+        }:
+            role = "body"
+        blocks = slide.get("blocks", [])
+        item_count = 0
+        text_chars = len(str(slide.get("title", "")))
+        decision_three_ready = False
+        asset_refs: list[str] = []
+        asset_kinds: list[str] = []
+        for block in blocks if isinstance(blocks, list) else []:
+            if not isinstance(block, Mapping):
+                continue
+            items = block.get("items")
+            if (
+                isinstance(items, list)
+                and len(items) == 3
+                and str(block.get("kind", "")).casefold()
+                in {"recommendation", "decision", "cta"}
+            ):
+                decision_three_ready = True
+            item_count += (
+                len(items)
+                if isinstance(items, list)
+                else int(bool(block.get("text") or block.get("title")))
+            )
+            text_chars += len(str(block.get("title", "")))
+            text_chars += len(str(block.get("text", "")))
+            if isinstance(items, list):
+                text_chars += sum(len(str(item)) for item in items)
+            source_ref = block.get("source_ref")
+            if isinstance(source_ref, str) and source_ref:
+                asset_refs.append(source_ref)
+                binding = asset_bindings.get(source_ref)
+                if binding is not None:
+                    asset_kinds.append(binding.record.kind)
+                    asset_kinds.append("image")
+        slides.append(
+            {
+                "slide_id": slide_id,
+                "role": role,
+                "title_chars": len(
+                    "".join(str(slide.get("title", "")).split())
+                ),
+                "decision_three_ready": decision_three_ready,
+                "semantic_kind": (
+                    narrative_slide.semantic_kind
+                    if narrative_slide is not None
+                    else "structured-content"
+                ),
+                "item_count": item_count,
+                "text_chars": text_chars,
+                "fact_refs": (
+                    list(narrative_slide.fact_refs)
+                    if narrative_slide is not None
+                    else []
+                ),
+                "asset_refs": list(dict.fromkeys(asset_refs)),
+                "asset_kinds": list(dict.fromkeys(asset_kinds)),
+                "importance": (
+                    narrative_slide.importance
+                    if narrative_slide is not None
+                    else slide.get("importance", "standard")
+                ),
+            }
+        )
+    return {
+        "brief_id": f"generation-{compilation.fact_store.digest[:16]}",
+        "status": "Locked",
+        "discussion_status": "complete",
+        "scenario": compilation.brief_plan.scenario_id,
+        "slides": slides,
+    }
+
+
+def _selection_brief_has_complete_anatomy(brief: Mapping[str, Any]) -> bool:
+    slides = brief.get("slides")
+    if not isinstance(slides, list) or len(slides) < 6:
+        return False
+    roles = {slide.get("role") for slide in slides if isinstance(slide, Mapping)}
+    return {"cover", "agenda", "section", "closing"} <= roles
+
+
+def _ensure_certified_deck_anatomy(
+    deck_plan: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Add governed directory/section beats before certified selection."""
+
+    result = copy.deepcopy(dict(deck_plan))
+    slides = result.get("slides")
+    if not isinstance(slides, list) or not slides:
+        return result
+    roles = {slide.get("role") for slide in slides if isinstance(slide, Mapping)}
+    content = [
+        slide
+        for slide in slides
+        if isinstance(slide, Mapping)
+        and slide.get("role") not in {"cover", "closing", "agenda", "directory"}
+    ]
+    section_titles = [
+        str(slide.get("title") or slide.get("role") or "Evidence")
+        for slide in content[:6]
+    ]
+    cover_index = next(
+        (
+            index
+            for index, slide in enumerate(slides)
+            if isinstance(slide, Mapping) and slide.get("role") == "cover"
+        ),
+        0,
+    )
+    insert_at = cover_index + 1
+    if not ({"agenda", "directory"} & roles):
+        slides.insert(
+            insert_at,
+            {
+                "id": "directory",
+                "role": "agenda",
+                "importance": "high",
+                "title": "Agenda",
+                "blocks": [
+                    {
+                        "id": "directory.items",
+                        "kind": "bullets",
+                        "items": section_titles[:6] or ["Overview"],
+                    }
+                ],
+            },
+        )
+        insert_at += 1
+    if not ({"section", "chapter", "section-divider"} & roles):
+        first_title = section_titles[0] if section_titles else "Evidence"
+        slides.insert(
+            insert_at,
+            {
+                "id": "section-01",
+                "role": "section",
+                "importance": "high",
+                "title": first_title,
+                "blocks": [
+                    {
+                        "id": "section-01.statement",
+                        "kind": "statement",
+                        "text": "Evidence and decision context",
+                    }
+                ],
+            },
+        )
+    return result
+
+
+def _align_visual_plan_with_deck(
+    visual_plan: VisualPlan,
+    deck_plan: Mapping[str, Any],
+    design_pack: DesignPack,
+) -> VisualPlan:
+    """Add governed visual records for deterministic anatomy insertions."""
+
+    existing = {slide.slide_id: slide for slide in visual_plan.slides}
+    aligned: list[VisualSlide] = []
+    allowed = set(design_pack.page_families)
+    for index, deck_slide in enumerate(deck_plan.get("slides", [])):
+        if not isinstance(deck_slide, Mapping):
+            continue
+        slide_id = deck_slide.get("id")
+        if not isinstance(slide_id, str) or not slide_id:
+            continue
+        known = existing.get(slide_id)
+        if known is not None:
+            aligned.append(known)
+            continue
+        role = str(deck_slide.get("role") or "structured-content")
+        if role in {"agenda", "directory", "contents"}:
+            family = "contents" if "contents" in allowed else design_pack.safe_fallback.family
+            variant = "editorial-index"
+        elif role in {"section", "chapter", "section-divider"}:
+            family = "section" if "section" in allowed else design_pack.safe_fallback.family
+            variant = "numbered-divider"
+        else:
+            family = design_pack.safe_fallback.family
+            variant = "modular-grid"
+        density = design_pack.pacing.density_pattern[
+            index % len(design_pack.pacing.density_pattern)
+        ]
+        aligned.append(
+            VisualSlide(
+                slide_id=slide_id,
+                role=role,
+                family=family,
+                variant=variant,
+                emphasis="quiet" if role in {"agenda", "directory"} else "hero",
+                density=density,
+                components=("claim-title", "content-modules", "visual-anchor"),
+                asset_refs=(),
+                decision_rules=(
+                    "CERTIFIED_ANATOMY_INSERTION",
+                    f"DENSITY_PATTERN_{density.upper()}",
+                    f"PACK_{design_pack.id}",
+                ),
+                recipe_id=None,
+            )
+        )
+    return VisualPlan(
+        design_pack_id=visual_plan.design_pack_id,
+        template_pack_id=visual_plan.template_pack_id,
+        theme_id=visual_plan.theme_id,
+        slides=tuple(aligned),
+    )
+
+
 def prepare_brief_generation(
     fact_payload: Any,
     brief_payload: Any,
@@ -354,6 +621,8 @@ def prepare_brief_generation(
     brief_retry_payloads: tuple[Any, ...] = (),
     use_safe_default: bool = False,
     fallback_scenario_id: str | None = None,
+    template_selection_mode: str = "auto",
+    template_choices: tuple[Mapping[str, Any], ...] = (),
 ) -> BriefGeneration:
     """Prepare a deterministic weak-model generation and optionally RenderPlan."""
 
@@ -365,6 +634,10 @@ def prepare_brief_generation(
         )
     if len(brief_retry_payloads) > 2:
         raise GenerationGateError("at most two BriefPlan retries are allowed")
+    if template_selection_mode not in {"auto", "off", "required"}:
+        raise GenerationGateError(
+            f"unknown template selection mode: {template_selection_mode}"
+        )
     if use_safe_default:
         scenario_id = fallback_scenario_id
         if scenario_id is None and isinstance(brief_payload, Mapping):
@@ -577,6 +850,88 @@ def prepare_brief_generation(
     safe_deck = copy.deepcopy(pre_result.state["deck_plan"])
     asset_fallbacks = tuple(pre_result.state.get("asset_fallbacks", ()))
     _ensure_fact_safety(compilation.fact_store, safe_deck)
+    selection_plan: TemplateSelectionPlan | None = None
+    slide_blueprints: tuple[SlideBlueprint, ...] = ()
+    candidate_materialization: CandidateMaterializationReport | None = None
+    template_layout_by_slide: dict[str, str] = {}
+    if template_selection_mode != "off":
+        selection_brief = _selection_brief(compilation, safe_deck, bindings)
+        registry = load_registry_v3()
+        selection_ready = _selection_brief_has_complete_anatomy(selection_brief)
+        try:
+            selected_spine = choose_spine(
+                compilation.brief_plan.scenario_id, registry
+            )
+        except TemplateIntelligenceError:
+            if template_selection_mode == "required" or template_choices:
+                raise GenerationGateError(
+                    "MATERIALIZER_SPINE_UNKNOWN: "
+                    + compilation.brief_plan.scenario_id
+                )
+            selection_ready = False
+        else:
+            safe_deck = _ensure_certified_deck_anatomy(safe_deck)
+            _ensure_fact_safety(compilation.fact_store, safe_deck)
+            visual_plan = _align_visual_plan_with_deck(
+                visual_plan, safe_deck, design_pack
+            )
+            visual_family_by_slide = {
+                slide.slide_id: governed_runtime_family(slide.family)
+                for slide in visual_plan.slides
+            }
+            visual_recipe_by_slide = {
+                slide.slide_id: slide.recipe_id
+                for slide in visual_plan.slides
+                if slide.recipe_id is not None
+            }
+            selection_brief = _selection_brief(compilation, safe_deck, bindings)
+            selection_ready = _selection_brief_has_complete_anatomy(selection_brief)
+            exact_candidate_coverage = (
+                selection_ready
+                and all(
+                    retrieve_candidates(slide, selected_spine, registry, limit=1)
+                    for slide in selection_brief["slides"]
+                )
+            )
+            if selection_ready and not exact_candidate_coverage:
+                if template_selection_mode == "required" or template_choices:
+                    raise GenerationGateError(
+                        "MATERIALIZER_NO_FIT: at least one slide has no "
+                        "capacity-safe exact candidate"
+                    )
+                selection_ready = False
+            if not selection_ready:
+                if template_selection_mode == "required" or template_choices:
+                    raise GenerationGateError(
+                        "MATERIALIZER_BRIEF_INCOMPLETE: certified selection "
+                        "requires cover, agenda, section, closing, and six slides"
+                    )
+                selection_ready = False
+        if selection_ready:
+            try:
+                selection_plan = build_selection_plan(
+                    selection_brief,
+                    choices=template_choices or None,
+                    registry=registry,
+                )
+                slide_blueprints = compile_slide_blueprints(
+                    selection_plan, registry
+                )
+                candidate_materialization = planned_materialization_report(
+                    selection_plan, slide_blueprints, registry
+                )
+                if (
+                    candidate_materialization.materializer
+                    == "registered_native_renderer"
+                ):
+                    template_layout_by_slide = registered_layout_bindings(
+                        selection_plan, slide_blueprints, registry
+                    )
+            except (
+                TemplateIntelligenceError,
+                SelectionMaterializationError,
+            ) as exc:
+                raise GenerationGateError(str(exc)) from exc
     interaction_required = direction_mode == "interactive"
     should_build = build_render
     if should_build:
@@ -606,8 +961,21 @@ def prepare_brief_generation(
             visual_family_by_slide=visual_family_by_slide,
             visual_recipe_by_slide=visual_recipe_by_slide,
             composition_by_slide=composition_by_slide,
+            template_layout_by_slide=template_layout_by_slide,
             art_direction_id=selected_profile_id,
         )
+        if (
+            selection_plan is not None
+            and candidate_materialization is not None
+            and candidate_materialization.materializer
+            == "registered_native_renderer"
+        ):
+            try:
+                candidate_materialization = verify_registered_materialization(
+                    selection_plan, slide_blueprints, render_plan
+                )
+            except SelectionMaterializationError as exc:
+                raise GenerationGateError(str(exc)) from exc
     else:
         compiled_deck = compile_deck_plan(
             safe_deck,
@@ -615,6 +983,7 @@ def prepare_brief_generation(
             visual_family_by_slide=visual_family_by_slide,
             visual_recipe_by_slide=visual_recipe_by_slide,
             composition_by_slide=composition_by_slide,
+            template_layout_by_slide=template_layout_by_slide,
         )
         render_plan = None
     if resolved_brand is not None and render_plan is not None:
@@ -698,6 +1067,9 @@ def prepare_brief_generation(
         brand_spec_evidence=brand_spec_evidence,
         font_inventory_evidence=font_inventory_evidence,
         asset_manifest_evidence=asset_manifest_evidence,
+        template_selection_plan=selection_plan,
+        slide_blueprints=slide_blueprints,
+        candidate_materialization=candidate_materialization,
     )
 
 

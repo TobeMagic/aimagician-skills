@@ -130,6 +130,7 @@ class SlideBlueprint:
     asset_refs: tuple[str, ...]
     token_profile_id: str
     physical_slide: int | None
+    base_variant_id: str | None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -143,6 +144,7 @@ class SlideBlueprint:
             "asset_refs": list(self.asset_refs),
             "token_profile_id": self.token_profile_id,
             "physical_slide": self.physical_slide,
+            "base_variant_id": self.base_variant_id,
         }
 
 
@@ -187,6 +189,9 @@ _SEMANTIC_FAMILIES = {
     "table": ("table",), "case-study": ("case-study",),
     "risk": ("risk-recommendation",), "recommendation": ("recommendation",),
     "kpi": ("big-number",), "image-story": ("image-story",),
+    "metrics": ("big-number",), "statement": ("focal-statement",),
+    "bullets": ("cards",), "sequence": ("process",),
+    "image": ("text-media", "image-story"), "generic": ("cards",),
 }
 
 
@@ -279,6 +284,11 @@ def _derive_candidates(raw: Mapping[str, Any], spines: Mapping[str, VisualSpine]
     if not isinstance(families, list) or len(families) != 25:
         raise TemplateIntelligenceError("layout registry must expose the governed 25 families")
     candidates: list[PageCandidate] = []
+    recipes = {
+        recipe["id"]: recipe
+        for recipe in layouts.get("recipes", [])
+        if isinstance(recipe, dict) and isinstance(recipe.get("id"), str)
+    }
 
     physical = spines["institutional-work-summary"].pack
     for page in physical.pages:
@@ -309,12 +319,41 @@ def _derive_candidates(raw: Mapping[str, Any], spines: Mapping[str, VisualSpine]
             raise TemplateIntelligenceError(f"family {family} needs at least two variants")
         chosen = list(variants[:2])
         if supplement_remaining and len(variants) >= 3:
-            chosen.append(variants[2])
+            if family == "cover":
+                assetless_cover = next(
+                    (
+                        variant
+                        for variant in variants
+                        if variant.get("id") == "cover.editorial"
+                    ),
+                    variants[2],
+                )
+                chosen.append(assetless_cover)
+            else:
+                chosen.append(variants[2])
             supplement_remaining -= 1
         for variant in chosen:
             variant_id = _text(variant.get("id"), f"{family}.variant.id")
+            recipe = recipes.get(variant.get("recipe"))
+            overrides = variant.get("components", {})
+            required_assets: tuple[str, ...] = ()
+            if isinstance(recipe, dict):
+                effective_components = [
+                    (
+                        overrides.get(slot.get("id"), slot.get("component"))
+                        if isinstance(overrides, dict)
+                        else slot.get("component")
+                    )
+                    for slot in recipe.get("slots", [])
+                    if isinstance(slot, dict)
+                ]
+                if "image-frame" in effective_components:
+                    required_assets = ("image",)
             candidates.append(_registered_candidate(
-                f"layout.{variant_id}", family, variant_id
+                f"layout.{variant_id}",
+                family,
+                variant_id,
+                required_assets=required_assets,
             ))
     if supplement_remaining:
         raise TemplateIntelligenceError("not enough third variants for supplements")
@@ -440,16 +479,27 @@ def retrieve_candidates(
     semantic = _text(slide.get("semantic_kind", "structured-content"), "semantic_kind")
     item_count = slide.get("item_count", 1)
     text_chars = slide.get("text_chars", 0)
+    title_chars = slide.get("title_chars", 0)
+    decision_three_ready = slide.get("decision_three_ready", False)
     if type(item_count) is not int or item_count < 0:
         raise TemplateIntelligenceError("slide.item_count must be a non-negative integer")
     if type(text_chars) is not int or text_chars < 0:
         raise TemplateIntelligenceError("slide.text_chars must be a non-negative integer")
+    if type(title_chars) is not int or title_chars < 0:
+        raise TemplateIntelligenceError("slide.title_chars must be a non-negative integer")
+    if not isinstance(decision_three_ready, bool):
+        raise TemplateIntelligenceError("slide.decision_three_ready must be boolean")
     asset_kinds = set(_strings(slide.get("asset_kinds", []), "slide.asset_kinds"))
     preferred = _ROLE_FAMILIES.get(role, ())
     semantic_families = _SEMANTIC_FAMILIES.get(semantic, ())
     ranked: list[tuple[float, str, CandidateScore, PageCandidate]] = []
     for candidate in registry.candidates.values():
         if candidate.certification != "certified":
+            continue
+        if (
+            candidate.source_mode != spine.source_mode
+            or candidate.materializer != spine.materializer
+        ):
             continue
         if spine.deck_family_id not in candidate.deck_family_ids:
             continue
@@ -466,6 +516,20 @@ def retrieve_candidates(
         if item_count > candidate.capacity.max_items or text_chars > candidate.capacity.max_text_chars:
             continue
         if set(candidate.required_assets) - asset_kinds:
+            continue
+        if (
+            candidate.base_variant_id == "cta.centered"
+            and title_chars > 8
+        ):
+            # The centered CTA has an intentionally compact eyebrow/title
+            # lane. Route ordinary action titles to the top-band candidate
+            # before materialization instead of allowing a render-time layout
+            # substitution that would invalidate exact candidate evidence.
+            continue
+        if (
+            candidate.base_variant_id == "cta.decision-three"
+            and not decision_three_ready
+        ):
             continue
         score = 0.25
         reasons = ["CERTIFIED", "CAPACITY_OK", "MATERIALIZER_OK", "FAMILY_OK"]
@@ -496,22 +560,7 @@ def retrieve_candidates(
     if not ranked:
         return ()
     ordered = sorted(ranked)
-    result: list[CandidateScore] = []
-    seen_families: set[str] = set()
-    for _, _, score, candidate in ordered:
-        if candidate.family in seen_families and len(result) < min(3, limit):
-            continue
-        result.append(score)
-        seen_families.add(candidate.family)
-        if len(result) == limit:
-            break
-    if len(result) < min(limit, len(ordered)):
-        for _, _, score, _ in ordered:
-            if score not in result:
-                result.append(score)
-                if len(result) == limit:
-                    break
-    return tuple(result)
+    return tuple(item[2] for item in ordered[:limit])
 
 
 def _validate_brief(brief: Mapping[str, Any]) -> tuple[str, str, list[Mapping[str, Any]]]:
@@ -617,7 +666,7 @@ def build_selection_plan(
     spine = choose_spine(scenario, available)
     if choices is None:
         generated: list[dict[str, Any]] = []
-        family_run: list[str] = []
+        candidate_run: list[str] = []
         for slide in slides:
             candidates = retrieve_candidates(slide, spine, available)
             if not candidates:
@@ -625,19 +674,21 @@ def build_selection_plan(
                     f"NO_FIT: no candidate for slide {slide['slide_id']}"
                 )
             chosen = candidates[0]
-            if len(family_run) >= 2:
-                previous = family_run[-1]
+            if len(candidate_run) >= 2:
+                previous = candidate_run[-1]
+                preferred_family = available.candidates[chosen.candidate_id].family
                 alternate = next(
                     (
                         score for score in candidates
-                        if available.candidates[score.candidate_id].family != previous
+                        if score.candidate_id != previous
+                        and available.candidates[score.candidate_id].family
+                        == preferred_family
                     ),
                     None,
                 )
                 if alternate is not None:
                     chosen = alternate
-            family = available.candidates[chosen.candidate_id].family
-            family_run = [*family_run[-1:], family]
+            candidate_run = [*candidate_run[-1:], chosen.candidate_id]
             confidence = chosen.score
             fallback = None
             if confidence < 0.65:
@@ -664,22 +715,22 @@ def _validate_rhythm(
     spine: VisualSpine,
     registry: RegistryV3,
 ) -> None:
-    run_family: str | None = None
+    run_candidate: str | None = None
     run = 0
     for selection, slide in zip(selections, slides):
-        family = registry.candidates[selection.candidate_id].family
         role = slide["role"]
         if role in {"section", "chapter"}:
-            run_family, run = None, 0
+            run_candidate, run = None, 0
             continue
         if role not in {"body", "appendix"}:
-            run_family, run = None, 0
+            run_candidate, run = None, 0
             continue
-        run = run + 1 if family == run_family else 1
-        run_family = family
+        run = run + 1 if selection.candidate_id == run_candidate else 1
+        run_candidate = selection.candidate_id
         if run > spine.pack.art_direction.max_same_family_run:
             raise TemplateIntelligenceError(
-                f"rhythm violation: {family} repeats {run} ordinary pages"
+                f"rhythm violation: {selection.candidate_id} repeats "
+                f"{run} ordinary pages"
             )
 
 
@@ -709,6 +760,7 @@ def compile_slide_blueprints(
             selection.asset_refs,
             spine.art_direction_id,
             candidate.physical_slide,
+            candidate.base_variant_id,
         ))
     return tuple(result)
 
@@ -718,10 +770,113 @@ def validate_blueprint_payload(payload: Mapping[str, Any]) -> None:
     allowed = {
         "schema_version", "slide_id", "spine_id", "candidate_id", "family",
         "materializer", "fact_refs", "asset_refs", "token_profile_id",
-        "physical_slide",
+        "physical_slide", "base_variant_id",
     }
     unknown = sorted(set(payload) - allowed)
     if forbidden or unknown:
         raise TemplateIntelligenceError(
             f"blueprint fields invalid; forbidden={forbidden}, unknown={unknown}"
         )
+
+
+def selection_plan_from_payload(payload: Mapping[str, Any]) -> TemplateSelectionPlan:
+    """Load a serialized owned plan without reopening model design authority."""
+
+    if set(payload) != {"schema_version", "brief_id", "spine_id", "selections"}:
+        raise TemplateIntelligenceError("selection plan fields are invalid")
+    if payload.get("schema_version") != "1.0":
+        raise TemplateIntelligenceError("selection plan schema_version must be 1.0")
+    raw_selections = payload.get("selections")
+    if not isinstance(raw_selections, list) or not raw_selections:
+        raise TemplateIntelligenceError("selection plan requires selections")
+    selections: list[SlideSelection] = []
+    required = {
+        "slide_id", "candidate_id", "fact_refs", "asset_refs", "importance",
+        "confidence", "fallback_reason", "rationale_codes",
+    }
+    for index, item in enumerate(raw_selections):
+        if not isinstance(item, Mapping) or set(item) != required:
+            raise TemplateIntelligenceError(
+                f"selection plan selections[{index}] fields are invalid"
+            )
+        confidence = item["confidence"]
+        if (
+            not isinstance(confidence, (int, float))
+            or isinstance(confidence, bool)
+            or not 0 <= confidence <= 1
+        ):
+            raise TemplateIntelligenceError("selection confidence must be 0..1")
+        fallback = item["fallback_reason"]
+        if fallback not in {
+            None,
+            "LOW_CONFIDENCE_SAFE_DEFAULT",
+            "SAME_FAMILY_CAPACITY_FALLBACK",
+        }:
+            raise TemplateIntelligenceError(
+                "selection fallback_reason is not governed"
+            )
+        selections.append(
+            SlideSelection(
+                _text(item["slide_id"], "selection.slide_id"),
+                _text(item["candidate_id"], "selection.candidate_id"),
+                _strings(item["fact_refs"], "selection.fact_refs"),
+                _strings(item["asset_refs"], "selection.asset_refs"),
+                _text(item["importance"], "selection.importance"),
+                float(confidence),
+                fallback,
+                _strings(item["rationale_codes"], "selection.rationale_codes"),
+            )
+        )
+    return TemplateSelectionPlan(
+        "1.0",
+        _text(payload["brief_id"], "selection.brief_id"),
+        _text(payload["spine_id"], "selection.spine_id"),
+        tuple(selections),
+    )
+
+
+def slide_blueprints_from_payload(payload: Mapping[str, Any]) -> tuple[SlideBlueprint, ...]:
+    """Load the versioned blueprint sidecar emitted by production."""
+
+    if set(payload) != {"schema_version", "blueprints"}:
+        raise TemplateIntelligenceError("blueprint sidecar fields are invalid")
+    if payload.get("schema_version") != "1.0":
+        raise TemplateIntelligenceError("blueprint sidecar schema_version must be 1.0")
+    raw_blueprints = payload.get("blueprints")
+    if not isinstance(raw_blueprints, list) or not raw_blueprints:
+        raise TemplateIntelligenceError("blueprint sidecar requires blueprints")
+    result: list[SlideBlueprint] = []
+    for item in raw_blueprints:
+        if not isinstance(item, Mapping):
+            raise TemplateIntelligenceError("blueprint must be an object")
+        validate_blueprint_payload(item)
+        if item.get("schema_version") != "1.0":
+            raise TemplateIntelligenceError(
+                "blueprint schema_version must be 1.0"
+            )
+        physical_slide = item["physical_slide"]
+        base_variant_id = item["base_variant_id"]
+        if physical_slide is not None and (
+            type(physical_slide) is not int or physical_slide < 1
+        ):
+            raise TemplateIntelligenceError("blueprint physical_slide is invalid")
+        if base_variant_id is not None and (
+            not isinstance(base_variant_id, str) or not base_variant_id.strip()
+        ):
+            raise TemplateIntelligenceError("blueprint base_variant_id is invalid")
+        result.append(
+            SlideBlueprint(
+                _text(item["schema_version"], "blueprint.schema_version"),
+                _text(item["slide_id"], "blueprint.slide_id"),
+                _text(item["spine_id"], "blueprint.spine_id"),
+                _text(item["candidate_id"], "blueprint.candidate_id"),
+                _text(item["family"], "blueprint.family"),
+                _text(item["materializer"], "blueprint.materializer"),
+                _strings(item["fact_refs"], "blueprint.fact_refs"),
+                _strings(item["asset_refs"], "blueprint.asset_refs"),
+                _text(item["token_profile_id"], "blueprint.token_profile_id"),
+                physical_slide,
+                base_variant_id,
+            )
+        )
+    return tuple(result)

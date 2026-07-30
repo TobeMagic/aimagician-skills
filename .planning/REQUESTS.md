@@ -311,3 +311,43 @@ result rather than optimizing portability first.
 
 - Access-control bypass, credential leakage, redistribution, whole-slide
   raster output, or claiming code variants as downloaded templates.
+
+## USR-V6-12: Select visually diverse templates inside every real category
+
+**Status:** Accepted
+**Source:** User direction after authenticated Gaojie access was restored
+
+### Original Request
+
+Continue without stopping unless user intervention is required. Every category
+contains many weakly named PPT items, so inspect their images and download a
+highly differentiated, reusable subset rather than mechanically taking the
+first items or accumulating near-duplicates.
+
+### Accepted Decisions
+
+- The Gaojie template source of truth is the 32 nonzero categories under
+  `products.aspx`; other site sections are inventoried separately and cannot
+  overwrite template categories with the same numeric `category_id`.
+- Inventory every product card and preview image before selecting downloads.
+- Use deterministic image features and farthest-first selection to reject
+  exact and near-duplicate previews and preserve style, color, density, and
+  composition variation.
+- Target 12 representatives per sufficiently populated category, producing a
+  roughly 300–400-template private core; retain all items only when a category
+  contains fewer candidates and report the shortfall.
+- Phase 44 must render the downloaded PPTX files and perform a second
+  cross-category visual/structural deduplication before certification.
+- Authentication expiry, CAPTCHA, entitlement rejection, or site blocking are
+  the only expected reasons to request user intervention during acquisition.
+
+### Derived Requirements
+
+- V6R-ACQ-01
+- V6R-MINE-01
+
+### Exclusions
+
+- First-N selection, title-only classification, downloading all near-duplicate
+  items, uploading credentials to a reviewer, or claiming thumbnail diversity
+  as final rendered-slide quality.

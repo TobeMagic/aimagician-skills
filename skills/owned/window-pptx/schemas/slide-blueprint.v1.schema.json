@@ -4,7 +4,7 @@
   "title": "SlideBlueprint v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "slide_id", "spine_id", "candidate_id", "family", "materializer", "fact_refs", "asset_refs", "token_profile_id", "physical_slide"],
+  "required": ["schema_version", "slide_id", "spine_id", "candidate_id", "family", "materializer", "fact_refs", "asset_refs", "token_profile_id", "physical_slide", "base_variant_id"],
   "properties": {
     "schema_version": {"const": "1.0"},
     "slide_id": {"type": "string", "minLength": 1},
@@ -15,6 +15,7 @@
     "fact_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
     "asset_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
     "token_profile_id": {"type": "string", "minLength": 1},
-    "physical_slide": {"type": ["integer", "null"], "minimum": 1}
+    "physical_slide": {"type": ["integer", "null"], "minimum": 1},
+    "base_variant_id": {"type": ["string", "null"], "minLength": 1}
   }
 }

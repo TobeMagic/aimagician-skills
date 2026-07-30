@@ -735,6 +735,7 @@ def compile_deck_plan(
     visual_family_by_slide: Mapping[str, str] | None = None,
     visual_recipe_by_slide: Mapping[str, str] | None = None,
     composition_by_slide: Mapping[str, Mapping[str, Any]] | None = None,
+    template_layout_by_slide: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Compile validated semantic intent into deterministic, design-neutral slides."""
 
@@ -750,12 +751,14 @@ def compile_deck_plan(
     governed_compositions = {
         key: dict(value) for key, value in (composition_by_slide or {}).items()
     }
+    governed_template_layouts = dict(template_layout_by_slide or {})
     slide_ids = {slide.id for slide in plan.slides}
     unknown_visual_slides = sorted(
         (
             set(governed_visual_families)
             | set(governed_visual_recipes)
             | set(governed_compositions)
+            | set(governed_template_layouts)
         )
         - slide_ids
     )
@@ -794,6 +797,9 @@ def compile_deck_plan(
             composition = governed_compositions.get(source_slide.id)
             compiled = slide.to_dict()
             compiled["page_family"] = decision.selected
+            template_layout = governed_template_layouts.get(source_slide.id)
+            if template_layout is not None:
+                compiled["materializer_layout_id"] = template_layout
             if visual_recipe is not None:
                 compiled["layout_variant_seed"] = visual_recipe
             if composition is not None:

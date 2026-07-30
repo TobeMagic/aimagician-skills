@@ -104,6 +104,66 @@ comparison, variance, ablation, robustness, parameter, and inference values
 point to `synthetic://mdgformer/experiment-log-v1`; never present them as
 published results.
 
+### Reference-anchor renderer
+
+The three flagship briefs have a governed reference-anchor renderer:
+
+```bash
+node scripts/build_window_pptx_v6_reference_anchors.mjs \
+  --brief-dir /tmp/window-pptx-v6-briefs \
+  --asset-dir .private/phase46/assets \
+  --output-dir .private/phase46/output
+```
+
+The work, campus, and academic anchors intentionally use different visual
+grammars. They share the same quality contract, not the same card system:
+
+- work: editorial emerald/ivory/gold, display-number evidence, native charts
+  and tables, chapter resets, roadmap and decision statement;
+- campus: midnight campus photography, observation map, native system
+  blueprint, product dashboard, commercial proof, metrics and validation
+  roadmap;
+- academic: evidence-first editorial pages, dynamic graph architecture,
+  concentric multiscale representation, curriculum staircase, benchmarks,
+  ablation and explicit research boundaries.
+
+The resulting manifests conform to
+`schemas/anchor-deck-blueprint.v1.schema.json`. Verify them against the local
+certified core with `scripts/verify_window_pptx_v6_reference_anchors.py`.
+Physical IDs are recorded as certified influence or bounded component routing,
+never as whole-slide materialization. Native IDs are governed composition
+choices. The verifier rejects reference-only/denied physical sources, unknown
+native candidates, excessive body-layout repetition, external relationships,
+missing notes, hash drift, or non-editable/raster-dominant output.
+
+### Fifteen-scenario suite and ordinary-model mode
+
+After the three anchors pass, generate the complete locked corpus with:
+
+```bash
+node scripts/build_window_pptx_v6_reference_anchors.mjs \
+  --brief-dir .private/phase47/briefs \
+  --asset-dir .private/phase46/assets \
+  --output-dir .private/phase47/output \
+  --all-scenarios
+```
+
+An ordinary model may supply only a validated `BriefPlan v1`:
+
+```bash
+python scripts/run_window_pptx_v6_ordinary_plans.py \
+  --output-dir .private/phase47/ordinary-plans \
+  --model opencode/deepseek-v4-flash-free
+```
+
+Then pass `--ordinary-plan-dir .private/phase47/ordinary-plans` to the Node
+builder. The plan changes only registered semantic planning decisions. It
+cannot change coordinates, theme tokens, fonts, candidate IDs, code, QA,
+repair, or release. Every active fact must appear exactly once in four to
+eight registered groups. Provider timeout or rate limiting remains
+`UNAVAILABLE`; do not replace it with a deterministic fallback while claiming
+an ordinary-model success.
+
 ## Authoring-model authority
 
 Codex GPT-5.5 medium is the v6.0 default author, or the controller may choose

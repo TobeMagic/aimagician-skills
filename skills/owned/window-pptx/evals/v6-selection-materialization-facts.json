@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "project": {
+    "title": "Campus Pilot Decision",
+    "objective": "Approve the competition defense pilot.",
+    "audience": "competition judges",
+    "language": "en-US"
+  },
+  "sources": [
+    {"id": "request", "kind": "request", "locator": "REQUEST.md"}
+  ],
+  "facts": [
+    {"id": "proof-1", "kind": "claim", "text": "Validated evidence point 1 supports the pilot decision.", "language": "en-US", "source_id": "request", "locator": "line:1", "required": true},
+    {"id": "proof-2", "kind": "claim", "text": "Validated evidence point 2 supports the pilot decision.", "language": "en-US", "source_id": "request", "locator": "line:2", "required": true},
+    {"id": "proof-3", "kind": "claim", "text": "Validated evidence point 3 supports the pilot decision.", "language": "en-US", "source_id": "request", "locator": "line:3", "required": true},
+    {"id": "proof-4", "kind": "claim", "text": "Validated evidence point 4 supports the pilot decision.", "language": "en-US", "source_id": "request", "locator": "line:4", "required": true},
+    {"id": "proof-5", "kind": "claim", "text": "Validated evidence point 5 supports the pilot decision.", "language": "en-US", "source_id": "request", "locator": "line:5", "required": true}
+  ]
+}

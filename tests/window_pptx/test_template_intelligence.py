@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import random
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -21,9 +22,22 @@ from window_pptx.template_intelligence import (  # noqa: E402
     compile_slide_blueprints,
     load_registry_v3,
     retrieve_candidates,
+    selection_plan_from_payload,
+    slide_blueprints_from_payload,
     validate_blueprint_payload,
 )
+from window_pptx.deck_plan import compile_deck_plan  # noqa: E402
 from window_pptx.template_pack import load_template_pack  # noqa: E402
+from window_pptx.selection_materialization import (  # noqa: E402
+    SelectionMaterializationError,
+    materialize_physical_selection,
+    planned_materialization_report,
+    registered_layout_bindings,
+    verify_registered_materialization,
+)
+from window_pptx.render_plan import RenderPlan, RenderSlide  # noqa: E402
+from window_pptx.layouts import SlideSize  # noqa: E402
+from window_pptx.themes import BrandOverrides  # noqa: E402
 from window_pptx.template_pack_v2 import (  # noqa: E402
     TemplatePackV2Error,
     adapt_template_pack_v1,
@@ -207,6 +221,168 @@ def test_blueprint_contract_rejects_geometry_style_code_and_repair() -> None:
             validate_blueprint_payload({**payload, field: "unsafe"})
 
 
+def _render_plan_for_blueprints(blueprints, *, mismatch: bool = False) -> RenderPlan:
+    slides = tuple(
+        RenderSlide(
+            source_id=item.slide_id,
+            index=index,
+            role="body",
+            title=None,
+            family_id=item.family,
+            layout_id=(
+                "cover.centered"
+                if mismatch and index == 1
+                else item.base_variant_id
+            ),
+            item_count=1,
+            requested_density="balanced",
+            resolved_density="balanced",
+            background_color="#FFFFFF",
+            objects=(),
+            speaker_notes=None,
+            motion="off",
+        )
+        for index, item in enumerate(blueprints, start=1)
+    )
+    return RenderPlan(
+        "1.0",
+        "test",
+        "test",
+        "technology",
+        BrandOverrides(),
+        "en-US",
+        ("Arial",),
+        SlideSize(13.333, 7.5),
+        "#FFFFFF",
+        slides,
+        (),
+        (),
+    )
+
+
+def test_registered_selection_has_exact_layout_bindings_and_observed_evidence() -> None:
+    registry = load_registry_v3()
+    plan = build_selection_plan(_brief("campus-competition"), registry=registry)
+    blueprints = compile_slide_blueprints(plan, registry)
+
+    bindings = registered_layout_bindings(plan, blueprints, registry)
+    report = verify_registered_materialization(
+        plan, blueprints, _render_plan_for_blueprints(blueprints), registry
+    )
+
+    assert bindings == {
+        item.slide_id: item.base_variant_id for item in blueprints
+    }
+    assert report.status == "pass"
+    assert len(report.evidence) == len(plan.selections)
+    assert all(item.status == "pass" for item in report.evidence)
+
+    with pytest.raises(
+        SelectionMaterializationError, match="MATERIALIZER_VARIANT_MISMATCH"
+    ):
+        verify_registered_materialization(
+            plan,
+            blueprints,
+            _render_plan_for_blueprints(blueprints, mismatch=True),
+            registry,
+        )
+
+
+def test_physical_selection_executes_hash_bound_pack_and_proves_each_slide(
+    tmp_path: Path,
+) -> None:
+    registry = load_registry_v3()
+    plan = build_selection_plan(_brief("annual-work-report"), registry=registry)
+    blueprints = compile_slide_blueprints(plan, registry)
+    pack = registry.spines[plan.spine_id].pack.v1_pack
+    bindings = {
+        slot.id: "1"
+        for slot in (*pack.slots, *pack.chart_slots)
+        if slot.required
+    }
+
+    report, adaptation = materialize_physical_selection(
+        plan,
+        blueprints,
+        bindings,
+        tmp_path / "adapted.pptx",
+        registry,
+    )
+
+    assert report.status == "pass"
+    assert adaptation.source_integrity_preserved is True
+    assert adaptation.output_path.is_file()
+    assert len(report.evidence) == len(plan.selections)
+    assert {
+        item.observed_output_slide for item in report.evidence
+    } == {item.physical_slide for item in blueprints}
+
+
+def test_materialization_fails_for_mixed_or_incomplete_blueprints() -> None:
+    registry = load_registry_v3()
+    plan = build_selection_plan(_brief("campus-competition"), registry=registry)
+    blueprints = compile_slide_blueprints(plan, registry)
+    planned = planned_materialization_report(plan, blueprints, registry)
+    assert planned.status == "planned"
+
+    with pytest.raises(
+        SelectionMaterializationError, match="MATERIALIZER_EVIDENCE_INCOMPLETE"
+    ):
+        planned_materialization_report(plan, blueprints[:-1], registry)
+    tampered = (
+        replace(blueprints[0], family="table"),
+        *blueprints[1:],
+    )
+    with pytest.raises(
+        SelectionMaterializationError, match="MATERIALIZER_CANDIDATE_INVALID"
+    ):
+        planned_materialization_report(plan, tampered, registry)
+
+
+def test_serialized_sidecars_round_trip_and_compiler_consumes_exact_layout() -> None:
+    registry = load_registry_v3()
+    plan = build_selection_plan(_brief("campus-competition"), registry=registry)
+    blueprints = compile_slide_blueprints(plan, registry)
+    loaded_plan = selection_plan_from_payload(plan.to_dict())
+    loaded_blueprints = slide_blueprints_from_payload(
+        {
+            "schema_version": "1.0",
+            "blueprints": [item.to_dict() for item in blueprints],
+        }
+    )
+    assert loaded_plan == plan
+    assert loaded_blueprints == blueprints
+
+    deck = {
+        "schema_version": "1.0",
+        "project": {
+            "title": "Materializer compiler seam",
+            "scenario": "product-launch",
+        },
+        "slides": [
+            {
+                "id": "s01",
+                "role": "cover",
+                "importance": "high",
+                "title": "Exact selected layout",
+                "blocks": [
+                    {
+                        "id": "s01.statement",
+                        "kind": "statement",
+                        "text": "Selection must reach production compilation.",
+                    }
+                ],
+            }
+        ],
+    }
+    exact = loaded_blueprints[0].base_variant_id
+    assert exact is not None
+    compiled = compile_deck_plan(
+        deck, template_layout_by_slide={"s01": exact}
+    )
+    assert compiled["slides"][0]["materializer_layout_id"] == exact
+
+
 def test_registry_digest_drift_and_pack_unknown_fields_fail_closed(tmp_path: Path) -> None:
     registry_payload = json.loads(REGISTRY.read_text(encoding="utf-8"))
     registry_payload["source_digests"]["layouts.json"] = "sha256:" + "0" * 64
@@ -239,6 +415,13 @@ def test_v2_and_selection_schemas_accept_owned_payloads() -> None:
     blueprint_schema = json.loads(
         (SKILL_ROOT / "schemas" / "slide-blueprint.v1.schema.json").read_text()
     )
+    materialization_schema = json.loads(
+        (
+            SKILL_ROOT
+            / "schemas"
+            / "candidate-materialization-report.v1.schema.json"
+        ).read_text()
+    )
     jsonschema.Draft202012Validator(registry_schema).validate(
         json.loads(REGISTRY.read_text())
     )
@@ -248,6 +431,11 @@ def test_v2_and_selection_schemas_accept_owned_payloads() -> None:
     jsonschema.Draft202012Validator(plan_schema).validate(plan.to_dict())
     for blueprint in compile_slide_blueprints(plan):
         jsonschema.Draft202012Validator(blueprint_schema).validate(blueprint.to_dict())
+    jsonschema.Draft202012Validator(materialization_schema).validate(
+        planned_materialization_report(
+            plan, compile_slide_blueprints(plan)
+        ).to_dict()
+    )
 
 
 REGISTRY = SKILL_ROOT / "registries" / "template-intelligence-v3.json"

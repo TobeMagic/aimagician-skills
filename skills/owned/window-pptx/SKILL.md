@@ -153,25 +153,63 @@ complete-work spine. The current seed exposes 84 candidate IDs, but these are
 not 84 independently sourced templates: they comprise 15 authorized physical
 reference pages, 60 registered code-composition variants, and nine specialty
 aliases for map, awards, people, partner wall, business model, architecture,
-mockup, quote, and six/multi-content pages. Until Phase 43–45 real private
-acquisition, certification, and materialization pass, do not describe this seed
-as a commercial template library or reference-grade production proof. A model receives
+mockup, quote, and six/multi-content pages. The authenticated private
+acquisition and visual certification are recorded separately from this tracked
+seed; private bytes remain ignored and non-redistributable. Do not describe
+either pool as redistributable commercial content or reference-grade
+production proof without exact materialization and acceptance evidence. A model receives
 only 3–6 capacity-safe candidate IDs and returns IDs, fact/asset bindings,
 importance, confidence, and reason codes. `TemplateSelectionPlan` and
 `SlideBlueprint` reject geometry, shape IDs, OOXML, HTML, code, arbitrary
-style values, and model-written repair.
+style values, and model-written repair. A registered blueprint carries the
+exact `base_variant_id`; a physical blueprint carries the exact source slide.
 
 Use `load_registry_v3`, `build_selection_plan`, and
 `compile_slide_blueprints` from `window_pptx.template_intelligence`.
-TemplatePack v1 remains unchanged and loads through
-`adapt_template_pack_v1`; registered-composition candidates can materialize
-through the existing native renderer. The current v6 flagship script does not
-yet consume this selection plan, so its manifest spine IDs are metadata rather
-than materialization evidence. Any unknown, uncertified,
+TemplatePack v1 remains unchanged and loads through `adapt_template_pack_v1`.
+The governed BriefPlan production route adds missing directory/section anatomy
+for certified spines, binds each registered blueprint to the exact native
+layout, and fails if the observed `RenderSlide.layout_id` differs. Physical
+TemplatePack production accepts paired `--template-selection-plan` and
+`--slide-blueprints` sidecars and emits a hash-bound
+`candidate-materialization-report.json`. A `planned` report is not proof; only
+one evidence item per selected slide with overall `pass` counts. Mixed
+materializers and silent native fallbacks are forbidden. The older 32-slide
+v6 flagship generator remains regression-only and its manifest spine labels
+do not count as selection or reference-parity evidence. Any unknown, uncertified,
 over-capacity, missing-asset, cross-family, or unbound-fact choice fails
 closed. The legacy BriefPlan compiler remains runnable for regression and
 compatibility work, but it is not evidence that the v6 reference-grade route
 has passed.
+
+For the three v6 reference anchors, use the explicit anchor renderer after the
+brief corpus is exported and the three project-bound hero assets are present.
+It produces 15-page annual work-report, 18-page campus competition-defense,
+and 19-page academic thesis-defense decks with cover, directory, sections,
+evidence, decision/conclusion, and closing anatomy. Geometry, typography,
+charts, tables, maps, diagrams, product scenes, and cadence are deterministic;
+the model does not author coordinates or style values.
+
+```bash
+node skills/owned/window-pptx/scripts/build_window_pptx_v6_reference_anchors.mjs \
+  --brief-dir /tmp/window-pptx-v6-briefs \
+  --asset-dir skills/owned/window-pptx/.private/phase46/assets \
+  --output-dir skills/owned/window-pptx/.private/phase46/output
+
+python skills/owned/window-pptx/scripts/verify_window_pptx_v6_reference_anchors.py \
+  --output-dir skills/owned/window-pptx/.private/phase46/output \
+  --schema skills/owned/window-pptx/schemas/anchor-deck-blueprint.v1.schema.json \
+  --certified-core skills/owned/window-pptx/.private/intelligence/gaojie/certified-core.json \
+  --report skills/owned/window-pptx/.private/phase46/anchor-provenance-report.json
+```
+
+The anchor verifier schema-validates every manifest, binds physical influence
+IDs to the local certified core, rejects denied/reference-only sources,
+records native composition IDs, verifies file hashes, notes and OOXML
+relationships, limits bitmap-bearing pages, and requires native editable
+objects on every slide. A physical candidate in an anchor manifest means
+certified influence or bounded component routing only; it never claims that
+the commercial page was copied or materialized as a whole slide.
 
 Read [quality-first-v6-workflow.md](./references/quality-first-v6-workflow.md)
 for the state machine, corpus, private-library boundary, model authority,
@@ -188,6 +226,15 @@ defense) plus twelve realistic business skeletons. Skeleton means visual/copy
 work remains to be authored; it does not mean a shallow prompt. Every pack has
 at least eight quantitative facts, three required material roles, a real
 meeting decision, timing, slide budget, anatomy, prohibitions, and rubric.
+
+For v6 fifteen-scenario evaluation, ordinary models are semantic routers only.
+Use `scripts/run_window_pptx_v6_ordinary_plans.py`; accept a plan only when
+every active fact appears exactly once in four to eight registered groups.
+Generate the complete editable suite with
+`build_window_pptx_v6_reference_anchors.mjs --all-scenarios`, optionally adding
+`--ordinary-plan-dir` after validation. Never let the model emit coordinates,
+fonts, colors, template IDs, implementation code, quality scores, or release
+decisions.
 
 Export reviewable JSON files outside the tracked source:
 
