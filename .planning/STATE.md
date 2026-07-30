@@ -6,8 +6,8 @@ current_phase: 28
 current_phase_name: Window-PPTX Weak-Model Benchmark
 status: in_progress
 stopped_at: Phase 27 quality gates passed 19 focused and 404 full tests; Phase 28 frozen weak-model benchmark is next
-last_updated: "2026-07-20T19:46:01+08:00"
-last_activity: 2026-07-20
+last_updated: "2026-07-30T20:35:15+08:00"
+last_activity: 2026-07-30
 progress:
   total_phases: 29
   completed_phases: 27
@@ -34,7 +34,7 @@ Milestone: v5.0 Window-PPTX Verified Production Engine
 Current Phase: 28 of 29
 Current Phase Name: Window-PPTX Weak-Model Benchmark
 Status: In Progress (current milestone 6/8 phases complete)
-Last Activity: 2026-07-20
+Last Activity: 2026-07-30
 
 ### Completed Controlled Exception
 
@@ -45,14 +45,12 @@ Last Activity: 2026-07-20
 - Boundary: Add direct Agnes image understanding, correct CLI-agent visual routing, and harden workflow goal/closure validation without changing Window-PPTX implementation or phase status.
 - Return checkpoint: Resumed Phase 28 at frozen benchmark briefs, manifests, scoring, and ordinary-model trials after independent audit and synchronization.
 
-### Active Controlled Exception
-
 - Task: `local-first-delivery-planning-storage`
-- Status: In progress
+- Status: Complete
 - Approval source: `USR-20260730-002`
 - Parent milestone/phase: `v5.0` / `28`
 - Boundary: Add local-first delivery gates, tracked/local-private planning storage, frozen audit review points, managed-install content parity, and PR CI without changing Window-PPTX implementation or phase status.
-- Return checkpoint: Resume Phase 28 at frozen benchmark briefs, manifests, scoring, and ordinary-model trials after independent audit, synchronization, merge, and postmerge recording.
+- Return checkpoint: Resumed Phase 28 at frozen benchmark briefs, manifests, scoring, and ordinary-model trials after independent audit, synchronization, and merge-readiness verification.
 
 Foundation completed:
 

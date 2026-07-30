@@ -1,14 +1,14 @@
 # Task: local-first-delivery-planning-storage
 
 **Task ID:** local-first-delivery-planning-storage
-**Status:** In progress
+**Status:** Complete
 **Source request:** USR-20260730-002
 **Parent milestone:** v5.0
 **Parent phase:** 28
 **Exception status:** Approved
 **Approval source:** USR-20260730-002
 **Return checkpoint:** Resume Phase 28 frozen benchmark briefs, manifests, scoring, and ordinary-model trials.
-**Review point:** NOT_RUN
+**Review point:** `3fa59c4bc91b2e40d694983c2ae3b5afbd7449ae`
 
 ## Original Request
 
@@ -56,11 +56,11 @@ Implement the accepted local-first delivery plan: map complete local context, ad
 - **Delivery class:** Non-deployable
 - **Context coverage:** PASS
 - **Local verification:** PASS
-- **CI verification:** NOT_RUN
+- **CI verification:** PASS
 - **Preview verification:** N/A
 - **Online-only exceptions:** N/A
 - **Artifact provenance:** N/A
-- **Premerge decision:** NOT_RUN
+- **Premerge decision:** MERGE_READY
 - **Implementation merge SHA:** N/A
 - **Postmerge verification:** N/A
 - **Deployed artifact match:** N/A
@@ -73,20 +73,20 @@ This task changes repository source and local managed installations. Publishing 
 ## Independent Completion Audit
 
 - **Provider:** OpenCode
-- **Primary model:** NOT_RUN
-- **Model:** NOT_RUN
-- **Attempt chain:** NOT_RUN
-- **Fallback reason:** NOT_RUN
-- **Session:** NOT_RUN
-- **Run status:** NOT_RUN
-- **Review point:** NOT_RUN
-- **Requirement matrix:** NOT_RUN
-- **Blocker:** NOT_RUN
-- **Important:** NOT_RUN
-- **Nitpick:** NOT_RUN
-- **Controller spot-check:** NOT_RUN
+- **Primary model:** `opencode/deepseek-v4-flash-free`
+- **Model:** `agnes/agnes-2.0-flash`
+- **Attempt chain:** DeepSeek `ses_04d04651cffea4rS1vx2s3txmi` (`usage-limit`); Agnes `ses_04d043a5dffeITA4xQWE7PeSBz` (`usage-limit`); Agnes `ses_04d00a44affeG9dUWElWmMYmZm` (`usage-limit`); Agnes `ses_04cfd5ba6ffekK7lrnJu0Jn6oe` (`success`)
+- **Fallback reason:** `explicit-usage-limit`
+- **Session:** `ses_04cfd5ba6ffekK7lrnJu0Jn6oe`
+- **Run status:** DONE
+- **Review point:** commit `3fa59c4bc91b2e40d694983c2ae3b5afbd7449ae`; stable fingerprint `0283e44fd30aa3763f8a58078bd653dea86713dad7dcd371b0a33be8199272c0`
+- **Requirement matrix:** 9/9 PASS (`REQ-LOCAL-001`, `REQ-GATE-001`, `REQ-RECOVERY-001`, `REQ-PLANNING-001`, `REQ-WORKTREE-001`, `REQ-AUDIT-006`, `REQ-SYNC-004`, `REQ-CI-001`, `REQ-DOC-002`)
+- **Blocker:** 0
+- **Important:** 0
+- **Nitpick:** 0
+- **Controller spot-check:** PASS. Verified `validateDeliveryStage`, `validateTaskDelivery`, and `validatePhaseDelivery` in `workflow.mjs`; `prepareFrozenReview` and `worktreeFingerprint` in `opencode-run.mjs`; manifest v4 `sourcePath`/`sourceDigest` and doctor drift detection in `src/bootstrap` and `src/inspection`; focused tests for delivery gates, shared planning, frozen review, and content drift; exact-head PR CI; and tag-only release triggers. Rejected an earlier audit that violated `WRITE_SCOPE: NONE` by writing `/tmp/audit_report.md`; the accepted fresh audit was strictly read-only and the unauthorized artifact was removed.
 
 ## Final Decision
 
-**Status:** In progress
-**Reason:** Implementation and audit are pending.
+**Status:** Complete
+**Reason:** All nine requirements have concrete PASS evidence; 153 local tests, typecheck, build, and pack smoke passed; exact-head PR CI passed; Codex/OpenCode synchronization and doctor checks passed; and a fresh frozen OpenCode audit returned 9/9 PASS with zero findings under a stable review fingerprint.
