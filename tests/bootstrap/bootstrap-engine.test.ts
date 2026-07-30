@@ -191,7 +191,12 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
+      platform: {
+        platform: "linux",
+        homeDir: fixture.root,
+        configBaseDir: join(fixture.root, ".config"),
+        stateBaseDir: fixture.root
+      }
     });
 
     expect(result.mode).toBe("dry-run");
@@ -215,7 +220,12 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
+      platform: {
+        platform: "linux",
+        homeDir: fixture.root,
+        configBaseDir: join(fixture.root, ".config"),
+        stateBaseDir: fixture.root
+      }
     });
 
     expect(result.pluginReports).toEqual([
@@ -249,7 +259,12 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
+      platform: {
+        platform: "linux",
+        homeDir: fixture.root,
+        configBaseDir: join(fixture.root, ".config"),
+        stateBaseDir: fixture.root
+      }
     });
 
     expect(result.plan.assets.map((asset) => asset.id)).toContain("browser-tools");
@@ -274,7 +289,12 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
+      platform: {
+        platform: "linux",
+        homeDir: fixture.root,
+        configBaseDir: join(fixture.root, ".config"),
+        stateBaseDir: fixture.root
+      }
     });
 
     expect(result.plan.assets.map((asset) => asset.id)).toContain("implicit-command");
