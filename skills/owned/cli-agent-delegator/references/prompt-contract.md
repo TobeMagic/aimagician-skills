@@ -12,6 +12,7 @@ MODALITY: <text | vision>
 OBJECTIVE: <one measurable outcome>
 DELIVERABLE: <report, evidence table, patch, commit, or decision input>
 REVIEW_POINT: <exact commit, diff, worktree state, source snapshot, URLs, or artifact set>
+REVIEW_BINDING: <--review-ref <git-ref> | --review-worktree <path> | NONE for non-review work>
 
 SOURCE_OF_TRUTH:
 - <path, document, requirement set, user decision, or primary URL>
@@ -72,7 +73,7 @@ Name only skills relevant to the role. Typical routing:
 - parallel write lanes: add `parallel-worktree-pr-flow`.
 - system prompt or agent instruction design: add `system-prompt-engineering`.
 
-For a completion audit, `REQUIRED_SKILLS` always includes `cli-agent-delegator`, `aimagician-superpower`, and every domain skill used by the implementation. The output must include provider, primary model, final model, attempt chain, fallback reason, session ID, frozen review point, one `PASS | FAIL | NOT_RUN` row per accepted requirement, finding counts, and evidence for controller spot-checks.
+For a completion audit, `REQUIRED_SKILLS` always includes `cli-agent-delegator`, `aimagician-superpower`, and every domain skill used by the implementation. Invoke the owned runner with exactly one `--review-ref` or `--review-worktree`; a review/audit without one is invalid. The output must include provider, primary model, final model, attempt chain, fallback reason, session ID, resolved commit, initial and final fingerprint, one `PASS | FAIL | NOT_RUN` row per accepted requirement, finding counts, and evidence for controller spot-checks.
 
 ## Permission Semantics
 

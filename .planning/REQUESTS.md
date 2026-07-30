@@ -77,3 +77,38 @@
 - Storing the Agnes key in the repository, skill content, command output, reports, or test fixtures.
 - Image generation, audio understanding, native PDF parsing, video understanding, or automatic visual-provider ranking.
 - Changing or closing the active Window-PPTX Phase 28 as part of this controlled exception.
+
+## USR-20260730-002: Local-first delivery and shared private planning
+
+**Status:** Accepted
+**Source:** User discussion and accepted implementation plan
+
+### Accepted Requirements
+
+- **REQ-LOCAL-001:** Add a local-first delivery capability that maps the complete execution context before implementation and uses a risk-scaled LOCAL, CI/PREMERGE, optional PREVIEW, and POSTMERGE verification ladder.
+- **REQ-GATE-001:** Add executable `premerge` and `postmerge` gates; deployable work is only complete after online confirmation and a fresh independent audit, while non-deployable work records an explicit `N/A`.
+- **REQ-RECOVERY-001:** A failed postmerge check reopens the checklist, blocks further promotion, and routes to the project's documented rollback or roll-forward instead of performing a generic automatic rollback.
+- **REQ-PLANNING-001:** Keep `.planning` as the project-first source of truth and support both Git-tracked and local-private storage without weakening task, phase, milestone, evidence, or handoff traceability.
+- **REQ-WORKTREE-001:** Local-private planning uses one Git-common-dir store shared by all worktrees, a local Git exclude, and lock plus revision conflict detection; tracked planning retains branch semantics.
+- **REQ-AUDIT-006:** Review and audit workers must use a frozen commit/tree or a fingerprinted working-tree review point and detect review-point drift.
+- **REQ-SYNC-004:** Skillbird doctor must detect content drift between managed owned-skill sources and Codex/OpenCode installations, not only missing directories.
+- **REQ-CI-001:** Add non-deploying pull-request CI for typecheck, tests, build, and package smoke while preserving the tag-only release workflow.
+- **REQ-DOC-002:** Update the owned skills, templates, evals, README, and tests; bootstrap the final owned set to Codex/OpenCode and verify source/install parity.
+
+### Accepted Decisions
+
+- Remote `master` is first fast-forwarded to the previously audited `0f8216b` capability baseline.
+- Full completion occurs after postmerge online evidence, not merely after merge or deployment.
+- PREVIEW is risk-based; `ONLINE_ONLY` items require an explicit exception contract.
+- Postmerge evidence is recorded in the corresponding `.planning` artifacts when planning exists. LLM wiki remains a cross-project macro activity record.
+- Planning-only closure commits may trigger another deployment; they remain tied to the original implementation merge SHA and do not recursively create a new delivery cycle when the diff is proven metadata-only.
+- Existing projects preserve their planning mode. New local-private stores are not automatically backed up and must warn about clone or machine-loss risk.
+- Local-private worktrees share one canonical planning root under the Git common directory. Concurrent writes use short locks and revision checks.
+
+### Explicit Non-goals
+
+- Generic automatic production rollback.
+- Claiming local environments are perfectly equivalent to production.
+- Uploading complete private planning content to LLM wiki.
+- Silently copying a local-private planning store when symlink or junction attachment fails.
+- Changing or closing the active Window-PPTX Phase 28.

@@ -45,6 +45,15 @@ Last Activity: 2026-07-20
 - Boundary: Add direct Agnes image understanding, correct CLI-agent visual routing, and harden workflow goal/closure validation without changing Window-PPTX implementation or phase status.
 - Return checkpoint: Resumed Phase 28 at frozen benchmark briefs, manifests, scoring, and ordinary-model trials after independent audit and synchronization.
 
+### Active Controlled Exception
+
+- Task: `local-first-delivery-planning-storage`
+- Status: In progress
+- Approval source: `USR-20260730-002`
+- Parent milestone/phase: `v5.0` / `28`
+- Boundary: Add local-first delivery gates, tracked/local-private planning storage, frozen audit review points, managed-install content parity, and PR CI without changing Window-PPTX implementation or phase status.
+- Return checkpoint: Resume Phase 28 at frozen benchmark briefs, manifests, scoring, and ordinary-model trials after independent audit, synchronization, merge, and postmerge recording.
+
 Foundation completed:
 
 - package identity renamed to `aimagician_superpower`;

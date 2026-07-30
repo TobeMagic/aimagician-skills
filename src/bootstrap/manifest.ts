@@ -16,6 +16,8 @@ export interface BootstrapManifestManagedInstall {
   kind: "skill" | "plugin";
   origin: "owned" | "external";
   sourceId?: string;
+  sourcePath?: string;
+  sourceDigest?: string;
   destinationPath: string;
   installType: "directory" | "file";
   installArea: "skills" | "plugins" | "extensions" | "rules";
@@ -29,7 +31,7 @@ export interface BootstrapManifestCommandInstall {
 }
 
 export interface BootstrapManifest {
-  version: 3;
+  version: 4;
   updatedAt: string;
   selectedTargets: SupportedTarget[];
   assets: BootstrapManifestAsset[];
@@ -65,7 +67,7 @@ export async function loadManifest(path: string): Promise<BootstrapManifest | nu
       [];
 
     return {
-      version: 3,
+      version: 4,
       updatedAt: parsed.updatedAt ?? "",
       selectedTargets: parsed.selectedTargets ?? [],
       assets: parsed.assets ?? [],

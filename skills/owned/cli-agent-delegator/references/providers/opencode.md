@@ -16,6 +16,15 @@ node scripts/opencode-run.mjs \
   --prompt-file "<prompt_file>"
 ```
 
+For `review` and `audit`, add exactly one:
+
+```bash
+--review-ref "<commit_or_ref>"
+--review-worktree "<stable_worktree_path>"
+```
+
+`--review-ref` resolves the commit and reviews it in a temporary detached worktree. `--review-worktree` hashes HEAD, tracked changes, and untracked contents before and after the run. Any drift blocks the review result.
+
 Use `--dry-run` to inspect the route without starting a worker and `--refresh-models` only after a model/config change, an unavailable-model result, or an explicit request. The runtime reads `opencode models --verbose`; it does not probe version, help, and model commands before every task.
 
 The equivalent direct command for ordinary non-visual work is:
@@ -54,13 +63,15 @@ node scripts/opencode-run.mjs \
 
 The prompt contract must list `vision-analysis` in `REQUIRED_SKILLS`. If the direct visual backend is unavailable, return `NEEDS_CONTEXT` or `BLOCKED`; do not infer OpenCode attachment support from a model name and do not silently select an unverified visual backend.
 
-For any task, phase, milestone, release, or delivery completion audit, use the normal DeepSeek-first reasoning route. Visual deliverables first add a sanitized `vision-analysis` evidence report:
+For any task, phase, milestone, release, or delivery completion audit, use the normal DeepSeek-first reasoning route and the owned frozen-review runner. Visual deliverables first add a sanitized `vision-analysis` evidence report:
 
 ```bash
-opencode run --dir "<source_path>" \
-  -m "opencode/deepseek-v4-flash-free" \
-  --print-logs --log-level INFO \
-  "<completion_audit_prompt>"
+node scripts/opencode-run.mjs \
+  --dir "<source_path>" \
+  --task-type audit \
+  --modality text \
+  --prompt-file "<completion_audit_prompt_file>" \
+  --review-ref "<exact_commit>"
 ```
 
 The audit must still use a fresh independent session, frozen review point, original-request traceability, requirement matrix, finding severities, and controller spot-check. Model neutrality does not permit implementer self-approval or controller self-review. For visual deliverables, collect observable evidence with a vision-capable worker and include it in the final independent audit.

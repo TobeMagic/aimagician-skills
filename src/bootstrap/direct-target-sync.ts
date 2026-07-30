@@ -4,6 +4,7 @@ import type { SupportedTarget } from "../model/targets";
 import type { BootstrapManifestManagedInstall } from "./manifest";
 import type { ResolvedManagedInstall } from "./source-resolution";
 import { shouldCopyManagedSource } from "./copy-filter";
+import { digestManagedContent } from "../shared/content-digest";
 
 export interface SyncManagedInstallsOptions {
   allowedRootsByTarget: Record<SupportedTarget, string[]>;
@@ -109,6 +110,19 @@ export async function syncManagedInstalls(
 ): Promise<ManagedInstallSyncResult[]> {
   const operations = planManagedInstallSync(options);
   const installsByTarget = new Map<SupportedTarget, BootstrapManifestManagedInstall[]>();
+  const writeOperations = operations.filter(
+    (operation): operation is ManagedInstallWriteOperation =>
+      operation.kind === "create" || operation.kind === "overwrite"
+  );
+  const sourceDigests = new Map(
+    await Promise.all(
+      [...new Set(writeOperations.map((operation) => operation.sourcePath))]
+        .map(async (sourcePath) => [
+          sourcePath,
+          await digestManagedContent(sourcePath, { filter: shouldCopyManagedSource })
+        ] as const)
+    )
+  );
 
   for (const target of options.selectedTargets) {
     const allowedRoots = options.allowedRootsByTarget[target] ?? [];
@@ -143,6 +157,8 @@ export async function syncManagedInstalls(
       force: true,
       filter: shouldCopyManagedSource
     });
+    const sourceDigest = sourceDigests.get(operation.sourcePath);
+    if (!sourceDigest) throw new Error(`Missing source digest for ${operation.sourcePath}`);
 
     installsByTarget.get(operation.target)?.push({
       target: operation.target,
@@ -150,6 +166,8 @@ export async function syncManagedInstalls(
       kind: operation.assetKind,
       origin: operation.origin,
       sourceId: operation.sourceId,
+      sourcePath: operation.sourcePath,
+      sourceDigest,
       destinationPath: operation.destinationPath,
       installType: operation.installType,
       installArea: operation.installArea

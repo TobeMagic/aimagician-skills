@@ -5,8 +5,17 @@
 ## 核心原则
 
 - 并行流是 `execution strategy`，不是第二套项目管理系统。
-- `.planning` 是项目真相源；registry 只是执行编排层。
+- `.planning` 是项目真相源；它可以是 tracked，也可以是 Git common dir 中的 local-private shared store。registry 只是执行编排层。
 - integration worktree 负责把并行结果回写到 GSD 文档。
+
+## Planning Storage
+
+先运行 `aimagician-superpower/scripts/workflow.mjs planning --action status` 确认模式。
+
+- tracked：按仓库现有版本控制规则更新。
+- local-private：bootstrap 脚本自动给新 worktree attach 同一个共享 store。integration owner 在写入前以当前 revision 获取短租约；provider lane 默认只提交 manifest 和 evidence，不直接改全局 planning。
+
+local-private 没有自动备份，删除 clone 或 Git common dir 会丢失规划记录。
 
 ## 先判断当前工作属于哪一类
 
@@ -42,7 +51,7 @@
 4. 明确当前 active milestone / phase
 5. 判断是否要新增 phase
 6. 再定义并行 lane
-7. 完成后回写 `.planning`
+7. 完成后由 integration 获取规划租约并回写 `.planning`
 
 ## integration 必须回写的文件
 

@@ -29,6 +29,13 @@ Every prompt names the exact:
 
 Do not let the review point change during the pass. Review actual files and evidence, not an implementation summary.
 
+Use the owned runner binding:
+
+- `--review-ref <git-ref>` resolves the commit and creates a temporary detached worktree for the review;
+- `--review-worktree <path>` fingerprints the exact worktree before and after the review.
+
+The runtime fails the review if the fingerprint changes. Record the resolved commit and fingerprint in the report. Do not accept a free-form `REVIEW_POINT` label as proof that the reviewed files were frozen.
+
 ## Review Roles
 
 ### Plan Reviewer

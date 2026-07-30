@@ -2,9 +2,10 @@
 
 import { spawn } from "node:child_process";
 import { execFile } from "node:child_process";
-import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { homedir, tmpdir } from "node:os";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 import { pathToFileURL } from "node:url";
 import { analyzeImages } from "../../vision-analysis/scripts/analyze.mjs";
@@ -346,6 +347,99 @@ ${JSON.stringify(visualEvidence, null, 2)}
 `;
 }
 
+async function git(directory, args, options = {}) {
+  return execFileAsync("git", args, {
+    cwd: directory,
+    encoding: options.encoding ?? "utf8",
+    maxBuffer: 32 * 1024 * 1024
+  });
+}
+
+async function resolveReviewRef(directory, reference) {
+  const result = await git(directory, ["rev-parse", "--verify", `${reference}^{commit}`]);
+  return result.stdout.trim();
+}
+
+async function worktreeFingerprint(directory) {
+  const hash = createHash("sha256");
+  const head = await git(directory, ["rev-parse", "HEAD"]);
+  const status = await git(directory, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
+  const diff = await git(directory, ["diff", "--binary", "HEAD"]);
+  hash.update(`HEAD\0${head.stdout.trim()}\0STATUS\0${status.stdout}\0DIFF\0${diff.stdout}\0`);
+
+  const untracked = await git(directory, ["ls-files", "--others", "--exclude-standard", "-z"]);
+  for (const relativePath of untracked.stdout.split("\0").filter(Boolean).sort()) {
+    const path = resolve(directory, relativePath);
+    const relation = relative(resolve(directory), path);
+    if (relation === ".." || relation.startsWith(`..${sep}`)) continue;
+    hash.update(`UNTRACKED\0${relativePath}\0`);
+    try {
+      hash.update(await readFile(path));
+    } catch (error) {
+      hash.update(`UNREADABLE:${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  return hash.digest("hex");
+}
+
+export async function prepareFrozenReview({ directory, reviewRef, reviewWorktree }) {
+  if (reviewRef) {
+    const commit = await resolveReviewRef(directory, reviewRef);
+    const temporary = await mkdtemp(join(tmpdir(), "aimagician-opencode-review-"));
+    await git(directory, ["worktree", "add", "--detach", temporary, commit]);
+    const fingerprint = await worktreeFingerprint(temporary);
+    return {
+      kind: "commit",
+      requested: reviewRef,
+      commit,
+      directory: temporary,
+      fingerprint,
+      async verify() {
+        const after = await worktreeFingerprint(temporary);
+        return { stable: after === fingerprint, before: fingerprint, after };
+      },
+      async cleanup() {
+        try {
+          await git(directory, ["worktree", "remove", "--force", temporary]);
+        } finally {
+          await rm(temporary, { recursive: true, force: true });
+        }
+      }
+    };
+  }
+
+  const target = resolve(reviewWorktree);
+  const commit = (await git(target, ["rev-parse", "HEAD"])).stdout.trim();
+  const fingerprint = await worktreeFingerprint(target);
+  return {
+    kind: "worktree",
+    requested: reviewWorktree,
+    commit,
+    directory: target,
+    fingerprint,
+    async verify() {
+      const after = await worktreeFingerprint(target);
+      return { stable: after === fingerprint, before: fingerprint, after };
+    },
+    async cleanup() {}
+  };
+}
+
+function frozenReviewPrompt(prompt, review) {
+  return `${prompt.trim()}
+
+# Frozen Review Point
+
+- Kind: ${review.kind}
+- Requested review point: ${review.requested}
+- Resolved commit: ${review.commit}
+- Review directory: ${review.directory}
+- Initial worktree fingerprint: ${review.fingerprint}
+
+Review only this frozen directory and revision state. Do not modify files, create commits, switch revisions, or inspect a newer source checkout. Report the resolved commit and fingerprint in the final review.
+`;
+}
+
 function parseArgs(argv) {
   const options = {
     files: [],
@@ -369,6 +463,8 @@ function parseArgs(argv) {
     else if (argument === "--modality") options.modality = value();
     else if (argument === "--prompt-file") options.promptFile = value();
     else if (argument === "--model") options.model = value();
+    else if (argument === "--review-ref") options.reviewRef = value();
+    else if (argument === "--review-worktree") options.reviewWorktree = value();
     else if (argument === "--file") options.files.push(value());
     else if (argument === "--allow-external-upload") options.allowExternalUpload = true;
     else if (argument === "--refresh-models") options.refreshModels = true;
@@ -387,6 +483,8 @@ Options:
   --task-type <quick|discovery|research|review|audit>
   --modality <text|vision>
   --model <id>              Controller choice when the default is unavailable
+  --review-ref <git-ref>    Review/audit an exact commit in a temporary detached worktree
+  --review-worktree <path>  Review/audit one worktree and fail if its fingerprint changes
   --file <path-or-url>      Repeat for visual inputs
   --allow-external-upload  Required for vision-analysis API calls
   --refresh-models          Refresh cached opencode models --verbose metadata
@@ -431,6 +529,15 @@ async function main(argv) {
   if (options.modality === "text" && options.files.length > 0) {
     throw new Error("--file is only valid with --modality vision");
   }
+  if (options.reviewRef && options.reviewWorktree) {
+    throw new Error("--review-ref and --review-worktree are mutually exclusive");
+  }
+  if (new Set(["review", "audit"]).has(options.taskType) && !options.reviewRef && !options.reviewWorktree) {
+    throw new Error("Review and audit work requires --review-ref or --review-worktree");
+  }
+  if (!new Set(["review", "audit"]).has(options.taskType) && (options.reviewRef || options.reviewWorktree)) {
+    throw new Error("--review-ref and --review-worktree are only valid for review or audit work");
+  }
 
   const directory = resolve(options.directory);
   const prompt = await readFile(resolve(options.promptFile), "utf8");
@@ -462,7 +569,12 @@ async function main(argv) {
         : null,
       commandShape: options.modality === "vision"
         ? "vision-analysis -> text evidence -> opencode run --dir <path> -m <reasoning-model> --print-logs --log-level INFO <positional-prompt>"
-        : "opencode run --dir <path> -m <reasoning-model> --print-logs --log-level INFO <positional-prompt>"
+        : "opencode run --dir <path> -m <reasoning-model> --print-logs --log-level INFO <positional-prompt>",
+      frozenReview: options.reviewRef
+        ? { kind: "commit", requested: options.reviewRef }
+        : options.reviewWorktree
+          ? { kind: "worktree", requested: resolve(options.reviewWorktree) }
+          : null
     }, null, 2)}\n`);
     return 0;
   }
@@ -479,67 +591,96 @@ async function main(argv) {
     workerPrompt = buildVisualReasoningPrompt(prompt, visualAcquisition);
   }
 
-  const attempts = [];
-  const primary = await runOnce({
-    directory,
-    model: route.model.id,
-    prompt: workerPrompt
-  });
-  attempts.push(primary);
+  const frozenReview = options.reviewRef || options.reviewWorktree
+    ? await prepareFrozenReview({
+      directory,
+      reviewRef: options.reviewRef,
+      reviewWorktree: options.reviewWorktree
+    })
+    : null;
+  const executionDirectory = frozenReview?.directory ?? directory;
+  if (frozenReview) workerPrompt = frozenReviewPrompt(workerPrompt, frozenReview);
 
-  let final = primary;
-  let fallbackReason = null;
-  let fallbackRateLimitEvents = 0;
-  let fallbackTransientRetries = 0;
-  const fallbackModel = process.env.AIMAGICIAN_OPENCODE_QUOTA_FALLBACK_MODEL || DEFAULT_QUOTA_FALLBACK_MODEL;
-  if (primary.classification === "usage-limit" && primary.model !== fallbackModel) {
-    const agnes = inventory.models.find((model) => model.id === fallbackModel && isUsableFreeModel(model));
-    if (agnes) {
-      fallbackReason = "explicit-usage-limit";
-      const fallback = await runQuotaFallback({
-        directory,
-        model: fallbackModel,
-        prompt: workerPrompt,
-        attempts
-      });
-      final = fallback.result;
-      fallbackRateLimitEvents = fallback.rateLimitEvents;
-      fallbackTransientRetries = fallback.transientRetries;
-    } else {
-      fallbackReason = "agnes-unavailable-after-usage-limit";
+  try {
+    const attempts = [];
+    const primary = await runOnce({
+      directory: executionDirectory,
+      model: route.model.id,
+      prompt: workerPrompt
+    });
+    attempts.push(primary);
+
+    let final = primary;
+    let fallbackReason = null;
+    let fallbackRateLimitEvents = 0;
+    let fallbackTransientRetries = 0;
+    const fallbackModel = process.env.AIMAGICIAN_OPENCODE_QUOTA_FALLBACK_MODEL || DEFAULT_QUOTA_FALLBACK_MODEL;
+    if (primary.classification === "usage-limit" && primary.model !== fallbackModel) {
+      const agnes = inventory.models.find((model) => model.id === fallbackModel && isUsableFreeModel(model));
+      if (agnes) {
+        fallbackReason = "explicit-usage-limit";
+        const fallback = await runQuotaFallback({
+          directory: executionDirectory,
+          model: fallbackModel,
+          prompt: workerPrompt,
+          attempts
+        });
+        final = fallback.result;
+        fallbackRateLimitEvents = fallback.rateLimitEvents;
+        fallbackTransientRetries = fallback.transientRetries;
+      } else {
+        fallbackReason = "agnes-unavailable-after-usage-limit";
+      }
     }
-  }
 
-  if (primary.classification === "model-unavailable" && primary.model === DEFAULT_TEXT_MODEL) {
-    const refreshed = await discoverModels({ refresh: true });
-    const candidates = freeCandidates(refreshed.models, { exclude: [DEFAULT_TEXT_MODEL] });
-    process.stderr.write(`OPENCODE_DELEGATION_RESULT ${JSON.stringify({
+    if (primary.classification === "model-unavailable" && primary.model === DEFAULT_TEXT_MODEL) {
+      const refreshed = await discoverModels({ refresh: true });
+      const candidates = freeCandidates(refreshed.models, { exclude: [DEFAULT_TEXT_MODEL] });
+      process.stderr.write(`OPENCODE_DELEGATION_RESULT ${JSON.stringify({
+        ...baseReport,
+        routeStatus: "selection-required",
+        routeReason: `${DEFAULT_TEXT_MODEL} failed as unavailable; controller selection is required`,
+        candidates: candidates.map(publicModel),
+        primaryModel: primary.model,
+        finalModel: primary.model,
+        attemptChain: attempts.map(({ output, ...attempt }) => attempt),
+        fallbackReason: null,
+        frozenReview: frozenReview ? {
+          kind: frozenReview.kind,
+          requested: frozenReview.requested,
+          commit: frozenReview.commit,
+          fingerprint: frozenReview.fingerprint
+        } : null
+      })}\n`);
+      return 3;
+    }
+
+    const frozenVerification = frozenReview ? await frozenReview.verify() : null;
+    const report = {
       ...baseReport,
-      routeStatus: "selection-required",
-      routeReason: `${DEFAULT_TEXT_MODEL} failed as unavailable; controller selection is required`,
-      candidates: candidates.map(publicModel),
       primaryModel: primary.model,
-      finalModel: primary.model,
+      finalModel: final.model,
       attemptChain: attempts.map(({ output, ...attempt }) => attempt),
-      fallbackReason: null
-    })}\n`);
-    return 3;
+      fallbackReason,
+      visualAcquisition,
+      fallbackRateLimitEvents,
+      fallbackTransientRetries,
+      session: final.session,
+      frozenReview: frozenReview ? {
+        kind: frozenReview.kind,
+        requested: frozenReview.requested,
+        commit: frozenReview.commit,
+        fingerprint: frozenReview.fingerprint,
+        stable: frozenVerification.stable,
+        finalFingerprint: frozenVerification.after
+      } : null,
+      runStatus: final.exitCode === 0 && frozenVerification?.stable !== false ? "DONE" : "BLOCKED"
+    };
+    process.stderr.write(`OPENCODE_DELEGATION_RESULT ${JSON.stringify(report)}\n`);
+    return final.exitCode === 0 && frozenVerification?.stable !== false ? 0 : 1;
+  } finally {
+    if (frozenReview) await frozenReview.cleanup();
   }
-
-  const report = {
-    ...baseReport,
-    primaryModel: primary.model,
-    finalModel: final.model,
-    attemptChain: attempts.map(({ output, ...attempt }) => attempt),
-    fallbackReason,
-    visualAcquisition,
-    fallbackRateLimitEvents,
-    fallbackTransientRetries,
-    session: final.session,
-    runStatus: final.exitCode === 0 ? "DONE" : "BLOCKED"
-  };
-  process.stderr.write(`OPENCODE_DELEGATION_RESULT ${JSON.stringify(report)}\n`);
-  return final.exitCode === 0 ? 0 : 1;
 }
 
 const isEntryPoint = process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;

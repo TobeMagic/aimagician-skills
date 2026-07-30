@@ -1,17 +1,24 @@
 #!/usr/bin/env node
 
-import { access, mkdir, readFile, readdir, realpath, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, realpath, rename, symlink, unlink, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const SCRIPT_DIR = fileURLToPath(new URL(".", import.meta.url));
 const TEMPLATE_DIR = resolve(SCRIPT_DIR, "..", "assets", "templates");
-const COMMANDS = new Set(["init", "status", "validate", "trace", "next", "help"]);
-const GATES = new Set(["align", "spec", "plan", "execute", "complete"]);
+const execFileAsync = promisify(execFile);
+const COMMANDS = new Set(["init", "planning", "status", "validate", "trace", "next", "help"]);
+const GATES = new Set(["align", "spec", "plan", "execute", "premerge", "postmerge", "complete"]);
 const FORMATS = new Set(["text", "json"]);
 const RISKS = new Set(["low", "medium", "high"]);
 const EXTENSIONS = new Set(["ui", "ai", "security-ops"]);
+const PLANNING_ACTIONS = new Set(["status", "init", "attach", "lock", "unlock"]);
+const PLANNING_MODES = new Set(["tracked", "local-private"]);
+const PLANNING_OUTCOMES = new Set(["updated", "unchanged"]);
 
 const PROJECT_TEMPLATES = [
   ["project-requests.md", "REQUESTS.md"],
@@ -73,6 +80,12 @@ function parseArgs(argv) {
     gate: "spec",
     risk: "medium",
     extensions: [],
+    planningAction: "status",
+    planningMode: undefined,
+    owner: undefined,
+    expectedRevision: undefined,
+    lease: undefined,
+    outcome: undefined,
     write: false
   };
 
@@ -84,7 +97,10 @@ function parseArgs(argv) {
     }
 
     const next = argv[index + 1];
-    if (["--project", "--phase", "--task", "--milestone", "--format", "--gate", "--risk", "--extensions"].includes(token)) {
+    if ([
+      "--project", "--phase", "--task", "--milestone", "--format", "--gate", "--risk", "--extensions",
+      "--action", "--mode", "--owner", "--expected-revision", "--lease", "--outcome"
+    ].includes(token)) {
       if (!next || next.startsWith("--")) {
         throw new WorkflowError("USAGE_MISSING_VALUE", `${token} requires a value`);
       }
@@ -96,6 +112,12 @@ function parseArgs(argv) {
       if (token === "--format") options.format = next;
       if (token === "--gate") options.gate = next;
       if (token === "--risk") options.risk = next;
+      if (token === "--action") options.planningAction = next;
+      if (token === "--mode") options.planningMode = next;
+      if (token === "--owner") options.owner = next;
+      if (token === "--expected-revision") options.expectedRevision = Number(next);
+      if (token === "--lease") options.lease = next;
+      if (token === "--outcome") options.outcome = next;
       if (token === "--extensions") {
         options.extensions = next.split(",").map((value) => value.trim()).filter(Boolean);
       }
@@ -117,6 +139,18 @@ function parseArgs(argv) {
   }
   if (!RISKS.has(options.risk)) {
     throw new WorkflowError("USAGE_INVALID_RISK", `Unsupported risk: ${options.risk}`);
+  }
+  if (!PLANNING_ACTIONS.has(options.planningAction)) {
+    throw new WorkflowError("USAGE_INVALID_PLANNING_ACTION", `Unsupported planning action: ${options.planningAction}`);
+  }
+  if (options.planningMode && !PLANNING_MODES.has(options.planningMode)) {
+    throw new WorkflowError("USAGE_INVALID_PLANNING_MODE", `Unsupported planning mode: ${options.planningMode}`);
+  }
+  if (options.outcome && !PLANNING_OUTCOMES.has(options.outcome)) {
+    throw new WorkflowError("USAGE_INVALID_PLANNING_OUTCOME", `Unsupported planning outcome: ${options.outcome}`);
+  }
+  if (options.expectedRevision !== undefined && (!Number.isInteger(options.expectedRevision) || options.expectedRevision < 0)) {
+    throw new WorkflowError("USAGE_INVALID_REVISION", "--expected-revision must be a non-negative integer");
   }
   for (const extension of options.extensions) {
     if (!EXTENSIONS.has(extension)) {
@@ -181,7 +215,35 @@ async function assertInside(root, path) {
   }
   const canonicalAncestor = await realpath(existingAncestor);
   if (!isInside(canonicalRoot, canonicalAncestor)) {
+    if (await isApprovedLocalPrivatePlanningPath(resolvedRoot, resolvedPath, canonicalAncestor)) {
+      return;
+    }
     throw new WorkflowError("PATH_OUTSIDE_PROJECT", `Refusing path through an external symlink: ${path}`);
+  }
+}
+
+async function gitCommonDir(project) {
+  try {
+    const { stdout } = await execFileAsync("git", ["rev-parse", "--git-common-dir"], { cwd: project });
+    return resolve(project, stdout.trim());
+  } catch {
+    throw new WorkflowError("PLANNING_GIT_REQUIRED", "Local-private planning requires a Git repository");
+  }
+}
+
+async function localPrivatePlanningRoot(project) {
+  return join(await gitCommonDir(project), "aimagician", "planning");
+}
+
+async function isApprovedLocalPrivatePlanningPath(project, candidate, canonicalAncestor) {
+  const planningPath = join(project, ".planning");
+  if (!isInside(planningPath, candidate)) return false;
+  try {
+    const expected = await localPrivatePlanningRoot(project);
+    const canonicalExpected = await realpath(expected);
+    return isInside(canonicalExpected, canonicalAncestor);
+  } catch {
+    return false;
   }
 }
 
@@ -348,6 +410,257 @@ async function initArtifacts(options) {
     milestone: options.milestone ?? null,
     planned,
     skipped,
+    findings: []
+  };
+}
+
+async function readStorageConfig(root) {
+  const path = join(root, ".storage.json");
+  if (!await exists(path)) {
+    return { schemaVersion: 1, mode: "tracked", revision: 0 };
+  }
+  try {
+    const parsed = JSON.parse(await readFile(path, "utf8"));
+    const mode = PLANNING_MODES.has(parsed.mode) ? parsed.mode : "tracked";
+    const revision = Number.isInteger(parsed.revision) && parsed.revision >= 0 ? parsed.revision : 0;
+    return { schemaVersion: 1, mode, revision };
+  } catch {
+    throw new WorkflowError("PLANNING_CONFIG_INVALID", `Invalid planning storage config: ${path}`);
+  }
+}
+
+async function writeStorageConfig(root, config) {
+  await mkdir(root, { recursive: true });
+  const path = join(root, ".storage.json");
+  const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
+  await writeFile(temporary, `${JSON.stringify({
+    schemaVersion: 1,
+    mode: config.mode,
+    revision: config.revision
+  }, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+  await rename(temporary, path);
+}
+
+async function planningState(project) {
+  const planningPath = join(project, ".planning");
+  const commonDir = await gitCommonDir(project);
+  const sharedRoot = join(commonDir, "aimagician", "planning");
+  const sharedConfig = await exists(sharedRoot) ? await readStorageConfig(sharedRoot) : null;
+  let attached = false;
+  let mode = null;
+  let root = null;
+
+  if (await exists(planningPath)) {
+    const canonical = await realpath(planningPath);
+    root = canonical;
+    if (canonical === resolve(sharedRoot) && sharedConfig?.mode === "local-private") {
+      mode = "local-private";
+      attached = true;
+    } else {
+      mode = (await readStorageConfig(canonical)).mode;
+    }
+  } else if (sharedConfig?.mode === "local-private") {
+    mode = "local-private";
+    root = sharedRoot;
+  }
+
+  const config = root && await exists(root) ? await readStorageConfig(root) : { schemaVersion: 1, mode: mode ?? "tracked", revision: 0 };
+  const lockPath = join(commonDir, "aimagician", "planning.lock");
+  let lock = null;
+  if (await exists(lockPath)) {
+    try {
+      const parsed = JSON.parse(await readFile(lockPath, "utf8"));
+      lock = {
+        owner: parsed.owner ?? "unknown",
+        lease: parsed.lease ?? "unknown",
+        revision: parsed.revision ?? null,
+        acquiredAt: parsed.acquiredAt ?? null
+      };
+    } catch {
+      lock = { owner: "unknown", lease: "invalid", revision: null, acquiredAt: null };
+    }
+  }
+
+  return {
+    mode,
+    planningPath,
+    root,
+    sharedRoot,
+    attached,
+    revision: config.revision,
+    lock,
+    commonDir
+  };
+}
+
+async function appendLocalPlanningExclude(commonDir) {
+  const infoDir = join(commonDir, "info");
+  const excludePath = join(infoDir, "exclude");
+  await mkdir(infoDir, { recursive: true });
+  const current = await exists(excludePath) ? await readFile(excludePath, "utf8") : "";
+  const lines = current.split(/\r?\n/).map((line) => line.trim());
+  if (lines.includes("/.planning")) return excludePath;
+  const prefix = current.length > 0 && !current.endsWith("\n") ? "\n" : "";
+  await writeFile(excludePath, `${current}${prefix}/.planning\n`, "utf8");
+  return excludePath;
+}
+
+async function attachLocalPrivatePlanning(state) {
+  if (await exists(state.planningPath)) {
+    const canonical = await realpath(state.planningPath);
+    if (canonical !== resolve(state.sharedRoot)) {
+      throw new WorkflowError("PLANNING_ATTACH_CONFLICT", `${state.planningPath} already exists and is not the shared local-private store`);
+    }
+    return;
+  }
+  await appendLocalPlanningExclude(state.commonDir);
+  await symlink(state.sharedRoot, state.planningPath, process.platform === "win32" ? "junction" : "dir");
+}
+
+async function planningCommand(options) {
+  if (!await exists(options.project)) {
+    throw new WorkflowError("PROJECT_NOT_FOUND", `Project directory not found: ${options.project}`);
+  }
+  const action = options.planningAction;
+  let state = await planningState(options.project);
+
+  if (action === "status") {
+    return {
+      ok: state.mode !== "local-private" || state.attached,
+      command: "planning",
+      action,
+      project: options.project,
+      mode: state.mode ?? "uninitialized",
+      planningRoot: state.root,
+      attached: state.attached,
+      revision: state.revision,
+      lock: state.lock,
+      warnings: state.mode === "local-private"
+        ? ["Local-private planning is not backed up automatically and is lost with the clone's Git common directory."]
+        : [],
+      findings: state.mode === "local-private" && !state.attached
+        ? [finding("PLANNING_NOT_ATTACHED", "A shared local-private planning store exists, but this worktree is not attached")]
+        : []
+    };
+  }
+
+  if (action === "init") {
+    if (!options.planningMode) {
+      throw new WorkflowError("PLANNING_MODE_REQUIRED", "planning init requires --mode tracked|local-private");
+    }
+    if (state.mode && state.mode !== options.planningMode) {
+      throw new WorkflowError("PLANNING_MODE_CONFLICT", `Existing planning mode is ${state.mode}; automatic migration is not supported`);
+    }
+    const planned = options.planningMode === "local-private"
+      ? [state.sharedRoot, state.planningPath, join(state.commonDir, "info", "exclude")]
+      : [state.planningPath, join(state.planningPath, ".storage.json")];
+    if (options.write) {
+      if (options.planningMode === "local-private") {
+        await writeStorageConfig(state.sharedRoot, { mode: "local-private", revision: state.revision });
+        state = await planningState(options.project);
+        await attachLocalPrivatePlanning(state);
+      } else {
+        await writeStorageConfig(state.planningPath, { mode: "tracked", revision: state.revision });
+      }
+      state = await planningState(options.project);
+    }
+    return {
+      ok: true,
+      command: "planning",
+      action,
+      project: options.project,
+      mode: options.planningMode,
+      operationMode: options.write ? "write" : "preview",
+      planned,
+      planningRoot: options.planningMode === "local-private" ? state.sharedRoot : state.planningPath,
+      attached: options.write ? state.attached || options.planningMode === "tracked" : false,
+      revision: state.revision,
+      findings: []
+    };
+  }
+
+  if (action === "attach") {
+    if (state.mode !== "local-private") {
+      throw new WorkflowError("PLANNING_SHARED_STORE_MISSING", "No local-private planning store exists for this Git common directory");
+    }
+    if (options.write) {
+      await attachLocalPrivatePlanning(state);
+      state = await planningState(options.project);
+    }
+    return {
+      ok: true,
+      command: "planning",
+      action,
+      project: options.project,
+      mode: state.mode,
+      operationMode: options.write ? "write" : "preview",
+      planningRoot: state.sharedRoot,
+      attached: options.write ? state.attached : false,
+      revision: state.revision,
+      findings: []
+    };
+  }
+
+  if (state.mode !== "local-private" || !state.attached) {
+    throw new WorkflowError("PLANNING_LOCAL_PRIVATE_REQUIRED", `${action} requires an attached local-private planning store`);
+  }
+
+  const lockPath = join(state.commonDir, "aimagician", "planning.lock");
+  if (action === "lock") {
+    if (!options.owner || options.expectedRevision === undefined) {
+      throw new WorkflowError("PLANNING_LOCK_ARGUMENTS_REQUIRED", "planning lock requires --owner and --expected-revision");
+    }
+    if (state.revision !== options.expectedRevision) {
+      throw new WorkflowError("PLANNING_REVISION_CONFLICT", `Expected revision ${options.expectedRevision}, found ${state.revision}`);
+    }
+    await mkdir(dirname(lockPath), { recursive: true });
+    const lease = randomUUID();
+    try {
+      await writeFile(lockPath, `${JSON.stringify({
+        owner: options.owner,
+        lease,
+        revision: state.revision,
+        acquiredAt: new Date().toISOString()
+      }, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+    } catch (error) {
+      if (error?.code === "EEXIST") {
+        throw new WorkflowError("PLANNING_LOCK_HELD", `Planning is already locked by ${state.lock?.owner ?? "another writer"}`);
+      }
+      throw error;
+    }
+    return {
+      ok: true,
+      command: "planning",
+      action,
+      project: options.project,
+      mode: state.mode,
+      planningRoot: state.root,
+      revision: state.revision,
+      lease,
+      findings: []
+    };
+  }
+
+  if (!options.lease || !options.outcome) {
+    throw new WorkflowError("PLANNING_UNLOCK_ARGUMENTS_REQUIRED", "planning unlock requires --lease and --outcome updated|unchanged");
+  }
+  if (!state.lock || state.lock.lease !== options.lease) {
+    throw new WorkflowError("PLANNING_LEASE_MISMATCH", "Planning lease does not match the active lock");
+  }
+  const revision = options.outcome === "updated" ? state.revision + 1 : state.revision;
+  if (options.outcome === "updated") {
+    await writeStorageConfig(state.root, { mode: "local-private", revision });
+  }
+  await unlink(lockPath);
+  return {
+    ok: true,
+    command: "planning",
+    action,
+    project: options.project,
+    mode: state.mode,
+    planningRoot: state.root,
+    revision,
+    outcome: options.outcome,
     findings: []
   };
 }
@@ -1178,6 +1491,10 @@ function validateComplete(loaded) {
   const trace = traceLoaded(loaded);
   const goalTrace = traceGoals(loaded, plan.alignment);
   const findings = [...plan.findings, ...trace.findings, ...goalTrace.findings];
+  const delivery = phaseDeliveryRecord(loaded);
+  if (delivery.version) {
+    findings.push(...validateDeliveryStage(delivery.content, delivery.artifact, "postmerge"));
+  }
   if (loaded.contents.validation.length === 0) {
     findings.push(finding("VALIDATION_MISSING", "Completion requires validation or verification evidence"));
   }
@@ -1228,11 +1545,146 @@ function taskEvidence(content) {
   return items;
 }
 
+function phaseDeliveryRecord(loaded) {
+  const records = loaded.contents.validation ?? [];
+  const record = records.find((item) => extractScalar(item.content, "Delivery contract"));
+  return {
+    version: record ? normalizeScalar(extractScalar(record.content, "Delivery contract")) : null,
+    content: record?.content ?? "",
+    artifact: record ? relative(loaded.project, record.path) : null
+  };
+}
+
+function taskDeliveryRecord(loaded) {
+  return {
+    version: normalizeScalar(extractScalar(loaded.content, "Delivery contract")),
+    content: loaded.content,
+    artifact: relative(loaded.project, loaded.path)
+  };
+}
+
+function validateDeliveryStage(content, artifact, stage) {
+  const findings = [];
+  const contractVersion = normalizeScalar(extractScalar(content, "Delivery contract"));
+  if (!contractVersion) {
+    return [finding("DELIVERY_CONTRACT_MISSING", "Delivery validation requires a versioned Delivery contract", artifact)];
+  }
+  if (contractVersion.toLowerCase() !== "v1") {
+    findings.push(finding("DELIVERY_CONTRACT_VERSION_INVALID", `Unsupported delivery contract: ${contractVersion}`, artifact));
+  }
+
+  const deliveryClass = (normalizeScalar(extractScalar(content, "Delivery class")) ?? "").toLowerCase();
+  if (!new Set(["deployable", "non-deployable"]).has(deliveryClass)) {
+    findings.push(finding("DELIVERY_CLASS_INVALID", "Delivery class must be Deployable or Non-deployable", artifact));
+  }
+
+  const requireStatus = (label, allowed, code) => {
+    const value = (normalizeScalar(extractScalar(content, label)) ?? "").toUpperCase();
+    if (!allowed.has(value)) {
+      findings.push(finding(code, `${label} must be ${[...allowed].join(" or ")}`, artifact));
+    }
+    return value;
+  };
+
+  requireStatus("Context coverage", new Set(["PASS"]), "DELIVERY_CONTEXT_NOT_PASSED");
+  requireStatus("Local verification", new Set(["PASS"]), "DELIVERY_LOCAL_NOT_PASSED");
+  requireStatus(
+    "CI verification",
+    deliveryClass === "deployable" ? new Set(["PASS"]) : new Set(["PASS", "N/A"]),
+    "DELIVERY_CI_NOT_PASSED"
+  );
+  requireStatus("Preview verification", new Set(["PASS", "N/A"]), "DELIVERY_PREVIEW_NOT_RESOLVED");
+  requireStatus("Online-only exceptions", new Set(["PASS", "N/A"]), "DELIVERY_ONLINE_ONLY_NOT_RESOLVED");
+  requireStatus(
+    "Artifact provenance",
+    deliveryClass === "deployable" ? new Set(["PASS"]) : new Set(["PASS", "N/A"]),
+    "DELIVERY_PROVENANCE_NOT_PASSED"
+  );
+  requireStatus("Premerge decision", new Set(["MERGE_READY"]), "DELIVERY_NOT_MERGE_READY");
+
+  if (stage === "premerge") return findings;
+
+  if (deliveryClass === "deployable") {
+    const mergeSha = normalizeScalar(extractScalar(content, "Implementation merge SHA"));
+    if (!/^[0-9a-f]{7,40}$/i.test(mergeSha)) {
+      findings.push(finding("DELIVERY_MERGE_SHA_INVALID", "Deployable work requires the implementation merge SHA", artifact));
+    }
+    requireStatus("Postmerge verification", new Set(["PASS"]), "DELIVERY_POSTMERGE_NOT_PASSED");
+    const artifactMatch = requireStatus(
+      "Deployed artifact match",
+      new Set(["MATCH", "APPROVED_EXCEPTION"]),
+      "DELIVERY_ARTIFACT_MISMATCH"
+    );
+    if (artifactMatch === "APPROVED_EXCEPTION") {
+      const exception = normalizeScalar(extractScalar(content, "Provenance exception"));
+      if (!exception || hasPlaceholder(exception) || /^NONE$/i.test(exception)) {
+        findings.push(finding("DELIVERY_PROVENANCE_EXCEPTION_MISSING", "Approved artifact exceptions require concrete provenance evidence", artifact));
+      }
+    }
+    requireStatus("Recovery status", new Set(["NOT_REQUIRED", "COMPLETE"]), "DELIVERY_RECOVERY_OPEN");
+    requireStatus("Postmerge decision", new Set(["ONLINE_CONFIRMED"]), "DELIVERY_ONLINE_NOT_CONFIRMED");
+  } else {
+    requireStatus("Implementation merge SHA", new Set(["N/A"]), "DELIVERY_NONDEPLOYABLE_MERGE_INVALID");
+    requireStatus("Postmerge verification", new Set(["N/A"]), "DELIVERY_NONDEPLOYABLE_POSTMERGE_INVALID");
+    requireStatus("Deployed artifact match", new Set(["N/A"]), "DELIVERY_NONDEPLOYABLE_ARTIFACT_INVALID");
+    requireStatus("Recovery status", new Set(["NOT_REQUIRED"]), "DELIVERY_NONDEPLOYABLE_RECOVERY_INVALID");
+    requireStatus("Postmerge decision", new Set(["N/A"]), "DELIVERY_NONDEPLOYABLE_DECISION_INVALID");
+  }
+  return findings;
+}
+
+function validatePhaseDelivery(loaded, stage) {
+  const record = phaseDeliveryRecord(loaded);
+  const execution = validateExecute(loaded);
+  const trace = traceLoaded(loaded);
+  const goals = traceGoals(loaded, execution.alignment);
+  return {
+    alignment: execution.alignment,
+    findings: [
+      ...execution.findings,
+      ...trace.findings,
+      ...goals.findings,
+      ...validateDeliveryStage(record.content, record.artifact, stage)
+    ]
+  };
+}
+
+function validateTaskDelivery(loaded, stage) {
+  const alignment = validateTaskAlignment(loaded);
+  const record = taskDeliveryRecord(loaded);
+  const unchecked = getSection(loaded.content, "Checklist").match(/^- \[ \]\s+.+$/gm) ?? [];
+  const items = taskEvidence(loaded.content);
+  const evidenceFindings = [];
+  if (unchecked.length > 0) {
+    evidenceFindings.push(finding("TASK_CHECKLIST_OPEN", `${unchecked.length} task checklist item(s) remain open`, record.artifact));
+  }
+  if (items.length === 0) {
+    evidenceFindings.push(finding("TASK_EVIDENCE_MISSING", "Task record has no stable requirement evidence rows", record.artifact));
+  }
+  for (const item of items) {
+    if (item.evidenceStatus !== "PASS" || !item.evidence || /NOT_RUN|TBD|Pending/i.test(item.evidence)) {
+      evidenceFindings.push(finding("TASK_EVIDENCE_NOT_PASSED", `${item.id} requires concrete PASS evidence`, record.artifact, item.id));
+    }
+  }
+  return {
+    alignment,
+    findings: [
+      ...alignment.findings,
+      ...evidenceFindings,
+      ...validateDeliveryStage(record.content, record.artifact, stage)
+    ]
+  };
+}
+
 function validateTaskComplete(loaded) {
   const artifact = relative(loaded.project, loaded.path);
   const content = loaded.content;
   const alignment = validateTaskAlignment(loaded);
   const findings = [...alignment.findings];
+  const delivery = taskDeliveryRecord(loaded);
+  if (delivery.version) {
+    findings.push(...validateDeliveryStage(delivery.content, delivery.artifact, "postmerge"));
+  }
 
   for (const section of ["Original Request", "Accepted Decisions", "Checklist", "Evidence", "Final Decision"]) {
     if (!getSection(content, section)) {
@@ -1412,12 +1864,14 @@ async function validateMilestoneComplete(loaded) {
 
 async function validateTaskCommand(options) {
   const loaded = await loadTask(options.project, options.task);
-  if (!new Set(["align", "complete"]).has(options.gate)) {
-    throw new WorkflowError("TASK_GATE_INVALID", "Task records support align and complete gates");
+  if (!new Set(["align", "premerge", "postmerge", "complete"]).has(options.gate)) {
+    throw new WorkflowError("TASK_GATE_INVALID", "Task records support align, premerge, postmerge, and complete gates");
   }
-  const result = options.gate === "align"
-    ? validateTaskAlignment(loaded)
-    : validateTaskComplete(loaded);
+  let result;
+  if (options.gate === "align") result = validateTaskAlignment(loaded);
+  if (options.gate === "premerge") result = validateTaskDelivery(loaded, "premerge");
+  if (options.gate === "postmerge") result = validateTaskDelivery(loaded, "postmerge");
+  if (options.gate === "complete") result = validateTaskComplete(loaded);
   return {
     ok: result.findings.length === 0,
     command: "validate",
@@ -1470,6 +1924,8 @@ async function validateCommand(options) {
   if (options.gate === "spec") result = validateSpec(loaded);
   if (options.gate === "plan") result = validatePlan(loaded);
   if (options.gate === "execute") result = validateExecute(loaded);
+  if (options.gate === "premerge") result = validatePhaseDelivery(loaded, "premerge");
+  if (options.gate === "postmerge") result = validatePhaseDelivery(loaded, "postmerge");
   if (options.gate === "complete") result = validateComplete(loaded);
   return {
     ok: result.findings.length === 0,
@@ -1514,6 +1970,30 @@ async function determineStatus(options) {
   }
   if (options.task) {
     const loaded = await loadTask(options.project, options.task);
+    if (taskDeliveryRecord(loaded).version) {
+      const premerge = validateTaskDelivery(loaded, "premerge");
+      if (premerge.findings.length > 0) {
+        return {
+          task: loaded.task,
+          milestone: premerge.alignment.milestone,
+          phase: premerge.alignment.phase,
+          status: "verify-premerge",
+          nextAction: "Complete local and CI evidence, resolve online-only exceptions, and reach MERGE_READY.",
+          findings: premerge.findings
+        };
+      }
+      const postmerge = validateTaskDelivery(loaded, "postmerge");
+      if (postmerge.findings.length > 0) {
+        return {
+          task: loaded.task,
+          milestone: postmerge.alignment.milestone,
+          phase: postmerge.alignment.phase,
+          status: "awaiting-postmerge",
+          nextAction: "Merge, deploy when applicable, record online evidence, and resolve recovery findings.",
+          findings: postmerge.findings
+        };
+      }
+    }
     const result = validateTaskComplete(loaded);
     return {
       task: loaded.task,
@@ -1569,6 +2049,12 @@ async function determineStatus(options) {
   if (loaded.contents.validation.length === 0) return phaseStatus(loaded, "execute-and-verify", "Execute dependency-ready tasks with review loops, then record validation evidence.");
   const trace = traceLoaded(loaded);
   if (trace.findings.length > 0) return phaseStatus(loaded, "verify", "Close requirement evidence gaps and rerun traceability.", trace.findings);
+  if (phaseDeliveryRecord(loaded).version) {
+    const premerge = validatePhaseDelivery(loaded, "premerge");
+    if (premerge.findings.length > 0) return phaseStatus(loaded, "verify-premerge", "Complete local and CI evidence, resolve online-only exceptions, and reach MERGE_READY.", premerge.findings);
+    const postmerge = validatePhaseDelivery(loaded, "postmerge");
+    if (postmerge.findings.length > 0) return phaseStatus(loaded, "awaiting-postmerge", "Merge, deploy when applicable, record online evidence, and resolve recovery findings.", postmerge.findings);
+  }
   if (!loaded.contents.audit) return phaseStatus(loaded, "audit", "Run the independent requirement, integration, and regression audit.");
   if (!loaded.contents.summary) return phaseStatus(loaded, "handoff", "Write the completion summary and durable handoff.");
   const complete = validateComplete(loaded);
@@ -1595,7 +2081,8 @@ async function statusCommand(options, command) {
   const state = await determineStatus(options);
   return {
     ok: !state.findings?.some((item) => item.severity === "error") || [
-      "in-progress", "realign", "research", "re-discuss", "repair-spec", "repair-plan", "review-plan", "verify", "repair-closure"
+      "in-progress", "realign", "research", "re-discuss", "repair-spec", "repair-plan", "review-plan",
+      "verify", "verify-premerge", "awaiting-postmerge", "repair-closure"
     ].includes(state.status),
     command,
     project: options.project,
@@ -1617,11 +2104,16 @@ Usage:
   node scripts/workflow.mjs init [--project PATH] [--phase ID] [--risk LEVEL] [--extensions ui,ai,security-ops] [--write] [--format text|json]
   node scripts/workflow.mjs init --task ID [--project PATH] [--write] [--format text|json]
   node scripts/workflow.mjs init --milestone ID [--project PATH] [--write] [--format text|json]
+  node scripts/workflow.mjs planning --action status [--project PATH] [--format text|json]
+  node scripts/workflow.mjs planning --action init --mode tracked|local-private [--project PATH] [--write] [--format text|json]
+  node scripts/workflow.mjs planning --action attach [--project PATH] [--write] [--format text|json]
+  node scripts/workflow.mjs planning --action lock --owner ID --expected-revision N [--project PATH] [--format text|json]
+  node scripts/workflow.mjs planning --action unlock --lease ID --outcome updated|unchanged [--project PATH] [--format text|json]
   node scripts/workflow.mjs status [--project PATH] [--phase ID] [--format text|json]
   node scripts/workflow.mjs status --task ID [--project PATH] [--format text|json]
   node scripts/workflow.mjs next [--project PATH] [--phase ID] [--format text|json]
-  node scripts/workflow.mjs validate --gate align|spec|plan|execute|complete [--project PATH] [--phase ID] [--format text|json]
-  node scripts/workflow.mjs validate --gate align|complete --task ID [--project PATH] [--format text|json]
+  node scripts/workflow.mjs validate --gate align|spec|plan|execute|premerge|postmerge|complete [--project PATH] [--phase ID] [--format text|json]
+  node scripts/workflow.mjs validate --gate align|premerge|postmerge|complete --task ID [--project PATH] [--format text|json]
   node scripts/workflow.mjs validate --gate complete --milestone ID [--project PATH] [--format text|json]
   node scripts/workflow.mjs trace [--project PATH] [--phase ID] [--format text|json]
   node scripts/workflow.mjs trace --task ID [--project PATH] [--format text|json]
@@ -1631,9 +2123,11 @@ Gate semantics:
   spec      Locked requirements, sections, scores, boundaries, and ambiguity
   plan      Specification validity, plan structure, and requirement mapping
   execute   Plan gate plus completed research, discussion, context, and plan acceptance
-  complete  Execute gate plus passing evidence, UAT when needed, audit, and summary
+  premerge  Execute gate plus full context, local/CI evidence, exceptions, and artifact provenance
+  postmerge Premerge gate plus merge, deployment, online smoke, artifact match, and recovery evidence
+  complete  Postmerge gate plus passing evidence, UAT when needed, independent audit, and summary
 
-init previews by default. Add --write to create missing files; existing files are never overwritten.`;
+init and planning setup preview by default. Add --write to create missing files; existing files are never overwritten.`;
 }
 
 function renderText(result) {
@@ -1643,6 +2137,12 @@ function renderText(result) {
   if (result.phase) lines.push(`Phase: ${result.phase}`);
   if (result.task) lines.push(`Task: ${result.task}`);
   if (result.mode) lines.push(`Mode: ${result.mode}`);
+  if (result.operationMode) lines.push(`Operation mode: ${result.operationMode}`);
+  if (result.action) lines.push(`Action: ${result.action}`);
+  if (result.planningRoot) lines.push(`Planning root: ${result.planningRoot}`);
+  if (result.revision !== undefined) lines.push(`Revision: ${result.revision}`);
+  if (result.attached !== undefined) lines.push(`Attached: ${result.attached ? "yes" : "no"}`);
+  if (result.lease) lines.push(`Lease: ${result.lease}`);
   if (result.gate) lines.push(`Gate: ${result.gate}`);
   if (result.status) lines.push(`Status: ${result.status}`);
   if (result.nextAction) lines.push(`Next: ${result.nextAction}`);
@@ -1679,6 +2179,7 @@ export async function runWorkflow(argv) {
   const options = parseArgs(argv);
   if (options.command === "help") return { ok: true, command: "help", usage: usage(), findings: [] };
   if (options.command === "init") return initArtifacts(options);
+  if (options.command === "planning") return planningCommand(options);
   if (options.command === "validate") return validateCommand(options);
   if (options.command === "trace") return traceCommand(options);
   if (options.command === "status" || options.command === "next") return statusCommand(options, options.command);
