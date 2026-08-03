@@ -1,6 +1,6 @@
 ---
 name: cli-agent-delegator
-description: MANDATORY CLI delegation and independent completion-audit gate. Use before broad or multi-source exploration, repository scanning, architecture mapping, deep web research, image inspection, independent plan/code/spec/verification review, bounded git/test/report/write work, whenever a locked simple short execution task can be offloaded, and before any task, phase, milestone, or delivery is declared complete. Prefer OpenCode, require cli-agent-delegator plus all domain skills to be loaded, and validate critical claims.
+description: Use for broad or multi-source exploration, repository scanning, architecture mapping, deep web research, image inspection, independent plan/code/spec/verification review, bounded git/test/report/write work, or whenever a locked simple short execution task can be offloaded. Prefer OpenCode, require cli-agent-delegator plus all domain skills to be loaded, and validate critical claims; require a fresh completion audit only for high-risk, planning-managed, deployable, policy-required, or explicitly requested work.
 category: operate
 subcategory: agent-orchestration
 tags:
@@ -127,7 +127,7 @@ The prompt must require the worker to load every named skill before doing substa
 2. **Protect macro reasoning.** Keep unresolved requirements, architecture tradeoffs, risk acceptance, and final decisions with the main Agent.
 3. **Lock the contract.** Define sources, skills, scope, permission mode, commands, evidence, git policy, and escalation.
 4. **Select evidence and reasoning routes.** Read `references/providers/opencode.md`. Visual tasks first load `vision-analysis` and obtain authorized textual evidence through its Agnes backend. Every OpenCode reasoning task, including one using visual evidence or performing completion audit, defaults to DeepSeek V4 Flash Free. If DeepSeek is absent, inspect the live free candidates and let the controller choose for the task; do not maintain or invent a quality ranking.
-5. **Use the known-good fast path.** Prefer `scripts/opencode-run.mjs`, which caches verbose model metadata and uses the current positional prompt syntax. Do not repeat binary, version, model-list, or help probes before routine work.
+5. **Use the known-good fast path.** Prefer `scripts/opencode-run.mjs`, which caches verbose model metadata and uses the current positional prompt syntax. Review and audit tasks must pass `--review-ref <git-ref>` or `--review-worktree <path>`; the runtime resolves and fingerprints the exact review point. Do not repeat binary, version, model-list, or help probes before routine work.
 6. **Run non-interactively.** Keep logs attached. Automatic Agnes reasoning fallback is allowed only for a verified DeepSeek usage, quota, or rate-limit event. Agnes rate limits remain active and retry by events until success or cancellation. Model absence returns free candidates for controller selection. Authentication, permission, syntax, network, and worker-quality failures retain their real classification.
 7. **Wait by events.** Continue while logs, tool calls, stage transitions, file references, session changes, or provider activity show progress. Do not stop an active worker because a fixed number of seconds elapsed.
 8. **Classify failure.** Stop only on process exit, clear command/provider/permission error, user cancellation, or confirmed stale state. Never start a fallback while the first process is alive.
@@ -144,13 +144,13 @@ Use risk-scaled independent review rather than forcing the same ceremony onto ev
 - substantial work: independent plan review before execution, specification review before quality review, independent verification, phase audit, and milestone or completion audit;
 - high-risk security, data, concurrency, migration, or architecture work: add focused reviewers where their axes are genuinely independent.
 
-Regardless of task size, any `complete` claim gets a fresh independent OpenCode audit. A bounded quick write may combine specification, quality, verification, and completion in one compact review; substantial work keeps independent staged reviewers and adds a final whole-result audit. Pure discussion without a completion claim is exempt.
+Require a fresh independent OpenCode audit for High work, phase/milestone closure, deployable postmerge closure, project policy, or explicit user request. A bounded quick write normally closes with controller verification and the repository's actual merge protections; add one compact combined review when the diff or discovered risk justifies it. Substantial work keeps independent staged reviewers and adds a final whole-result audit. Pure discussion without a completion claim is exempt.
 
 Review findings use exactly `Blocker`, `Important`, or `Nitpick`. A Blocker stops progression. An Important finding is fixed and re-reviewed, or deferred only by an explicit user decision. A Nitpick is non-blocking but recorded when useful.
 
-## Mandatory Completion Audit
+## Completion Audit When Required
 
-Use a fresh OpenCode session and the normal reasoning route: DeepSeek for audit reasoning, including audits that consume a `vision-analysis` report; another controller-selected free reasoning model only when DeepSeek is absent; and Agnes text fallback only after an explicit DeepSeek usage, quota, or rate-limit event. For visual deliverables, obtain authorized observable evidence through `vision-analysis` and include its sanitized report in the fresh final audit. Freeze the exact commit, diff, task record, phase, or milestone under review. Include the original request or PRD, accepted decisions, `.planning/REQUESTS.md`, requirement IDs, implementation, verification, UAT, documentation, installation state, and existing findings.
+Use a fresh OpenCode session and the normal reasoning route: DeepSeek for audit reasoning, including audits that consume a `vision-analysis` report; another controller-selected free reasoning model only when DeepSeek is absent; and Agnes text fallback only after an explicit DeepSeek usage, quota, or rate-limit event. For visual deliverables, obtain authorized observable evidence through `vision-analysis` and include its sanitized report in the fresh final audit. Freeze the exact commit with `--review-ref` or the exact stable worktree with `--review-worktree`; a fingerprint change invalidates the audit. Include the original request or PRD, accepted decisions, `.planning/REQUESTS.md`, requirement IDs, implementation, verification, UAT, documentation, installation state, and existing findings.
 
 The auditor returns:
 

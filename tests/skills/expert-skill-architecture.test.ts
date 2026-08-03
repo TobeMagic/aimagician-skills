@@ -26,7 +26,7 @@ describe("expert engineering capability architecture", () => {
     for (const [kind, expectedStage] of Object.entries(expectedStages)) {
       const route = runJson(engineeringRouter, ["--kind", kind, "--risk", "high", "--format", "json"]);
       expect(route).toMatchObject({ kind, risk: "high" });
-      expect(route.stages).toContain(expectedStage);
+      expect(route.required_stages).toContain(expectedStage);
       expect(route.review_axes).toEqual(expect.arrayContaining([
         "specification-compliance",
         "engineering-standards-compliance",
@@ -36,9 +36,22 @@ describe("expert engineering capability architecture", () => {
         "maintainability-and-locality",
         "performance-and-operability"
       ]));
-      expect(route.independent_review).toContain("specialist-risk-review");
+      expect(route.independent_review).toContain("specialist-risk-review-when-applicable");
       expect(route.review_passes).toEqual(["specification-compliance", "engineering-standards"]);
     }
+  }, 30_000);
+
+  it("keeps low-risk routes compact and adds ceremony only as risk rises", () => {
+    const quick = runJson(engineeringRouter, ["--kind", "bug", "--risk", "low", "--format", "json"]);
+    const standard = runJson(engineeringRouter, ["--kind", "feature", "--risk", "medium", "--format", "json"]);
+
+    expect(quick).toMatchObject({ tier: "Quick", independent_review: [] });
+    expect(quick.required_artifacts).toEqual(["inline-behavior-contract"]);
+    expect(quick.required_checks).toEqual(expect.arrayContaining(["decisive-acceptance-check", "diff-scope-check"]));
+    expect(quick.audit).toContain("optional");
+    expect(standard).toMatchObject({ tier: "Standard" });
+    expect(standard.required_checks).toContain("focused-acceptance-check");
+    expect(standard.independent_review).toContain("fresh-quality-review-when-diff-or-risk-justifies-it");
   }, 30_000);
 
   it("exposes progressive engineering modules, durable artifacts, and behavior scenarios", async () => {

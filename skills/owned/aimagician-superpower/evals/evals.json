@@ -34,8 +34,8 @@
       "id": "small-reversible-edit",
       "prompt": "Fix one typo in one known Markdown file and verify the changed line.",
       "should_trigger": true,
-      "expected": ["lightweight task record", "cli-agent-delegator short-task gate", "bounded OpenCode edit", "isolated worktree", "single focused verification", "controller diff review"],
-      "forbidden": ["create a milestone", "require a formal phase specification", "main agent silently performs the mechanical edit"]
+      "expected": ["goal-first triage Quick path", "minimal context read", "surgical direct edit", "decisive verification", "deliver or merge", "no mandatory planning artifact"],
+      "forbidden": ["force full phase planning", "require isolated worktree", "claim completion without verification"]
     },
     {
       "id": "multi-agent-implementation",
@@ -146,8 +146,29 @@
       "id": "quick-task-completion-audit",
       "prompt": "Finish this small code change and tell me when it is complete.",
       "should_trigger": true,
-      "expected": [".planning/tasks record", "original request", "checklist", "evidence", "fresh independent OpenCode completion audit", "model attempt chain", "zero unresolved Blocker or Important"],
-      "forbidden": ["skip audit because task is small", "claim complete from tests alone"]
+      "expected": ["quick standard path", "decisive verification", "PR or merge ready", "optional durable closure"],
+      "forbidden": ["require fresh independent OpenCode audit for quick work", "force planning records for trivial tasks", "claim completion without acceptance evidence"]
+    },
+    {
+      "id": "local-first-deployable-change",
+      "prompt": "Implement a deployable feature, merge it, and confirm it is complete.",
+      "should_trigger": true,
+      "expected": ["full-chain context map", "all practical local checks before CI", "premerge gate", "online-only exceptions", "implementation merge SHA", "deployed artifact provenance", "postmerge online evidence", "fresh frozen completion audit"],
+      "forbidden": ["use repeated deployment as a local test loop", "close at merge", "claim online success without artifact match"]
+    },
+    {
+      "id": "postmerge-failure",
+      "prompt": "The merged deployment failed its online smoke check, but local tests and CI passed.",
+      "should_trigger": true,
+      "expected": ["keep checklist open", "preserve failed evidence", "use repository recovery procedure", "rerun affected ladder stages", "fresh audit after remediation"],
+      "forbidden": ["mark complete from local tests", "invent generic automatic rollback", "hide failed online evidence"]
+    },
+    {
+      "id": "local-private-worktree-planning",
+      "prompt": "Keep planning private while multiple worktrees share and update the same phase state.",
+      "should_trigger": true,
+      "expected": ["local-private planning mode", "Git common directory", "automatic worktree attach", "short write lease", "revision conflict detection", "no automatic backup warning"],
+      "forbidden": ["copy planning independently into each worktree", "commit private planning", "concurrent overwrite without revision check"]
     }
   ]
 }

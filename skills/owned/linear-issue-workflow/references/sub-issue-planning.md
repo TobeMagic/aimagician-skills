@@ -4,7 +4,7 @@ Use this reference when a Linear issue has child issues, needs to be split, or i
 
 ## Current Linear User
 
-Resolve the current Linear user through the MCP connector when possible. Use that user as "me".
+Resolve the current Linear user through a selected Composio Linear read action when possible. Use that user as "me".
 
 If the connector cannot identify the current user and assignee matters, ask for the intended assignee before creating or assigning child issues.
 
@@ -28,7 +28,7 @@ Do not close a parent issue until:
 - child issues assigned to the current Linear user are complete or explicitly marked not required;
 - non-Done terminal states such as canceled, duplicate, or won't-do have an explicit rationale;
 - parent acceptance criteria and recent comments have been rechecked for remaining requirements;
-- PR, review, deployment, and wiki-record gates are satisfied when applicable.
+- PR, review, deployment, and wiki-record gates are satisfied when applicable to the repository, risk, or explicit acceptance criteria.
 
 If any required child issue remains open, add a parent comment listing:
 
@@ -82,7 +82,7 @@ Each child issue should include:
 When child issues assigned to the current Linear user exist:
 
 1. Work the highest-priority unblocked child issue.
-2. Update Linear with branch, commit, PR, tests, and blockers.
+2. After a meaningful remote delivery event, update Linear through Composio with branch, commit, PR, tests, and blockers when tracking is in scope.
 3. Move the child issue through the normal workflow.
 4. After each child reaches a terminal state, update the parent comment.
 5. Re-check the parent for remaining requirements before closure.

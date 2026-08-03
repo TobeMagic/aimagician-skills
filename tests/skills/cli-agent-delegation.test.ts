@@ -21,20 +21,19 @@ describe("cli-agent-delegator capability contract", () => {
     const skill = await readFile(join(delegatorRoot, "SKILL.md"), "utf8");
     const description = frontmatterDescription(skill);
 
-    expect(description).toMatch(/^MANDATORY CLI delegation and independent completion-audit gate\./);
+    expect(description).toMatch(/^Use for broad or multi-source exploration/);
     for (const trigger of [
       "broad or multi-source exploration",
       "deep web research",
       "image inspection",
       "bounded git/test/report/write work",
       "whenever a locked simple short execution task can be offloaded",
-      "independent plan/code/spec/verification review",
-      "before any task, phase, milestone, or delivery is declared complete"
+      "independent plan/code/spec/verification review"
     ]) {
       expect(description).toContain(trigger);
     }
 
-    expect(description).toContain("independent completion-audit gate");
+    expect(description).toContain("completion audit only for high-risk, planning-managed, deployable, policy-required, or explicitly requested work");
     expect(skill).toContain("read-only one- or two-file lookup: no forced delegation");
     expect(skill).toContain("Before the main Agent starts a broad scan or mechanical verification");
     expect(skill).toContain("This gate applies even when the user says only");
@@ -89,7 +88,8 @@ describe("cli-agent-delegator capability contract", () => {
     expect(provider).toContain('-m "opencode/deepseek-v4-flash-free"');
     expect(provider).toContain('-m "agnes/agnes-2.0-flash"');
     expect(provider).toContain('"<same_detailed_prompt>"');
-    expect(provider).toContain('"<completion_audit_prompt>"');
+    expect(provider).toContain('--prompt-file "<completion_audit_prompt_file>"');
+    expect(provider).toContain('--review-ref "<exact_commit>"');
     expect(provider).toContain("--allow-external-upload");
     expect(provider).toContain("never attach the image to OpenCode for Agnes");
     expect(provider).not.toContain('-f "<image_path>"');
@@ -143,7 +143,7 @@ describe("cli-agent-delegator capability contract", () => {
     const qualityReviewer = await readFile(join(superpowerRoot, "references", "roles", "quality-reviewer.md"), "utf8");
 
     expect(review).toContain("One- or two-file read-only lookup");
-    expect(review).toContain("One combined pre-commit specification, quality, verification, and completion review");
+    expect(review).toContain("Decisive controller verification");
     expect(review).toContain("Plan review before execution; specification review; quality review; verifier");
     expect(review).toContain("Fresh whole-result auditor");
     expect(review).toContain("original-request traceability");

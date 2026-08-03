@@ -35,7 +35,7 @@ Use `interface-design` and `webapp-testing` for visual, responsive, accessibilit
 
 ## Traceability Gate
 
-Run `workflow.mjs trace` to detect:
+For High or planning-managed work, run `workflow.mjs trace` to detect:
 
 - active milestone, phase, or literal goal drift;
 - an accepted requirement absent from all plans;
@@ -44,7 +44,7 @@ Run `workflow.mjs trace` to detect:
 - failed or not-run evidence;
 - evidence that names an unknown requirement.
 
-Before mutation, `validate --gate align` must pass. Before execution, `validate --gate plan` must pass. Before closure, `validate --gate complete` must pass unless the user explicitly accepts and records an exception.
+For High or planning-managed work, `validate --gate align` must pass before mutation, `validate --gate plan` before execution, and `validate --gate complete` before closure unless the user explicitly accepts and records an exception. For Quick and Standard work, the compact task contract and decisive behavior check are the traceability gate; do not create planning artifacts just to run these commands.
 
 ## Failed Verification
 

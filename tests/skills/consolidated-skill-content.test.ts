@@ -39,10 +39,12 @@ describe("consolidated owned skill content", () => {
       expect(runtimeContent).not.toContain(forbidden);
     }
 
-    expect(skill).toContain("Mandatory Start And Resume Gate");
+    expect(skill).toContain("Goal-First Triage");
+    expect(skill).toContain("Adaptive Start And Resume Gate");
+    expect(skill).toContain("Task Contract Instead Of Universal Goal Lock");
     expect(skill).toContain("Read this `SKILL.md` again");
     expect(skill).toContain("project knowledge base");
-    expect(skill).toContain("Workload And Specification Gate");
+    expect(skill).toContain("Default Delivery Path");
     expect(skill).toContain("Discuss Baseline Requirements");
     expect(skill).toContain("Research And Brainstorm");
     expect(skill).toContain("Re-Discuss And Lock");
@@ -138,6 +140,27 @@ describe("consolidated owned skill content", () => {
     expect(cliWorkflow).toContain("composio tools list linear --limit 50");
     expect(cliWorkflow).toContain("--dry-run");
     expect(safety).toContain("Never print API keys");
+  });
+
+  it("keeps Linear post-delivery, Composio-only, and free of a global branch convention", async () => {
+    const linearRoot = join(ownedSkillsRoot, "linear-issue-workflow");
+    const linear = await readOwnedSkill("linear-issue-workflow");
+    const branchRules = await readFile(join(linearRoot, "references", "branch-and-closure-rules.md"), "utf8");
+
+    expect(linear).toContain("Use Composio CLI for every Linear lookup or mutation");
+    expect(linear).toContain("Keep core delivery first");
+    expect(linear).toContain("Delegate Post-Delivery Closure");
+    expect(linear).toContain("If Composio, auth, or a Linear action is unavailable, report it and continue core code delivery when safe");
+    expect(branchRules).toContain("Do not infer the base from a global convention");
+    await expect(readFile(join(linearRoot, "references", "linear-mcp-chain.md"), "utf8")).rejects.toThrow();
+  });
+
+  it("keeps PR protections repository-specific and tracker work post-delivery", async () => {
+    const pr = await readOwnedSkill("github-pr-workflow");
+    expect(pr).toContain("Never assume `dev`, `develop`, `main`, `master`");
+    expect(pr).toContain("actual merge protections");
+    expect(pr).toContain("optional Linear status/comment/closure");
+    expect(pr).toContain("as a reason to delay a verified PR");
   });
 
   it("keeps the skill-authoring evaluation loop in skill-creator", async () => {

@@ -1,11 +1,13 @@
-import { spawn } from "node:child_process";
-import { access, mkdtemp, mkdir, readFile, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { execFile, spawn } from "node:child_process";
+import { access, mkdtemp, mkdir, readFile, realpath, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { afterEach, describe, expect, it } from "vitest";
 
 const tempDirectories: string[] = [];
+const execFileAsync = promisify(execFile);
 const skillRoot = join(process.cwd(), "skills", "owned", "aimagician-superpower");
 const workflowScript = join(skillRoot, "scripts", "workflow.mjs");
 const waitScript = join(skillRoot, "scripts", "wait-for.mjs");
@@ -73,6 +75,110 @@ describe("aimagician-superpower workflow runtime", () => {
       task: "quick-fix",
       status: "passed"
     });
+  });
+
+  it("shares local-private planning across worktrees and rejects stale or concurrent writers", async () => {
+    const project = await makeGitProject();
+    const initialized = await runNode(workflowScript, [
+      "planning", "--project", project, "--action", "init", "--mode", "local-private", "--write", "--format", "json"
+    ]);
+    expect(initialized.exitCode).toBe(0);
+    expect(JSON.parse(initialized.stdout)).toMatchObject({
+      ok: true,
+      mode: "local-private",
+      attached: true,
+      revision: 0
+    });
+
+    const worktreeParent = await makeProject();
+    const worktree = join(worktreeParent, "secondary");
+    await execFileAsync("git", ["worktree", "add", "-b", "test/local-private-secondary", worktree, "HEAD"], { cwd: project });
+    const detached = await runNode(workflowScript, [
+      "planning", "--project", worktree, "--action", "status", "--format", "json"
+    ]);
+    expect(detached.exitCode).toBe(1);
+    expect(JSON.parse(detached.stdout)).toMatchObject({
+      mode: "local-private",
+      attached: false,
+      findings: [expect.objectContaining({ code: "PLANNING_NOT_ATTACHED" })]
+    });
+
+    const attached = await runNode(workflowScript, [
+      "planning", "--project", worktree, "--action", "attach", "--write", "--format", "json"
+    ]);
+    expect(attached.exitCode).toBe(0);
+    expect(await realpath(join(worktree, ".planning"))).toBe(await realpath(join(project, ".planning")));
+    expect(await readFile(join(project, ".git", "info", "exclude"), "utf8")).toContain("/.planning");
+
+    const locked = await runNode(workflowScript, [
+      "planning", "--project", project, "--action", "lock", "--owner", "primary",
+      "--expected-revision", "0", "--format", "json"
+    ]);
+    expect(locked.exitCode).toBe(0);
+    const lease = (JSON.parse(locked.stdout) as { lease: string }).lease;
+
+    const concurrent = await runNode(workflowScript, [
+      "planning", "--project", worktree, "--action", "lock", "--owner", "secondary",
+      "--expected-revision", "0", "--format", "json"
+    ]);
+    expect(concurrent.exitCode).toBe(2);
+    expect(JSON.parse(concurrent.stdout)).toMatchObject({
+      findings: [expect.objectContaining({ code: "PLANNING_LOCK_HELD" })]
+    });
+
+    const unlocked = await runNode(workflowScript, [
+      "planning", "--project", project, "--action", "unlock", "--lease", lease,
+      "--outcome", "updated", "--format", "json"
+    ]);
+    expect(unlocked.exitCode).toBe(0);
+    expect(JSON.parse(unlocked.stdout)).toMatchObject({ revision: 1 });
+
+    const stale = await runNode(workflowScript, [
+      "planning", "--project", worktree, "--action", "lock", "--owner", "secondary",
+      "--expected-revision", "0", "--format", "json"
+    ]);
+    expect(stale.exitCode).toBe(2);
+    expect(JSON.parse(stale.stdout)).toMatchObject({
+      findings: [expect.objectContaining({ code: "PLANNING_REVISION_CONFLICT" })]
+    });
+  });
+
+  it("separates premerge readiness from deployable postmerge completion", async () => {
+    const project = await makeProject();
+    await mkdir(join(project, ".planning", "tasks"), { recursive: true });
+    await writeFile(join(project, ".planning", "REQUESTS.md"), validRequests(), "utf8");
+    const taskPath = join(project, ".planning", "tasks", "delivery-check.md");
+    await writeFile(taskPath, validDeliveryTask(), "utf8");
+
+    const premerge = await runNode(workflowScript, [
+      "validate", "--project", project, "--task", "delivery-check", "--gate", "premerge", "--format", "json"
+    ]);
+    expect(premerge.exitCode).toBe(0);
+    expect(JSON.parse(premerge.stdout)).toMatchObject({ ok: true, gate: "premerge" });
+
+    const postmergeBlocked = await runNode(workflowScript, [
+      "validate", "--project", project, "--task", "delivery-check", "--gate", "postmerge", "--format", "json"
+    ]);
+    expect(postmergeBlocked.exitCode).toBe(1);
+    expect((JSON.parse(postmergeBlocked.stdout) as { findings: Array<{ code: string }> }).findings.map((item) => item.code))
+      .toEqual(expect.arrayContaining([
+        "DELIVERY_MERGE_SHA_INVALID",
+        "DELIVERY_POSTMERGE_NOT_PASSED",
+        "DELIVERY_ARTIFACT_MISMATCH",
+        "DELIVERY_ONLINE_NOT_CONFIRMED"
+      ]));
+
+    await writeFile(taskPath, validDeliveryTask({
+      mergeSha: "1234567abcdef",
+      postmerge: "PASS",
+      artifactMatch: "MATCH",
+      decision: "ONLINE_CONFIRMED"
+    }), "utf8");
+    const postmerge = await runNode(workflowScript, [
+      "validate", "--project", project, "--task", "delivery-check", "--gate", "postmerge", "--format", "json"
+    ]);
+    expect(postmerge.exitCode).toBe(0);
+    expect(JSON.parse(postmerge.stdout)).toMatchObject({ ok: true, gate: "postmerge" });
   });
 
   it("accepts model-neutral audits and rejects unsupported Agnes fallback claims", async () => {
@@ -372,6 +478,17 @@ describe("aimagician-superpower debugging helpers", () => {
 async function makeProject(): Promise<string> {
   const project = await mkdtemp(join(tmpdir(), "aimagician-workflow-"));
   tempDirectories.push(project);
+  return project;
+}
+
+async function makeGitProject(): Promise<string> {
+  const project = await makeProject();
+  await execFileAsync("git", ["init"], { cwd: project });
+  await execFileAsync("git", ["config", "user.name", "Workflow Test"], { cwd: project });
+  await execFileAsync("git", ["config", "user.email", "workflow@example.invalid"], { cwd: project });
+  await writeFile(join(project, "README.md"), "# Fixture\n", "utf8");
+  await execFileAsync("git", ["add", "README.md"], { cwd: project });
+  await execFileAsync("git", ["commit", "-m", "test: initialize fixture"], { cwd: project });
   return project;
 }
 
@@ -840,6 +957,43 @@ function validControlledTask(): string {
 **Exception status:** Approved
 **Approval source:** USR-TEST-001
 **Return checkpoint:** Resume the active runtime validation phase.`
+    );
+}
+
+function validDeliveryTask({
+  mergeSha = "NOT_RUN",
+  postmerge = "NOT_RUN",
+  artifactMatch = "NOT_RUN",
+  decision = "NOT_RUN"
+}: {
+  mergeSha?: string;
+  postmerge?: string;
+  artifactMatch?: string;
+  decision?: string;
+} = {}): string {
+  return validNeutralTask()
+    .replaceAll("quick-fix", "delivery-check")
+    .replace(
+      "## Independent Completion Audit",
+      `## Delivery Contract
+
+- **Delivery contract:** v1
+- **Delivery class:** Deployable
+- **Context coverage:** PASS
+- **Local verification:** PASS
+- **CI verification:** PASS
+- **Preview verification:** N/A
+- **Online-only exceptions:** N/A
+- **Artifact provenance:** PASS
+- **Premerge decision:** MERGE_READY
+- **Implementation merge SHA:** ${mergeSha}
+- **Postmerge verification:** ${postmerge}
+- **Deployed artifact match:** ${artifactMatch}
+- **Provenance exception:** NONE
+- **Recovery status:** NOT_REQUIRED
+- **Postmerge decision:** ${decision}
+
+## Independent Completion Audit`
     );
 }
 

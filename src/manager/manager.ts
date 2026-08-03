@@ -477,7 +477,7 @@ export async function installSkills(options: InstallSkillsOptions): Promise<Inst
   const previousInstalls = previousManifest?.managedInstalls ?? [];
   const allowedRootsByTarget = createAllowedRootsByTarget(targetHomes);
 
-  await syncManagedInstalls({
+  const managedSyncResults = await syncManagedInstalls({
     allowedRootsByTarget,
     selectedTargets,
     installs: selectedManagedInstalls,
@@ -489,7 +489,7 @@ export async function installSkills(options: InstallSkillsOptions): Promise<Inst
     previousManifest,
     selectedTargets,
     prepared.plan.assets.filter((asset) => selectedIds.has(asset.id) && isInstallEligible(eligibilityById.get(asset.id))),
-    selectedManagedInstalls.map(toManifestInstall),
+    managedSyncResults.flatMap((result) => result.installs),
     commandReports,
     options.now
   );
@@ -501,7 +501,7 @@ export async function installSkills(options: InstallSkillsOptions): Promise<Inst
     workspaceRoot: workspace.rootDir,
     manifestPath: workspace.manifestPath,
     dryRun: false,
-    installed: selectedManagedInstalls.map(toManifestInstall),
+    installed: managedSyncResults.flatMap((result) => result.installs),
     commandReports,
     skipped,
     changed: JSON.stringify(previousManifest) !== JSON.stringify(nextManifest)
@@ -863,7 +863,7 @@ function mergeInstalledManifest(
   const managedInstalls = [...managedByKey.values()].sort(compareManifestInstall);
 
   return {
-    version: 3,
+    version: 4,
     updatedAt: now ?? new Date().toISOString(),
     selectedTargets: uniqueTargets([
       ...(previousManifest?.selectedTargets ?? []),
@@ -884,6 +884,7 @@ function toManifestInstall(install: ResolvedManagedInstall): BootstrapManifestMa
     kind: install.kind,
     origin: install.origin,
     sourceId: install.sourceId,
+    sourcePath: install.sourcePath,
     destinationPath: install.destinationPath,
     installType: install.installType,
     installArea: install.installArea

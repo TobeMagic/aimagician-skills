@@ -14,6 +14,8 @@ import {
   resolvePlatformContext,
   type PlatformContext
 } from "../shared/platform";
+import { digestManagedContent } from "../shared/content-digest";
+import { shouldCopyManagedSource } from "../bootstrap/copy-filter";
 
 export interface LiveTargetAsset {
   id: string;
@@ -29,6 +31,10 @@ export interface TargetManagedInstallStatus {
   installArea: "skills" | "plugins" | "extensions" | "rules";
   destinationPath: string;
   present: boolean;
+  sourcePath?: string;
+  expectedDigest?: string;
+  actualDigest?: string;
+  integrity: "match" | "drift" | "missing" | "unverified";
 }
 
 export interface TargetCommandInstallStatus {
@@ -128,19 +134,19 @@ async function inspectTarget(
   const targetCommandInstalls = commandInstalls
     .filter((install) => install.targets.includes(target))
     .sort(compareCommandInstall);
-  const managedStatuses = await Promise.all(
-    installs.map(async (install) => ({
-      assetId: install.assetId,
-      kind: install.kind,
-      installArea: install.installArea,
-      destinationPath: install.destinationPath,
-      present: await pathExists(install.destinationPath)
-    }))
-  );
+  const managedStatuses = await Promise.all(installs.map(inspectManagedInstall));
   const managedPaths = new Set(managedStatuses.map((install) => install.destinationPath));
-  const issues = managedStatuses
-    .filter((install) => !install.present)
-    .map((install) => `Missing managed ${install.kind} "${install.assetId}" at ${install.destinationPath}`);
+  const issues = managedStatuses.flatMap((install) => {
+    if (!install.present) {
+      return [`Missing managed ${install.kind} "${install.assetId}" at ${install.destinationPath}`];
+    }
+    if (install.integrity === "drift") {
+      return [
+        `Content drift for managed ${install.kind} "${install.assetId}" at ${install.destinationPath}`
+      ];
+    }
+    return [];
+  });
 
   switch (target) {
     case "codex":
@@ -192,6 +198,48 @@ async function inspectTarget(
     managedInstalls: managedStatuses,
     commandInstalls: targetCommandInstalls,
     issues
+  };
+}
+
+async function inspectManagedInstall(
+  install: BootstrapManifestManagedInstall
+): Promise<TargetManagedInstallStatus> {
+  const present = await pathExists(install.destinationPath);
+  if (!present) {
+    return {
+      assetId: install.assetId,
+      kind: install.kind,
+      installArea: install.installArea,
+      destinationPath: install.destinationPath,
+      present: false,
+      sourcePath: install.sourcePath,
+      expectedDigest: install.sourceDigest,
+      integrity: "missing"
+    };
+  }
+
+  const actualDigest = await digestManagedContent(install.destinationPath, {
+    filter: shouldCopyManagedSource
+  });
+  let expectedDigest = install.sourceDigest;
+  if (install.sourcePath && await pathExists(install.sourcePath)) {
+    expectedDigest = await digestManagedContent(install.sourcePath, {
+      filter: shouldCopyManagedSource
+    });
+  }
+
+  return {
+    assetId: install.assetId,
+    kind: install.kind,
+    installArea: install.installArea,
+    destinationPath: install.destinationPath,
+    present: true,
+    sourcePath: install.sourcePath,
+    expectedDigest,
+    actualDigest,
+    integrity: expectedDigest
+      ? expectedDigest === actualDigest ? "match" : "drift"
+      : "unverified"
   };
 }
 

@@ -11,7 +11,7 @@ tags:
   - mcp-alternative
 compatibility:
   tools: [bash, composio]
-  requires: Composio CLI, intended service/toolkit, user intent, and explicit confirmation for external writes
+  requires: Composio CLI, intended service/toolkit, user intent, and confirmation or a task-scoped delegated-closure authorization for external writes
 ---
 
 # Composio Tool Router
@@ -53,7 +53,7 @@ Do not use it when:
 - Service-scoped: identify the toolkit slug first, then list or search inside that toolkit.
 - Schema-on-demand: inspect a specific tool schema only after selecting a candidate action.
 - Dry-run first: validate write-capable calls with `--dry-run` before real execution.
-- Confirm external writes: any create, update, archive, delete, send, invite, publish, or proxy mutation needs explicit confirmation of target, payload, and expected effect.
+- Confirm external writes: any create, update, archive, delete, send, invite, publish, or proxy mutation needs explicit confirmation of target, payload, and expected effect. A user may grant one task-scoped delegated-closure authorization for named post-delivery Linear mutations; it is not blanket permission.
 - Secret-safe: never print tokens, API keys, OAuth state, or raw files from `~/.composio/`.
 - Output-efficient: summarize candidate tools and only include fields needed for the next decision.
 
@@ -90,7 +90,7 @@ Do not use it when:
 
 - Build the payload from user-approved facts and resolved IDs.
 - For write-capable calls, run `composio execute <tool_slug> -d '<json>' --dry-run` first.
-- Before real execution, confirm the exact tool slug, target account/service, destination/resource, payload summary, and whether duplicate execution would be harmful.
+- Before real execution, confirm the exact tool slug, target account/service, destination/resource, payload summary, and whether duplicate execution would be harmful. A delegated post-delivery closure may proceed without another conversational prompt only when the original user authorization named the issue, permitted Linear status/comment closure after merge, and the worker prompt repeats the exact permitted action set. It must still dry-run and report the final payload summary.
 - Execute once. If the response indicates success, do not retry blindly.
 - For failures, summarize the error, connection state, missing scopes or fields, and the safest retry path.
 

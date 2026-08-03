@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { runBootstrap } from "../../src/bootstrap/run-bootstrap";
+import { inspectInstallation } from "../../src/inspection/inspect-installation";
 import { resolvePlatformContext } from "../../src/shared/platform";
 
 const tempDirectories: string[] = [];
@@ -72,7 +73,10 @@ describe("runBootstrap", () => {
     expect(secondRun.changed).toBe(false);
     expect(plan.selectedTargets).toEqual(["codex", "claude", "opencode", "gemini", "hermes", "cursor", "copilot"]);
     expect(plan.ownedSkillIds).toEqual(["daily-ops"]);
-    expect(manifest.version).toBe(3);
+    expect(manifest.version).toBe(4);
+    expect(manifest.managedInstalls.every((install) =>
+      typeof (install as { sourceDigest?: string }).sourceDigest === "string"
+    )).toBe(true);
     expect(manifest.assets.map((asset) => asset.id)).toEqual([
       "daily-ops",
       "claude-sync",
@@ -111,6 +115,72 @@ describe("runBootstrap", () => {
     ]);
   }, 15000);
 
+  it("detects managed content drift against the current source", async () => {
+    const fixture = await createFixtureRepository();
+    const workspaceRoot = join(fixture.root, "workspace");
+    const platform = {
+      platform: "linux" as const,
+      homeDir: fixture.root,
+      configBaseDir: join(fixture.root, ".config"),
+      stateBaseDir: fixture.root,
+      workspaceRoot
+    };
+    await runBootstrap({
+      selectedTargets: ["codex"],
+      catalog: fixture.catalog,
+      githubRepoOverrides: {
+        "aimagician/repo-skills": fixture.externalRepoRoot
+      },
+      platform
+    });
+
+    const healthy = await inspectInstallation({
+      selectedTargets: ["codex"],
+      platform
+    });
+    expect(healthy.status).toBe("healthy");
+    expect(healthy.targets[0]?.managedInstalls.every((install) => install.integrity === "match")).toBe(true);
+
+    await writeFile(
+      join(fixture.root, ".codex", "skills", "daily-ops", "SKILL.md"),
+      "# Locally drifted install\n",
+      "utf8"
+    );
+    const driftedInstall = await inspectInstallation({
+      selectedTargets: ["codex"],
+      platform
+    });
+    expect(driftedInstall.status).toBe("issues");
+    expect(driftedInstall.targets[0]?.issues).toContain(
+      `Content drift for managed skill "daily-ops" at ${join(fixture.root, ".codex", "skills", "daily-ops")}`
+    );
+    expect(driftedInstall.targets[0]?.managedInstalls).toContainEqual(
+      expect.objectContaining({ assetId: "daily-ops", integrity: "drift" })
+    );
+
+    await runBootstrap({
+      selectedTargets: ["codex"],
+      catalog: fixture.catalog,
+      githubRepoOverrides: {
+        "aimagician/repo-skills": fixture.externalRepoRoot
+      },
+      platform
+    });
+    await writeFile(
+      join(fixture.catalog.ownedSkillsRoot, "daily-ops", "SKILL.md"),
+      "# Updated source\n",
+      "utf8"
+    );
+    const staleInstall = await inspectInstallation({
+      selectedTargets: ["codex"],
+      platform
+    });
+    expect(staleInstall.status).toBe("issues");
+    expect(staleInstall.targets[0]?.managedInstalls).toContainEqual(
+      expect.objectContaining({ assetId: "daily-ops", integrity: "drift" })
+    );
+  }, 15000);
+
   it("respects selected target overrides during bootstrap planning", async () => {
     const fixture = await createFixtureRepository();
 
@@ -121,7 +191,12 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
+      platform: {
+        platform: "linux",
+        homeDir: fixture.root,
+        configBaseDir: join(fixture.root, ".config"),
+        stateBaseDir: fixture.root
+      }
     });
 
     expect(result.mode).toBe("dry-run");
@@ -145,7 +220,12 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
+      platform: {
+        platform: "linux",
+        homeDir: fixture.root,
+        configBaseDir: join(fixture.root, ".config"),
+        stateBaseDir: fixture.root
+      }
     });
 
     expect(result.pluginReports).toEqual([
@@ -179,7 +259,12 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
+      platform: {
+        platform: "linux",
+        homeDir: fixture.root,
+        configBaseDir: join(fixture.root, ".config"),
+        stateBaseDir: fixture.root
+      }
     });
 
     expect(result.plan.assets.map((asset) => asset.id)).toContain("browser-tools");
@@ -204,7 +289,12 @@ describe("runBootstrap", () => {
       githubRepoOverrides: {
         "aimagician/repo-skills": fixture.externalRepoRoot
       },
-      platform: { platform: "linux", homeDir: fixture.root, stateBaseDir: fixture.root }
+      platform: {
+        platform: "linux",
+        homeDir: fixture.root,
+        configBaseDir: join(fixture.root, ".config"),
+        stateBaseDir: fixture.root
+      }
     });
 
     expect(result.plan.assets.map((asset) => asset.id)).toContain("implicit-command");

@@ -1,146 +1,75 @@
 ---
 name: linear-issue-workflow
-description: Use when starting, implementing, tracking, splitting, or closing a
-  Linear issue, especially Luckee 2.0 work that needs Linear MCP context,
-  parent/sub-issue completion gates, a fresh dev-based branch, GitHub PR
-  linkage, reviewer-bot gates, or LLM wiki activity records.
+description: "Use when a Linear issue must be read, created, updated, split, linked to a pull request, or closed through Composio CLI. Keep Linear auxiliary to delivery: use it only when ticket context is needed or after core code work is verified, merged, or otherwise ready to hand off."
 metadata:
   related_skills:
+    - composio-tool-router
     - github-pr-workflow
-    - llm-know-how-wiki
+    - cli-agent-delegator
 compatibility:
-  tools:
-    - bash
-    - git
-    - linear-mcp
-    - python
-  requires: Configured Linear MCP connector; write access to the target repo for
-    branch work
+  tools: [bash, composio, git, gh, opencode]
+  requires: Composio CLI with a Linear connection for live Linear work
 category: operate
 subcategory: linear
 tags:
   - linear
   - issue-tracking
+  - composio
+  - post-delivery
 ---
 
 # Linear Issue Workflow
 
-Use this skill for one issue from intake to closure. Linear is the work-state source. GitHub is the PR/review source. `LLM-know-how-wiki` is the durable audit trail.
+Use Linear as an optional work-tracking surface, not as a prerequisite for writing or verifying code. Use Composio CLI for every Linear lookup or mutation. Do not discover or call Linear MCP.
 
-## First Reads
+## Route By Need
 
-- For Luckee 2.0 specifics, read [`references/luckee-2-playbook.md`](./references/luckee-2-playbook.md).
-- For Linear MCP usage, read [`references/linear-mcp-chain.md`](./references/linear-mcp-chain.md).
-- For branch, PR, status, and reviewer gates, read [`references/branch-pr-status-rules.md`](./references/branch-pr-status-rules.md).
-- For parent/sub-issue planning and completion gates, read [`references/sub-issue-planning.md`](./references/sub-issue-planning.md).
+| Situation | Action |
+|---|---|
+| Ticket details determine the acceptance criteria or scope | Read the issue through Composio before implementation. |
+| User supplied sufficient requirements and only mentioned a ticket incidentally | Deliver and verify code first; update the ticket after the PR or merge. |
+| No issue identifier and no request to create one | Do not create or search Linear. |
+| Normal task closure after merge | Delegate the bounded Composio read/update/readback to OpenCode when authorization exists. |
+| Ticket split changes scope or ownership | Discuss the split with the user before creating child issues. |
 
 ## Core Rules
 
-- Start from a Linear issue ID or URL. Do not infer scope from chat alone.
-- Read the issue through Linear MCP before touching code.
-- Confirm target repo, target base branch, owner, acceptance criteria, and current status.
-- Default base branch is latest `origin/dev`.
-- Branch name format: `<ISSUE-ID>-<short-slug>`, for example `LUC-123-fix-feishu-qr-pending`.
-- One Linear issue maps to one working branch and one primary PR unless the human explicitly approves a multi-repo split.
-- Fetch parent and child/sub-issue relationships before planning and before closure. Do not close a parent issue while required child issues remain incomplete.
-- If the issue is large, collaborative, multi-service, or naturally sequential, decompose it into child issues with clear acceptance criteria. Default new child issue assignee is the current Linear user unless the human specifies another owner.
-- After implementation and verification, create a GitHub PR targeting `dev` before claiming the development handoff is complete, unless the human explicitly says not to open a PR.
-- PR title must be based on the Linear issue: `[<ISSUE-ID>] <Linear issue title>`.
-- Immediately after PR creation, update Linear to In Review or the repo/team's review-equivalent state and add a Linear comment with PR URL, branch, test result, and remaining risk.
-- Every meaningful remote code update must add a Linear comment: pushed commits, PR updates, review fixes, changed test results, merges, and deployment verification results.
-- When a branch push or merge triggers automatic deployment, resolve branch-to-environment mapping from the project `LLM-know-how-wiki` first. Then check repo CI/CD config, then live cloud config. Use defaults such as `dev` -> staging and `main`/`master` -> prod only as fallback.
-- Do not mark the issue complete until PR checks, reviewer-bot, and required human review are resolved.
-- After every meaningful workflow transition, record activity in the project wiki.
+- Load `composio-tool-router` before live Linear work. Discover service-scoped actions on demand with `composio tools list linear --limit 50`; inspect only the selected schema.
+- Treat Linear status, comments, and linked records as auxiliary work. They do not block implementation, focused verification, PR creation, or merge unless the ticket itself contains material acceptance information or project policy says otherwise.
+- Keep core delivery first: understand -> discuss material tradeoffs -> implement -> necessary verification -> PR -> merge to the project-resolved integration branch. Run Linear closure afterwards.
+- Resolve the PR base per project. On the first task, read repository contribution/branch conventions and GitHub default/protection data. If still unclear, ask the user; do not assume `dev`, `develop`, `main`, or `master`. Reuse the confirmed project decision for later tasks.
+- One issue normally maps to one branch and primary PR, but split only when it reduces delivery risk. Parent closure requires required child work to be terminal.
+- Write actions require the normal Composio dry run and confirmation. A task-scoped user authorization may allow OpenCode to perform only named post-merge state/comment/closure actions; see `composio-tool-router` for the authorization boundary.
+- If Composio, auth, or a Linear action is unavailable, report it and continue core code delivery when safe. Never fabricate ticket state.
 
 ## Workflow
 
-1. **Intake**
-   - Resolve the Linear issue through MCP.
-   - Capture identifier, title, URL, team, project, state, assignee, priority, labels, description, comments, parent issue, child/sub-issues, and linked PRs.
-   - Read the project wiki for context: `wiki/index.md`, relevant service pages, and Luckee 2.0 project pages.
+### 1. Read Only When It Changes Delivery
 
-2. **Plan**
-   - State the repo, base branch, working branch, acceptance criteria, and test plan.
-   - Summarize existing parent/child issue relationships and identify incomplete child issues assigned to the current Linear user.
-   - If the issue should be split, propose a child-issue plan with title, scope, owner, acceptance criteria, and dependency order before creating children.
-   - If any of these are missing, ask a narrow question before branching.
-   - Move Linear to In Progress only when actual implementation starts.
+When a ticket is a source of truth, use Composio discovery, select a read action, and retrieve only the issue fields needed for implementation: identifier, title, description, acceptance criteria, current state, dependencies, parent/children, and linked PRs. Summarize contradictions with the user's latest decision instead of silently preferring either source.
 
-3. **Sub-Issue Work Queue**
-   - If the current issue has incomplete child issues assigned to the current Linear user, treat those child issues as the execution queue.
-   - Work child issues one by one unless dependencies or human direction require a different order.
-   - After each child issue is completed, update the child and parent with a compact status comment.
-   - When all assigned child issues are terminal, re-read the parent issue and check whether parent acceptance criteria or comments still contain unfinished requirements.
+### 2. Deliver Core Work
 
-4. **Branch**
-   - Run `git fetch origin dev --prune`.
-   - Create the branch from `origin/dev`: `git switch -c LUC-123-short-slug origin/dev`.
-   - If `origin/dev` does not exist, stop and confirm the correct base branch.
-   - Record the branch event in `LLM-know-how-wiki`.
+Use `aimagician-superpower` for risk triage and `github-pr-workflow` for the repository's branch, PR, check, and merge policy. Do not insert Linear comments between ordinary local edits, test runs, or review fixes. Record only meaningful post-delivery facts: PR URL, merge commit, tests, residual risk, and accepted follow-up.
 
-5. **Implement**
-   - Make scoped changes for the issue.
-   - Run focused tests and relevant lint/typecheck/build commands.
-   - Comment on Linear when scope changes, a blocker appears, or implementation reaches PR readiness.
-   - After each push or PR update, add a Linear comment with branch, commit SHA, summary, tests, PR URL if available, and risk/follow-up.
-   - Do not stop at local implementation when the work is PR-ready; continue into the PR step.
+### 3. Delegate Post-Delivery Closure
 
-6. **PR**
-   - Use `github-pr-workflow` for PR creation, checks, reviews, reviewer-bot, and merge readiness.
-   - Push the issue branch and create a PR against `dev`.
-   - PR title should be `[<ISSUE-ID>] <Linear issue title>`, for example `[LUC-123] Fix Feishu QR pending state`.
-   - PR body should include Linear URL, summary, tests, risks, and screenshots/logs when relevant.
-   - Link the PR back to Linear by native integration or a Linear comment.
-   - Move Linear to In Review or the team's review-equivalent state after the PR exists.
-   - Add a Linear comment containing the PR URL, branch name, summary, test result, and known follow-up/risk.
-   - Record PR creation and Linear update in `LLM-know-how-wiki`.
+After the PR is merged or delivery is otherwise accepted, a `cli-agent-delegator` worker may run a `read-and-run` Composio closure contract. Its prompt must include the issue ID, exact authorized actions, PR/commit/test facts, allowed tool slugs, dry-run requirement, readback requirement, and a prohibition on unrelated writes.
 
-7. **Review Gate**
-   - Read CI, human reviews, and reviewer-bot output before claiming completion.
-   - Fix blocking comments and re-check.
-   - Comment on Linear after pushed review fixes or changed check/test results.
-   - Record reviewer-bot and final review state in the wiki.
+The worker may:
 
-8. **Deployment Verification**
-   - If merge or push triggers automatic deployment, use `gcloud-ops-workflow` to verify build/deploy provenance.
-   - Determine environment from configured branch mapping in this order: project wiki deployment metadata/runbooks, repo CI/CD config, live cloud config, fallback defaults.
-   - If wiki expectations conflict with CI/CD or live cloud state, report the conflict and do not silently choose one.
-   - Compare expected commit, Cloud Build source revision, artifact/image digest, Cloud Run/GKE deployed revision, service URL, and deployment status.
-   - Add a Linear comment with environment, expected commit, build ID/status, deployed revision/image, URL, and verdict: MATCH, MISMATCH, or UNKNOWN.
-   - Record deployment verification in `LLM-know-how-wiki`.
+- read the current issue and child status;
+- move the issue to the project's review or done-equivalent state when authorized;
+- add one compact delivery summary comment;
+- link the known PR if the selected action supports it;
+- return the readback result and any failure.
 
-9. **Close**
-   - Re-fetch the parent issue, child/sub-issues, linked PRs, and latest comments before moving anything to Done.
-   - Only move Linear to Done or equivalent after merge or explicit human instruction, all required child issues are terminal, and parent acceptance criteria have no remaining unfinished requirements.
-   - If child issues assigned to the current Linear user are incomplete, do not close the parent; comment with the remaining child issue list and next action.
-   - Final Linear comment should summarize child issue status, PR, tests, review result, deployment verification if applicable, and any follow-up.
-   - Record final activity in the wiki.
+It must stop with `NEEDS_CONTEXT` if child status, acceptance criteria, state names, payload, or scope is ambiguous.
 
-## Wiki Activity Record
+### 4. Close Carefully
 
-Use the related `llm-know-how-wiki` script after transitions:
+Before closing a parent, re-read its required children and stated acceptance criteria. Do not close while required children are unfinished. A successful merge alone is not proof that a ticket is ready to close; use the verified delivery evidence and ticket criteria. Wiki records and reviewer bots are optional unless the repository or user explicitly requires them.
 
-```bash
-python <llm-know-how-wiki>/scripts/record_activity.py \
-  --wiki-root <wiki-root> \
-  --operation LINEAR_WORKFLOW \
-  --issue LUC-123 \
-  --repo motse-ai/gke-agent-manager \
-  --branch LUC-123-fix-feishu-qr-pending \
-  --summary "Started LUC-123 from latest origin/dev" \
-  --source https://linear.app/luckee20/issue/LUC-123
-```
+## Output Contract
 
-If the wiki is unavailable, say that the workflow audit trail could not be written and continue only if the human agrees.
-
-## Common Mistakes
-
-- Starting from a stale local branch instead of `origin/dev`.
-- Closing Linear when code is pushed but reviewer-bot has not been read.
-- Closing a parent issue while required child/sub-issues remain incomplete.
-- Creating large child issue sets without clear acceptance criteria, ownership, and dependency order.
-- Pushing commits or review fixes without adding a Linear update comment.
-- Assuming deployment mapping from branch names without checking `LLM-know-how-wiki` first.
-- Ignoring conflicts between wiki deployment metadata, repo CI/CD config, and live cloud triggers.
-- Treating Feishu project tables as newer than Linear without evidence.
-- Forgetting to write a wiki activity record after branch creation, PR creation, review checks, or closure.
+Report the issue ID, whether Linear influenced delivery, Composio tools selected, dry-run and readback result for writes, PR/commit/test facts recorded, unresolved child or acceptance gaps, and whether closure was completed, deferred, or blocked. Do not expose credentials or raw auth data.
