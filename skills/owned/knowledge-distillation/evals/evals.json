@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill": "knowledge-distillation",
+  "scenarios": [
+    {
+      "id": "book-to-skills",
+      "prompt": "Turn this management book into reusable Agent Skills with evidence and tests.",
+      "should_trigger": true,
+      "expected": ["source gate", "source overview", "five extractor roles", "triple verification", "pressure tests"],
+      "forbidden": ["distill from memory", "simple chapter summary", "install without request"]
+    },
+    {
+      "id": "video-course-to-skills",
+      "prompt": "把这套课程字幕蒸馏成一组能在项目里触发的 skill。",
+      "should_trigger": true,
+      "expected": ["transcript source", "evidence IDs", "resumable state", "skill-system index"],
+      "forbidden": ["ignore unreadable segments", "merge unrelated triggers"]
+    },
+    {
+      "id": "summary-non-trigger",
+      "prompt": "Summarize chapter three in five bullets.",
+      "should_trigger": false,
+      "expected": ["do not trigger", "route to summarization"],
+      "forbidden": ["create a Skill system", "start extractor agents"]
+    },
+    {
+      "id": "person-perspective-non-trigger",
+      "prompt": "Create a perspective skill that answers like this public thinker.",
+      "should_trigger": false,
+      "expected": ["route to perspective-distillation"],
+      "forbidden": ["treat biography as a long-form method source"]
+    },
+    {
+      "id": "missing-source-gate",
+      "prompt": "I do not have the book text. Use what you remember and build the Skills now.",
+      "should_trigger": true,
+      "expected": ["stop extraction", "request actual source", "no memory-based claims"],
+      "forbidden": ["invent evidence IDs", "claim complete source coverage"]
+    }
+  ]
+}

@@ -3,9 +3,12 @@
  *
  * 提供功能：
  * - 固定尺寸canvas（默认1920×1080）+ auto-scale + letterbox
- * - 键盘导航（←/→/Space/Home/End/Esc）
+ * - 键盘导航（←/→/↑/↓/Space/Page/Home/End）
+ * - Esc / O 全局缩略图概览，F 全屏
  * - 左右点击区域导航
+ * - 滚轮和触摸滑动导航
  * - slide counter (当前/总数)
+ * - progress bar
  * - localStorage持久化当前slide
  * - Speaker notes postMessage (支持外层渲染)
  * - Hash导航 (#slide-5 跳到第5张)
@@ -37,6 +40,11 @@
       this._currentSlide = 0;
       this._slides = [];
       this._storageKey = STORAGE_KEY_PREFIX + (location.pathname || 'default');
+      this._overviewOpen = false;
+      this._wheelDelta = 0;
+      this._wheelTimer = null;
+      this._touchStart = null;
+      this._listeners = [];
     }
 
     connectedCallback() {
@@ -49,12 +57,13 @@
       // 防御：若 script 放在 <head> 里（而非 </deck-stage> 之后），
       // parser 此刻可能还没处理完子 <section>，querySelectorAll 会返回空。
       // 延迟到下一个事件循环，确保子节点都已 parse 完毕。
-      const init = () => {
-        this._collectSlides();
-        this._setupEventListeners();
-        this._restoreSlide();
-        this._updateDisplay();
-        this._setupPrintStyles();
+        const init = () => {
+          this._collectSlides();
+          this._createOverview();
+          this._setupEventListeners();
+          this._restoreSlide();
+          this._updateDisplay();
+          this._setupPrintStyles();
       };
 
       if (this.ownerDocument.readyState === 'loading') {
@@ -64,6 +73,16 @@
         // 文档已 parse 完（script 在 body 底部或 defer），下一帧收集即可
         requestAnimationFrame(init);
       }
+    }
+
+    disconnectedCallback() {
+      this._listeners.forEach(([target, type, handler, options]) => {
+        target.removeEventListener(type, handler, options);
+      });
+      this._listeners = [];
+      this._overview?.remove();
+      this._overviewStyle?.remove();
+      if (this._wheelTimer) clearTimeout(this._wheelTimer);
     }
 
     _render() {
@@ -82,6 +101,13 @@
             transform: none !important;
             top: 0 !important;
             left: 0 !important;
+          }
+
+          :host([data-exporting]) .counter,
+          :host([data-exporting]) .nav-zone,
+          :host([data-exporting]) .shell-actions,
+          :host([data-exporting]) .progress {
+            display: none !important;
           }
 
           .stage {
@@ -133,6 +159,54 @@
             opacity: 1;
           }
 
+          .shell-actions {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            z-index: 100;
+            display: flex;
+            gap: 8px;
+          }
+
+          .icon-button {
+            width: 36px;
+            height: 36px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            color: rgba(255, 255, 255, 0.84);
+            cursor: pointer;
+            font: 18px/1 sans-serif;
+            opacity: 0.64;
+            transition: opacity 0.2s, background 0.2s;
+          }
+
+          .icon-button:hover,
+          .icon-button:focus-visible {
+            opacity: 1;
+            background: rgba(0, 0, 0, 0.72);
+            outline: 2px solid rgba(255, 255, 255, 0.72);
+            outline-offset: 2px;
+          }
+
+          .progress {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 3px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.14);
+          }
+
+          .progress > span {
+            display: block;
+            width: 0;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.88);
+            transition: width 0.24s ease;
+          }
+
           .nav-zone {
             position: fixed;
             top: 0;
@@ -174,7 +248,7 @@
               position: static;
               background: #fff;
             }
-            .counter, .nav-zone {
+            .counter, .nav-zone, .shell-actions, .progress {
               display: none !important;
             }
             .stage {
@@ -205,7 +279,12 @@
           <div class="nav-hint">›</div>
         </div>
 
+        <div class="shell-actions">
+          <button class="icon-button" id="overviewButton" type="button" aria-label="Open slide overview" aria-pressed="false" title="Overview (Esc or O)">⊞</button>
+          <button class="icon-button" id="fullscreenButton" type="button" aria-label="Toggle full screen" title="Full screen (F)">⛶</button>
+        </div>
         <div class="counter" id="counter">1 / 1</div>
+        <div class="progress" aria-hidden="true"><span id="progress"></span></div>
       `;
     }
 
@@ -223,20 +302,47 @@
       });
     }
 
-    _setupEventListeners() {
-      window.addEventListener('resize', () => this._updateScale());
+    _listen(target, type, handler, options) {
+      target.addEventListener(type, handler, options);
+      this._listeners.push([target, type, handler, options]);
+    }
 
-      document.addEventListener('keydown', (e) => {
+    _setupEventListeners() {
+      this._listen(window, 'resize', () => {
+        this._updateScale();
+        if (this._overviewOpen) this._buildOverview();
+      });
+
+      this._listen(document, 'keydown', (e) => {
         if (e.target.matches('input, textarea, [contenteditable]')) return;
+
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          this.toggleOverview();
+          return;
+        }
+        if (e.key.toLowerCase() === 'o' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          e.preventDefault();
+          this.toggleOverview();
+          return;
+        }
+        if (e.key.toLowerCase() === 'f' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          e.preventDefault();
+          this.toggleFullscreen();
+          return;
+        }
+        if (this._overviewOpen) return;
 
         switch (e.key) {
           case 'ArrowRight':
+          case 'ArrowDown':
           case ' ':
           case 'PageDown':
             e.preventDefault();
             this.next();
             break;
           case 'ArrowLeft':
+          case 'ArrowUp':
           case 'PageUp':
             e.preventDefault();
             this.prev();
@@ -252,10 +358,41 @@
         }
       });
 
-      this.shadowRoot.getElementById('navLeft').addEventListener('click', () => this.prev());
-      this.shadowRoot.getElementById('navRight').addEventListener('click', () => this.next());
+      this._listen(this.shadowRoot.getElementById('navLeft'), 'click', () => this.prev());
+      this._listen(this.shadowRoot.getElementById('navRight'), 'click', () => this.next());
+      this._listen(this.shadowRoot.getElementById('overviewButton'), 'click', () => this.toggleOverview());
+      this._listen(this.shadowRoot.getElementById('fullscreenButton'), 'click', () => this.toggleFullscreen());
 
-      window.addEventListener('hashchange', () => this._handleHash());
+      this._listen(window, 'wheel', (event) => {
+        if (this._overviewOpen) return;
+        this._wheelDelta += event.deltaY + event.deltaX;
+        if (Math.abs(this._wheelDelta) >= 48) {
+          this._wheelDelta > 0 ? this.next() : this.prev();
+          this._wheelDelta = 0;
+        }
+        if (this._wheelTimer) clearTimeout(this._wheelTimer);
+        this._wheelTimer = setTimeout(() => {
+          this._wheelDelta = 0;
+        }, 160);
+      }, { passive: true });
+
+      this._listen(window, 'touchstart', (event) => {
+        const touch = event.touches[0];
+        this._touchStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
+      }, { passive: true });
+
+      this._listen(window, 'touchend', (event) => {
+        if (this._overviewOpen || !this._touchStart) return;
+        const touch = event.changedTouches[0];
+        if (!touch) return;
+        const dx = touch.clientX - this._touchStart.x;
+        const dy = touch.clientY - this._touchStart.y;
+        const primary = Math.abs(dx) >= Math.abs(dy) ? dx : dy;
+        if (Math.abs(primary) >= 48) primary < 0 ? this.next() : this.prev();
+        this._touchStart = null;
+      }, { passive: true });
+
+      this._listen(window, 'hashchange', () => this._handleHash());
       if (location.hash) {
         setTimeout(() => this._handleHash(), 0);
       }
@@ -266,6 +403,137 @@
         }
       });
       observer.observe(this, { attributes: true, attributeFilter: ['noscale'] });
+    }
+
+    _createOverview() {
+      this._overviewStyle = document.createElement('style');
+      this._overviewStyle.dataset.deckStageOverviewStyle = '';
+      this._overviewStyle.textContent = `
+        [data-deck-stage-overview] {
+          position: fixed;
+          inset: 0;
+          z-index: 2147483000;
+          display: none;
+          overflow: auto;
+          padding: clamp(24px, 4vw, 64px);
+          background: rgba(8, 9, 10, 0.94);
+          color: #f4f1ea;
+          backdrop-filter: blur(14px);
+        }
+        [data-deck-stage-overview][data-open="true"] { display: block; }
+        [data-deck-stage-grid] {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+          gap: clamp(16px, 2vw, 28px);
+          max-width: 1600px;
+          margin: 0 auto;
+        }
+        [data-deck-stage-card] {
+          min-width: 0;
+          padding: 0;
+          overflow: hidden;
+          border: 2px solid rgba(255, 255, 255, 0.16);
+          border-radius: 6px;
+          background: #111;
+          color: inherit;
+          cursor: pointer;
+          text-align: left;
+        }
+        [data-deck-stage-card][aria-current="true"] { border-color: rgba(255, 255, 255, 0.9); }
+        [data-deck-stage-card]:hover,
+        [data-deck-stage-card]:focus-visible {
+          border-color: rgba(255, 255, 255, 0.68);
+          outline: 2px solid rgba(255, 255, 255, 0.52);
+          outline-offset: 3px;
+        }
+        [data-deck-stage-preview] {
+          position: relative;
+          width: 100%;
+          overflow: hidden;
+          background: #000;
+        }
+        [data-deck-stage-preview] > section {
+          position: absolute !important;
+          inset: 0 auto auto 0 !important;
+          display: block !important;
+          margin: 0 !important;
+          transform-origin: top left !important;
+          pointer-events: none !important;
+        }
+        [data-deck-stage-label] {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 9px 11px;
+          font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          letter-spacing: 0.08em;
+        }
+        @media print {
+          [data-deck-stage-overview] { display: none !important; }
+        }
+      `;
+      document.head.appendChild(this._overviewStyle);
+
+      this._overview = document.createElement('div');
+      this._overview.dataset.deckStageOverview = '';
+      this._overview.dataset.open = 'false';
+      this._overview.setAttribute('role', 'dialog');
+      this._overview.setAttribute('aria-modal', 'true');
+      this._overview.setAttribute('aria-label', 'Slide overview');
+      this._overview.innerHTML = '<div data-deck-stage-grid></div>';
+      document.body.appendChild(this._overview);
+    }
+
+    _buildOverview() {
+      const grid = this._overview?.querySelector('[data-deck-stage-grid]');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      this._slides.forEach((slide, index) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.dataset.deckStageCard = '';
+        card.setAttribute('aria-current', index === this._currentSlide ? 'true' : 'false');
+        card.setAttribute('aria-label', `Open slide ${index + 1} of ${this._slides.length}`);
+
+        const preview = document.createElement('div');
+        preview.dataset.deckStagePreview = '';
+        preview.style.aspectRatio = `${this._width} / ${this._height}`;
+
+        const clone = slide.cloneNode(true);
+        clone.classList.add('active');
+        clone.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
+        clone.removeAttribute('id');
+        clone.style.width = `${this._width}px`;
+        clone.style.height = `${this._height}px`;
+        preview.appendChild(clone);
+
+        const label = document.createElement('span');
+        label.dataset.deckStageLabel = '';
+        const title = slide.getAttribute('data-title') || slide.querySelector('h1, h2, h3')?.textContent?.trim() || '';
+        label.innerHTML = `<span>${String(index + 1).padStart(2, '0')} / ${String(this._slides.length).padStart(2, '0')}</span><span>${this._escapeText(title)}</span>`;
+
+        card.append(preview, label);
+        card.addEventListener('click', () => {
+          this.goTo(index);
+          this.toggleOverview(false);
+        });
+        grid.appendChild(card);
+      });
+
+      requestAnimationFrame(() => {
+        grid.querySelectorAll('[data-deck-stage-preview]').forEach((preview) => {
+          const clone = preview.firstElementChild;
+          if (clone) clone.style.transform = `scale(${preview.clientWidth / this._width})`;
+        });
+        grid.querySelector('[aria-current="true"]')?.focus();
+      });
+    }
+
+    _escapeText(value) {
+      const span = document.createElement('span');
+      span.textContent = value;
+      return span.innerHTML;
     }
 
     _handleHash() {
@@ -279,6 +547,14 @@
     }
 
     _restoreSlide() {
+      const hashMatch = location.hash.match(/^#slide-(\d+)$/);
+      if (hashMatch) {
+        const index = parseInt(hashMatch[1], 10) - 1;
+        if (index >= 0 && index < this._slides.length) {
+          this._currentSlide = index;
+          return;
+        }
+      }
       try {
         const stored = localStorage.getItem(this._storageKey);
         if (stored !== null) {
@@ -330,6 +606,14 @@
       if (counter) {
         counter.textContent = `${this._currentSlide + 1} / ${this._slides.length}`;
       }
+      const progress = this.shadowRoot.getElementById('progress');
+      if (progress) {
+        const ratio = this._slides.length > 0 ? (this._currentSlide + 1) / this._slides.length : 0;
+        progress.style.width = `${ratio * 100}%`;
+      }
+
+      const nextHash = `#slide-${this._currentSlide + 1}`;
+      if (location.hash !== nextHash) history.replaceState(null, '', nextHash);
 
       this._updateScale();
 
@@ -348,6 +632,11 @@
           }, '*');
         }
       } catch (e) {}
+
+      this.dispatchEvent(new CustomEvent('deckslidechange', {
+        bubbles: true,
+        detail: { index: this._currentSlide, total: this._slides.length }
+      }));
     }
 
     _setupPrintStyles() {
@@ -402,6 +691,30 @@
         this._currentSlide = idx;
         this._saveSlide();
         this._updateDisplay();
+      }
+    }
+
+    toggleOverview(force) {
+      const next = typeof force === 'boolean' ? force : !this._overviewOpen;
+      this._overviewOpen = next;
+      if (next) this._buildOverview();
+      if (this._overview) this._overview.dataset.open = String(next);
+      this.shadowRoot.getElementById('overviewButton')?.setAttribute('aria-pressed', String(next));
+      this.dispatchEvent(new CustomEvent('deckoverviewchange', {
+        bubbles: true,
+        detail: { open: next }
+      }));
+    }
+
+    async toggleFullscreen() {
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await document.documentElement.requestFullscreen();
+      } catch (error) {
+        this.dispatchEvent(new CustomEvent('deckfullscreenerror', {
+          bubbles: true,
+          detail: { message: error?.message || String(error) }
+        }));
       }
     }
 

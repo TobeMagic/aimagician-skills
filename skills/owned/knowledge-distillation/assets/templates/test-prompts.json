@@ -1,0 +1,41 @@
+{
+  "skill": "<skill-id>",
+  "version": "0.1.0",
+  "scenarios": [
+    {
+      "id": "should-trigger-primary",
+      "kind": "should-trigger",
+      "prompt": "",
+      "expected": []
+    },
+    {
+      "id": "should-trigger-secondary",
+      "kind": "should-trigger",
+      "prompt": "",
+      "expected": []
+    },
+    {
+      "id": "should-not-trigger-neighbor",
+      "kind": "should-not-trigger",
+      "prompt": "",
+      "expected_owner": ""
+    },
+    {
+      "id": "ambiguous-boundary",
+      "kind": "ambiguous",
+      "prompt": "",
+      "expected": []
+    },
+    {
+      "id": "evidence-poor-or-unsafe",
+      "kind": "unsafe-or-insufficient-evidence",
+      "prompt": "",
+      "expected": []
+    }
+  ],
+  "acceptance": {
+    "minimum_pass_rate": 0.8,
+    "all_non_trigger_cases_must_pass": true,
+    "requires_real_artifact_or_factual_oracle": true
+  }
+}

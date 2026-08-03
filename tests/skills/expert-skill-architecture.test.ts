@@ -303,6 +303,7 @@ describe("HTML universal design capability architecture", () => {
       "html-first-editable-pptx",
       "html-first-fidelity-pptx",
       "html-first-pptx-decision",
+      "single-file-html-slide-player",
       "device-prototype-variants",
       "narrated-launch-film",
       "evidence-infographic"
@@ -341,6 +342,7 @@ describe("HTML universal design capability architecture", () => {
       "scripts/render-motion-media.mjs",
       "scripts/verify-motion-media.mjs",
       "scripts/export-html-deck-pptx.mjs",
+      "scripts/export-html-stage-pptx.mjs",
       "scripts/export-html-deck-pdf.mjs",
       "scripts/export-html-stage-pdf.mjs",
       "scripts/render-narration-tts.mjs",
@@ -362,6 +364,9 @@ describe("HTML universal design capability architecture", () => {
 
     const pptxHelp = execFileSync(process.execPath, [join(designRoot, "scripts", "export-html-deck-pptx.mjs"), "--help"], { encoding: "utf8" });
     expect(pptxHelp).toContain("--mode <editable|fidelity>");
+    const stagePptxHelp = execFileSync(process.execPath, [join(designRoot, "scripts", "export-html-stage-pptx.mjs"), "--help"], { encoding: "utf8" });
+    expect(stagePptxHelp).toContain("#deck with .slide children");
+    expect(stagePptxHelp).toContain("Editable HTML-first PPTX requires independent slide HTML files");
     const deckPdfHelp = execFileSync(process.execPath, [join(designRoot, "scripts", "export-html-deck-pdf.mjs"), "--help"], { encoding: "utf8" });
     expect(deckPdfHelp).toContain("vector-text PDF page");
     const stagePdfHelp = execFileSync(process.execPath, [join(designRoot, "scripts", "export-html-stage-pdf.mjs"), "--help"], { encoding: "utf8" });
@@ -384,6 +389,12 @@ describe("HTML universal design capability architecture", () => {
     expect(thumbnailHelp).toContain("window.__VISUAL_READY__");
     const timelineHelp = execFileSync(process.execPath, [join(designRoot, "scripts", "compile-narration-timeline.mjs"), "--help"], { encoding: "utf8" });
     expect(timelineHelp).toContain("## scene-id");
+    const deckStage = await readFile(join(designRoot, "assets", "starter", "deck-stage.js"), "utf8");
+    expect(deckStage).toContain("toggleOverview");
+    expect(deckStage).toContain("requestFullscreen");
+    expect(deckStage).toContain("case 'ArrowDown'");
+    expect(deckStage).toContain("'wheel'");
+    expect(deckStage).toContain("'touchstart'");
 
     const temp = await mkdtemp(join(tmpdir(), "interface-narration-"));
     try {

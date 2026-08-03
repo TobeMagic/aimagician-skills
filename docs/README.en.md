@@ -31,6 +31,9 @@ External catalog sources remain visible reference material and are disabled by d
 | `system-prompt-engineering` | Design and audit system prompts with routed guidance for tools, delegation, safety, memory, search, channels, coding agents, and evaluation |
 | `composio-tool-router` | Route SaaS tool discovery and execution through Composio CLI with service-scoped lookup and schema-on-demand |
 | `skill-creator` | Create, merge, classify, and verify skills |
+| `skill-optimizer` | Audit and improve Skills with controlled baseline/treatment tests, independent review, and no automatic Git mutation |
+| `knowledge-distillation` | Turn long-form sources into traceable executable Skill systems |
+| `perspective-distillation` | Build evidence-backed person or topic perspective Skills with ethical and uncertainty boundaries |
 | `interface-design` | Universal HTML/CSS/JS design for prototypes, UI, dashboards, repository covers, posters, product video, creative coding, data visualization, marketing pages, HTML presentations, brand routing, and browser/media QA |
 | `github-readme-highstar` | README information architecture, quick-start clarity, repository visual collaboration, and final Markdown integration |
 | `webapp-testing` | Playwright and browser verification workflow |
@@ -53,7 +56,9 @@ node skills/owned/interface-design/scripts/design-router.mjs --task readme-cover
 node skills/owned/interface-design/scripts/design-router.mjs --task product-demo --deliverable video --signals workflow,motion --format json
 ```
 
-`interface-design` owns browser-native artifacts, rendered still/video assets, and HTML slides. It includes 17 layout patterns, 23 component patterns, eight templates, source scaffolds, and a deterministic Playwright/ffmpeg media renderer. Editable `.pptx`, slide masters, Office compatibility, and native PowerPoint QA remain owned by `pptx` or `window-pptx`; hybrid work uses a structured handoff between them.
+`interface-design` owns browser-native artifacts, rendered still/video assets, and HTML slides. Its standard single-file slide player includes keyboard, wheel, touch, overview-card, full-screen, progress, hash, persistence, and print behavior, with fidelity PPTX export from the live HTML stage. Editable `.pptx`, slide masters, Office compatibility, and native PowerPoint QA remain owned by `pptx` or `window-pptx`; editable HTML-first PPTX uses independent slide files, while hybrid native work uses a structured handoff.
+
+The catalog contains 26 active owned Skills. Full upstream repositories used for consolidation remain ignored audit references and are not installed or packaged. The distillation, optimization, HTML presentation, and YapCLI validation record is in [`audits/distillation-and-html-presentation-optimization-2026-07-27.md`](audits/distillation-and-html-presentation-optimization-2026-07-27.md).
 
 The full trigger, capability, boundary, and YapCLI validation report is in [`audits/skill-capability-audit-2026-07-21.md`](audits/skill-capability-audit-2026-07-21.md).
 

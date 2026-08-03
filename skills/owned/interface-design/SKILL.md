@@ -100,7 +100,7 @@ Load only the modules needed for the current stage.
 | Standalone React setup, pinning, offline fallback, JSX and failure diagnosis | `references/capabilities/react-browser-setup.md` |
 | App prototypes, dashboards, reports, charts, data and fidelity decisions | `references/capabilities/prototypes-and-data.md` |
 | Motion grammar and browser-native slide narratives | `references/capabilities/motion-and-html-presentations.md` |
-| HTML Deck source, PDF export, editable DOM-to-PPTX, and fidelity image-slide PPTX | `references/capabilities/html-first-presentations.md` |
+| Standard single-file HTML slide player, Deck source, PDF export, editable DOM-to-PPTX, and fidelity image-slide PPTX | `references/capabilities/html-first-presentations.md` |
 | Covers, banners, posters, infographics, product showcases, brand assets, licensed asset acquisition, and still rendering | `references/capabilities/brand-and-product-assets.md` |
 | README and repository branding, developer-product proof, and marketing integration | `references/capabilities/repository-branding-and-marketing.md` |
 | SVG, canvas, deterministic animation, poster/GIF/video/alpha outputs, semantic review packages, and render adapters | `references/capabilities/creative-coding-and-motion-media.md` |
@@ -115,6 +115,8 @@ Decision rules, output contracts, taste anchors, motion recipes, anti-template c
 ### 1. Route The Deliverable
 
 Name the final artifact, runtime, editability requirement, target devices or frame geometry, distribution surface, static fallback, and acceptance method. Do not start HTML when the accepted deliverable is ordinary native PowerPoint. When the user explicitly requires HTML-first PPTX, keep HTML as source of truth and select `editable` or `fidelity` before the first slide is built.
+
+**CHECKPOINT:** lock artifact ownership, geometry, HTML/PPTX editability, and acceptance evidence before implementation when any answer changes the architecture.
 
 ### 2. Recover Design Context
 
@@ -132,11 +134,15 @@ Use `assets/patterns/decision-rules.json` and the relevant output/taste contract
 
 For a high-impact or visually open task, produce exactly three materially different, real direction previews at the target geometry. Vary composition, type, color behavior, imagery, interaction, or motion and obtain a user decision before full build. Record the selection and rationale. A previously accepted direction, a small correction, or a mechanical export may bypass this gate only when the reason is written into the direction decision record.
 
+**CHECKPOINT:** record the accepted direction or documented exemption before expanding beyond the showcase slice.
+
 Lock semantic tokens for surfaces, text, borders, accents, state, spacing, type, radius, shadow, and motion. Use `oklch()` when the project supports it, with fallbacks when compatibility requires them. Color and typography must support hierarchy, not replace it.
 
 ### 6. Build A Real Slice
 
 Implement the primary workflow or product story end to end with real or structurally honest content. Reuse the local framework and components. Build feature-complete controls and their default, hover, focus-visible, active, disabled, loading, empty, error, success, and selected states as applicable. For still or motion assets, preserve editable HTML/CSS/JS source and expose a deterministic time setter before rendering.
+
+For a browser presentation, use a complete player rather than disconnected HTML frames. A single-file deck must support arrow, Page, and Space navigation; wheel and touch; `Escape` or `O` overview cards; `F` full screen; progress; URL hash; persisted position; and print behavior. Use `assets/starter/deck-stage.js` for up to ten tightly coupled slides, or preserve an existing equivalent player when it passes the same contract. Single-file interactive decks export to fidelity PPTX through `scripts/export-html-stage-pptx.mjs`; editable PPTX requires independent slide HTML and `scripts/export-html-deck-pptx.mjs`.
 
 ### 7. Expand Deliberately
 
@@ -168,6 +174,18 @@ When judgment is limited, follow these rules in order:
 8. Run the quality checklist and browser evidence loop; do not claim visual quality from code inspection.
 
 If context is constrained, load in this order: delivery route, context and content, chosen pattern, visual system, relevant component module, verification. Never drop artifact routing, content truth, accessibility, responsive behavior, or final verification.
+
+## Failure Handling
+
+| Trigger | First response | Fallback |
+|---|---|---|
+| Final presentation format or editability is ambiguous | Ask one concise ownership question and stop production | Deliver a route recommendation and comparison without creating slides |
+| Browser, media encoder, or export dependency is unavailable | Finish and verify the browser source at the highest available level | Provide the exact missing derivative command and mark PDF/PPTX/GIF/video `NOT_RUN` |
+| `file://` blocks local scripts, fonts, or modules | Serve the artifact from a loopback-only local static server | Inline permitted local assets or report the blocked dependency without hiding the failure |
+| Existing HTML cannot satisfy editable PPTX constraints | Stop lossy conversion and expose incompatible elements | Select fidelity PPTX with explicit approval or rebuild independent slides for native objects |
+| Browser console, network, font, image, canvas, or frame checks fail | Fix the first structural cause and rerun the same evidence | Deliver verified source plus a blocked derivative report; do not ship partial media |
+| Motion, canvas, WebGL, audio, or interaction is unsupported | Preserve semantic content, stable geometry, controls, and reduced-motion behavior | Produce a static poster or non-interactive fallback and disclose the removed behavior |
+| Product evidence or licensed assets are unavailable | Use a labeled structural placeholder and keep the claim ledger honest | Pause public-facing rendering when the missing proof would make the artifact misleading |
 
 ## Runtime Degradation Ladder
 
@@ -222,6 +240,7 @@ node scripts/design-router.mjs --task product-demo --deliverable gif --signals w
 NODE_PATH=<playwright-node-modules> node scripts/render-motion-media.mjs --input <source.html> --output-dir <assets-dir> --name product-loop --formats poster,mp4,gif
 WIKIMEDIA_USER_AGENT=<descriptive-id> node scripts/fetch-wikimedia-assets.mjs --query <subject> --output-dir <assets-dir>
 NODE_PATH=<playwright-node-modules> node scripts/render-deck-thumbnails.mjs --slides <slides-dir> --output-dir <thumbs-dir>
+NODE_PATH=<playwright-and-pptxgenjs-node-modules> node scripts/export-html-stage-pptx.mjs --html <deck.html> --out <deck.pptx> --mode fidelity
 node scripts/compile-narration-timeline.mjs --script <script.md> --manifest <narration.json>
 node scripts/export-html-deck-pptx.mjs --slides <slides-dir> --out <deck.pptx> --mode editable
 node scripts/verify-motion-media.mjs --input <loop.gif> --require-loop --max-mb 2 --json

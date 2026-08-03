@@ -1,0 +1,27 @@
+{
+  "skill": "",
+  "round": 0,
+  "changed_dimension": "",
+  "files": [],
+  "controls": {
+    "model": "",
+    "context_hash": "",
+    "repository_state": "",
+    "tools": [],
+    "budget": ""
+  },
+  "prompts": [],
+  "baseline_artifacts": [],
+  "candidate_artifacts": [],
+  "evaluation_mode": "full_test|mixed|dry_run|not_run",
+  "judge_sessions": [],
+  "scores": {
+    "baseline": null,
+    "candidate": null,
+    "delta": null
+  },
+  "accepted": false,
+  "reason": "",
+  "regressions": [],
+  "unresolved": []
+}

@@ -154,6 +154,9 @@ The central owned skill is:
 | `github-readme-highstar` | README information architecture, quick-start clarity, repository visual collaboration, static hero and supplemental demo integration |
 | `system-prompt-engineering` | System-prompt requirements, composition, identity, tools, delegation, safety, memory, search, channel adaptation, code-agent behavior, and evaluation |
 | `skill-creator` | Skill authoring, merging, taxonomy, formatter rules |
+| `skill-optimizer` | Controlled baseline/treatment evaluation, runtime-neutral auditing, independent review, and measured Skill improvement without automatic Git mutation |
+| `knowledge-distillation` | Long-form source mapping, independent method extraction, triple verification, executable Skill construction, and pressure testing |
+| `perspective-distillation` | Ethical person/topic research, cognitive-model synthesis, evidence boundaries, independent validation, and incremental updates |
 
 ## Skill Consolidation
 
@@ -167,6 +170,9 @@ External sources are curated into owned skills instead of installed by default.
 | Composio SaaS tool routing and MCP-light discovery | `composio-tool-router` |
 | System-prompt playbooks and cross-product prompt patterns | `system-prompt-engineering` |
 | Claude skill creator + Superpowers skill writing | `skill-creator` |
+| Validation-gated Skill evaluation and iterative improvement | `skill-optimizer` |
+| Long-form method extraction and executable knowledge construction | `knowledge-distillation` |
+| Person/topic evidence research and perspective construction | `perspective-distillation` |
 | Claude MCP builder + community MCP builder | `mcp-builder` |
 | frontend-design, design-md brand routing, UI/UX, prototypes, dashboards, data visualization, HTML presentations, accessibility, motion, design-lab, impeccable | `interface-design` |
 | Claude webapp-testing + Playwright skill | `webapp-testing` |
@@ -192,7 +198,7 @@ skillbird format-skills --write
 
 ### HTML And PowerPoint Boundary
 
-`interface-design` owns browser-native visual work and rendered visual assets: apps, prototypes, landing pages, dashboards, interactive reports, repository covers, autoplay GIF heroes, posters, product showcases, deterministic demo video, creative coding, data visualization, narrated motion, and HTML slides. `github-readme-highstar` owns the surrounding README structure and integration.
+`interface-design` owns browser-native visual work and rendered visual assets: apps, prototypes, landing pages, dashboards, interactive reports, repository covers, autoplay GIF heroes, posters, product showcases, deterministic demo video, creative coding, data visualization, narrated motion, and HTML slides. A standard single-file slide player provides arrow/Page/Space, wheel and touch navigation, `Escape`/`O` overview cards, `F` full screen, progress, URL hash, persisted position, and print behavior. `github-readme-highstar` owns the surrounding README structure and integration.
 
 Ordinary native editable `.pptx`, slide masters, Office compatibility, and PowerPoint QA remain owned by `pptx` or `window-pptx`. When a user explicitly requires HTML as the presentation source, `interface-design` also owns HTML-first PDF and PPTX derivatives. HTML-first PPTX has two explicit modes: native editable DOM-to-PowerPoint objects, or visually faithful image-backed slides. The agent must select editability versus fidelity before implementation.
 
@@ -206,7 +212,10 @@ node skills/owned/interface-design/scripts/design-router.mjs --task product-demo
 node skills/owned/interface-design/scripts/design-router.mjs --task html-presentation --deliverable pptx --pipeline html-first --pptx-mode editable --format json
 node skills/owned/interface-design/scripts/render-motion-media.mjs --input demo.html --output-dir assets --name demo --formats poster,mp4,gif
 node skills/owned/interface-design/scripts/export-html-deck-pptx.mjs --slides slides --out deck.pptx --mode editable
+node skills/owned/interface-design/scripts/export-html-stage-pptx.mjs --html deck.html --out deck.pptx --mode fidelity
 ```
+
+The owned catalog currently contains 26 active Skills. Full upstream source mirrors used during consolidation stay ignored under each Skill's `references/_external_repos/`; they are neither packaged nor installed. The distillation, optimization, HTML presentation, and YapCLI validation record is in [`docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md`](docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md).
 
 See [`docs/design/html-universal-design-capability-merge.md`](docs/design/html-universal-design-capability-merge.md) for the capability analysis and boundary decisions.
 

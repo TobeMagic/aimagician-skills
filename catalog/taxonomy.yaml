@@ -65,6 +65,12 @@ skills:
     tags: [system-prompt, prompt-engineering, agents, tools, safety, memory, evaluation]
     recommendedScopes: [global]
     description: "Design, review, evaluate, version, and safely operate system prompts and agent instruction contracts through progressive capability modules."
+  skill-optimizer:
+    group: build
+    subgroup: skills
+    tags: [skills, optimization, evaluation, quality, runtime-neutral]
+    recommendedScopes: [global]
+    description: "Validation-gated Skill auditing and improvement with controlled behavioral tests, independent review, and no Git mutation by default."
   writing-skills:
     group: build
     subgroup: skills
@@ -139,6 +145,18 @@ skills:
     subgroup: repo-analysis
     tags: [interview, evidence, repo]
     recommendedScopes: [project]
+  knowledge-distillation:
+    group: research
+    subgroup: knowledge-distillation
+    tags: [knowledge-distillation, long-form, skill-generation, evidence, multi-agent]
+    recommendedScopes: [project]
+    description: "Turn long-form source material into traceable executable Skill systems through independent extraction, verification, linking, and pressure tests."
+  perspective-distillation:
+    group: research
+    subgroup: perspective-distillation
+    tags: [perspective, research, knowledge-distillation, skill-generation, multi-agent]
+    recommendedScopes: [project]
+    description: "Build evidence-backed person or topic perspective Skills with ethical boundaries, six-stream research, cognitive synthesis, and independent validation."
 
   interface-design:
     group: design
