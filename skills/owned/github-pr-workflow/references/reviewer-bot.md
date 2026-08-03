@@ -1,6 +1,6 @@
 # Reviewer-Bot Gate
 
-Reviewer-bot output is a completion gate for PR work.
+Load this reference only when the repository actually configures a reviewer bot or branch protection requires one. Reviewer-bot output is otherwise advisory, not a universal completion gate.
 
 ## What To Check
 
@@ -27,5 +27,4 @@ Treat as blocking when:
 - a bot thread is unresolved;
 - CI/checks tied to the bot are failed, pending, or cancelled.
 
-Record the result in `LLM-know-how-wiki` as `GITHUB_PR_WORKFLOW`.
-
+Record the result in a wiki only when the project or user asks for that audit trail.

@@ -1,6 +1,6 @@
 ---
 name: cli-agent-delegator
-description: MANDATORY CLI delegation and independent completion-audit gate. Use before broad or multi-source exploration, repository scanning, architecture mapping, deep web research, image inspection, independent plan/code/spec/verification review, bounded git/test/report/write work, whenever a locked simple short execution task can be offloaded, and before any task, phase, milestone, or delivery is declared complete. Prefer OpenCode, require cli-agent-delegator plus all domain skills to be loaded, and validate critical claims.
+description: Use for broad or multi-source exploration, repository scanning, architecture mapping, deep web research, image inspection, independent plan/code/spec/verification review, bounded git/test/report/write work, or whenever a locked simple short execution task can be offloaded. Prefer OpenCode, require cli-agent-delegator plus all domain skills to be loaded, and validate critical claims; require a fresh completion audit only for high-risk, planning-managed, deployable, policy-required, or explicitly requested work.
 category: operate
 subcategory: agent-orchestration
 tags:
@@ -144,11 +144,11 @@ Use risk-scaled independent review rather than forcing the same ceremony onto ev
 - substantial work: independent plan review before execution, specification review before quality review, independent verification, phase audit, and milestone or completion audit;
 - high-risk security, data, concurrency, migration, or architecture work: add focused reviewers where their axes are genuinely independent.
 
-Regardless of task size, any `complete` claim gets a fresh independent OpenCode audit. A bounded quick write may combine specification, quality, verification, and completion in one compact review; substantial work keeps independent staged reviewers and adds a final whole-result audit. Pure discussion without a completion claim is exempt.
+Require a fresh independent OpenCode audit for High work, phase/milestone closure, deployable postmerge closure, project policy, or explicit user request. A bounded quick write normally closes with controller verification and the repository's actual merge protections; add one compact combined review when the diff or discovered risk justifies it. Substantial work keeps independent staged reviewers and adds a final whole-result audit. Pure discussion without a completion claim is exempt.
 
 Review findings use exactly `Blocker`, `Important`, or `Nitpick`. A Blocker stops progression. An Important finding is fixed and re-reviewed, or deferred only by an explicit user decision. A Nitpick is non-blocking but recorded when useful.
 
-## Mandatory Completion Audit
+## Completion Audit When Required
 
 Use a fresh OpenCode session and the normal reasoning route: DeepSeek for audit reasoning, including audits that consume a `vision-analysis` report; another controller-selected free reasoning model only when DeepSeek is absent; and Agnes text fallback only after an explicit DeepSeek usage, quota, or rate-limit event. For visual deliverables, obtain authorized observable evidence through `vision-analysis` and include its sanitized report in the fresh final audit. Freeze the exact commit with `--review-ref` or the exact stable worktree with `--review-worktree`; a fingerprint change invalidates the audit. Include the original request or PRD, accepted decisions, `.planning/REQUESTS.md`, requirement IDs, implementation, verification, UAT, documentation, installation state, and existing findings.
 

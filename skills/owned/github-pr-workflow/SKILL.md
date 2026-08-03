@@ -1,93 +1,74 @@
 ---
 name: github-pr-workflow
-description: Use when creating, inspecting, reviewing, updating, or closing
-  GitHub pull requests, especially when PR readiness depends on CI, reviewer-bot
-  output, review comments, Linear links, or LLM wiki activity records.
+description: Use when creating, inspecting, reviewing, updating, merging, or closing a GitHub pull request. Resolve repository-specific branch and merge protections first; use Linear through Composio only as optional post-delivery tracking.
 metadata:
   related_skills:
     - linear-issue-workflow
-    - llm-know-how-wiki
+    - composio-tool-router
+    - cli-agent-delegator
 compatibility:
-  tools:
-    - bash
-    - git
-    - gh
-    - python
-  requires: GitHub CLI authenticated for the target repo
+  tools: [bash, git, gh]
+  requires: GitHub CLI authenticated for the target repository
 category: operate
 subcategory: github
 tags:
   - pull-request
   - review
+  - merge
+  - delivery
 ---
 
 # GitHub PR Workflow
 
-Use this skill for PR creation, review status, CI, reviewer-bot output, and merge readiness. Use `linear-issue-workflow` for Linear state changes.
+Use this skill to get verified code into the repository through the shortest path that matches its real protections. PR work follows core delivery; optional tracker, wiki, and reporting work follows the merge.
 
-## First Reads
+## Resolve Project Policy Once
 
-- For reviewer-bot gates, read [`references/reviewer-bot.md`](./references/reviewer-bot.md).
-- For `gh` commands, read [`references/gh-command-recipes.md`](./references/gh-command-recipes.md).
+Before the first PR in a project, establish the target branch and protections from project evidence:
 
-## Core Rules
+1. read contribution and release documentation plus local automation configuration;
+2. inspect the remote default branch and recent merged PR base branches with `gh`;
+3. inspect the PR's required checks/reviews and branch protection where access permits;
+4. if the evidence is absent or conflicts, ask the user which integration branch to use.
 
-- Use `gh` for GitHub state. Use local `git` for local branch state.
-- Always identify repo and PR number or URL before querying.
-- Do not say a PR is ready until checks, reviewer-bot, and required reviews have been inspected.
-- Link PRs back to Linear when the work came from a Linear issue.
-- For Linear issue work, default PR base is `dev` and PR title is `[<ISSUE-ID>] <Linear issue title>` unless the human explicitly provides a different base or title.
-- Record PR creation, review checks, merge readiness, and closure in `LLM-know-how-wiki`.
+Never assume `dev`, `develop`, `main`, `master`, a reviewer-bot, or an LLM wiki. Reuse the confirmed project convention in later tasks until repository evidence or the user changes it.
 
-## PR Lifecycle
+## Risk-Scaled PR Path
 
-1. **Create**
-   - Confirm current branch and base branch.
-   - Use base `dev` when creating a PR for Linear issue work unless explicitly overridden.
-   - Use title `[ISSUE-ID] <Linear issue title>` when a Linear issue exists.
-   - Include Linear URL, summary, tests, risks, and screenshots/logs as relevant.
-   - Return the PR URL so `linear-issue-workflow` can update Linear status and comment with the link.
+| Work tier | Minimum PR path |
+|---|---|
+| Quick | Focused verification, surgical diff review, PR/merge when the project uses it, and only actual merge protections. |
+| Standard | Focused tests plus a concise PR body; inspect the checks and required reviews actually configured for the target branch. |
+| High | Full review/verification evidence, independent audit where required by `aimagician-superpower`, and all actual branch protections. |
 
-2. **Inspect**
-   - Run `gh pr view` for title, state, author, base/head refs, body, reviews, review decision, and URL.
-   - Run `gh pr checks`.
-   - Fetch comments and review threads when there are unresolved concerns.
+CI, reviewer bots, full regression suites, wiki records, screenshots, and deployment checks are required only when repository protection, risk, user acceptance, or project policy makes them material. Tool unavailability must not block otherwise safe core delivery unless it is an enforced protection.
 
-3. **Reviewer-Bot Gate**
-   - Search PR comments and reviews for the configured reviewer-bot identity.
-   - Treat failed bot output, blocking comments, or missing required bot output as not ready.
-   - Summarize bot result before claiming completion.
+## Lifecycle
 
-4. **Fix Loop**
-   - Apply fixes for blocking review comments.
-   - Push updates.
-   - Re-run or re-check CI and reviewer-bot.
-   - Record each significant review cycle in the wiki.
+### 1. Prepare
 
-5. **Close**
-   - Merge only when checks, reviewer-bot, and required human reviews pass or are explicitly waived.
-   - After merge, update Linear through `linear-issue-workflow` when applicable.
-   - Write a final wiki activity record.
+- Confirm the repository, current branch, intended base, dirty state, and whether the change belongs in a PR or an already-approved target branch.
+- Keep user changes separate. Do not rewrite history, reset, or clean unrelated files.
+- Use a Linear issue ID in the title/body only when one is actually associated with the work. The title may use `[ISSUE-ID] <title>` when the ticket's canonical title is relevant.
 
-## Wiki Activity Record
+### 2. Create Or Update
 
-Use the related `llm-know-how-wiki` recorder:
+- Push only when authorized by the repository workflow or user.
+- Create a PR against the resolved project base with a compact summary, verification commands/results, known risk, and relevant visual evidence.
+- Link a Linear issue after the PR is created only if the task needs tracking. Route all Linear actions through `linear-issue-workflow` and Composio CLI.
 
-```bash
-python <llm-know-how-wiki>/scripts/record_activity.py \
-  --wiki-root <wiki-root> \
-  --operation GITHUB_PR_WORKFLOW \
-  --issue LUC-123 \
-  --pr https://github.com/motse-ai/gke-agent-manager/pull/12 \
-  --repo motse-ai/gke-agent-manager \
-  --summary "Checked PR #12: CI passed, reviewer-bot approved"
-```
+### 3. Inspect Merge Readiness
 
-If the wiki record fails, report that failure instead of silently dropping the audit trail.
+- Use `gh pr view`, `gh pr checks`, and review-thread inspection to identify the actual state.
+- Distinguish required checks/reviews from advisory results. A configured reviewer-bot is a required gate only when branch protection or the project explicitly requires it.
+- Fix confirmed blocking review or check failures. Do not treat a missing optional bot, optional wiki, or unavailable tracker integration as a reason to delay a verified PR.
 
-## Common Mistakes
+### 4. Merge And Close
 
-- Checking only `gh pr checks` and ignoring reviewer-bot comments.
-- Assuming a linked Linear issue is closed by PR creation.
-- Merging without reading unresolved review threads.
-- Forgetting to record the PR/review state into the wiki.
+- Merge only when the repository's required protections pass or an authorized maintainer waives them.
+- Record the merge commit and any required postmerge evidence.
+- After core merge work, delegate optional Linear status/comment/closure and wiki/report administration through the appropriate skill. These actions must not reopen code delivery unless they reveal a real acceptance gap.
+
+## Output Contract
+
+Report repository and resolved base branch, PR URL/state, required versus advisory checks, reviews read, verification evidence, merge result, remaining blockers, and deferred post-delivery administration. Do not claim a merge protection has passed without inspecting its current state.

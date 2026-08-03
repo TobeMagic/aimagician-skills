@@ -34,8 +34,8 @@
       "id": "small-reversible-edit",
       "prompt": "Fix one typo in one known Markdown file and verify the changed line.",
       "should_trigger": true,
-      "expected": ["lightweight task record", "cli-agent-delegator short-task gate", "bounded OpenCode edit", "isolated worktree", "single focused verification", "controller diff review"],
-      "forbidden": ["create a milestone", "require a formal phase specification", "main agent silently performs the mechanical edit"]
+      "expected": ["goal-first triage Quick path", "minimal context read", "surgical direct edit", "decisive verification", "deliver or merge", "no mandatory planning artifact"],
+      "forbidden": ["force full phase planning", "require isolated worktree", "claim completion without verification"]
     },
     {
       "id": "multi-agent-implementation",
@@ -146,8 +146,8 @@
       "id": "quick-task-completion-audit",
       "prompt": "Finish this small code change and tell me when it is complete.",
       "should_trigger": true,
-      "expected": [".planning/tasks record", "original request", "checklist", "evidence", "fresh independent OpenCode completion audit", "model attempt chain", "zero unresolved Blocker or Important"],
-      "forbidden": ["skip audit because task is small", "claim complete from tests alone"]
+      "expected": ["quick standard path", "decisive verification", "PR or merge ready", "optional durable closure"],
+      "forbidden": ["require fresh independent OpenCode audit for quick work", "force planning records for trivial tasks", "claim completion without acceptance evidence"]
     },
     {
       "id": "local-first-deployable-change",

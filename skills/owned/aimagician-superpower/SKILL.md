@@ -1,6 +1,6 @@
 ---
 name: aimagician-superpower
-description: Use when starting or resuming engineering work, understanding requirements, exploring a codebase, designing or implementing changes, debugging, refactoring, reviewing code, applying spec-driven development, coordinating agents, delegating eligible short execution tasks, or claiming any task, phase, milestone, or delivery complete. Requires original-request traceability, verified evidence, a fresh independent OpenCode completion audit, and a durable handoff.
+description: Use when starting or resuming engineering work, understanding requirements, exploring a codebase, designing or implementing changes, debugging, refactoring, reviewing code, applying spec-driven development, coordinating agents, delegating eligible short execution tasks, or claiming any task, phase, milestone, or delivery complete. Chooses the shortest reliable path from requirement complexity and risk; full planning and independent OpenCode audit are reserved for high-risk, phase/milestone, deployable, or explicitly requested work.
 category: build
 subcategory: workflow
 tags:
@@ -48,27 +48,44 @@ compatibility:
 
 # AImagician Superpower
 
-Use this skill as the control plane for substantial work. It converts an uncertain request into a source-grounded, discussed, specified, planned, implemented, independently reviewed, verified, auditable, and resumable result.
+Use this skill as the goal-first control plane for engineering work. It classifies each request by complexity and risk, then selects the shortest reliable path: deliver the real requirement first, add planning, review, and audit only when they materially reduce risk.
 
-The workflow is not complete when code exists. It is complete only when every accepted requirement has evidence, unresolved gaps are explicit, and another agent can resume without reconstructing the work.
+The workflow is complete when the accepted requirement is implemented and verified at a risk-appropriate level, unresolved gaps are explicit, and the handoff is durable enough for another agent to resume without reconstructing the work.
 
-## Mandatory Start And Resume Gate
+## Goal-First Triage
 
-Before any non-trivial execution, and always after resume, context compaction, handoff, interruption, or uncertain repository state:
+Classify the request before choosing a workflow. The default path is the shortest route that can complete and verify the real requirement. Do not force phase planning, OpenCode audits, wiki updates, or Linear closure onto quick work.
+
+| Tier | Typical Scope | Default Path |
+|---|---|---|
+| `Quick` | Docs, config, isolated one-file or low-risk bug fix, test-only change | Minimal context -> implement -> decisive focused check -> PR or target-branch merge when ready -> optional closure |
+| `Standard` | Normal feature or bug in a bounded module | One discussion round only if behavior is ambiguous -> implement -> focused tests -> PR -> merge -> optional closure |
+| `High` | Cross-module, public API, schema/data migration, security, release, production or deploy behavior, multi-agent coordination | Discuss/brainstorm -> research -> design/plan -> implement -> review + full verification -> independent audit when required -> PR -> merge -> closure |
+
+Escalate when any signal is present: unclear goal, multiple modules, public contract or schema change, data or security impact, deployment or production behavior, hard-to-reverse changes, cross-agent coordination, or the user explicitly requests review/audit. Downgrade when the same work has already been explored, scoped, or accepted.
+
+## Adaptive Start And Resume Gate
+
+Run the full recovery gate only for High work, phase/milestone work, resume/compaction/handoff, or uncertain repository state. Quick and Standard work starts from the current request and existing context; read only what changes the next action.
 
 1. Read this `SKILL.md` again.
-2. Read workflow state and planning sources first: `.planning/REQUESTS.md`, `.planning/STATE.md`, `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`, the active task or phase specification, context, discussion log, research, plans, validation, audit, and latest summary.
-3. Read project sources of truth next: `README*`, relevant `docs/`, ADRs, contributor guidance, architecture, API documentation, and repository-specific workflow files.
-4. Read the project knowledge base when present: `llm-know-how-wiki`, `.llm-know-how-wiki`, `llm-wiki`, `.llm-wiki`, `wiki/`, or the documented equivalent.
-5. Read current git status and separate user changes from planned work.
-6. Reconcile the latest user instruction, planning artifacts, project docs, wiki, and filesystem. Newer explicit user decisions win, but contradictions that affect behavior, scope, data, risk, or acceptance must be confirmed.
-7. Resume from the last verified checkpoint. Do not restart solved discovery or skip an unfinished gate.
+2. Read `.planning` state and project sources of truth only when they are needed to resolve scope, alignment, or risk.
+3. Read the project knowledge base when present and material.
+4. Read current git status and separate user changes from planned work.
+5. Reconcile the latest user instruction, planning artifacts, project docs, wiki, and filesystem. Newer explicit user decisions win; contradictions that affect behavior, scope, data, risk, or acceptance must be confirmed.
+6. Resume from the last verified checkpoint for phase/milestone work. Do not restart solved discovery or skip a gate that is still relevant.
 
-If a source is absent, record that fact and decide whether it is blocking. Do not invent missing context. Never present a partial implementation as complete, and do not stop while accepted work remains feasible.
+If a source is absent, record that fact and decide whether it is blocking. Do not invent missing context. Never present a partial implementation as complete. For Quick/Standard work, absent optional planning or wiki sources are not blockers.
+
+## Task Contract Instead Of Universal Goal Lock
+
+For Quick/Standard requests, define a compact contract before editing: objective, acceptance signal, file scope, forbidden scope, and decisive verification. Do not require `.planning/REQUESTS.md`, roadmap alignment, or gate records.
+
+For phase/milestone/High work, use the Active Goal Lock below.
 
 ## Active Goal Lock
 
-Before changing files, lock execution to the active planning target:
+For phase/milestone/High work, lock execution to the active planning target before changing files:
 
 1. Read the active milestone and phase from `.planning/STATE.md`.
 2. Read that phase's status, literal goal, requirement IDs, and success criteria from `.planning/ROADMAP.md`.
@@ -77,7 +94,7 @@ Before changing files, lock execution to the active planning target:
 5. Map each planned action to a `REQ-*` item or an explicit `GOAL-*` acceptance criterion. Work with no mapping is scope drift.
 6. Run `workflow.mjs trace` at checkpoints and before any completion claim. A passing test is evidence for a mapped criterion, not proof that the phase goal is complete.
 
-An off-phase task requires a controlled exception with the parent milestone, parent phase, explicit `USR-*` approval, and a return checkpoint. Resume the parent phase after the exception. Never relabel partial progress as phase or milestone completion.
+An off-phase task requires a controlled exception with the parent milestone, parent phase, explicit `USR-*` approval, and a return checkpoint. Do not apply this lock to standalone Quick/Standard tasks unless the project itself is phase-managed.
 
 ## Capability Routing
 
@@ -106,9 +123,15 @@ Load the smallest set of modules needed for the current stage.
 
 Role prompt templates live under `references/roles/`. Planning templates live under `assets/templates/`. Executable checks live under `scripts/`.
 
-## Senior Engineering Operating Standard
+## Engineering Standards, Scaled By Risk
 
-For any change beyond a known one-file edit, do not move from request directly to code. Establish five engineering artifacts, inline for small work or from `assets/templates/` for substantial work:
+Apply engineering quality with the minimum artifacts that materially improve correctness. Do not generate ceremony for quick work.
+
+- `Quick`: one inline behavior contract, a decisive verification command, and a surgical diff.
+- `Standard`: inline or template-backed context map, design options when a meaningful tradeoff exists, and a change brief.
+- `High`: use the durable templates for context map, design record, change brief, and review record.
+
+For Standard and High work, do not move from request directly to code without the relevant reasoning. A named artifact is required only when it reduces risk or preserves a decision that must survive the current task:
 
 1. **Behavior contract:** observable current and target behavior, acceptance examples, invariants, and failure behavior.
 2. **Context map:** active milestone, phase, literal roadmap goal, acceptance criteria, entry points, ownership boundaries, dependency direction, data/control flow, persisted state, external boundaries, build and delivery path, observability, user-visible result, and likely blast radius.
@@ -116,7 +139,7 @@ For any change beyond a known one-file edit, do not move from request directly t
 4. **Change brief:** ordered vertical slices, exact file scope, integration points, delivery class, local-to-online verification ladder, recovery path, and evidence expected after each slice.
 5. **Review record:** specification findings first, then correctness, tests, security, maintainability, extensibility, performance, operability, and diff hygiene.
 
-Scale the detail to risk; do not skip the reasoning category. Facts need file, command, runtime, or primary-source evidence. Mark inference and unknowns explicitly. Prefer a deep module with a small stable interface over knowledge spread across many callers, but do not introduce abstraction without demonstrated leverage.
+Scale the detail to risk. For High work, do not skip the reasoning category. Facts need file, command, runtime, or primary-source evidence. Mark inference and unknowns explicitly. Prefer a deep module with a small stable interface over knowledge spread across many callers, but do not introduce abstraction without demonstrated leverage.
 
 Durable engineering artifacts use `assets/templates/engineering-context-map.md`, `assets/templates/engineering-design-record.md`, `assets/templates/engineering-change-brief.md`, and `assets/templates/engineering-review.md`. When the destination is clear but the route is still foggy, use `assets/templates/progressive-discovery-map.md`. When one uncertainty must be tested cheaply, use `assets/templates/engineering-prototype-brief.md`.
 
@@ -134,13 +157,25 @@ A lightweight inline target is allowed only when all are true:
 
 If any condition fails, read `references/capabilities/spec-driven-development.md` and create or update the phase specification before planning.
 
-Every lightweight task that will end in a completion claim uses one `.planning/tasks/<id>.md` record. Preserve or link the original request, accepted decisions, requirement checklist, evidence, fresh independent OpenCode audit, model attempt provenance, finding disposition, and final decision in that file. Pure discussion or clarification without a completion claim does not create a task record.
+Create a `.planning/tasks/<id>.md` record only when the project is planning-managed, the work is phase/milestone/High, or the user explicitly asks for a durable record. Quick/Standard completion may use the PR description and verification evidence instead. Pure discussion or clarification without a completion claim does not create a task record.
+
+## Default Delivery Path
+
+For `Quick` and `Standard` requests, run this path and stop when the requirement is verified:
+
+1. **Lock target:** objective, acceptance signal, file scope, and decisive verification.
+2. **Execute:** implement with minimal context and keep the diff surgical.
+3. **Verify:** run only the commands that prove the target behavior.
+4. **Deliver:** create a PR or push to the target branch; wait only for checks that are actual merge protections.
+5. **Close:** update Linear, wiki, or reports only when a ticket or explicit user request exists; use OpenCode + Composio CLI for mechanical closure after merge.
 
 ## Canonical Delivery Loop
 
+Use this full loop for High or planning-managed work. Quick and Standard work use the Default Delivery Path, borrowing only the loop stages that materially improve the acceptance signal. Do not read this section as a universal checklist.
+
 ### 1. Recover Context
 
-Run the Mandatory Start And Resume Gate and Active Goal Lock. Establish the last verified state, active milestone and phase, literal roadmap goal, current dirty files, active blockers, and next safe action.
+Run the Adaptive Start And Resume Gate and, for phase/milestone work, Active Goal Lock. Establish the last verified state, active milestone and phase, literal roadmap goal, current dirty files, active blockers, and next safe action.
 
 ### 2. Establish Target And Boundary
 
@@ -164,23 +199,23 @@ Define the behavior contract, durable domain vocabulary, invariants, interfaces,
 
 ### 7. Execute And Checkpoint
 
-Run the alignment gate before editing. Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Deliver one end-to-end tracer slice before broadening. Agree the most public practical test seam, make the first check fail for the intended behavioral reason, then complete one red-green-refactor slice before the next. Reject tautological tests, tests that only replay mocked returns, and horizontal tests disconnected from observable behavior. Use expand-contract for wide refactors and reversible prototypes for uncertain architecture. Give each bounded implementation slice a clean context and finish it with fresh evidence plus a durable handoff; do not rely on lossy mid-slice compaction. Before the controller performs a simple short execution task, apply the `cli-agent-delegator` short-task gate. Eligible test runs, Git checks, reports, localized fixes, and scoped research are delegated by default. Visual evidence is acquired through `vision-analysis`; only sanitized text evidence is delegated for reasoning. Write work must use an exact scope in an isolated worktree. A bounded quick write gets one combined pre-commit review. Substantial delegated implementation gets a fresh implementer context, independent specification review, then quality review. Fix and re-review before advancing.
+For High or planning-managed work, run the alignment gate before editing. Read before editing, preserve user changes, follow local patterns, and keep scope surgical. Deliver one end-to-end tracer slice before broadening. Agree the most public practical test seam, make the first check fail for the intended behavioral reason, then complete one red-green-refactor slice before the next. Reject tautological tests, tests that only replay mocked returns, and horizontal tests disconnected from observable behavior. Use expand-contract for wide refactors and reversible prototypes for uncertain architecture. Give each bounded implementation slice a clean context and finish it with fresh evidence plus a durable handoff; do not rely on lossy mid-slice compaction. Before the controller performs a simple short execution task, apply the `cli-agent-delegator` short-task gate. Eligible test runs, Git checks, reports, localized fixes, and scoped research are delegated by default. Visual evidence is acquired through `vision-analysis`; only sanitized text evidence is delegated for reasoning. Write work must use an exact scope in an isolated worktree. A bounded quick write gets a combined pre-commit review only when the diff, risk, or project policy warrants it. Substantial delegated implementation gets a fresh implementer context, independent specification review, then quality review. Fix and re-review before advancing.
 
 ### 8. Verify And UAT
 
-Run all practical LOCAL checks first, narrow before broad, based on the full-chain context and blast radius. Do not use repeated CI or deployment cycles to discover locally observable failures. Trace original request to requirement, roadmap goal criterion, task, and evidence. Exercise observable UAT for user-facing behavior. Record commands, outputs, inspected artifacts, failures, skipped checks, revision provenance, and residual risk. For substantial work, delegate an independent verifier through `cli-agent-delegator`, then rerun or inspect the decisive evidence yourself. For deployable work, this stage establishes premerge readiness; it is not final completion.
+Run all practical LOCAL checks first, narrow before broad, based on the full-chain context and blast radius. Do not use repeated CI or deployment cycles to discover locally observable failures. For planning-managed work, trace original request to requirement, roadmap goal criterion, task, and evidence; otherwise retain the compact task contract and decisive evidence. Exercise observable UAT for user-facing behavior. Record commands, outputs, inspected artifacts, failures, skipped checks, revision provenance, and residual risk. For substantial work, delegate an independent verifier through `cli-agent-delegator`, then rerun or inspect the decisive evidence yourself. For deployable work, this stage establishes premerge readiness; it is not final completion when online evidence is an accepted requirement.
 
 ### 9. Audit
 
-Compare the result with the locked specification, original request, non-goals, plan, and evidence. Check integration wiring, regression risk, capability preservation, stale placeholders, security, cleanup, documentation, installation state, delivery provenance, and recovery readiness. Use a fresh OpenCode reviewer through `cli-agent-delegator` against a frozen commit or frozen worktree for premerge review, phase audit, and milestone or completion closure. Reconcile its findings against primary evidence and classify every gap.
+When an audit trigger applies, compare the result with the locked specification, original request, non-goals, plan, and evidence. Check integration wiring, regression risk, capability preservation, stale placeholders, security, cleanup, documentation, installation state, delivery provenance, and recovery readiness. Use a fresh OpenCode reviewer through `cli-agent-delegator` against a frozen commit or frozen worktree for premerge review, phase audit, and milestone or completion closure. Reconcile its findings against primary evidence and classify every gap.
 
-Every completion claim, including a bounded quick task, must use a fresh independent OpenCode session. Visual evidence is acquired through `vision-analysis` with explicit upload authorization, then passed as text to the reviewer. Audit reasoning follows the DeepSeek-first route; Agnes is a text-reasoning fallback only after a verified DeepSeek usage or quota limit. The audit freezes the reviewed commit or diff and maps `USR-* -> REQ-* -> implementation -> evidence -> audit decision`. Record provider, primary model, final model, attempt chain, fallback reason, session, run status, review point, requirement matrix, Blocker/Important/Nitpick counts, and main-Agent spot-check evidence. Tests passing alone never satisfies this gate.
+An independent OpenCode audit is required for High work, phase/milestone closure, deployable postmerge closure, or explicit user request. Quick/Standard work does not require it; targeted verification plus PR/CI is the normal completion evidence. Visual evidence is acquired through `vision-analysis` with explicit upload authorization, then passed as text to the reviewer. Audit reasoning follows the DeepSeek-first route; Agnes is a text-reasoning fallback only after a verified DeepSeek usage or quota limit. The audit freezes the reviewed commit or diff and maps `USR-* -> REQ-* -> implementation -> evidence -> audit decision`. Record provider, primary model, final model, attempt chain, fallback reason, session, run status, review point, requirement matrix, Blocker/Important/Nitpick counts, and main-Agent spot-check evidence. Tests passing alone never satisfies an independent audit gate.
 
 Any `FAIL`, `NOT_RUN`, unresolved `Blocker`, or unresolved `Important` keeps the checklist open. Continue implementing and re-auditing while feasible. Defer an Important finding only through an explicit user decision. Stop as blocked only for a genuine external inability, not because the remaining work is inconvenient.
 
 ### 10. Handoff And Complete
 
-Update durable state and summarize what changed, what passed, what was not verified, residual risk, current git state, and the exact next action. Non-deployable work may close after its explicit `N/A` delivery fields and independent audit pass. Deployable work remains open after merge until the implementation merge SHA, deployed artifact match, required online checks, recovery status, and a fresh postmerge independent audit are recorded. A metadata-only planning closure commit may follow; identify it separately from the implementation artifact.
+Update durable state and summarize what changed, what passed, what was not verified, residual risk, current git state, and the exact next action. Quick/Standard work closes when the acceptance signal is verified and delivery is complete. High non-deployable work may close after its explicit `N/A` delivery fields and independent audit pass. Deployable work remains open after merge until the implementation merge SHA, deployed artifact match, required online checks, recovery status, and a fresh postmerge independent audit are recorded. A metadata-only planning closure commit may follow; identify it separately from the implementation artifact.
 
 ## Runtime Assistance
 
@@ -215,7 +250,7 @@ node scripts/engineering-route.mjs --kind discovery --risk high --format json
 node scripts/engineering-route.mjs --kind prototype --risk medium
 ```
 
-`align` proves the selected work matches the active milestone, phase, literal roadmap goal, requirement mapping, and any controlled exception. `spec` checks locked requirements, USR source mapping, and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires alignment plus completed research, discussion, context, and accepted plans. `premerge` checks the delivery contract through frozen-review readiness. `postmerge` additionally checks implementation merge SHA, deployed artifact provenance, online evidence, recovery, and closure decision. Phase `complete` requires requirement and goal-criterion evidence, a passing phase audit, summary, no unresolved Blocker or Important, and postmerge evidence when a delivery contract is present. Milestone `complete` additionally requires every member phase complete plus a milestone-wide requirement and goal audit. Task mode supports alignment, premerge, postmerge, and complete gates. `planning` supports tracked storage or a worktree-shared local-private store with explicit lock and revision control; local-private state is excluded from Git and has no automatic backup. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the minimum engineering stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
+`align` proves the selected work matches the active milestone, phase, literal roadmap goal, requirement mapping, and any controlled exception. `spec` checks locked requirements, USR source mapping, and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires alignment plus completed research, discussion, context, and accepted plans. `premerge` checks the delivery contract through frozen-review readiness. `postmerge` additionally checks implementation merge SHA, deployed artifact provenance, online evidence, recovery, and closure decision. Phase `complete` requires requirement and goal-criterion evidence, a passing phase audit, summary, no unresolved Blocker or Important, and postmerge evidence when a delivery contract is present. Milestone `complete` additionally requires every member phase complete plus a milestone-wide requirement and goal audit. Task mode supports alignment, premerge, postmerge, and complete gates. `planning` supports tracked storage or a worktree-shared local-private store with explicit lock and revision control; local-private state is excluded from Git and has no automatic backup. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the tier, shortest default path, and risk-scaled stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
 
 ## Companion Routing
 
@@ -231,6 +266,6 @@ The main workflow owns routing, state, requirements, and completion. Companion s
 
 ## Output Contract
 
-For active work, report the objective and boundary, evidence consulted, decisions, current stage, changed files, verification result, blockers, and next action.
+For active work, report the objective and boundary, evidence consulted, decisions, current stage, changed files, verification result, blockers, and next action. Quick/Standard closure may be one concise paragraph when no durable record was requested. Do not create Linear, wiki, or report work before the implementation and its necessary verification unless that information is needed to understand the requirement.
 
 For closure, report requirement coverage, implementation summary, verification and UAT evidence, audit result, checks not run, residual risk, git or installation state, and handoff notes.

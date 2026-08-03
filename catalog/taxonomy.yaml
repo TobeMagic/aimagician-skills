@@ -247,12 +247,12 @@ skills:
   github-pr-workflow:
     group: operate
     subgroup: github
-    tags: [pull-request, review]
+    tags: [pull-request, review, merge, delivery]
     recommendedScopes: [global]
   linear-issue-workflow:
     group: operate
     subgroup: linear
-    tags: [linear, issue-tracking]
+    tags: [linear, issue-tracking, composio, post-delivery]
     recommendedScopes: [global]
   parallel-worktree-pr-flow:
     group: operate

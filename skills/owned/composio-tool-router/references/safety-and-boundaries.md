@@ -25,6 +25,17 @@ Before real execution, confirm:
 - duplicate execution risk;
 - verification or readback step after success.
 
+## Task-Scoped Closure Authorization
+
+The user may authorize an agent to complete a known Linear ticket after the core delivery is merged. Treat this as valid only when all facts are explicit in the task contract:
+
+- the Linear issue identifier;
+- allowed actions, limited to state transition, PR/commit/test summary comment, and closure when acceptance is satisfied;
+- trigger point, such as after a named PR merges;
+- a readback step and a report of the final result.
+
+It does not authorize creating unrelated issues, changing ownership, editing estimates, posting to other services, or retrying ambiguous mutations. If the actual payload differs materially from the authorization, stop for confirmation.
+
 ## Secret Handling
 
 - Never print API keys, OAuth tokens, refresh tokens, cookies, or raw auth files.

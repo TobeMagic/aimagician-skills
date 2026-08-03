@@ -84,19 +84,45 @@ function parseArgs(argv) {
 
 function buildRoute(options) {
   const route = KINDS[options.kind];
+  const tier = options.risk === "low" ? "Quick" : options.risk === "medium" ? "Standard" : "High";
   const independentReview = options.risk === "low"
-    ? ["specification-and-quality-self-check"]
+    ? []
     : options.risk === "medium"
-      ? ["fresh-specification-review", "fresh-quality-review"]
-      : ["fresh-specification-review", "fresh-quality-review", "specialist-risk-review"];
+      ? ["fresh-quality-review-when-diff-or-risk-justifies-it"]
+      : ["fresh-plan-review", "fresh-specification-review", "fresh-quality-review", "specialist-risk-review-when-applicable"];
+  const defaultPath = tier === "Quick"
+    ? ["lock-target", "implement-surgical-diff", "decisive-verification", "deliver-or-merge", "optional-closure"]
+    : tier === "Standard"
+      ? ["one-round-discussion-if-ambiguous", "implement", "focused-verification", "pull-request-merge", "optional-closure"]
+      : ["discuss-and-brainstorm", "research", "design-and-plan", "implement-with-checkpoints", "review-and-full-verification", "independent-audit-when-required", "merge-and-closure"];
+  const requiredStages = tier === "Quick"
+    ? ["lock-target", "implement-surgical-diff", "decisive-verification", "deliver"]
+    : tier === "Standard"
+      ? ["lock-target", "context-needed-for-change", "implement", "focused-verification", "deliver"]
+      : route.stages;
+  const requiredArtifacts = tier === "Quick"
+    ? ["inline-behavior-contract"]
+    : tier === "Standard"
+      ? ["behavior-contract", "change-brief-when-tradeoff-or-multiple-files"]
+      : route.artifacts;
+  const requiredChecks = tier === "Quick"
+    ? ["decisive-acceptance-check", "diff-scope-check"]
+    : tier === "Standard"
+      ? ["focused-acceptance-check", "regression-check-by-blast-radius", "diff-scope-check"]
+      : route.checks;
 
   return {
     kind: options.kind,
     risk: options.risk,
+    tier,
     focus: route.focus,
-    stages: route.stages,
-    artifacts: route.artifacts,
-    checks: route.checks,
+    default_path: defaultPath,
+    required_stages: requiredStages,
+    optional_stages: tier === "High" ? [] : route.stages.filter((stage) => !requiredStages.includes(stage)),
+    required_artifacts: requiredArtifacts,
+    optional_artifacts: tier === "High" ? [] : route.artifacts.filter((artifact) => !requiredArtifacts.includes(artifact)),
+    required_checks: requiredChecks,
+    optional_checks: tier === "High" ? [] : route.checks.filter((check) => !requiredChecks.includes(check)),
     review_axes: [
       "specification-compliance",
       "engineering-standards-compliance",
@@ -109,20 +135,27 @@ function buildRoute(options) {
     ],
     review_passes: ["specification-compliance", "engineering-standards"],
     independent_review: independentReview,
+    audit: tier === "High"
+      ? "required before phase, milestone, deployable, or explicit completion closure"
+      : "optional unless the user, project policy, or discovered risk requires it",
     completion: "Every accepted requirement has fresh passing evidence; failures, skipped checks, and residual risk are explicit."
   };
 }
 
 function renderText(route) {
   const lines = [
-    `Engineering route: ${route.kind} (${route.risk})`,
+    `Engineering route: ${route.kind} (${route.risk}) -> ${route.tier}`,
     `Focus: ${route.focus}`,
-    "Stages:"
+    `Default path: ${route.default_path.join(" -> ")}`
   ];
-  route.stages.forEach((stage, index) => lines.push(`${index + 1}. ${stage}`));
-  lines.push(`Artifacts: ${route.artifacts.join(", ")}`);
-  lines.push(`Checks: ${route.checks.join(", ")}`);
-  lines.push(`Independent review: ${route.independent_review.join(", ")}`);
+  lines.push(`Required stages: ${route.required_stages.join(", ")}`);
+  lines.push(`Optional stages: ${route.optional_stages.join(", ") || "none"}`);
+  lines.push(`Required artifacts: ${route.required_artifacts.join(", ")}`);
+  lines.push(`Optional artifacts: ${route.optional_artifacts.join(", ") || "none"}`);
+  lines.push(`Required checks: ${route.required_checks.join(", ")}`);
+  lines.push(`Optional checks: ${route.optional_checks.join(", ") || "none"}`);
+  lines.push(`Independent review: ${route.independent_review.join(", ") || "none required by default"}`);
+  lines.push(`Audit: ${route.audit}`);
   lines.push(`Completion: ${route.completion}`);
   return lines.join("\n");
 }

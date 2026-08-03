@@ -56,24 +56,18 @@ skillbird install --category documents --scope project --target claude
 
 ## Workflow
 
-Skillbird keeps one risk-scaled workflow model:
+Skillbird keeps a goal-first, risk-scaled workflow model:
 
-1. Recover the active Skill, planning state, project docs, wiki, and git context.
-2. Lock the active milestone, phase, literal roadmap goal, requirement set, success criteria, and non-goals.
-3. Discuss baseline requirements and create a draft specification when the risk gate requires it.
-4. Research local evidence and current external facts, then compare viable approaches.
-5. Re-discuss changed boundaries and assumptions; lock falsifiable requirements only after ambiguity passes.
-6. Plan atomic requirement-backed tasks and independently review substantial plans.
-7. Build a full-chain context map, then execute with test-first slices, checkpoints, and bounded Agent roles.
-8. Delegate broad discovery, deep research, eligible simple short execution tasks, bounded checks, and fresh independent reviews to OpenCode while the main Agent keeps macro decisions.
-9. Review specification compliance before code quality.
-10. Complete all practical local checks before CI; reserve preview and online checks for behavior that cannot be proven locally.
-11. Verify request-to-requirement-to-roadmap-goal-to-evidence traceability and run user-facing UAT.
-12. Run a fresh independent OpenCode audit against a frozen commit or stable worktree.
-13. For deployable work, keep the checklist open through merge, artifact provenance, and postmerge online verification.
-14. Hand off and close only when every accepted requirement and goal criterion passes and no `Blocker` or unresolved `Important` remains.
+1. Classify the request into `Quick`, `Standard`, or `High` by scope, risk, and impact.
+2. For `Quick`/`Standard` work, lock the target, acceptance signal, file scope, and decisive verification without heavy planning overhead.
+3. For `High`, phase, or milestone work, recover context and lock the active milestone, phase, roadmap goal, requirements, and success criteria.
+4. Discuss requirements only when ambiguity materially changes scope, risk, or acceptance; research when local evidence affects the design.
+5. Execute surgically, run the decisive verification command, and create or update the PR once the target behavior is proven.
+6. Delegate bounded discovery, research, verification, or independent review to OpenCode when it materially saves context or improves confidence.
+7. Run independent OpenCode audits for `High` work, phase/milestone closure, deployable postmerge evidence, or when explicitly requested.
+8. Close the task after the verified deliverable is merged or ready; perform Linear/wiki/report updates afterwards only when a ticket, project policy, or user request makes them useful.
 
-The workflow stays light for a reversible one- or two-file edit. Public APIs, schema/data changes, security, integrations, UI/AI contracts, production state, cross-module work, and multi-Agent execution use a formal `SPEC.md` with an ambiguity gate.
+The workflow stays light by default for reversible one- or two-file edits, docs, and configuration work. Public APIs, schema/data changes, security, integrations, UI/AI contracts, production state, cross-module work, and multi-Agent execution escalate to the formal `SPEC.md` / independent review path.
 
 The installed skill includes a dependency-free runtime:
 
@@ -98,11 +92,13 @@ node scripts/workflow.mjs init --project <path> --milestone <milestone-id> --wri
 node scripts/workflow.mjs validate --project <path> --milestone <milestone-id> --gate complete
 ```
 
-The `align` gate prevents work from drifting away from the active milestone, phase, literal roadmap goal, and requirements. The `execute` gate additionally requires completed research, renewed discussion, full-chain implementation context, requirement-mapped plans, and explicit plan acceptance. `premerge` requires local and CI evidence, resolved online-only exceptions, artifact provenance, and `MERGE_READY`; `postmerge` additionally requires the implementation merge SHA, deployed artifact match, online evidence, recovery status, and `ONLINE_CONFIRMED`. Deployable work is not complete at merge.
+For phase-managed or High work, the `align` gate prevents work from drifting away from the active milestone, phase, literal roadmap goal, and requirements. Its `execute` gate adds research, discussion, full-chain context, requirement-mapped plans, and explicit plan acceptance. Use `premerge` and `postmerge` only where deployment evidence is part of the accepted delivery contract. Quick and Standard work use a compact behavior contract, focused verification, and the repository's actual merge protections rather than generating planning artifacts.
 
 Planning can remain tracked or use one local-private store shared by every worktree under the repository's Git common directory. The runtime attaches worktrees, excludes `/.planning` through Git's local exclude file, and provides short write leases with revision conflict detection. Local-private planning has no automatic backup and is lost with the clone.
 
-Lightweight work uses `.planning/tasks/<task-id>.md`; phase completion requires requirement and `GOAL-*` evidence, while milestone completion rechecks every member phase and runs a milestone-wide audit. Every completion claim requires a frozen independent OpenCode review point, model attempt provenance, and a main-Agent spot-check. Visual evidence is acquired directly by `vision-analysis` with explicit upload authorization and passed as text to DeepSeek reasoning. Agnes is the OpenCode text fallback only after a verified DeepSeek usage or quota limit. `init` previews project, phase, task, or milestone artifacts and writes only with `--write`; it never overwrites existing files or follows an unapproved planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
+Lightweight work may use a concise PR description and verification evidence; phase and milestone work use `.planning/tasks/<task-id>.md` plus requirement and `GOAL-*` evidence. High, phase, milestone, deployable-postmerge, policy-required, or explicitly requested closure gets a frozen independent OpenCode review point, model attempt provenance, and a main-Agent spot-check. Visual evidence is acquired directly by `vision-analysis` with explicit upload authorization and passed as text to DeepSeek reasoning. Agnes is the OpenCode text fallback only after a verified DeepSeek usage or quota limit. `init` previews project, phase, task, or milestone artifacts and writes only with `--write`; it never overwrites existing files or follows an unapproved planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
+
+Linear is managed only through `composio-tool-router` and Composio CLI, never through Linear MCP. If Linear context is not needed to understand the requirement, OpenCode performs the approved post-merge status/comment/closure work as a bounded task after core delivery. The first PR in a project resolves its integration branch from project evidence; no global `dev` default is assumed.
 
 The delegated runtime caches `opencode models --verbose`, uses the current positional prompt syntax, streams progress until the worker exits, and returns free candidates for controller judgment when DeepSeek is absent:
 

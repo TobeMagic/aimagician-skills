@@ -7,15 +7,15 @@ Use this task family to create a fresh evidence-based challenge to a plan, imple
 | Work class | Required independent gate |
 |---|---|
 | One- or two-file read-only lookup | None |
-| Bounded quick write | One combined pre-commit specification, quality, verification, and completion review |
+| Bounded quick write | Decisive controller verification; add one combined pre-commit review only when project policy, diff risk, or a user request justifies it |
 | Substantial implementation | Plan review before execution; specification review; quality review; verifier |
 | Phase closure | Phase auditor after verification |
-| Milestone, release, or complete claim | Fresh whole-result auditor |
+| Milestone, release, deployable postmerge, or High completion claim | Fresh whole-result auditor |
 | High-risk security, data, concurrency, migration, or architecture work | Additional focused reviewer where the axis is independent |
 
 Use a fresh OpenCode session or context for each logically independent review pass. Do not ask the implementer to approve its own work.
 
-Any row that ends with a completion claim uses a fresh OpenCode session, the normal DeepSeek-first non-visual route, and original-request traceability. Visual evidence comes from a vision-capable worker. Passing tests without a requirement-by-requirement audit is not completion evidence.
+Every audit-required row uses a fresh OpenCode session, the normal DeepSeek-first non-visual route, and original-request traceability. Visual evidence comes from a vision-capable worker. For Quick and Standard closure, passing the decisive behavior check plus the repository's actual merge protections is sufficient unless a required audit trigger applies.
 
 ## Freeze The Review Point
 
