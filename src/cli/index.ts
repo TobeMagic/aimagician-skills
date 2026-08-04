@@ -512,7 +512,7 @@ function renderHelp(): string {
     "  --yes, -y     Confirm an Agent-mode write, or confirm reset in human mode",
     "  --include-archived  Show or install archived owned skills",
     "  --dry-run     Print bootstrap/install/reset intent without applying changes",
-    "  --clean       Wipe all target skill/plugin dirs before install (bootstrap only)",
+    "  --clean       Rebuild target skill/plugin dirs; preserve Codex .system skills (bootstrap only)",
     "  --json        Render machine-readable output",
     "  --agent       Stable JSON, no interaction, writes preview unless --yes is present",
     "  -h, --help    Show command help"

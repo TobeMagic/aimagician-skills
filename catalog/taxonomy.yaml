@@ -59,6 +59,12 @@ skills:
     subgroup: skills
     tags: [skills, authoring, taxonomy]
     recommendedScopes: [global]
+  darwin:
+    group: build
+    subgroup: skill-quality
+    tags: [skills, evaluation, optimization, regression, quality, rollback]
+    recommendedScopes: [global]
+    description: "Validate and improve an existing Skill with baselines, targeted edits, independent comparison, regression checks, and reversible keep-or-revert decisions."
   system-prompt-engineering:
     group: build
     subgroup: prompt-engineering
@@ -139,6 +145,18 @@ skills:
     subgroup: repo-analysis
     tags: [interview, evidence, repo]
     recommendedScopes: [project]
+  cangjie:
+    group: research
+    subgroup: knowledge-distillation
+    tags: [distillation, books, methodology, extraction, skill-authoring, evidence]
+    recommendedScopes: [project]
+    description: "Convert long-form source material into evidence-grounded, executable, reusable Skills with explicit triggers, boundaries, and tests."
+  nuwa:
+    group: research
+    subgroup: cognitive-distillation
+    tags: [distillation, reasoning, decision-making, perspective, research, uncertainty]
+    recommendedScopes: [global]
+    description: "Distill a subject's evidenced reasoning patterns into a bounded decision-advisor Skill without inventing private beliefs or certainty."
 
   interface-design:
     group: design

@@ -27,6 +27,12 @@ TBD
 
 - TBD
 
+## Project Context Promotion
+
+| Action | Context ID | Project context entry | Source phase | Result |
+|---|---|---|---|---|
+| NO_CHANGE | NONE | No durable cross-phase architecture or decision change | {{PHASE}} | PASS |
+
 ## Handoff
 
 - Current git or worktree state: TBD

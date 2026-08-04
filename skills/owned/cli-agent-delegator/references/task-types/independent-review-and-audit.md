@@ -15,7 +15,7 @@ Use this task family to create a fresh evidence-based challenge to a plan, imple
 
 Use a fresh OpenCode session or context for each logically independent review pass. Do not ask the implementer to approve its own work.
 
-Every audit-required row uses a fresh OpenCode session, the normal DeepSeek-first non-visual route, and original-request traceability. Visual evidence comes from a vision-capable worker. For Quick and Standard closure, passing the decisive behavior check plus the repository's actual merge protections is sufficient unless a required audit trigger applies.
+Every audit-required row uses a fresh OpenCode session, an explicitly controller-selected free model chain, and original-request traceability. Visual evidence comes from `vision-analysis`; the controller then selects the text reviewer for the audit's difficulty and records the rationale. For Quick and Standard closure, passing the decisive behavior check plus the repository's actual merge protections is sufficient unless a required audit trigger applies.
 
 ## Freeze The Review Point
 

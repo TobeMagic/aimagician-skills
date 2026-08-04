@@ -24,6 +24,8 @@ describe("aimagician-superpower workflow runtime", () => {
     expect(preview.exitCode).toBe(0);
     const previewResult = JSON.parse(preview.stdout) as { mode: string; planned: string[] };
     expect(previewResult.mode).toBe("preview");
+    expect(previewResult.planned).toContain(".planning/PROJECT.md");
+    expect(previewResult.planned).toContain(".planning/CONTEXT.md");
     expect(previewResult.planned).toContain(".planning/phases/01-runtime/01-SPEC.md");
     expect(previewResult.planned).toContain(".planning/REQUESTS.md");
     await expect(access(join(project, ".planning"), constants.F_OK)).rejects.toMatchObject({ code: "ENOENT" });
@@ -207,6 +209,63 @@ describe("aimagician-superpower workflow runtime", () => {
       .toContainEqual(expect.objectContaining({ code: "AUDIT_AGNES_FALLBACK_INVALID" }));
   });
 
+  it("requires model rationale and chain provenance for v2 audit records while preserving legacy records", async () => {
+    const project = await makeProject();
+    await mkdir(join(project, ".planning", "tasks"), { recursive: true });
+    await writeFile(join(project, ".planning", "REQUESTS.md"), validRequests(), "utf8");
+    const taskPath = join(project, ".planning", "tasks", "quick-fix.md");
+    await writeFile(taskPath, validNeutralTask().replace(
+      "- **Provider:** OpenCode",
+      "- **Result schema:** v2\n- **Provider:** OpenCode"
+    ), "utf8");
+    const incomplete = await runNode(workflowScript, [
+      "validate", "--project", project, "--task", "quick-fix", "--gate", "complete", "--format", "json"
+    ]);
+    expect(incomplete.exitCode).toBe(1);
+    expect((JSON.parse(incomplete.stdout) as { findings: Array<{ code: string }> }).findings.map((item) => item.code))
+      .toEqual(expect.arrayContaining([
+        "AUDIT_MODEL_RATIONALE_MISSING",
+        "AUDIT_DECLARED_CHAIN_MISSING",
+        "AUDIT_EFFECTIVE_CHAIN_MISSING",
+        "AUDIT_TRANSITIONS_MISSING"
+      ]));
+
+    await writeFile(taskPath, validNeutralTask().replace(
+      "- **Provider:** OpenCode",
+      `- **Result schema:** v2
+- **Provider:** OpenCode
+- **Model selection rationale:** Best active free model for a bounded audit.
+- **Declared model chain:** \`opencode/deepseek-v4-flash-free\`
+- **Effective model chain:** \`opencode/deepseek-v4-flash-free -> agnes/agnes-2.0-flash\`
+- **Model transitions:** NONE`
+    ), "utf8");
+    const complete = await runNode(workflowScript, [
+      "validate", "--project", project, "--task", "quick-fix", "--gate", "complete", "--format", "json"
+    ]);
+    expect(complete.exitCode).toBe(0);
+  });
+
+  it("blocks planning-managed alignment when canonical project context is missing or unresolved", async () => {
+    const fixture = await makeInitializedPhase();
+    await writeFile(fixture.specPath, validSpec(), "utf8");
+    await unlink(join(fixture.project, ".planning", "CONTEXT.md"));
+    const missing = await runNode(workflowScript, [
+      "validate", "--project", fixture.project, "--phase", "01", "--gate", "align", "--format", "json"
+    ]);
+    expect(missing.exitCode).toBe(1);
+    expect((JSON.parse(missing.stdout) as { findings: Array<{ code: string }> }).findings)
+      .toContainEqual(expect.objectContaining({ code: "CONTEXT_MIGRATION_REQUIRED" }));
+
+    await writeValidPlanningContext(fixture.project);
+    await writeFile(join(fixture.project, ".planning", "PROJECT.md"), "# Project\n\n## Purpose\n\nTBD\n", "utf8");
+    const unresolved = await runNode(workflowScript, [
+      "validate", "--project", fixture.project, "--phase", "01", "--gate", "align", "--format", "json"
+    ]);
+    expect(unresolved.exitCode).toBe(1);
+    expect((JSON.parse(unresolved.stdout) as { findings: Array<{ code: string }> }).findings.map((item) => item.code))
+      .toEqual(expect.arrayContaining(["ALIGN_PROJECT_SECTION_MISSING", "ALIGN_PROJECT_PLACEHOLDER"]));
+  });
+
   it("enforces specification scoring and reports stable finding codes", async () => {
     const fixture = await makeInitializedPhase();
     await writeFile(fixture.specPath, validSpec().replace("**Ambiguity:** 0.12", "**Ambiguity:** 0.40"), "utf8");
@@ -335,6 +394,48 @@ describe("aimagician-superpower workflow runtime", () => {
     expect(JSON.parse(next.stdout)).toMatchObject({ status: "complete", nextAction: "No workflow action remains for this phase." });
   });
 
+  it("requires an explicit project-context promotion decision after adoption", async () => {
+    const fixture = await makeInitializedPhase();
+    await writeFile(fixture.specPath, validSpec(), "utf8");
+    await writeFile(fixture.planPath, validPlan(), "utf8");
+    await writeFile(fixture.researchPath, validResearch(), "utf8");
+    await writeFile(fixture.discussionPath, validDiscussion(), "utf8");
+    await writeFile(fixture.contextPath, validContext(), "utf8");
+    await writeFile(fixture.validationPath, validValidation(), "utf8");
+    await writeFile(fixture.auditPath, validAudit(), "utf8");
+    await writeFile(join(fixture.project, ".planning", "config.json"), JSON.stringify({
+      context_schema: 1,
+      context_adoption_phase: 1
+    }), "utf8");
+    await writeFile(fixture.summaryPath, "# Summary\n\n**Status:** Complete\n\n## Outcome\n\nRuntime behavior is verified.\n", "utf8");
+
+    const missing = await runNode(workflowScript, [
+      "validate", "--project", fixture.project, "--phase", "01", "--gate", "complete", "--format", "json"
+    ]);
+    expect(missing.exitCode).toBe(1);
+    expect((JSON.parse(missing.stdout) as { findings: Array<{ code: string }> }).findings)
+      .toContainEqual(expect.objectContaining({ code: "CONTEXT_PROMOTION_MISSING" }));
+
+    await writeFile(fixture.summaryPath, `# Summary
+
+**Status:** Complete
+
+## Outcome
+
+Runtime behavior is verified.
+
+## Project Context Promotion
+
+| Action | Context ID | Project context entry | Source phase | Result |
+|---|---|---|---|---|
+| NO_CHANGE | NONE | No durable cross-phase change | 01 | PASS |
+`, "utf8");
+    const complete = await runNode(workflowScript, [
+      "validate", "--project", fixture.project, "--phase", "01", "--gate", "complete", "--format", "json"
+    ]);
+    expect(complete.exitCode).toBe(0);
+  });
+
   it("does not accept passing requirement tests without roadmap goal evidence", async () => {
     const fixture = await makeInitializedPhase();
     await writeFile(fixture.specPath, validSpec(), "utf8");
@@ -362,6 +463,7 @@ describe("aimagician-superpower workflow runtime", () => {
     await runNode(workflowScript, ["init", "--project", project, "--task", "urgent-fix", "--write", "--format", "json"]);
     await writeFile(join(project, ".planning", "REQUESTS.md"), validRequests(), "utf8");
     await writeFile(join(project, ".planning", "STATE.md"), validState(), "utf8");
+    await writeValidPlanningContext(project);
     await writeFile(join(project, ".planning", "tasks", "urgent-fix.md"), validNeutralTask().replaceAll("quick-fix", "urgent-fix"), "utf8");
 
     const missing = await runNode(workflowScript, [
@@ -388,7 +490,24 @@ describe("aimagician-superpower workflow runtime", () => {
     await writeFile(fixture.contextPath, validContext(), "utf8");
     await writeFile(fixture.validationPath, validValidation(), "utf8");
     await writeFile(fixture.auditPath, validAudit(), "utf8");
-    await writeFile(fixture.summaryPath, "# Summary\n\n**Status:** Complete\n\n## Outcome\n\nRuntime behavior is verified.\n", "utf8");
+    await writeFile(join(fixture.project, ".planning", "config.json"), JSON.stringify({
+      context_schema: 1,
+      context_adoption_phase: 1
+    }), "utf8");
+    await writeFile(fixture.summaryPath, `# Summary
+
+**Status:** Complete
+
+## Outcome
+
+Runtime behavior is verified.
+
+## Project Context Promotion
+
+| Action | Context ID | Project context entry | Source phase | Result |
+|---|---|---|---|---|
+| NO_CHANGE | NONE | No durable cross-phase change | 01 | PASS |
+`, "utf8");
     await writeFile(join(fixture.project, ".planning", "ROADMAP.md"), validRoadmap("Complete"), "utf8");
     await writeFile(join(fixture.project, ".planning", "REQUIREMENTS.md"), validProjectRequirements("Complete"), "utf8");
 
@@ -399,6 +518,50 @@ describe("aimagician-superpower workflow runtime", () => {
     const milestoneDir = join(fixture.project, ".planning", "milestones", "test-v1");
     await writeFile(join(milestoneDir, "MILESTONE-AUDIT.md"), validMilestoneAudit(), "utf8");
     await writeFile(join(milestoneDir, "MILESTONE-SUMMARY.md"), "# Milestone Summary\n\n**Status:** Complete\n\n## Outcome\n\nAll phase goals passed.\n", "utf8");
+
+    const missingPromotion = await runNode(workflowScript, [
+      "validate", "--project", fixture.project, "--milestone", "test-v1", "--gate", "complete", "--format", "json"
+    ]);
+    expect(missingPromotion.exitCode).toBe(1);
+    expect((JSON.parse(missingPromotion.stdout) as { findings: Array<{ code: string }> }).findings)
+      .toContainEqual(expect.objectContaining({ code: "MILESTONE_CONTEXT_PROMOTION_MISSING" }));
+
+    await writeFile(join(milestoneDir, "MILESTONE-SUMMARY.md"), `# Milestone Summary
+
+**Status:** Complete
+
+## Outcome
+
+All phase goals passed.
+
+## Project Context Promotion
+
+| Action | Context ID | Project context entry | Source milestone | Result |
+|---|---|---|---|---|
+| PROMOTE | CTX-ARCH-00 | Prefixes must not match another context ID | test-v1 | PASS |
+`, "utf8");
+
+    const prefixCollision = await runNode(workflowScript, [
+      "validate", "--project", fixture.project, "--milestone", "test-v1", "--gate", "complete", "--format", "json"
+    ]);
+    expect(prefixCollision.exitCode).toBe(1);
+    expect((JSON.parse(prefixCollision.stdout) as { findings: Array<{ code: string }> }).findings)
+      .toContainEqual(expect.objectContaining({ code: "MILESTONE_CONTEXT_PROMOTION_ENTRY_MISSING" }));
+
+    await writeFile(join(milestoneDir, "MILESTONE-SUMMARY.md"), `# Milestone Summary
+
+**Status:** Complete
+
+## Outcome
+
+All phase goals passed.
+
+## Project Context Promotion
+
+| Action | Context ID | Project context entry | Source milestone | Result |
+|---|---|---|---|---|
+| PROMOTE | CTX-ARCH-001 | Validation remains non-mutating | test-v1 | PASS |
+`, "utf8");
 
     const complete = await runNode(workflowScript, [
       "validate", "--project", fixture.project, "--milestone", "test-v1", "--gate", "complete", "--format", "json"
@@ -511,6 +674,7 @@ async function makeInitializedPhase(): Promise<{
   await writeFile(join(project, ".planning", "STATE.md"), validState(), "utf8");
   await writeFile(join(project, ".planning", "ROADMAP.md"), validRoadmap(), "utf8");
   await writeFile(join(project, ".planning", "REQUIREMENTS.md"), validProjectRequirements(), "utf8");
+  await writeValidPlanningContext(project);
   const phaseDir = join(project, ".planning", "phases", "01-runtime");
   return {
     project,
@@ -524,6 +688,75 @@ async function makeInitializedPhase(): Promise<{
     auditPath: join(phaseDir, "01-AUDIT.md"),
     summaryPath: join(phaseDir, "01-SUMMARY.md")
   };
+}
+
+async function writeValidPlanningContext(project: string): Promise<void> {
+  await writeFile(join(project, ".planning", "PROJECT.md"), `# Project
+
+**Updated:** 2026-08-03
+
+## Purpose
+
+Provide deterministic workflow validation for engineering agents.
+
+## Current Milestone
+
+- Milestone: test-v1
+- Goal: Validate runtime workflow behavior.
+
+## Scope
+
+- In scope: Workflow runtime and tests.
+- Out of scope: Production deployment.
+
+## Constraints
+
+- Preserve dependency-free execution.
+
+## Key Decisions
+
+- Planning artifacts are the durable source of truth.
+`, "utf8");
+  await writeFile(join(project, ".planning", "CONTEXT.md"), `# Project Context
+
+**Context schema:** v1
+**Adoption source:** USR-TEST-001
+**Last reviewed:** 2026-08-03
+
+## Architecture Snapshot
+
+The workflow runtime reads Markdown planning artifacts and emits deterministic findings.
+
+## Stable Boundaries And Invariants
+
+| ID | Contract | Canonical source | Status |
+|---|---|---|---|
+| CTX-ARCH-001 | Validation is non-mutating. | \`workflow.mjs\` | Active |
+
+## Durable Decisions
+
+| ID | Decision | Source | Status | Supersedes |
+|---|---|---|---|---|
+| CTX-DEC-001 | Keep validation dependency-free. | USR-TEST-001 | Active | NONE |
+
+## Verification And Delivery Baseline
+
+- Run focused runtime tests before closure.
+
+## Source Routing
+
+| Source ID | Topic | Path | Policy | Authority |
+|---|---|---|---|---|
+| SRC-STATE | Active checkpoint | \`.planning/STATE.md\` | MUST_READ on resume | Planning state |
+
+## Superseded Decisions
+
+- None.
+
+## Open Questions
+
+- None.
+`, "utf8");
 }
 
 function validSpec(): string {

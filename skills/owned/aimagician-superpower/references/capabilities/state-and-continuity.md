@@ -6,15 +6,19 @@ Use this module when work spans turns, phases, agents, worktrees, risky operatio
 
 1. Latest explicit user decision.
 2. Locked phase specification and accepted requirement IDs.
-3. Current planning state, roadmap, phase context, and plans.
-4. Project docs and knowledge base.
+3. `.planning/PROJECT.md`, `.planning/CONTEXT.md`, current state, roadmap, active phase context, and plans.
+4. Routed project docs and knowledge-base pages.
 5. Filesystem, tests, runtime evidence, and git state.
 
 When these disagree, do not silently choose the convenient source. Resolve material conflicts before mutation.
 
+Recency and authority serve different purposes. Read the newest relevant task, phase, or handoff record first to locate the active checkpoint and routed sources. Then resolve claims using the authority order above. A recent summary does not override a locked requirement, canonical project decision, or observed runtime result.
+
 ## Durable State Model
 
 - `.planning/STATE.md`: active milestone or phase, status, blocker, next action, and resume checkpoint.
+- `.planning/PROJECT.md`: durable product purpose, users, boundaries, delivery shape, and project-level constraints.
+- `.planning/CONTEXT.md`: versioned project-wide architecture, ownership boundaries, invariants, adopted decisions, verification baseline, source routing, superseded decisions, and material open questions.
 - `.planning/ROADMAP.md`: ordered outcomes, dependencies, requirements, and phase status.
 - `.planning/REQUIREMENTS.md`: durable project requirements and acceptance IDs.
 - `.planning/phases/<phase>/`: specification, discussion, research, context, plans, validation, UAT, audit, and summary.
@@ -44,13 +48,13 @@ All worktrees resolve to the same local-private root. Before a writer changes sh
 ## Resume Protocol
 
 1. Reload the main skill.
-2. Read state, roadmap, requirements, active specification, context, discussion, research, plans, validation, audit, and summary. Extract the active milestone, phase, literal roadmap goal, `GOAL-*` criteria, and `REQ-*` set.
-3. Read project docs and the project knowledge base.
-4. Inspect git status and recent relevant commits.
-5. Identify the last requirement-backed checkpoint and unverified work after it.
-6. Run `node scripts/workflow.mjs validate ... --gate align`, then `status ...` or `next ...` when the work uses supported artifacts.
-7. State known facts, unavailable sources, conflicts, blockers, and the next safe action.
-8. Continue from the checkpoint; do not repeat solved research or skip an incomplete gate.
+2. Read the latest user instruction, git status, and newest relevant active phase/task/handoff record to locate the current checkpoint.
+3. Read state, `PROJECT.md`, `CONTEXT.md`, roadmap, requirements, and the active specification. Follow routed source links only to discussion, research, plans, validation, audit, summary, project docs, or wiki pages that can change the next action.
+4. Extract the active milestone, phase, literal roadmap goal, `GOAL-*` criteria, `REQ-*` set, adopted architecture constraints, and verification baseline.
+5. Inspect recent relevant commits and identify unverified work after the last requirement-backed checkpoint.
+6. Resolve material contradictions or uncertainty with the user. Local reversible assumptions may proceed only when recorded and isolated from behavior, architecture, interfaces, data, security, scope, acceptance, and irreversible actions.
+7. Run `node scripts/workflow.mjs validate ... --gate align`, then `status ...` or `next ...` when the work uses supported artifacts.
+8. State known facts, unavailable sources, conflicts, blockers, and the next safe action, then continue without repeating solved research or skipping an incomplete gate.
 
 When planning is local-private, run `planning --action attach --write` after creating or entering a new worktree, then acquire a lease before updating shared planning records.
 
@@ -75,6 +79,18 @@ Record after each meaningful unit:
 - For an interrupted write operation, inspect resulting state before retrying.
 
 Use `workflow.mjs trace` before closure so the next agent can distinguish completed implementation from unsupported claims.
+
+## Context Promotion
+
+At phase closure, review phase discussion, research, design, implementation, validation, audit, and summary for information that future phases must inherit. Promote only durable project-wide knowledge into `.planning/CONTEXT.md`:
+
+- architecture and ownership boundaries;
+- invariants and public interface contracts;
+- adopted decisions and their rationale/source;
+- verification commands or environment constraints that remain current;
+- source index changes and superseded decisions.
+
+Keep transient progress, raw research, command logs, and phase-local implementation detail in the phase artifacts. The phase summary records each promotion target and evidence, or explicitly records `NO_CHANGE`. At milestone closure, repeat the synthesis across all member phases and record a milestone-level `PROMOTE`, `SUPERSEDE`, or `NO_CHANGE` decision. Completion validators block adopted phases and milestones when their respective promotion records are missing or unresolved.
 
 ## Drift And Exception Control
 

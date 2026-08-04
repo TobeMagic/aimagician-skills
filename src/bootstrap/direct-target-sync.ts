@@ -1,5 +1,5 @@
-import { dirname, normalize, sep } from "node:path";
-import { cp, mkdir, rm } from "node:fs/promises";
+import { basename, dirname, join, normalize, sep } from "node:path";
+import { cp, mkdir, readdir, rm } from "node:fs/promises";
 import type { SupportedTarget } from "../model/targets";
 import type { BootstrapManifestManagedInstall } from "./manifest";
 import type { ResolvedManagedInstall } from "./source-resolution";
@@ -8,15 +8,19 @@ import { digestManagedContent } from "../shared/content-digest";
 
 export interface SyncManagedInstallsOptions {
   allowedRootsByTarget: Record<SupportedTarget, string[]>;
+  skillRootsByTarget?: Partial<Record<SupportedTarget, string[]>>;
+  unmanagedSkillPathsByTarget?: Partial<Record<SupportedTarget, string[]>>;
   selectedTargets: SupportedTarget[];
   installs: ResolvedManagedInstall[];
   previousInstalls: BootstrapManifestManagedInstall[];
   pruneMissing?: boolean;
+  pruneUnmanagedSkills?: boolean;
 }
 
 export interface ManagedInstallSyncResult {
   target: SupportedTarget;
   installs: BootstrapManifestManagedInstall[];
+  removedCount: number;
 }
 
 export type ManagedInstallSyncOperation =
@@ -67,6 +71,7 @@ export function planManagedInstallSync(
 ): ManagedInstallSyncOperation[] {
   const operations: ManagedInstallSyncOperation[] = [];
   const pruneMissing = options.pruneMissing ?? true;
+  const pruneUnmanagedSkills = options.pruneUnmanagedSkills ?? true;
 
   for (const target of options.selectedTargets) {
     const desiredInstalls = options.installs
@@ -82,6 +87,7 @@ export function planManagedInstallSync(
       previousInstalls.map((install) => normalize(install.destinationPath))
     );
     const allowedRoots = options.allowedRootsByTarget[target] ?? [];
+    const removedPaths = new Set<string>();
 
     for (const install of previousInstalls) {
       const normalizedPath = normalize(install.destinationPath);
@@ -94,6 +100,32 @@ export function planManagedInstallSync(
         operations.push(toSkipOperation(install));
       } else if (pruneMissing) {
         operations.push(toRemoveOperation(install));
+        removedPaths.add(normalizedPath);
+      }
+    }
+
+    if (pruneUnmanagedSkills) {
+      for (const path of options.unmanagedSkillPathsByTarget?.[target] ?? []) {
+        const normalizedPath = normalize(path);
+
+        if (
+          desiredPaths.has(normalizedPath) ||
+          removedPaths.has(normalizedPath) ||
+          !isManagedPath(normalizedPath, allowedRoots)
+        ) {
+          continue;
+        }
+
+        operations.push(toRemoveOperation({
+          target,
+          assetId: basename(normalizedPath),
+          kind: "skill",
+          origin: "external",
+          destinationPath: normalizedPath,
+          installType: "directory",
+          installArea: "skills"
+        }));
+        removedPaths.add(normalizedPath);
       }
     }
 
@@ -110,6 +142,7 @@ export async function syncManagedInstalls(
 ): Promise<ManagedInstallSyncResult[]> {
   const operations = planManagedInstallSync(options);
   const installsByTarget = new Map<SupportedTarget, BootstrapManifestManagedInstall[]>();
+  const removedByTarget = new Map<SupportedTarget, number>();
   const writeOperations = operations.filter(
     (operation): operation is ManagedInstallWriteOperation =>
       operation.kind === "create" || operation.kind === "overwrite"
@@ -132,6 +165,7 @@ export async function syncManagedInstalls(
     }
 
     installsByTarget.set(target, []);
+    removedByTarget.set(target, 0);
   }
 
   for (const operation of operations) {
@@ -144,6 +178,10 @@ export async function syncManagedInstalls(
         recursive: operation.installType === "directory",
         force: true
       });
+      removedByTarget.set(
+        operation.target,
+        (removedByTarget.get(operation.target) ?? 0) + 1
+      );
       continue;
     }
 
@@ -176,8 +214,74 @@ export async function syncManagedInstalls(
 
   return options.selectedTargets.map((target) => ({
     target,
-    installs: installsByTarget.get(target) ?? []
+    installs: installsByTarget.get(target) ?? [],
+    removedCount: removedByTarget.get(target) ?? 0
   }));
+}
+
+export interface DiscoverUnmanagedSkillPathsOptions {
+  selectedTargets: SupportedTarget[];
+  skillRootsByTarget: Partial<Record<SupportedTarget, string[]>>;
+  installs: ResolvedManagedInstall[];
+  protectedSkillDirectoryNamesByTarget?: Partial<Record<SupportedTarget, string[]>>;
+}
+
+export async function discoverUnmanagedSkillPaths(
+  options: DiscoverUnmanagedSkillPathsOptions
+): Promise<Partial<Record<SupportedTarget, string[]>>> {
+  const result: Partial<Record<SupportedTarget, string[]>> = {};
+
+  for (const target of options.selectedTargets) {
+    const desiredPaths = new Set(
+      options.installs
+        .filter((install) => install.target === target && install.kind === "skill")
+        .map((install) => normalize(install.destinationPath))
+    );
+    const protectedNames = new Set(
+      options.protectedSkillDirectoryNamesByTarget?.[target] ?? []
+    );
+    const unmanagedPaths: string[] = [];
+
+    for (const root of options.skillRootsByTarget[target] ?? []) {
+      for (const entry of await readSkillRoot(root)) {
+        if (!entry.isDirectory() || protectedNames.has(entry.name)) {
+          continue;
+        }
+
+        const skillPath = normalize(join(root, entry.name));
+        if (desiredPaths.has(skillPath)) {
+          continue;
+        }
+
+        try {
+          const skillEntries = await readdir(skillPath);
+          if (skillEntries.includes("SKILL.md")) {
+            unmanagedPaths.push(skillPath);
+          }
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+            throw error;
+          }
+        }
+      }
+    }
+
+    result[target] = [...new Set(unmanagedPaths)].sort();
+  }
+
+  return result;
+}
+
+async function readSkillRoot(root: string) {
+  try {
+    return await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+
+    throw error;
+  }
 }
 
 function isManagedPath(path: string, allowedRoots: string[]): boolean {

@@ -51,7 +51,7 @@ GIT_POLICY: inspect-only
 ROLE: visual-inspector
 TASK_TYPE: discovery
 MODALITY: vision
-MODEL_POLICY: vision-analysis evidence then DeepSeek reasoning
+MODEL_POLICY: vision-analysis evidence, then explicit controller-selected reasoning model and ordered fallbacks
 PERMISSION_MODE: strict-read-only
 OBJECTIVE: Inspect the authorized assets against <observable criteria>.
 REQUIRED_SKILLS: cli-agent-delegator, vision-analysis, <domain skill when needed>
@@ -73,4 +73,4 @@ GIT_POLICY: inspect-only
 STOP_AND_ESCALATE_WHEN: review point moves, required source is missing, or a check needs new permission
 ```
 
-The controller records the selected provider and model outside the task body. For non-visual work, DeepSeek is the default. If it is absent, the controller chooses from live free candidates and records why; the recipe never encodes a fallback ranking.
+The controller records the selected primary, rationale, and ordered fallback chain outside the task body. Choose from current active free worker candidates for the task; the recipe never encodes a fixed quality ranking. The runtime appends Agnes once as the final fallback when available.

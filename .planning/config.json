@@ -4,6 +4,8 @@
   "parallelization": true,
   "commit_docs": true,
   "model_profile": "balanced",
+  "context_schema": 1,
+  "context_adoption_phase": 28,
   "workflow": {
     "research": true,
     "plan_check": true,

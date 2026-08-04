@@ -1,4 +1,5 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { CatalogLoadOptions } from "../catalog/load-catalog";
 import { type SupportedTarget, supportedTargets } from "../model/targets";
 import {
@@ -13,6 +14,7 @@ import {
 } from "./command-sources";
 import {
   planManagedInstallSync,
+  discoverUnmanagedSkillPaths,
   syncManagedInstalls,
   type ManagedInstallSyncOperation
 } from "./direct-target-sync";
@@ -103,8 +105,17 @@ export async function runBootstrap(
       githubRepoOverrides: options.githubRepoOverrides
     });
     const allowedRootsByTarget = createAllowedRootsByTarget(targetHomes);
+    const skillRootsByTarget = createSkillRootsByTarget(targetHomes);
+    const unmanagedSkillPathsByTarget = await discoverUnmanagedSkillPaths({
+      selectedTargets,
+      skillRootsByTarget,
+      installs: skillInstalls,
+      protectedSkillDirectoryNamesByTarget: protectedSkillDirectoryNamesByTarget()
+    });
     const syncOperations = planManagedInstallSync({
       allowedRootsByTarget,
+      skillRootsByTarget,
+      unmanagedSkillPathsByTarget,
       selectedTargets,
       installs: skillInstalls,
       previousInstalls: previousManifest?.managedInstalls ?? []
@@ -155,20 +166,33 @@ export async function runBootstrap(
     githubRepoOverrides: options.githubRepoOverrides
   });
   const allowedRootsByTarget = createAllowedRootsByTarget(targetHomes);
+  const skillRootsByTarget = createSkillRootsByTarget(targetHomes);
+  const unmanagedSkillPathsByTarget = await discoverUnmanagedSkillPaths({
+    selectedTargets,
+    skillRootsByTarget,
+    installs: [...skillInstalls, ...pluginResolution.installs],
+    protectedSkillDirectoryNamesByTarget: protectedSkillDirectoryNamesByTarget()
+  });
 
   if (options.clean) {
     for (const target of selectedTargets) {
       const roots = allowedRootsByTarget[target];
 
       for (const root of roots.filter(Boolean)) {
-        await rm(root, { recursive: true, force: true });
-        await mkdir(root, { recursive: true });
+        if (root === targetHomes.codex.skillsDir) {
+          await cleanSkillRoot(root, protectedSkillDirectoryNamesByTarget().codex ?? []);
+        } else {
+          await rm(root, { recursive: true, force: true });
+          await mkdir(root, { recursive: true });
+        }
       }
     }
   }
 
   const managedSyncResults = await syncManagedInstalls({
     allowedRootsByTarget,
+    skillRootsByTarget,
+    unmanagedSkillPathsByTarget,
     selectedTargets,
     installs: [...skillInstalls, ...pluginResolution.installs],
     previousInstalls: previousManifest?.managedInstalls ?? []
@@ -193,7 +217,8 @@ export async function runBootstrap(
     ],
     commandReports
   );
-  const changed = !manifestsEqual(previousManifest, nextManifest);
+  const changed = !manifestsEqual(previousManifest, nextManifest) ||
+    managedSyncResults.some((result) => result.removedCount > 0);
   const targetReports = createAppliedTargetReports(
     prepared.plan,
     targetHomes,
@@ -374,6 +399,40 @@ function createAllowedRootsByTarget(
     cursor: [targetHomes.cursor.skillsDir],
     copilot: [targetHomes.copilot?.skillsDir || ""]
   };
+}
+
+function createSkillRootsByTarget(
+  targetHomes: ResolvedTargetHomes
+): Partial<Record<SupportedTarget, string[]>> {
+  return {
+    codex: [targetHomes.codex.skillsDir],
+    claude: [targetHomes.claude.skillsDir],
+    opencode: [targetHomes.opencode.skillsDir],
+    hermes: [targetHomes.hermes.skillsDir],
+    cursor: [targetHomes.cursor.skillsDir],
+    copilot: [targetHomes.copilot.skillsDir]
+  };
+}
+
+function protectedSkillDirectoryNamesByTarget(): Partial<Record<SupportedTarget, string[]>> {
+  // Codex owns this directory and recreates it as its built-in system-skill store.
+  return { codex: [".system"] };
+}
+
+async function cleanSkillRoot(root: string, protectedNames: string[]): Promise<void> {
+  await mkdir(root, { recursive: true });
+  const protectedSet = new Set(protectedNames);
+
+  for (const entry of await readdir(root, { withFileTypes: true })) {
+    if (protectedSet.has(entry.name)) {
+      continue;
+    }
+
+    await rm(join(root, entry.name), {
+      recursive: entry.isDirectory(),
+      force: true
+    });
+  }
 }
 
 function compareManagedInstall(

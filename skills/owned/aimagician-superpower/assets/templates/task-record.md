@@ -69,10 +69,15 @@ TBD - preserve or link the original user request or PRD section.
 
 ## Independent Completion Audit
 
+- **Result schema:** v2
 - **Provider:** OpenCode
+- **Model selection rationale:** NOT_RUN
+- **Declared model chain:** NOT_RUN
+- **Effective model chain:** NOT_RUN
 - **Primary model:** NOT_RUN
 - **Model:** NOT_RUN
 - **Attempt chain:** NOT_RUN
+- **Model transitions:** NOT_RUN
 - **Fallback reason:** NOT_RUN
 - **Session:** NOT_RUN
 - **Run status:** NOT_RUN

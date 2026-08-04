@@ -7,9 +7,9 @@ Use this task family for broad context gathering that would otherwise consume th
 - **Repository or system discovery:** map relevant entry points, ownership boundaries, dependencies, representative data/control flow, existing patterns, risks, likely change locations, tests, and open questions.
 - **Deep web research:** search current sources, favor primary and authoritative material, record dates, distinguish evidence from inference, compare alternatives, and return citations suitable for controller verification.
 - **Cross-source comparison:** use one comparison frame and expose incompatible assumptions rather than flattening differences.
-- **Visual or image inspection:** load `vision-analysis`, require explicit external-upload authorization, acquire sanitized evidence through its Agnes backend, and then use the normal OpenCode reasoning route.
+- **Visual or image inspection:** load `vision-analysis`, require explicit external-upload authorization, acquire sanitized evidence through its Agnes backend, and then use the controller-selected OpenCode reasoning route.
 
-Use DeepSeek V4 Flash Free for ordinary discovery, research, and reasoning over visual evidence. If DeepSeek is absent, return the live free candidates for controller selection. Use Agnes directly for pixel evidence through `vision-analysis`, and as the OpenCode text fallback only after an explicit DeepSeek usage, quota, or rate-limit failure. Do not convert authentication, network, permission, syntax, or generic worker failures into a model fallback.
+List the current free inventory and let the controller select the best suitable model for the task's breadth, depth, context, and tool needs. Supply an ordered fallback chain when useful; the runtime appends Agnes once as the final fallback. Use Agnes directly for pixel evidence through `vision-analysis`. Apply quota, provider, model, and retry scopes from the provider guide; do not convert permission, syntax, generic worker, or worker-quality failures into a model fallback.
 
 ## Discovery Questions
 

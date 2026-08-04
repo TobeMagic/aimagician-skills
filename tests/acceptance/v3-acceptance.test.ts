@@ -18,13 +18,13 @@ describe("v3 acceptance coverage", () => {
     expect(managerTests).toContain("keeps archive overrides isolated");
   });
 
-  it("ACC-02 covers selected-target sync and manual-file preservation tests", async () => {
+  it("ACC-02 covers selected-target sync and owner-only skill cleanup tests", async () => {
     expect(planManagedInstallSync).toBeTypeOf("function");
     await access("tests/bootstrap/direct-target-sync.test.ts", constants.F_OK);
 
     const syncTests = await readFile("tests/bootstrap/direct-target-sync.test.ts", "utf8");
     expect(syncTests).toContain("updates only the selected direct targets");
-    expect(syncTests).toContain("keeps unmanaged directories");
+    expect(syncTests).toContain("non-owner skill directories");
     expect(syncTests).toContain("manual-skill");
   });
 

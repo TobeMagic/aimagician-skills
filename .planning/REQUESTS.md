@@ -17,6 +17,8 @@
 - **REQ-AUDIT-002:** Every completion claim must use a fresh OpenCode Agnes audit; unresolved Blocker, Important, FAIL, or NOT_RUN prevents completion.
 - **REQ-AUDIT-003:** The main Agent must validate completion-critical reviewer claims against primary evidence.
 - **REQ-SYNC-001:** Update README, run regression checks, sync owned skills to Codex and OpenCode with Skillbird, and verify installation health.
+- **REQ-SYNC-004:** Bootstrap synchronization reconciles selected target Skill directories to the active owner set and removes unowned Skill directories, while preserving Codex-managed `.system` skills.
+- **REQ-SKILL-010:** Add clean owner Skills for long-form knowledge distillation, evidence-grounded reasoning distillation, and validated Skill evolution without upstream branding or installer behavior.
 - **REQ-GIT-001:** Integrate only clean audited work, exclude the dirty PPT worktree, merge to `master`, and push after final audit.
 
 ### Explicit Non-goals
@@ -112,3 +114,38 @@
 - Uploading complete private planning content to LLM wiki.
 - Silently copying a local-private planning store when symlink or junction attachment fails.
 - Changing or closing the active Window-PPTX Phase 28.
+
+## USR-20260803-001: Controller-selected OpenCode models and canonical project context
+
+**Status:** Accepted
+**Source:** User discussion and accepted implementation plan
+**Supersedes:** REQ-MODEL-001 and the DeepSeek-first reasoning portion of REQ-ROUTE-002. Historical audit evidence remains valid and immutable.
+
+### Accepted Requirements
+
+- **REQ-MODEL-V2-001:** `opencode-run.mjs` lists all active free text models across configured providers without requiring a task directory or prompt.
+- **REQ-MODEL-V2-002:** Every OpenCode worker execution requires a controller-selected primary model and supports an ordered controller-selected fallback chain.
+- **REQ-MODEL-V2-003:** OpenCode Zen models share one user-asserted quota pool, non-Zen provider models use model-specific pools, and Agnes is appended at most once as the final unlimited fallback.
+- **REQ-MODEL-V2-004:** Fallback transitions preserve exact failure semantics, provider and quota invalidation, event-driven waiting, complete attempt provenance, and a versioned result schema.
+- **REQ-MODEL-V2-005:** Visual acquisition remains owned by `vision-analysis`; the downstream OpenCode reasoning model is selected explicitly like any other text worker.
+- **REQ-CONTEXT-V1-001:** Planning-managed projects can maintain one canonical `.planning/CONTEXT.md` for stable architecture, cross-phase decisions, invariants, source routing, and unresolved material questions.
+- **REQ-CONTEXT-V1-002:** Context loading is risk-scaled: recent relevant sources orient the agent first, authority order resolves conflicts, and phase/milestone/High/resume work blocks on missing adopted context while isolated Quick work remains lightweight.
+- **REQ-CONTEXT-V1-003:** Phase and milestone closure records and validates durable context promotion or an explicit no-change decision without rewriting historical phase records.
+- **REQ-COMPAT-V2-001:** Existing DeepSeek/Agnes audits and public result fields remain valid while new controller-selected audit chains are accepted prospectively.
+- **REQ-SYNC-V2-001:** Update skills, templates, docs, evals, tests, and runtime; then synchronize owned skills to Codex/OpenCode and verify installation health and content parity.
+
+### Accepted Decisions
+
+- Model quality is judged by the controller from task difficulty, task fit, known model behavior, context capacity, tool support, and quota diversity; the runtime does not own a static quality ranking.
+- Quota policy is a versioned user assertion, not inferred provider metadata.
+- Quota, rate-limit, model-unavailable, and provider authentication failures may advance the declared chain according to their invalidation scope. Permission, syntax, exhausted network retry, and worker-quality failures stop.
+- Navigation recency never changes authority: latest explicit user decisions and locked requirements/specifications remain stronger than newer but lower-authority notes.
+- Material uncertainty affecting behavior, architecture, interfaces, data, security, scope, acceptance, or irreversible work requires discussion. Local reversible details may proceed with a recorded assumption.
+
+### Explicit Non-goals
+
+- A persistent model quality leaderboard or automatic runtime scoring.
+- Paid or unknown-cost model selection.
+- Sending images through OpenCode attachments for Agnes.
+- Rewriting historical audit sessions or completed task evidence.
+- Changing or closing active Window-PPTX Phase 28.

@@ -269,7 +269,7 @@ describe("direct target sync", () => {
   });
 
 
-  it("prunes stale managed installs on selected targets and keeps unmanaged directories", async () => {
+  it("prunes stale managed installs and non-owner skill directories on selected targets", async () => {
     const fixture = await createFixtureRepository();
     const workspaceRoot = join(fixture.root, "workspace");
     const homeDir = join(fixture.root, "home");
@@ -294,6 +294,12 @@ describe("direct target sync", () => {
     await writeFile(
       join(homeDir, ".codex", "skills", "manual-skill", "SKILL.md"),
       "# Manual\n",
+      "utf8"
+    );
+    await mkdir(join(homeDir, ".codex", "skills", ".system", "builtin"), { recursive: true });
+    await writeFile(
+      join(homeDir, ".codex", "skills", ".system", "builtin", "SKILL.md"),
+      "# Codex system skill\n",
       "utf8"
     );
 
@@ -322,7 +328,11 @@ describe("direct target sync", () => {
     expect(rerun.changed).toBe(true);
     await expectMissing(join(homeDir, ".codex", "skills", "daily-ops", "SKILL.md"));
     await expectMissing(join(homeDir, ".codex", "skills", "gsd", "SKILL.md"));
-    await access(join(homeDir, ".codex", "skills", "manual-skill", "SKILL.md"), constants.F_OK);
+    await expectMissing(join(homeDir, ".codex", "skills", "manual-skill", "SKILL.md"));
+    await access(
+      join(homeDir, ".codex", "skills", ".system", "builtin", "SKILL.md"),
+      constants.F_OK
+    );
 
     const manifest = JSON.parse(await readFile(rerun.manifestPath, "utf8")) as {
       managedInstalls: Array<{ target: string; assetId: string }>;

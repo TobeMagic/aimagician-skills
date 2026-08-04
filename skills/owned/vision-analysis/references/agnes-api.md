@@ -42,4 +42,4 @@ The result never records:
 
 ## Downstream Reasoning
 
-When OpenCode must continue the task, append the JSON report as controller-provided visual evidence and run OpenCode as text reasoning. DeepSeek remains the primary reasoning model; explicit usage-limit evidence may switch that text run to Agnes.
+When OpenCode must continue the task, append the JSON report as controller-provided visual evidence and run OpenCode as text reasoning. The controller explicitly chooses the best suitable active free reasoning model and ordered fallbacks for the task; the runtime appends Agnes once as the final text fallback when available.

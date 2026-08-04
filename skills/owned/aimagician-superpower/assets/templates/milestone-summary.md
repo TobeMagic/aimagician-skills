@@ -17,6 +17,12 @@
 
 - TBD
 
+## Project Context Promotion
+
+| Action | Context ID | Project context entry | Source milestone | Result |
+|---|---|---|---|---|
+| TBD | TBD | TBD | {{MILESTONE}} | NOT_RUN |
+
 ## Residual Risk
 
 - TBD

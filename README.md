@@ -96,23 +96,26 @@ For phase-managed or High work, the `align` gate prevents work from drifting awa
 
 Planning can remain tracked or use one local-private store shared by every worktree under the repository's Git common directory. The runtime attaches worktrees, excludes `/.planning` through Git's local exclude file, and provides short write leases with revision conflict detection. Local-private planning has no automatic backup and is lost with the clone.
 
-Lightweight work may use a concise PR description and verification evidence; phase and milestone work use `.planning/tasks/<task-id>.md` plus requirement and `GOAL-*` evidence. High, phase, milestone, deployable-postmerge, policy-required, or explicitly requested closure gets a frozen independent OpenCode review point, model attempt provenance, and a main-Agent spot-check. Visual evidence is acquired directly by `vision-analysis` with explicit upload authorization and passed as text to DeepSeek reasoning. Agnes is the OpenCode text fallback only after a verified DeepSeek usage or quota limit. `init` previews project, phase, task, or milestone artifacts and writes only with `--write`; it never overwrites existing files or follows an unapproved planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
+Lightweight work may use a concise PR description and verification evidence; phase and milestone work use `.planning/tasks/<task-id>.md` plus requirement and `GOAL-*` evidence. High, phase, milestone, deployable-postmerge, policy-required, or explicitly requested closure gets a frozen independent OpenCode review point, model attempt provenance, and a main-Agent spot-check. Visual evidence is acquired directly by `vision-analysis` with explicit upload authorization and passed as sanitized text to a controller-selected reasoning model. The controller chooses every OpenCode primary and ordered fallback from the current free inventory; Agnes is appended once as the final fallback when available. Planning-managed projects use `.planning/PROJECT.md` and `.planning/CONTEXT.md` for durable product, architecture, invariant, decision, verification, and source-routing continuity. `init` previews project, phase, task, or milestone artifacts and writes only with `--write`; it never overwrites existing files or follows an unapproved planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
 
 Linear is managed only through `composio-tool-router` and Composio CLI, never through Linear MCP. If Linear context is not needed to understand the requirement, OpenCode performs the approved post-merge status/comment/closure work as a bounded task after core delivery. The first PR in a project resolves its integration branch from project evidence; no global `dev` default is assumed.
 
-The delegated runtime caches `opencode models --verbose`, uses the current positional prompt syntax, streams progress until the worker exits, and returns free candidates for controller judgment when DeepSeek is absent:
+The delegated runtime caches `opencode models --verbose`, lists active free candidates across configured providers, exposes worker eligibility and quota-policy provenance, requires explicit `--model`, accepts ordered `--fallback-model` values, uses the current positional prompt syntax, and streams progress until the worker exits:
 
 ```bash
 node skills/owned/cli-agent-delegator/scripts/opencode-run.mjs \
   --dir <project> \
   --task-type quick \
   --modality text \
+  --model <best-suitable-free-model> \
+  --fallback-model <next-suitable-free-model> \
   --prompt-file <prompt-file>
 
 node skills/owned/cli-agent-delegator/scripts/opencode-run.mjs \
   --dir <project> \
   --task-type discovery \
   --modality vision \
+  --model <best-suitable-free-reasoning-model> \
   --file <image-or-https-url> \
   --allow-external-upload \
   --prompt-file <prompt-file>
@@ -121,6 +124,8 @@ node skills/owned/cli-agent-delegator/scripts/opencode-run.mjs \
   --dir <project> \
   --task-type audit \
   --modality text \
+  --model <best-suitable-free-audit-model> \
+  --fallback-model <next-suitable-free-audit-model> \
   --prompt-file <audit-prompt-file> \
   --review-ref <exact-commit>
 ```
@@ -150,6 +155,9 @@ The central owned skill is:
 | `github-readme-highstar` | README information architecture, quick-start clarity, repository visual collaboration, static hero and supplemental demo integration |
 | `system-prompt-engineering` | System-prompt requirements, composition, identity, tools, delegation, safety, memory, search, channel adaptation, code-agent behavior, and evaluation |
 | `skill-creator` | Skill authoring, merging, taxonomy, formatter rules |
+| `cangjie` | Long-form knowledge distillation into evidence-grounded executable Skills |
+| `nuwa` | Bounded reasoning and decision-advisor distillation from public or user-provided evidence |
+| `darwin` | Baseline-driven Skill evaluation, targeted improvement, regression checks, and reversible decisions |
 
 ## Skill Consolidation
 
@@ -167,6 +175,9 @@ External sources are curated into owned skills instead of installed by default.
 | frontend-design, design-md brand routing, UI/UX, prototypes, dashboards, data visualization, HTML presentations, accessibility, motion, design-lab, impeccable | `interface-design` |
 | Claude webapp-testing + Playwright skill | `webapp-testing` |
 | docx / pdf / pptx / xlsx | Owned document skills under `skills/owned` |
+| Long-form knowledge distillation | `cangjie` |
+| Evidence-grounded reasoning distillation | `nuwa` |
+| Skill quality evolution and regression validation | `darwin` |
 
 Six categories are used everywhere:
 
@@ -223,7 +234,7 @@ See [`docs/design/html-universal-design-capability-merge.md`](docs/design/html-u
 | `skillbird bootstrap` | Legacy all-selected bootstrap workflow |
 | `skillbird --agent capabilities` | Return the versioned Agent command contract |
 
-`install` is additive: installing one skill or selected bundle preserves other managed skills. Use `bootstrap` or `reset` when the target should be reconciled to the full active owner-skill set.
+`install` is additive: installing one skill or selected bundle preserves other managed skills. Use `bootstrap` or `reset` when the target should be reconciled to the full active owner-skill set. Bootstrap also removes unowned Skill directories from selected targets; Codex's `.system` directory is reserved for Codex-managed built-ins and is never removed.
 
 Bootstrap manifests record each managed source path and deterministic content digest. `doctor` compares the current source with Codex, OpenCode, and other managed destinations, so an existing but stale or manually modified Skill is reported as `content drift` instead of healthy.
 

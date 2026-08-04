@@ -40,7 +40,7 @@ WRITE_SCOPE: <exact paths, or NONE>
 ALLOWED_COMMANDS: <command classes and important exact commands>
 TESTS_AND_EVIDENCE: <checks to run or evidence to collect>
 GIT_POLICY: <inspect-only | no-commit | local-commit-after-review | other explicit policy>
-MODEL_POLICY: <DeepSeek reasoning default | controller-selected free reasoning model because DeepSeek is absent | vision-analysis evidence then DeepSeek reasoning | Agnes quota fallback>
+MODEL_POLICY: <explicit primary model + task/capability rationale + ordered fallback models + declared quota-scope policy; visual tasks also name vision-analysis evidence>
 CHILD_AGENT_POLICY: <forbidden | explicitly bounded roles>
 
 STATUS_PROTOCOL: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
@@ -73,7 +73,7 @@ Name only skills relevant to the role. Typical routing:
 - parallel write lanes: add `parallel-worktree-pr-flow`.
 - system prompt or agent instruction design: add `system-prompt-engineering`.
 
-For a completion audit, `REQUIRED_SKILLS` always includes `cli-agent-delegator`, `aimagician-superpower`, and every domain skill used by the implementation. Invoke the owned runner with exactly one `--review-ref` or `--review-worktree`; a review/audit without one is invalid. The output must include provider, primary model, final model, attempt chain, fallback reason, session ID, resolved commit, initial and final fingerprint, one `PASS | FAIL | NOT_RUN` row per accepted requirement, finding counts, and evidence for controller spot-checks.
+For a completion audit, `REQUIRED_SKILLS` always includes `cli-agent-delegator`, `aimagician-superpower`, and every domain skill used by the implementation. Invoke the owned runner with an explicit `--model`, zero or more ordered `--fallback-model` values, and exactly one `--review-ref` or `--review-worktree`; a review/audit without these bindings is invalid. The output must include model-selection rationale, declared/effective chain, provider, primary model, final model, transitions, attempt chain, fallback reason, session ID, resolved commit, initial and final fingerprint, one `PASS | FAIL | NOT_RUN` row per accepted requirement, finding counts, and evidence for controller spot-checks.
 
 ## Permission Semantics
 

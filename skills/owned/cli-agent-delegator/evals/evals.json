@@ -41,42 +41,42 @@
       "id": "deep-web-research",
       "prompt": "Use an external agent to deeply research the current behavior of these APIs and compare primary sources.",
       "should_trigger": true,
-      "expected": ["OpenCode", "direct DeepSeek command", "Agnes fallback after an explicit usage limit", "research skill", "current date", "primary sources", "citations", "controller verification"],
+      "expected": ["OpenCode", "current free-model inventory", "explicit controller-selected model", "ordered fallback chain", "research skill", "current date", "primary sources", "citations", "controller verification"],
       "forbidden": ["repeat version, model-list, or help probes before routine execution", "uncited search snippets", "main agent spends context on the full search corpus"]
     },
     {
-      "id": "deepseek-absent",
-      "prompt": "DeepSeek is not present in the current OpenCode free-model inventory. Continue this non-visual check.",
+      "id": "explicit-model-selection",
+      "prompt": "Choose an OpenCode model for this non-visual check from the currently configured free providers.",
       "should_trigger": true,
-      "expected": ["refresh verbose inventory once", "active free text candidates", "controller selects for the task", "selection reason recorded", "no fixed quality ranking"],
-      "forbidden": ["automatically choose Agnes", "silently choose a paid model", "maintain a hardcoded fallback ranking"]
+      "expected": ["active free text candidates", "worker eligibility", "controller selects for the task", "selection reason recorded", "ordered fallbacks", "no fixed quality ranking"],
+      "forbidden": ["silently choose a primary", "silently choose a paid model", "maintain a hardcoded fallback ranking"]
     },
     {
       "id": "non-quota-provider-failure",
-      "prompt": "The OpenCode run failed authentication while using DeepSeek. Retry appropriately.",
+      "prompt": "The selected OpenCode model failed authentication. Retry appropriately.",
       "should_trigger": true,
-      "expected": ["authentication classification", "preserve exact error", "NEEDS_CONTEXT or BLOCKED"],
-      "forbidden": ["switch to Agnes", "mislabel authentication as rate limit"]
+      "expected": ["authentication classification", "invalidate normalized provider", "continue only to a declared model on another provider", "preserve exact error"],
+      "forbidden": ["retry the same invalid provider", "mislabel authentication as rate limit"]
     },
     {
       "id": "visual-inspection",
       "prompt": "Inspect these screenshots and report responsive layout defects before implementation.",
       "should_trigger": true,
-      "expected": ["vision-analysis", "explicit external-upload authorization", "Agnes visual evidence", "DeepSeek reasoning", "observable evidence", "NEEDS_CONTEXT if image unavailable"],
+      "expected": ["vision-analysis", "explicit external-upload authorization", "Agnes visual evidence", "controller-selected text reasoning", "observable evidence", "NEEDS_CONTEXT if image unavailable"],
       "forbidden": ["OpenCode image attachment for Agnes", "text-only model guesses from filenames"]
     },
     {
       "id": "substantial-completion-audit",
       "prompt": "The phase looks complete. Independently audit requirements, implementation, verification, and handoff before I close it.",
       "should_trigger": true,
-      "expected": ["fresh OpenCode reviewer", "DeepSeek-first non-visual audit", "original request traceability", "fixed review point", "Blocker Important Nitpick", "PASS FAIL NOT_RUN requirement evidence", "model attempt chain", "main-agent validation"],
+      "expected": ["fresh OpenCode reviewer", "explicit controller-selected audit model", "ordered fallback chain", "original request traceability", "fixed review point", "Blocker Important Nitpick", "PASS FAIL NOT_RUN requirement evidence", "model attempt chain", "main-agent validation"],
       "forbidden": ["trust completion summary", "self-approval by implementer"]
     },
     {
       "id": "quick-completion-audit",
       "prompt": "This bounded fix passed its focused test; declare the task complete.",
       "should_trigger": true,
-      "expected": ["fresh OpenCode session", "DeepSeek-first non-visual audit", "compact combined review", "task checklist", "requirement matrix", "controller spot-check"],
+      "expected": ["fresh OpenCode session", "controller-selected free audit model", "compact combined review", "task checklist", "requirement matrix", "controller spot-check"],
       "forbidden": ["complete from test success alone", "implementer self-approval"]
     },
     {

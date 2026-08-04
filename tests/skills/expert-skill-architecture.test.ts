@@ -499,13 +499,13 @@ describe("owned skill trigger contracts", () => {
     expect(pptxFrontmatter).toContain("deck");
   });
 
-  it("routes visual acquisition separately and all completion-audit reasoning to DeepSeek first", async () => {
+  it("routes visual acquisition separately and makes audit-model selection explicit", async () => {
     const provider = await readFile(join(ownedRoot, "cli-agent-delegator", "references", "providers", "opencode.md"), "utf8");
-    expect(provider.indexOf("opencode/deepseek-v4-flash-free")).toBeLessThan(provider.indexOf("agnes/agnes-2.0-flash"));
-    expect(provider).toContain("For any task, phase, milestone, release, or delivery completion audit, use the normal DeepSeek-first reasoning route");
-    expect(provider).toContain("Automatically switch a failed DeepSeek reasoning run to Agnes only when logs identify an explicit usage, quota, rate-limit");
+    expect(provider).toContain("For any task, phase, milestone, release, or delivery completion audit that requires independence");
+    expect(provider).toContain("controller-selected reasoning route");
+    expect(provider).toContain("runtime appends `agnes/agnes-2.0-flash` exactly once as the final fallback");
+    expect(provider).toContain("controller selects the best suitable worker");
     expect(provider).toContain("vision-analysis");
-    expect(provider).toContain("If DeepSeek is absent");
   });
 });
 

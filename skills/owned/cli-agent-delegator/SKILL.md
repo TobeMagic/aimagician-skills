@@ -76,7 +76,7 @@ Load only the references needed for the delegated role.
 | Ready-to-fill contracts for Git/test reports, localized fixes, research, visual inspection, and pre-commit review | `references/task-types/quick-task-recipes.md` |
 | Plan, specification, quality, verification, phase, milestone, or completion review | `references/task-types/independent-review-and-audit.md` |
 | OpenCode ready-to-run commands, command syntax, diagnostic preflight, models, event-based waiting, fallback, session handling | `references/providers/opencode.md` |
-| Cached model discovery, dynamic routing, current positional syntax, streaming, quota-only Agnes fallback, attempt provenance | `scripts/opencode-run.mjs` |
+| Cached free-model inventory, explicit controller routing, ordered fallbacks, current positional syntax, streaming, and attempt provenance | `scripts/opencode-run.mjs` |
 | General handoff report | `references/report-templates/delegation-report.md` |
 | Reviewer and auditor report | `references/report-templates/review-report.md` |
 
@@ -126,9 +126,9 @@ The prompt must require the worker to load every named skill before doing substa
 1. **Classify.** Choose discovery/research, bounded operation/execution, or independent review/audit.
 2. **Protect macro reasoning.** Keep unresolved requirements, architecture tradeoffs, risk acceptance, and final decisions with the main Agent.
 3. **Lock the contract.** Define sources, skills, scope, permission mode, commands, evidence, git policy, and escalation.
-4. **Select evidence and reasoning routes.** Read `references/providers/opencode.md`. Visual tasks first load `vision-analysis` and obtain authorized textual evidence through its Agnes backend. Every OpenCode reasoning task, including one using visual evidence or performing completion audit, defaults to DeepSeek V4 Flash Free. If DeepSeek is absent, inspect the live free candidates and let the controller choose for the task; do not maintain or invent a quality ranking.
-5. **Use the known-good fast path.** Prefer `scripts/opencode-run.mjs`, which caches verbose model metadata and uses the current positional prompt syntax. Review and audit tasks must pass `--review-ref <git-ref>` or `--review-worktree <path>`; the runtime resolves and fingerprints the exact review point. Do not repeat binary, version, model-list, or help probes before routine work.
-6. **Run non-interactively.** Keep logs attached. Automatic Agnes reasoning fallback is allowed only for a verified DeepSeek usage, quota, or rate-limit event. Agnes rate limits remain active and retry by events until success or cancellation. Model absence returns free candidates for controller selection. Authentication, permission, syntax, network, and worker-quality failures retain their real classification.
+4. **Select evidence and reasoning routes.** Read `references/providers/opencode.md`. Visual tasks first load `vision-analysis` and obtain authorized textual evidence through its Agnes backend. For every OpenCode run, the controller inspects the cached or refreshed free-model inventory, judges task difficulty and capability needs, records a short rationale, and explicitly supplies the best suitable primary model plus any ordered fallbacks. Do not hard-code a global quality ranking.
+5. **Use the known-good fast path.** Prefer `scripts/opencode-run.mjs`, which caches verbose model metadata and uses the current positional prompt syntax. Use `--list-models` without routine version/help probes; refresh only after configuration changes, stale inventory, or model errors. Do not repeat binary, version, model-list, or help probes before routine execution. Every run supplies `--model`; repeat `--fallback-model` only for controller-approved alternatives. Review and audit tasks also pass `--review-ref <git-ref>` or `--review-worktree <path>` so the runtime fingerprints the exact review point.
+6. **Run non-interactively.** Keep logs attached. The runtime follows the declared order. A usage/quota event invalidates the model's declared quota scope, model absence invalidates that model, and authentication invalidates that provider. OpenCode Zen models share one policy-defined quota scope; non-Zen providers use model-specific scopes. Network failures retry the same model three times, while permission, syntax, and worker-quality failures stop. The runtime appends Agnes once as the final fallback when available; Agnes rate limits remain active and retry by events until success or cancellation.
 7. **Wait by events.** Continue while logs, tool calls, stage transitions, file references, session changes, or provider activity show progress. Do not stop an active worker because a fixed number of seconds elapsed.
 8. **Classify failure.** Stop only on process exit, clear command/provider/permission error, user cancellation, or confirmed stale state. Never start a fallback while the first process is alive.
 9. **Validate.** Check scope compliance and spot-check claims that affect design or completion, including paths, symbols, imports, “no tests” claims, Blocker/Important findings, and the decisive verification command.
@@ -150,7 +150,7 @@ Review findings use exactly `Blocker`, `Important`, or `Nitpick`. A Blocker stop
 
 ## Completion Audit When Required
 
-Use a fresh OpenCode session and the normal reasoning route: DeepSeek for audit reasoning, including audits that consume a `vision-analysis` report; another controller-selected free reasoning model only when DeepSeek is absent; and Agnes text fallback only after an explicit DeepSeek usage, quota, or rate-limit event. For visual deliverables, obtain authorized observable evidence through `vision-analysis` and include its sanitized report in the fresh final audit. Freeze the exact commit with `--review-ref` or the exact stable worktree with `--review-worktree`; a fingerprint change invalidates the audit. Include the original request or PRD, accepted decisions, `.planning/REQUESTS.md`, requirement IDs, implementation, verification, UAT, documentation, installation state, and existing findings.
+Use a fresh OpenCode session with an explicitly controller-selected free reasoning model and ordered fallback chain. Choose for audit complexity, context size, tool support, and current availability; record the rationale and declared chain. The runtime appends Agnes as the final fallback when available, but Agnes is not the mandatory primary. For visual deliverables, obtain authorized observable evidence through `vision-analysis` and include its sanitized report in the fresh final audit. Freeze the exact commit with `--review-ref` or the exact stable worktree with `--review-worktree`; a fingerprint change invalidates the audit. Include the original request or PRD, accepted decisions, `.planning/REQUESTS.md`, requirement IDs, implementation, verification, UAT, documentation, installation state, and existing findings.
 
 The auditor returns:
 
@@ -158,7 +158,7 @@ The auditor returns:
 - findings using only `Blocker`, `Important`, or `Nitpick`;
 - evidence paths and commands;
 - missing, extra, shallow, or incorrectly narrowed behavior;
-- primary model, final model, attempt chain, fallback reason, final recommendation, and OpenCode session ID.
+- model-selection rationale, declared and effective model chain, primary and final model, transition reasons, attempt chain, final recommendation, and OpenCode session ID.
 
 The controller reproduces every Blocker and material Important finding where feasible and spot-checks each completion-critical PASS. `FAIL`, `NOT_RUN`, unresolved Blocker, or unresolved Important means continue the checklist and re-audit. Do not replace requirement coverage with a test-success summary.
 
@@ -181,7 +181,7 @@ Every delegation handoff includes:
 
 - task ID, role, objective, provider, model, and permission mode;
 - source of truth, required skills loaded, allowed and forbidden scope;
-- command shape, primary model, final model, attempt chain, fallback reason, run status, activity evidence, retries, and failure classification;
+- command shape, model-selection rationale, declared/effective model chain, primary model, final model, transitions, attempt chain, fallback reason, run status, activity evidence, retries, and failure classification;
 - files inspected or changed and commands executed;
 - structured result, findings, uncertainty, and recommended action;
 - controller spot-checks and any corrected worker claims;

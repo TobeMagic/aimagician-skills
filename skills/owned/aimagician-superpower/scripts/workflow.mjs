@@ -21,6 +21,8 @@ const PLANNING_MODES = new Set(["tracked", "local-private"]);
 const PLANNING_OUTCOMES = new Set(["updated", "unchanged"]);
 
 const PROJECT_TEMPLATES = [
+  ["project.md", "PROJECT.md"],
+  ["project-context.md", "CONTEXT.md"],
   ["project-requests.md", "REQUESTS.md"],
   ["project-requirements.md", "REQUIREMENTS.md"],
   ["project-roadmap.md", "ROADMAP.md"],
@@ -672,11 +674,66 @@ async function loadPlanningSources(project) {
     return await exists(path) ? { path, content: await readFile(path, "utf8") } : null;
   };
   return {
+    project: await readOptional("PROJECT.md"),
+    context: await readOptional("CONTEXT.md"),
+    config: await readOptional("config.json"),
     state: await readOptional("STATE.md"),
     roadmap: await readOptional("ROADMAP.md"),
     requirements: await readOptional("REQUIREMENTS.md"),
     requests: await readOptional("REQUESTS.md")
   };
+}
+
+function planningConfig(planning) {
+  try {
+    return planning.config ? JSON.parse(planning.config.content) : {};
+  } catch {
+    return {};
+  }
+}
+
+function validateProjectContext(loaded) {
+  const findings = [];
+  const project = loaded.planning.project;
+  const context = loaded.planning.context;
+  if (!project) {
+    findings.push(finding("ALIGN_PROJECT_MISSING", "PROJECT.md is required for planning-managed alignment"));
+  } else {
+    const artifact = relative(loaded.project, project.path);
+    const projectSections = [
+      ["Purpose", Boolean(getSection(project.content, "Purpose") || getSection(project.content, "What This Is"))],
+      ["Current Milestone", /^##\s+Current Milestone(?::|\s|$)/im.test(project.content)],
+      ["Scope", Boolean(getSection(project.content, "Scope") || /^###\s+Out of Scope\s*$/im.test(project.content))],
+      ["Constraints", Boolean(getSection(project.content, "Constraints"))],
+      ["Key Decisions", Boolean(getSection(project.content, "Key Decisions"))]
+    ];
+    for (const [section, present] of projectSections) {
+      if (!present) findings.push(finding("ALIGN_PROJECT_SECTION_MISSING", `PROJECT.md is missing ${section}`, artifact));
+    }
+    if (hasPlaceholder(project.content)) {
+      findings.push(finding("ALIGN_PROJECT_PLACEHOLDER", "PROJECT.md contains unresolved placeholders", artifact));
+    }
+  }
+  if (!context) {
+    findings.push(finding(
+      "CONTEXT_MIGRATION_REQUIRED",
+      "Planning-managed phase, milestone, High, or resume work requires .planning/CONTEXT.md; preview workflow init before continuing"
+    ));
+    return findings;
+  }
+  const schema = normalizeScalar(extractScalar(context.content, "Context schema"));
+  if (schema !== "v1") {
+    findings.push(finding("CONTEXT_SCHEMA_INVALID", "CONTEXT.md must declare Context schema v1", relative(loaded.project, context.path)));
+  }
+  for (const section of ["Architecture Snapshot", "Stable Boundaries And Invariants", "Durable Decisions", "Source Routing", "Open Questions"]) {
+    if (!getSection(context.content, section)) {
+      findings.push(finding("CONTEXT_SECTION_MISSING", `CONTEXT.md is missing ${section}`, relative(loaded.project, context.path)));
+    }
+  }
+  if (hasPlaceholder(context.content)) {
+    findings.push(finding("CONTEXT_PLACEHOLDER", "CONTEXT.md contains unresolved placeholders", relative(loaded.project, context.path)));
+  }
+  return findings;
 }
 
 async function loadPhase(project, requested) {
@@ -924,7 +981,7 @@ function parseRequirementPhaseMap(content) {
 }
 
 function validatePhaseAlignment(loaded) {
-  const findings = [];
+  const findings = [...validateProjectContext(loaded)];
   const state = loaded.planning.state;
   const roadmap = loaded.planning.roadmap;
   const projectRequirements = loaded.planning.requirements;
@@ -1028,11 +1085,11 @@ function validatePhaseAlignment(loaded) {
 }
 
 function validateTaskAlignment(loaded) {
-  const findings = [];
   const state = loaded.planning.state;
-  if (!state) return { findings, milestone: null, phase: null };
+  if (!state) return { findings: [], milestone: null, phase: null };
   const activePhase = extractStatePhase(state.content);
-  if (!activePhase || hasPlaceholder(activePhase)) return { findings, milestone: null, phase: null };
+  if (!activePhase || hasPlaceholder(activePhase)) return { findings: [], milestone: null, phase: null };
+  const findings = [...validateProjectContext(loaded)];
   const activeMilestone = extractStateMilestone(state.content);
   const parentPhase = normalizeScalar(extractScalar(loaded.content, "Parent phase"));
   const parentMilestone = normalizeScalar(extractScalar(loaded.content, "Parent milestone"));
@@ -1368,6 +1425,11 @@ function validateOpenCodeAudit(content, artifact) {
   const runStatus = normalizeScalar(extractScalar(content, "Run status"))?.toLowerCase();
   const reviewPoint = normalizeScalar(extractScalar(content, "Review point"));
   const spotCheck = normalizeScalar(extractScalar(content, "Controller spot-check"));
+  const resultSchema = normalizeScalar(extractScalar(content, "Result schema"))?.toLowerCase();
+  const selectionRationale = normalizeScalar(extractScalar(content, "Model selection rationale"));
+  const declaredChain = normalizeScalar(extractScalar(content, "Declared model chain"));
+  const effectiveChain = normalizeScalar(extractScalar(content, "Effective model chain"));
+  const transitions = normalizeScalar(extractScalar(content, "Model transitions"));
   const legacyAgnesRecord = model === "agnes/agnes-2.0-flash"
     && !primaryModel
     && !attemptChain
@@ -1397,21 +1459,25 @@ function validateOpenCodeAudit(content, artifact) {
       findings.push(finding("AUDIT_FALLBACK_REASON_MISSING", "New completion audits require a fallback reason or NONE", artifact));
     }
 
+    if (resultSchema === "v2") {
+      for (const [value, code, label] of [
+        [selectionRationale, "AUDIT_MODEL_RATIONALE_MISSING", "model selection rationale"],
+        [declaredChain, "AUDIT_DECLARED_CHAIN_MISSING", "declared model chain"],
+        [effectiveChain, "AUDIT_EFFECTIVE_CHAIN_MISSING", "effective model chain"],
+        [transitions, "AUDIT_TRANSITIONS_MISSING", "model transitions or NONE"]
+      ]) {
+        if (!value || /NOT_RUN|TBD/i.test(value)) {
+          findings.push(finding(code, `Result schema v2 requires ${label}`, artifact));
+        }
+      }
+    }
+
     if (model === "agnes/agnes-2.0-flash") {
-      const quotaEvidence = `${fallbackReason ?? ""} ${attemptChain ?? ""}`;
-      if (primaryModel !== "opencode/deepseek-v4-flash-free" || !/(?:usage|quota|rate[ -]?limit|429|resource[_ ]exhausted)/i.test(quotaEvidence)) {
+      const fallbackEvidence = `${fallbackReason ?? ""} ${attemptChain ?? ""}`;
+      if (primaryModel === model || !/(?:usage|quota|rate[ -]?limit|429|resource[_ ]exhausted|unavailable|authentication|provider[^.\n]*invalidated)/i.test(fallbackEvidence)) {
         findings.push(finding(
           "AUDIT_AGNES_FALLBACK_INVALID",
-          "A new non-visual completion audit may end with Agnes only after an explicit DeepSeek usage, quota, or rate-limit failure",
-          artifact
-        ));
-      }
-    } else if (model && model !== "opencode/deepseek-v4-flash-free") {
-      const selectionEvidence = `${fallbackReason ?? ""} ${attemptChain ?? ""}`;
-      if (!/(?:deepseek[^.\n]*(?:absent|missing|unavailable|not available)|controller[^.\n]*(?:select|choice|chosen))/i.test(selectionEvidence)) {
-        findings.push(finding(
-          "AUDIT_ALTERNATE_MODEL_REASON_MISSING",
-          "A non-default audit model requires evidence that DeepSeek was absent and the controller selected the alternative",
+          "A new completion audit may end with Agnes only as the final fallback after a better controller-selected model or quota pool became unavailable",
           artifact
         ));
       }
@@ -1486,11 +1552,131 @@ function validatePhaseAudit(loaded, requirements, goalCriteria = []) {
   return findings;
 }
 
+function requiresContextPromotion(loaded) {
+  const config = planningConfig(loaded.planning);
+  if (Number(config.context_schema) !== 1) return false;
+  const adoptionPhase = Number(config.context_adoption_phase ?? 1);
+  const currentPhase = Number.parseInt(loaded.phase?.prefix ?? "0", 10);
+  return Number.isFinite(currentPhase) && currentPhase >= adoptionPhase;
+}
+
+function projectContextIds(content) {
+  return new Set([...content.matchAll(/\bCTX-[A-Z0-9-]+\b/g)].map((match) => match[0]));
+}
+
+function validateContextPromotion(loaded) {
+  if (!requiresContextPromotion(loaded)) return [];
+  const findings = [];
+  const summary = loaded.contents.summary;
+  const context = loaded.planning.context;
+  if (!summary) {
+    return [finding("CONTEXT_PROMOTION_SUMMARY_MISSING", "Context adoption requires a phase summary promotion record")];
+  }
+  const artifact = relative(loaded.project, summary.path);
+  const section = getSection(summary.content, "Project Context Promotion");
+  if (!section) {
+    return [finding("CONTEXT_PROMOTION_MISSING", "Phase summary must declare PROMOTE, SUPERSEDE, or NO_CHANGE", artifact)];
+  }
+  const rows = section.split(/\r?\n/)
+    .filter((line) => line.trim().startsWith("|"))
+    .map(parsePipeCells)
+    .filter((cells) => new Set(["PROMOTE", "SUPERSEDE", "NO_CHANGE"]).has(cells[0]?.toUpperCase()));
+  if (rows.length === 0) {
+    findings.push(finding("CONTEXT_PROMOTION_INVALID", "Project Context Promotion has no valid action row", artifact));
+    return findings;
+  }
+  for (const cells of rows) {
+    const action = cells[0].toUpperCase();
+    const contextId = cells[1];
+    const sourcePhase = normalizePhaseId(cells[3] ?? "");
+    const result = (cells[4] ?? "").toUpperCase();
+    if (result !== "PASS") {
+      findings.push(finding("CONTEXT_PROMOTION_NOT_PASSED", `${action} ${contextId ?? "NONE"} must record PASS`, artifact));
+    }
+    if (action === "NO_CHANGE") continue;
+    if (!/^CTX-[A-Z0-9-]+$/.test(contextId ?? "")) {
+      findings.push(finding("CONTEXT_PROMOTION_ID_INVALID", `${action} requires a stable CTX-* ID`, artifact));
+      continue;
+    }
+    if (sourcePhase !== normalizePhaseId(loaded.phase.prefix)) {
+      findings.push(finding("CONTEXT_PROMOTION_PHASE_MISMATCH", `${contextId} must cite source phase ${loaded.phase.prefix}`, artifact));
+    }
+    if (!context || !projectContextIds(context.content).has(contextId)) {
+      findings.push(finding("CONTEXT_PROMOTION_ENTRY_MISSING", `${contextId} is absent from .planning/CONTEXT.md`, artifact));
+    }
+  }
+  return findings;
+}
+
+function requiresMilestoneContextPromotion(loaded) {
+  const config = planningConfig(loaded.planning);
+  if (Number(config.context_schema) !== 1) return false;
+  const adoptionPhase = Number(config.context_adoption_phase ?? 1);
+  return loaded.phases.some((phase) => {
+    const phaseNumber = Number.parseInt(phase.id ?? "0", 10);
+    return Number.isFinite(phaseNumber) && phaseNumber >= adoptionPhase;
+  });
+}
+
+function validateMilestoneContextPromotion(loaded) {
+  if (!requiresMilestoneContextPromotion(loaded)) return [];
+  if (!loaded.summary) {
+    return [finding("MILESTONE_CONTEXT_PROMOTION_SUMMARY_MISSING", "Context adoption requires a milestone summary promotion record")];
+  }
+  const findings = [];
+  const artifact = relative(loaded.project, loaded.summary.path);
+  const section = getSection(loaded.summary.content, "Project Context Promotion");
+  if (!section) {
+    return [finding(
+      "MILESTONE_CONTEXT_PROMOTION_MISSING",
+      "Milestone summary must declare PROMOTE, SUPERSEDE, or NO_CHANGE",
+      artifact
+    )];
+  }
+  const rows = section.split(/\r?\n/)
+    .filter((line) => line.trim().startsWith("|"))
+    .map(parsePipeCells)
+    .filter((cells) => new Set(["PROMOTE", "SUPERSEDE", "NO_CHANGE"]).has(cells[0]?.toUpperCase()));
+  if (rows.length === 0) {
+    return [finding("MILESTONE_CONTEXT_PROMOTION_INVALID", "Project Context Promotion has no valid action row", artifact)];
+  }
+  for (const cells of rows) {
+    const action = cells[0].toUpperCase();
+    const contextId = cells[1];
+    const sourceMilestone = cells[3] ?? "";
+    const result = (cells[4] ?? "").toUpperCase();
+    if (result !== "PASS") {
+      findings.push(finding("MILESTONE_CONTEXT_PROMOTION_NOT_PASSED", `${action} ${contextId ?? "NONE"} must record PASS`, artifact));
+    }
+    if (sourceMilestone.toLowerCase() !== loaded.milestone.toLowerCase()) {
+      findings.push(finding(
+        "MILESTONE_CONTEXT_PROMOTION_SOURCE_MISMATCH",
+        `${contextId ?? "NONE"} must cite source milestone ${loaded.milestone}`,
+        artifact
+      ));
+    }
+    if (action === "NO_CHANGE") continue;
+    if (!/^CTX-[A-Z0-9-]+$/.test(contextId ?? "")) {
+      findings.push(finding("MILESTONE_CONTEXT_PROMOTION_ID_INVALID", `${action} requires a stable CTX-* ID`, artifact));
+      continue;
+    }
+    if (!loaded.planning.context || !projectContextIds(loaded.planning.context.content).has(contextId)) {
+      findings.push(finding(
+        "MILESTONE_CONTEXT_PROMOTION_ENTRY_MISSING",
+        `${contextId} is absent from .planning/CONTEXT.md`,
+        artifact
+      ));
+    }
+  }
+  return findings;
+}
+
 function validateComplete(loaded) {
   const plan = validateExecute(loaded);
   const trace = traceLoaded(loaded);
   const goalTrace = traceGoals(loaded, plan.alignment);
   const findings = [...plan.findings, ...trace.findings, ...goalTrace.findings];
+  findings.push(...validateContextPromotion(loaded));
   const delivery = phaseDeliveryRecord(loaded);
   if (delivery.version) {
     findings.push(...validateDeliveryStage(delivery.content, delivery.artifact, "postmerge"));
@@ -1742,7 +1928,7 @@ function validateTaskComplete(loaded) {
 }
 
 async function validateMilestoneComplete(loaded) {
-  const findings = [];
+  const findings = [...validateProjectContext(loaded)];
   const state = loaded.planning.state;
   const roadmap = loaded.planning.roadmap;
   const requirementsDocument = loaded.planning.requirements;
@@ -1823,6 +2009,7 @@ async function validateMilestoneComplete(loaded) {
         phaseLoaded.contents.summary ? relative(loaded.project, phaseLoaded.contents.summary.path) : null
       ));
     }
+    findings.push(...validateContextPromotion(phaseLoaded));
   }
 
   if (!loaded.audit) {
@@ -1854,6 +2041,7 @@ async function validateMilestoneComplete(loaded) {
       findings.push(finding("MILESTONE_SUMMARY_INCOMPLETE", "Milestone summary status must be Complete", artifact));
     }
   }
+  findings.push(...validateMilestoneContextPromotion(loaded));
 
   return {
     findings,

@@ -12,9 +12,10 @@ import { analyzeImages } from "../../vision-analysis/scripts/analyze.mjs";
 
 const execFileAsync = promisify(execFile);
 
-export const DEFAULT_TEXT_MODEL = "opencode/deepseek-v4-flash-free";
 export const DEFAULT_QUOTA_FALLBACK_MODEL = "agnes/agnes-2.0-flash";
 export const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+export const RESULT_SCHEMA_VERSION = 2;
+export const QUOTA_POLICY_VERSION = "user-policy-v1";
 
 const ANSI_PATTERN = /\u001b\[[0-?]*[ -/]*[@-~]/g;
 const MODEL_ID_PATTERN = /^([a-z0-9._-]+\/[a-z0-9._-]+)\s*$/gim;
@@ -109,56 +110,110 @@ function isUsableFreeModel(model) {
   return model.free && !new Set(["deprecated", "inactive", "disabled"]).has(model.status);
 }
 
-export function freeCandidates(models, { exclude = [] } = {}) {
+export function quotaPolicyForModel(model) {
+  if (model.id === DEFAULT_QUOTA_FALLBACK_MODEL) {
+    return {
+      quotaScope: "unlimited:agnes",
+      quotaScopeSource: QUOTA_POLICY_VERSION,
+      quotaScopeConfidence: "user-asserted"
+    };
+  }
+  if (model.provider === "opencode") {
+    return {
+      quotaScope: "shared:opencode",
+      quotaScopeSource: QUOTA_POLICY_VERSION,
+      quotaScopeConfidence: "user-asserted"
+    };
+  }
+  return {
+    quotaScope: `model:${model.id}`,
+    quotaScopeSource: QUOTA_POLICY_VERSION,
+    quotaScopeConfidence: "user-asserted"
+  };
+}
+
+export function freeCandidates(models, { exclude = [], requireTools = true } = {}) {
   const excluded = new Set(exclude);
   return models
     .filter((model) => isUsableFreeModel(model))
     .filter((model) => model.textInput)
-    .filter((model) => model.provider === "opencode")
+    .filter((model) => !requireTools || model.toolcall)
     .filter((model) => !excluded.has(model.id))
     .sort((left, right) => left.id.localeCompare(right.id));
 }
 
 export function resolveModelRoute({
   models,
-  requestedModel,
-  textDefault = process.env.AIMAGICIAN_OPENCODE_TEXT_MODEL || DEFAULT_TEXT_MODEL
+  requestedModel
 }) {
   const candidates = freeCandidates(models);
   const byId = new Map(candidates.map((model) => [model.id, model]));
 
-  if (requestedModel) {
-    const selected = byId.get(requestedModel);
-    if (!selected) {
-      return {
-        status: "invalid-selection",
-        reason: `${requestedModel} is not an active free OpenCode reasoning model`,
-        candidates
-      };
-    }
-    if (byId.has(textDefault) && requestedModel !== textDefault) {
-      return {
-        status: "invalid-selection",
-        reason: `${textDefault} is available and remains the required reasoning default`,
-        candidates
-      };
-    }
-    return { status: "selected", model: selected, reason: "controller-selection", candidates };
-  }
-
-  const selected = byId.get(textDefault);
-  if (selected) {
+  if (!requestedModel) {
     return {
-      status: "selected",
-      model: selected,
-      reason: "default-text-model",
+      status: "selection-required",
+      reason: "The controller must choose an active free tool-capable model with --model",
       candidates
     };
   }
 
+  const selected = byId.get(requestedModel);
+  if (!selected) {
+    return {
+      status: "invalid-selection",
+      reason: `${requestedModel} is not an active free text-and-tool OpenCode worker model`,
+      candidates
+    };
+  }
+  return { status: "selected", model: selected, reason: "controller-selection", candidates };
+}
+
+export function buildModelChain({
+  models,
+  primaryModel,
+  fallbackModels = [],
+  finalFallbackModel = process.env.AIMAGICIAN_OPENCODE_QUOTA_FALLBACK_MODEL || DEFAULT_QUOTA_FALLBACK_MODEL
+}) {
+  const candidates = freeCandidates(models);
+  const byId = new Map(candidates.map((model) => [model.id, model]));
+  const declared = [primaryModel, ...fallbackModels];
+  if (!primaryModel) {
+    return { status: "selection-required", reason: "--model is required", candidates };
+  }
+  if (new Set(declared).size !== declared.length) {
+    return { status: "invalid-chain", reason: "Primary and fallback models must be unique", candidates };
+  }
+  const unavailable = declared.filter((id) => !byId.has(id));
+  if (unavailable.length > 0) {
+    return {
+      status: "invalid-chain",
+      reason: `Unavailable or ineligible models: ${unavailable.join(", ")}`,
+      candidates
+    };
+  }
+  const explicitFinalIndex = declared.indexOf(finalFallbackModel);
+  if (explicitFinalIndex !== -1 && explicitFinalIndex !== declared.length - 1) {
+    return {
+      status: "invalid-chain",
+      reason: `${finalFallbackModel} may appear only as the final model`,
+      candidates
+    };
+  }
+
+  const effectiveIds = [...declared];
+  if (primaryModel !== finalFallbackModel && byId.has(finalFallbackModel) && explicitFinalIndex === -1) {
+    effectiveIds.push(finalFallbackModel);
+  }
+  const chain = effectiveIds.map((id) => {
+    const model = byId.get(id);
+    return { ...model, ...quotaPolicyForModel(model) };
+  });
   return {
-    status: "selection-required",
-    reason: `${textDefault} is not available; the controller must choose a task-appropriate free reasoning model`,
+    status: "selected",
+    reason: "controller-selected-chain",
+    declaredChain: declared,
+    effectiveChain: effectiveIds,
+    chain,
     candidates
   };
 }
@@ -166,7 +221,7 @@ export function resolveModelRoute({
 export function classifyOpenCodeFailure(output, exitCode) {
   if (exitCode === 0) return "success";
   const value = stripAnsi(output);
-  if (isTerminalUsageEvent(value)) {
+  if (isCompletedUsageFailure(value)) {
     return "usage-limit";
   }
   if (/(?:model[^.\n]*(?:not found|unknown|unavailable|disabled)|unknown model|invalid model)/i.test(value)) {
@@ -189,7 +244,33 @@ export function classifyOpenCodeFailure(output, exitCode) {
 
 export function isTerminalUsageEvent(chunk) {
   const value = stripAnsi(chunk);
-  return /(?:stream error|AI_APICallError|AI_RetryError|provider[^.\n]*(?:error|reject)|(?:status|code)[^0-9]{0,8}429|HTTP\s*429)[\s\S]{0,400}(?:rate[ -]?limit|usage[ -]?(?:limit|quota)|quota|resource[_ ]exhausted|429)/i.test(value);
+  const usageSignal = /(?:rate[ -]?limit|usage[ -]?(?:limit|quota)|quota|resource[_ ]exhausted|\b429\b)/i;
+  const explicitStreamError = /^stream error\b/i;
+  const openCodeErrorLog = /\blevel=(?:ERROR|WARN)\b.*\b(?:provider|stream|api|request|response|error|reject|status|code)\b/i;
+
+  return value.split(/\r?\n/).some((rawLine) => {
+    const line = rawLine.trim();
+    if (!line || !usageSignal.test(line)) return false;
+    if (explicitStreamError.test(line) || openCodeErrorLog.test(line)) return true;
+    if (!line.startsWith("{")) return false;
+
+    try {
+      const event = JSON.parse(line);
+      const serialized = JSON.stringify(event);
+      return /"(?:error|errors|name|type|code|status)"\s*:/i.test(serialized) && usageSignal.test(serialized);
+    } catch {
+      return false;
+    }
+  });
+}
+
+function isCompletedUsageFailure(output) {
+  if (isTerminalUsageEvent(output)) return true;
+  const usageSignal = /(?:rate[ -]?limit|usage[ -]?(?:limit|quota)|quota|resource[_ ]exhausted|\b429\b)/i;
+  return stripAnsi(output).split(/\r?\n/).some((rawLine) => {
+    const line = rawLine.trim();
+    return /^(?:AI_(?:APICall|Retry)Error\b|HTTP\s*429\b)/i.test(line) && usageSignal.test(line);
+  });
 }
 
 async function readCachedModels(path, now = Date.now()) {
@@ -197,7 +278,9 @@ async function readCachedModels(path, now = Date.now()) {
     const info = await stat(path);
     if (now - info.mtimeMs > CACHE_TTL_MS) return null;
     const parsed = JSON.parse(await readFile(path, "utf8"));
-    return Array.isArray(parsed.models) ? parsed.models : null;
+    return Array.isArray(parsed.models)
+      ? { models: parsed.models, refreshedAt: parsed.refreshedAt ?? new Date(info.mtimeMs).toISOString() }
+      : null;
   } catch {
     return null;
   }
@@ -213,7 +296,9 @@ async function writeCache(path, models) {
 export async function discoverModels({ refresh = false, path = cachePath() } = {}) {
   if (!refresh) {
     const cached = await readCachedModels(path);
-    if (cached?.length) return { models: cached, source: "cache", cachePath: path };
+    if (cached?.models.length) {
+      return { ...cached, source: "cache", cachePath: path };
+    }
   }
 
   const result = await execFileAsync("opencode", ["models", "--verbose"], {
@@ -224,8 +309,9 @@ export async function discoverModels({ refresh = false, path = cachePath() } = {
   if (models.length === 0) {
     throw new Error("OpenCode returned no parseable model metadata");
   }
+  const refreshedAt = new Date().toISOString();
   await writeCache(path, models);
-  return { models, source: "live", cachePath: path };
+  return { models, source: "live", cachePath: path, refreshedAt };
 }
 
 function appendTail(current, chunk) {
@@ -258,7 +344,7 @@ async function runOnce({ directory, model, prompt }) {
       const text = chunk.toString();
       output = appendTail(output, text);
       target.write(chunk);
-      if (!terminalUsageObserved && isTerminalUsageEvent(text)) {
+      if (!terminalUsageObserved && isTerminalUsageEvent(output)) {
         terminalUsageObserved = true;
         child.kill("SIGTERM");
       }
@@ -298,38 +384,74 @@ function fallbackWaitMs(attempt) {
   return Math.min(1_000 * (2 ** Math.min(Math.max(attempt - 1, 0), 6)), 60_000);
 }
 
-async function runQuotaFallback({ directory, model, prompt, attempts }) {
-  let rateLimitEvents = 0;
-  let transientRetries = 0;
-  while (true) {
-    const result = await runOnce({ directory, model, prompt });
-    attempts.push(result);
-    if (result.classification === "usage-limit") {
-      rateLimitEvents += 1;
-      const waitMs = fallbackWaitMs(rateLimitEvents);
-      process.stderr.write(`OPENCODE_DELEGATION_EVENT ${JSON.stringify({
-        type: "fallback-rate-limit",
-        model,
-        rateLimitEvents,
-        waitMs
-      })}\n`);
-      await new Promise((resolveWait) => setTimeout(resolveWait, waitMs));
+function isInvalidated(model, invalidated) {
+  return invalidated.models.has(model.id) ||
+    invalidated.providers.has(model.provider) ||
+    invalidated.quotaScopes.has(model.quotaScope);
+}
+
+export async function runModelChain({ directory, chain, prompt, attempts = [] }) {
+  const invalidated = {
+    models: new Set(),
+    providers: new Set(),
+    quotaScopes: new Set()
+  };
+  const transitions = [];
+  let final = null;
+
+  for (const model of chain) {
+    if (isInvalidated(model, invalidated)) {
+      transitions.push({ type: "skipped-invalidated", model: model.id, quotaScope: model.quotaScope });
       continue;
     }
-    if (result.classification === "network" && transientRetries < 3) {
-      transientRetries += 1;
-      const waitMs = [1_000, 2_000, 4_000][transientRetries - 1];
-      process.stderr.write(`OPENCODE_DELEGATION_EVENT ${JSON.stringify({
-        type: "fallback-transient-retry",
-        model,
-        transientRetries,
-        waitMs
-      })}\n`);
-      await new Promise((resolveWait) => setTimeout(resolveWait, waitMs));
-      continue;
+
+    let networkRetries = 0;
+    let agnesRateLimitEvents = 0;
+    while (true) {
+      const result = await runOnce({ directory, model: model.id, prompt });
+      attempts.push(result);
+      final = result;
+      if (result.classification === "success") {
+        return { final, attempts, transitions, invalidated };
+      }
+      if (result.classification === "usage-limit") {
+        if (model.quotaScope === "unlimited:agnes") {
+          agnesRateLimitEvents += 1;
+          const waitMs = fallbackWaitMs(agnesRateLimitEvents);
+          const event = { type: "agnes-rate-limit-retry", model: model.id, rateLimitEvents: agnesRateLimitEvents, waitMs };
+          transitions.push(event);
+          process.stderr.write(`OPENCODE_DELEGATION_EVENT ${JSON.stringify(event)}\n`);
+          await new Promise((resolveWait) => setTimeout(resolveWait, waitMs));
+          continue;
+        }
+        invalidated.quotaScopes.add(model.quotaScope);
+        transitions.push({ type: "quota-scope-invalidated", model: model.id, quotaScope: model.quotaScope });
+        break;
+      }
+      if (result.classification === "model-unavailable") {
+        invalidated.models.add(model.id);
+        transitions.push({ type: "model-invalidated", model: model.id });
+        break;
+      }
+      if (result.classification === "authentication") {
+        invalidated.providers.add(model.provider);
+        transitions.push({ type: "provider-invalidated", model: model.id, provider: model.provider });
+        break;
+      }
+      if (result.classification === "network" && networkRetries < 3) {
+        networkRetries += 1;
+        const waitMs = [1_000, 2_000, 4_000][networkRetries - 1];
+        const event = { type: "network-retry", model: model.id, networkRetries, waitMs };
+        transitions.push(event);
+        process.stderr.write(`OPENCODE_DELEGATION_EVENT ${JSON.stringify(event)}\n`);
+        await new Promise((resolveWait) => setTimeout(resolveWait, waitMs));
+        continue;
+      }
+      return { final, attempts, transitions, invalidated };
     }
-    return { result, rateLimitEvents, transientRetries };
   }
+
+  return { final, attempts, transitions, invalidated };
 }
 
 export function buildVisualReasoningPrompt(prompt, visualEvidence) {
@@ -443,8 +565,10 @@ Review only this frozen directory and revision state. Do not modify files, creat
 function parseArgs(argv) {
   const options = {
     files: [],
+    fallbackModels: [],
     taskType: "quick",
     modality: "text",
+    format: "json",
     refreshModels: false,
     dryRun: false,
     allowExternalUpload: false
@@ -463,6 +587,9 @@ function parseArgs(argv) {
     else if (argument === "--modality") options.modality = value();
     else if (argument === "--prompt-file") options.promptFile = value();
     else if (argument === "--model") options.model = value();
+    else if (argument === "--fallback-model") options.fallbackModels.push(value());
+    else if (argument === "--list-models") options.listModels = true;
+    else if (argument === "--format") options.format = value();
     else if (argument === "--review-ref") options.reviewRef = value();
     else if (argument === "--review-worktree") options.reviewWorktree = value();
     else if (argument === "--file") options.files.push(value());
@@ -477,12 +604,16 @@ function parseArgs(argv) {
 
 function usage() {
   return `Usage:
-  node scripts/opencode-run.mjs --dir <path> --prompt-file <path> [options]
+  node scripts/opencode-run.mjs --list-models [--format json|table] [--refresh-models]
+  node scripts/opencode-run.mjs --dir <path> --prompt-file <path> --model <id> [options]
 
 Options:
   --task-type <quick|discovery|research|review|audit>
   --modality <text|vision>
-  --model <id>              Controller choice when the default is unavailable
+  --model <id>              Required controller-selected primary model
+  --fallback-model <id>     Repeat for ordered better-model fallbacks; Agnes is final
+  --list-models             List active free text models without running a worker
+  --format <json|table>      Model-list format; JSON is the default
   --review-ref <git-ref>    Review/audit an exact commit in a temporary detached worktree
   --review-worktree <path>  Review/audit one worktree and fail if its fingerprint changes
   --file <path-or-url>      Repeat for visual inputs
@@ -493,16 +624,44 @@ Options:
 }
 
 function publicModel(model) {
+  const discoveryEligible = isUsableFreeModel(model) && model.textInput;
+  const workerEligible = discoveryEligible && model.toolcall;
   return {
     id: model.id,
     provider: model.provider,
+    free: model.free,
     status: model.status,
     context: model.context,
+    output: model.output,
     reasoning: model.reasoning,
     toolcall: model.toolcall,
+    textInput: model.textInput,
     imageInput: model.imageInput,
-    capabilitySource: model.capabilitySource
+    discoveryEligible,
+    workerEligible,
+    workerExclusionReason: workerEligible
+      ? null
+      : !discoveryEligible
+        ? "not an active free text model"
+        : "tool calling is not declared by provider metadata",
+    capabilitySource: model.capabilitySource,
+    ...quotaPolicyForModel(model)
   };
+}
+
+function renderModelTable(models) {
+  const rows = models.map(publicModel);
+  const header = ["MODEL", "PROVIDER", "CONTEXT", "WORKER", "QUOTA SCOPE"];
+  const values = rows.map((model) => [
+    model.id,
+    model.provider,
+    String(model.context ?? "unknown"),
+    model.workerEligible ? "yes" : "no",
+    model.quotaScope
+  ]);
+  const widths = header.map((value, index) => Math.max(value.length, ...values.map((row) => row[index].length)));
+  const line = (row) => row.map((value, index) => value.padEnd(widths[index])).join("  ").trimEnd();
+  return `${line(header)}\n${line(widths.map((width) => "-".repeat(width)))}\n${values.map(line).join("\n")}\n`;
 }
 
 async function main(argv) {
@@ -511,8 +670,35 @@ async function main(argv) {
     process.stdout.write(usage());
     return 0;
   }
+  if (!new Set(["json", "table"]).has(options.format)) {
+    throw new Error("--format must be json or table");
+  }
+  if (options.listModels) {
+    const inventory = await discoverModels({ refresh: options.refreshModels });
+    const models = freeCandidates(inventory.models, { requireTools: false });
+    if (options.format === "table") {
+      process.stdout.write(renderModelTable(models));
+    } else {
+      process.stdout.write(`${JSON.stringify({
+        schemaVersion: RESULT_SCHEMA_VERSION,
+        command: "list-models",
+        inventorySource: inventory.source,
+        refreshedAt: inventory.refreshedAt,
+        cachePath: inventory.cachePath,
+        policyVersion: QUOTA_POLICY_VERSION,
+        models: models.map(publicModel)
+      }, null, 2)}\n`);
+    }
+    return 0;
+  }
+  if (options.format !== "json") {
+    throw new Error("--format table is only valid with --list-models");
+  }
   if (!options.directory || !options.promptFile) {
     throw new Error("--dir and --prompt-file are required");
+  }
+  if (!options.model) {
+    throw new Error("--model is required; use --list-models to inspect active free candidates");
   }
   if (!new Set(["text", "vision"]).has(options.modality)) {
     throw new Error("--modality must be text or vision");
@@ -546,18 +732,29 @@ async function main(argv) {
     models: inventory.models,
     requestedModel: options.model
   });
+  const modelChain = buildModelChain({
+    models: inventory.models,
+    primaryModel: options.model,
+    fallbackModels: options.fallbackModels
+  });
 
   const baseReport = {
+    schemaVersion: RESULT_SCHEMA_VERSION,
     taskType: options.taskType,
     modality: options.modality,
     inventorySource: inventory.source,
-    routeStatus: route.status,
-    routeReason: route.reason,
-    candidates: route.candidates.map(publicModel)
+    inventoryRefreshedAt: inventory.refreshedAt,
+    routeStatus: modelChain.status,
+    routeReason: modelChain.reason,
+    declaredChain: modelChain.declaredChain ?? [options.model, ...options.fallbackModels],
+    effectiveChain: modelChain.effectiveChain ?? []
   };
 
-  if (route.status !== "selected") {
-    process.stdout.write(`${JSON.stringify(baseReport, null, 2)}\n`);
+  if (route.status !== "selected" || modelChain.status !== "selected") {
+    process.stdout.write(`${JSON.stringify({
+      ...baseReport,
+      candidates: modelChain.candidates.map(publicModel)
+    }, null, 2)}\n`);
     return 3;
   }
   if (options.dryRun) {
@@ -603,69 +800,31 @@ async function main(argv) {
 
   try {
     const attempts = [];
-    const primary = await runOnce({
+    const chainResult = await runModelChain({
       directory: executionDirectory,
-      model: route.model.id,
-      prompt: workerPrompt
+      chain: modelChain.chain,
+      prompt: workerPrompt,
+      attempts
     });
-    attempts.push(primary);
-
-    let final = primary;
-    let fallbackReason = null;
-    let fallbackRateLimitEvents = 0;
-    let fallbackTransientRetries = 0;
-    const fallbackModel = process.env.AIMAGICIAN_OPENCODE_QUOTA_FALLBACK_MODEL || DEFAULT_QUOTA_FALLBACK_MODEL;
-    if (primary.classification === "usage-limit" && primary.model !== fallbackModel) {
-      const agnes = inventory.models.find((model) => model.id === fallbackModel && isUsableFreeModel(model));
-      if (agnes) {
-        fallbackReason = "explicit-usage-limit";
-        const fallback = await runQuotaFallback({
-          directory: executionDirectory,
-          model: fallbackModel,
-          prompt: workerPrompt,
-          attempts
-        });
-        final = fallback.result;
-        fallbackRateLimitEvents = fallback.rateLimitEvents;
-        fallbackTransientRetries = fallback.transientRetries;
-      } else {
-        fallbackReason = "agnes-unavailable-after-usage-limit";
-      }
-    }
-
-    if (primary.classification === "model-unavailable" && primary.model === DEFAULT_TEXT_MODEL) {
-      const refreshed = await discoverModels({ refresh: true });
-      const candidates = freeCandidates(refreshed.models, { exclude: [DEFAULT_TEXT_MODEL] });
-      process.stderr.write(`OPENCODE_DELEGATION_RESULT ${JSON.stringify({
-        ...baseReport,
-        routeStatus: "selection-required",
-        routeReason: `${DEFAULT_TEXT_MODEL} failed as unavailable; controller selection is required`,
-        candidates: candidates.map(publicModel),
-        primaryModel: primary.model,
-        finalModel: primary.model,
-        attemptChain: attempts.map(({ output, ...attempt }) => attempt),
-        fallbackReason: null,
-        frozenReview: frozenReview ? {
-          kind: frozenReview.kind,
-          requested: frozenReview.requested,
-          commit: frozenReview.commit,
-          fingerprint: frozenReview.fingerprint
-        } : null
-      })}\n`);
-      return 3;
-    }
+    const primary = attempts[0] ?? null;
+    const final = chainResult.final;
+    const fallbackReason = chainResult.transitions[0]?.type ?? null;
 
     const frozenVerification = frozenReview ? await frozenReview.verify() : null;
     const report = {
       ...baseReport,
-      primaryModel: primary.model,
-      finalModel: final.model,
+      primaryModel: primary?.model ?? options.model,
+      finalModel: final?.model ?? null,
       attemptChain: attempts.map(({ output, ...attempt }) => attempt),
       fallbackReason,
+      transitions: chainResult.transitions,
+      invalidatedModels: [...chainResult.invalidated.models],
+      invalidatedProviders: [...chainResult.invalidated.providers],
+      invalidatedQuotaScopes: [...chainResult.invalidated.quotaScopes],
       visualAcquisition,
-      fallbackRateLimitEvents,
-      fallbackTransientRetries,
-      session: final.session,
+      fallbackRateLimitEvents: chainResult.transitions.filter((event) => event.type === "agnes-rate-limit-retry").length,
+      fallbackTransientRetries: chainResult.transitions.filter((event) => event.type === "network-retry").length,
+      session: final?.session ?? null,
       frozenReview: frozenReview ? {
         kind: frozenReview.kind,
         requested: frozenReview.requested,
@@ -674,10 +833,10 @@ async function main(argv) {
         stable: frozenVerification.stable,
         finalFingerprint: frozenVerification.after
       } : null,
-      runStatus: final.exitCode === 0 && frozenVerification?.stable !== false ? "DONE" : "BLOCKED"
+      runStatus: final?.exitCode === 0 && frozenVerification?.stable !== false ? "DONE" : "BLOCKED"
     };
     process.stderr.write(`OPENCODE_DELEGATION_RESULT ${JSON.stringify(report)}\n`);
-    return final.exitCode === 0 && frozenVerification?.stable !== false ? 0 : 1;
+    return final?.exitCode === 0 && frozenVerification?.stable !== false ? 0 : 1;
   } finally {
     if (frozenReview) await frozenReview.cleanup();
   }

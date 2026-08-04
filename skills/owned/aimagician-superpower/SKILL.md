@@ -66,16 +66,17 @@ Escalate when any signal is present: unclear goal, multiple modules, public cont
 
 ## Adaptive Start And Resume Gate
 
-Run the full recovery gate only for High work, phase/milestone work, resume/compaction/handoff, or uncertain repository state. Quick and Standard work starts from the current request and existing context; read only what changes the next action.
+Run the full recovery gate for High work, phase/milestone work, resume/compaction/handoff, missing context, or uncertain repository state. Quick and bounded Standard work starts from the latest request and current local evidence; read only sources that can change the next action.
 
-1. Read this `SKILL.md` again.
-2. Read `.planning` state and project sources of truth only when they are needed to resolve scope, alignment, or risk.
-3. Read the project knowledge base when present and material.
-4. Read current git status and separate user changes from planned work.
-5. Reconcile the latest user instruction, planning artifacts, project docs, wiki, and filesystem. Newer explicit user decisions win; contradictions that affect behavior, scope, data, risk, or acceptance must be confirmed.
-6. Resume from the last verified checkpoint for phase/milestone work. Do not restart solved discovery or skip a gate that is still relevant.
+1. Read this `SKILL.md` again before substantive action when context is missing or execution is resumed.
+2. Read the latest explicit user request, current git status, and the most recent relevant phase/task/handoff record first. Recent records are navigation aids: they identify the active target, latest checkpoint, and likely source paths.
+3. For planning-managed work, resolve authority by reading `.planning/STATE.md`, `.planning/PROJECT.md`, `.planning/CONTEXT.md`, the active roadmap/specification, and the requirement records routed by the recent record. `PROJECT.md` defines product intent and boundaries; `CONTEXT.md` is the canonical project-wide architecture, invariants, adopted decisions, verification baseline, and source index.
+4. Read project docs and the project knowledge base only when routed by `PROJECT.md`, `CONTEXT.md`, the active work, or a material uncertainty. Do not bulk-load all historical phases or wiki pages.
+5. Reconcile sources by authority, not recency alone. A newer explicit user decision wins; a recent summary cannot silently override an accepted specification, canonical decision, or runtime evidence.
+6. Discuss any unresolved material uncertainty before mutation. Material means it can change observable behavior, architecture, interfaces, stored data, security, scope, acceptance, or an irreversible action. A local, reversible implementation assumption may proceed only when it is recorded and cannot alter those surfaces.
+7. Resume from the last verified requirement-backed checkpoint. Do not restart solved discovery or skip a gate that remains relevant.
 
-If a source is absent, record that fact and decide whether it is blocking. Do not invent missing context. Never present a partial implementation as complete. For Quick/Standard work, absent optional planning or wiki sources are not blockers.
+If adopted `.planning/PROJECT.md` or `.planning/CONTEXT.md` is absent or invalid, alignment blocks phase/milestone/High/resumed execution until repaired. Isolated Quick work may proceed without adopting planning, provided it does not touch shared architecture and its compact contract records the assumption. Never invent missing context. Never present a partial implementation as complete.
 
 ## Task Contract Instead Of Universal Goal Lock
 
@@ -88,11 +89,12 @@ For phase/milestone/High work, use the Active Goal Lock below.
 For phase/milestone/High work, lock execution to the active planning target before changing files:
 
 1. Read the active milestone and phase from `.planning/STATE.md`.
-2. Read that phase's status, literal goal, requirement IDs, and success criteria from `.planning/ROADMAP.md`.
+2. Read `.planning/PROJECT.md` and `.planning/CONTEXT.md`, then the active phase's status, literal goal, requirement IDs, and success criteria from `.planning/ROADMAP.md`.
 3. Confirm the phase specification repeats the same goal and requirements, and confirm `.planning/REQUIREMENTS.md` maps every requirement to that phase.
-4. Run `workflow.mjs validate --gate align`. Do not edit while alignment fails.
+4. Run `workflow.mjs validate --gate align`. Do not edit while alignment or the adopted project-context contract fails.
 5. Map each planned action to a `REQ-*` item or an explicit `GOAL-*` acceptance criterion. Work with no mapping is scope drift.
 6. Run `workflow.mjs trace` at checkpoints and before any completion claim. A passing test is evidence for a mapped criterion, not proof that the phase goal is complete.
+7. At phase closure, promote durable architecture, invariant, interface, verification-baseline, or source index changes into `.planning/CONTEXT.md`; record `NONE` with evidence when no promotion is needed.
 
 An off-phase task requires a controlled exception with the parent milestone, parent phase, explicit `USR-*` approval, and a return checkpoint. Do not apply this lock to standalone Quick/Standard tasks unless the project itself is phase-managed.
 
@@ -209,7 +211,7 @@ Run all practical LOCAL checks first, narrow before broad, based on the full-cha
 
 When an audit trigger applies, compare the result with the locked specification, original request, non-goals, plan, and evidence. Check integration wiring, regression risk, capability preservation, stale placeholders, security, cleanup, documentation, installation state, delivery provenance, and recovery readiness. Use a fresh OpenCode reviewer through `cli-agent-delegator` against a frozen commit or frozen worktree for premerge review, phase audit, and milestone or completion closure. Reconcile its findings against primary evidence and classify every gap.
 
-An independent OpenCode audit is required for High work, phase/milestone closure, deployable postmerge closure, or explicit user request. Quick/Standard work does not require it; targeted verification plus PR/CI is the normal completion evidence. Visual evidence is acquired through `vision-analysis` with explicit upload authorization, then passed as text to the reviewer. Audit reasoning follows the DeepSeek-first route; Agnes is a text-reasoning fallback only after a verified DeepSeek usage or quota limit. The audit freezes the reviewed commit or diff and maps `USR-* -> REQ-* -> implementation -> evidence -> audit decision`. Record provider, primary model, final model, attempt chain, fallback reason, session, run status, review point, requirement matrix, Blocker/Important/Nitpick counts, and main-Agent spot-check evidence. Tests passing alone never satisfies an independent audit gate.
+An independent OpenCode audit is required for High work, phase/milestone closure, deployable postmerge closure, or explicit user request. Quick/Standard work does not require it; targeted verification plus PR/CI is the normal completion evidence. Visual evidence is acquired through `vision-analysis` with explicit upload authorization, then passed as text to the reviewer. The controller explicitly selects the best suitable free audit model and ordered fallbacks for the task; the runtime appends Agnes once as the final fallback. The audit freezes the reviewed commit or diff and maps `USR-* -> REQ-* -> implementation -> evidence -> audit decision`. Record selection rationale, declared/effective chain, provider, primary model, final model, attempt transitions, fallback reason, session, run status, review point, requirement matrix, Blocker/Important/Nitpick counts, and main-Agent spot-check evidence. Tests passing alone never satisfies an independent audit gate.
 
 Any `FAIL`, `NOT_RUN`, unresolved `Blocker`, or unresolved `Important` keeps the checklist open. Continue implementing and re-auditing while feasible. Defer an Important finding only through an explicit user decision. Stop as blocked only for a genuine external inability, not because the remaining work is inconvenient.
 
@@ -250,7 +252,7 @@ node scripts/engineering-route.mjs --kind discovery --risk high --format json
 node scripts/engineering-route.mjs --kind prototype --risk medium
 ```
 
-`align` proves the selected work matches the active milestone, phase, literal roadmap goal, requirement mapping, and any controlled exception. `spec` checks locked requirements, USR source mapping, and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires alignment plus completed research, discussion, context, and accepted plans. `premerge` checks the delivery contract through frozen-review readiness. `postmerge` additionally checks implementation merge SHA, deployed artifact provenance, online evidence, recovery, and closure decision. Phase `complete` requires requirement and goal-criterion evidence, a passing phase audit, summary, no unresolved Blocker or Important, and postmerge evidence when a delivery contract is present. Milestone `complete` additionally requires every member phase complete plus a milestone-wide requirement and goal audit. Task mode supports alignment, premerge, postmerge, and complete gates. `planning` supports tracked storage or a worktree-shared local-private store with explicit lock and revision control; local-private state is excluded from Git and has no automatic backup. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the tier, shortest default path, and risk-scaled stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
+`align` proves the selected work matches the active milestone, phase, literal roadmap goal, requirement mapping, and any controlled exception. `spec` checks locked requirements, USR source mapping, and ambiguity. `plan` checks requirement mapping and plan structure. `execute` additionally requires alignment plus completed research, discussion, context, and accepted plans. `premerge` checks the delivery contract through frozen-review readiness. `postmerge` additionally checks implementation merge SHA, deployed artifact provenance, online evidence, recovery, and closure decision. Phase `complete` requires requirement and goal-criterion evidence, a passing phase audit, summary, project-context promotion or explicit no-change, no unresolved Blocker or Important, and postmerge evidence when a delivery contract is present. Milestone `complete` additionally requires every member phase complete, a milestone-wide requirement and goal audit, and a milestone-level project-context promotion or explicit no-change decision. Task mode supports alignment, premerge, postmerge, and complete gates. `planning` supports tracked storage or a worktree-shared local-private store with explicit lock and revision control; local-private state is excluded from Git and has no automatic backup. `init` previews missing artifacts by default and writes only with `--write`. `engineering-route.mjs` returns the tier, shortest default path, and risk-scaled stages, artifacts, and review axes for a task type; it never edits the project. Runtime commands never install dependencies, modify hooks, commit, push, or overwrite an existing artifact.
 
 ## Companion Routing
 

@@ -172,6 +172,29 @@ describe("consolidated owned skill content", () => {
     expect(skill).toContain("Progressive Disclosure");
   });
 
+  it("adds clean, runtime-neutral distillation and Skill evolution capabilities", async () => {
+    const expectedMarkers: Record<string, string[]> = {
+      cangjie: ["cross-evidence", "RIA", "Pressure-Test", "SOURCE-MAP.md"],
+      nuwa: ["six complementary lanes", "mental models", "public evidence", "novel question"],
+      darwin: ["baseline", "paired comparison", "Keep Or Revert", "regression"]
+    };
+
+    for (const [id, markers] of Object.entries(expectedMarkers)) {
+      const skill = await readOwnedSkill(id);
+      for (const marker of markers) expect(skill).toContain(marker);
+      for (const forbidden of [
+        "alchaincyf",
+        "kangarooking",
+        "github.com/",
+        "npx skills add",
+        "About the Author",
+        "MIT License"
+      ]) {
+        expect(skill).not.toContain(forbidden);
+      }
+    }
+  });
+
   it("keeps the robust browser-testing probe workflow in webapp-testing", async () => {
     const skill = await readOwnedSkill("webapp-testing");
     expect(skill).toContain("with_server.py --help");
