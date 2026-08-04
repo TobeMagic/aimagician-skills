@@ -6,9 +6,9 @@ Keep Codex and OpenCode synchronized with the active `skills/owned` set, remove 
 
 ## Checklist
 
-- [x] Add `cangjie` for long-form knowledge-to-Skill distillation.
-- [x] Add `nuwa` for evidence-grounded reasoning and decision-advisor distillation.
-- [x] Add `darwin` for baseline, independent comparison, regression, and reversible Skill optimization.
+- [x] Add a clean long-form knowledge-to-Skill distillation owner Skill.
+- [x] Add a clean evidence-grounded reasoning and decision-advisor distillation owner Skill.
+- [x] Add a clean baseline, independent comparison, regression, and reversible Skill optimization owner Skill.
 - [x] Add taxonomy and formatter coverage for all three Skills.
 - [x] Remove author, promotion, installer, and upstream identity material from the owner Skill bodies.
 - [x] Prune unowned direct Skill directories during `bootstrap` reconciliation.

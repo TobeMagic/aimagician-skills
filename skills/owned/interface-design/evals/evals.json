@@ -31,6 +31,13 @@
       "forbidden": ["claim native PowerPoint", "repeat one card layout on every frame", "skip sequence review"]
     },
     {
+      "id": "single-file-html-slide-player",
+      "prompt": "Turn this single HTML presentation into a complete browser slide player with a global card overview and a PPTX derivative.",
+      "should_trigger": true,
+      "expected": ["single-file stage contract", "arrow page and space navigation", "wheel and touch", "Escape or O overview cards", "F full screen", "progress hash and persistence", "print behavior", "fidelity stage PPTX export", "browser and derivative verification"],
+      "forbidden": ["disconnected HTML screenshots", "claim editable PPTX", "controls captured in slide images", "route ordinary PowerPoint production to HTML"]
+    },
+    {
       "id": "native-powerpoint-boundary",
       "prompt": "Deliver an editable PowerPoint .pptx with a slide master and Office compatibility.",
       "should_trigger": false,

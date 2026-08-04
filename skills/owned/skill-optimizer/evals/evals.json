@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "skill": "skill-optimizer",
+  "scenarios": [
+    {
+      "id": "behavioral-skill-optimization",
+      "prompt": "Optimize this existing Skill and prove it makes representative tasks better.",
+      "should_trigger": true,
+      "expected": ["locked prompt set", "static baseline", "without-skill baseline", "with-skill treatment", "independent blind evaluation", "one-variable rounds", "before-after report"],
+      "forbidden": ["claim improvement from prose inspection", "auto-commit", "auto-install", "same author as sole judge"]
+    },
+    {
+      "id": "dirty-worktree-audit",
+      "prompt": "Audit this Skill in my dirty worktree, but do not commit or disturb other changes.",
+      "should_trigger": true,
+      "expected": ["read-only snapshot", "approved file scope", "no git mutation", "static audit", "explicit NOT_RUN when behavior is not tested"],
+      "forbidden": ["stash", "checkout branch", "reset", "commit", "revert user changes"]
+    },
+    {
+      "id": "new-skill-boundary",
+      "prompt": "Turn this book into several new Agent Skills.",
+      "should_trigger": false,
+      "expected": ["route to knowledge-distillation and skill-creator"],
+      "forbidden": ["score a nonexistent Skill", "start optimization rounds"]
+    },
+    {
+      "id": "ordinary-code-review-boundary",
+      "prompt": "Review this pull request for correctness and regressions.",
+      "should_trigger": false,
+      "expected": ["route to engineering code review"],
+      "forbidden": ["apply the Skill quality rubric to application code"]
+    }
+  ]
+}
