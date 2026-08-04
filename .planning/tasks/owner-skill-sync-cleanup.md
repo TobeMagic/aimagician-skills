@@ -22,10 +22,11 @@ Keep Codex and OpenCode synchronized with the active `skills/owned` set, remove 
 - `npm run typecheck` passed.
 - `npm run build` passed.
 - `node dist/cli/index.js format-skills --check --json` passed for 28 owner Skills.
-- `npm test` passed: 26 files, 161 tests.
+- `npm test` passed: 27 files, 164 tests.
 - Real bootstrap synchronized 28 owner Skills to Codex and OpenCode.
 - Real doctor reported both targets healthy with 28 managed and 28 detected owner Skills and no issues.
 - Codex `.system` remained present and was excluded from owner cleanup.
+- Direct `bootstrap --clean` regression coverage confirms non-owner Codex Skills are removed while `.system` and owned Skills remain.
 
 ## Boundary
 

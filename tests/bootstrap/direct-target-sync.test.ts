@@ -345,6 +345,73 @@ describe("direct target sync", () => {
     );
   });
 
+  it("clean mode removes non-owner Codex skills without deleting .system", async () => {
+    const fixture = await createFixtureRepository();
+    const workspaceRoot = join(fixture.root, "workspace");
+    const homeDir = join(fixture.root, "home");
+
+    await runBootstrap({
+      selectedTargets: ["codex"],
+      catalog: fixture.catalog,
+      platform: {
+        platform: "linux",
+        homeDir,
+        configBaseDir: join(homeDir, ".config"),
+        stateBaseDir: fixture.root,
+        workspaceRoot
+      },
+      githubRepoOverrides: {
+        "aimagician/external-skills": fixture.externalRepoRoot
+      },
+      now: "2026-03-14T03:00:00Z"
+    });
+
+    await mkdir(join(homeDir, ".codex", "skills", "manual-skill"), { recursive: true });
+    await writeFile(
+      join(homeDir, ".codex", "skills", "manual-skill", "SKILL.md"),
+      "# Manual\n",
+      "utf8"
+    );
+    await mkdir(join(homeDir, ".codex", "skills", ".system", "builtin"), { recursive: true });
+    await writeFile(
+      join(homeDir, ".codex", "skills", ".system", "builtin", "SKILL.md"),
+      "# Codex system skill\n",
+      "utf8"
+    );
+
+    const result = await runBootstrap({
+      selectedTargets: ["codex"],
+      clean: true,
+      catalog: fixture.catalog,
+      platform: {
+        platform: "linux",
+        homeDir,
+        configBaseDir: join(homeDir, ".config"),
+        stateBaseDir: fixture.root,
+        workspaceRoot
+      },
+      githubRepoOverrides: {
+        "aimagician/external-skills": fixture.externalRepoRoot
+      },
+      now: "2026-03-14T03:00:00Z"
+    });
+
+    expect(result.targetReports).toEqual([
+      expect.objectContaining({
+        target: "codex",
+        status: "synced",
+        installedSkillIds: ["daily-ops", "gsd"]
+      })
+    ]);
+    await expectMissing(join(homeDir, ".codex", "skills", "manual-skill", "SKILL.md"));
+    await access(
+      join(homeDir, ".codex", "skills", ".system", "builtin", "SKILL.md"),
+      constants.F_OK
+    );
+    await access(join(homeDir, ".codex", "skills", "daily-ops", "SKILL.md"), constants.F_OK);
+    await access(join(homeDir, ".codex", "skills", "gsd", "SKILL.md"), constants.F_OK);
+  });
+
   it("updates only the selected direct targets and leaves unselected targets untouched", async () => {
     const fixture = await createFixtureRepository();
     const workspaceRoot = join(fixture.root, "workspace");

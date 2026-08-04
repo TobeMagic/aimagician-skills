@@ -216,7 +216,7 @@ node skills/owned/interface-design/scripts/export-html-deck-pptx.mjs --slides sl
 node skills/owned/interface-design/scripts/export-html-stage-pptx.mjs --html deck.html --out deck.pptx --mode fidelity
 ```
 
-The owned catalog currently contains 26 active Skills. Full upstream source mirrors used during consolidation stay ignored under each Skill's `references/_external_repos/`; they are neither packaged nor installed. The distillation, optimization, HTML presentation, and YapCLI validation record is in [`docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md`](docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md).
+The owned catalog currently contains 28 active Skills. Full upstream source mirrors used during consolidation stay ignored under each Skill's `references/_external_repos/`; they are neither packaged nor installed. The distillation, optimization, HTML presentation, and YapCLI validation record is in [`docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md`](docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md).
 
 See [`docs/design/html-universal-design-capability-merge.md`](docs/design/html-universal-design-capability-merge.md) for the capability analysis and boundary decisions.
 
