@@ -814,9 +814,10 @@ does not preserve `window-pptx` as a long-term public identity.
 - **GOAL-49-05:** A clean external Codex run using `gpt-5.6-terra` medium
   produces the accepted 15-slide work report without access to a reference
   PPTX, historical output, private bytes, or arbitrary visual code.
-- **GOAL-49-06:** Three fresh independent visual-capable AI reviews and one
-  fresh frozen-point OpenCode completion audit report no Blocker or Important;
-  source/install digests match and the implementation is merged and pushed.
+- **GOAL-49-06:** Three fresh independent visual-capable AI reviews, one
+  frozen-point premerge implementation audit, and one fresh completion audit
+  frozen to the pushed master SHA report no Blocker or Important; source and
+  installed Skill digests match the pushed implementation.
 
 **Depends on:** v6.0 Phase 48
 **Requirements:** [V61-LIB-01, V61-SEL-01, V61-ASM-01, V61-ADAPT-01, V61-QA-01, V61-CLEAN-01, V61-REL-01]

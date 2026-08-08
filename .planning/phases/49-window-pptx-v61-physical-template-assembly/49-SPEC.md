@@ -132,50 +132,69 @@ phase, not a completion claim for that checkpoint.
   package-size breach, Blocker, Important, `FAIL`, or `NOT_RUN` keeps Phase 49
   open.
 
-## Acceptance criteria
+## Acceptance Criteria
 
-- [ ] **GOAL-49-01:** `compile-page-templates` ingests the 288 certified core
+- [ ] **AC-49-01:** `compile-page-templates` ingests the 288 certified core
   pages from 266 distinct packages and emits a deterministic
   `page-template-library-v4.json` plus per-package OPC manifests, each with
-  source SHA-256, slide count, masters, layouts, themes, and slot graph.
-- [ ] **GOAL-49-02:** `query-page-templates` accepts role + style-cluster
-  filters and returns ranked candidates with deterministic scoring weights
-  (role 0.30, capacity 0.25, semantic 0.20, style 0.15, editability 0.10).
-- [ ] **GOAL-49-03:** `assemble-physical-deck` takes an assembly plan (≥15
-  slides), opens each source `.pptx`, extracts slide 1 plus its required OPC
-  dependencies, rewrites relationship and content-type IDs with stable
-  `v61_<source-hash>_<ordinal>` names, and emits a single target `.pptx`
-  whose `/ppt/slides/slideN.xml` bytes verify equal to the source bytes for
-  the chosen page (modulo text replacement).
-- [ ] **GOAL-49-04:** `adapt-slot-text` rewrites the chosen text-bearing
-  shapes using the existing per-shape OOXML patcher, runs the existing
-  `TemplatePack` text-style rules, and produces a per-slide adaptation
-  evidence report.
-- [ ] **GOAL-49-05:** `verify-physical-assembly` validates OPC integrity
-  (zip-open, `[Content_Types].xml` parse, every slide resolves through
-  `slideN.xml.rels` to a registered target), editability (native editable,
-  not flattened), and per-slide lineage (slide N ⇒ package_sha256, slide
-  ordinal, source SHA-256). Failures block release.
-- [ ] **GOAL-49-06:** Build a clean external requirement pack
+  source SHA-256, true slide number, slide count, masters, layouts, themes,
+  slot graph, pool, decision, direct-use state, and nontrivial style features.
+- [ ] **AC-49-02:** `query-page-templates` applies direct-use, asset-presence,
+  residue-risk, capacity, and compatible-style gates before ranking. Every
+  returned candidate exposes gate decisions plus role 0.30, capacity 0.25,
+  semantic 0.20, style 0.15, editability 0.10, and total score; repeated
+  serialized results are byte-identical.
+- [ ] **AC-49-03:** `assemble-physical-deck` takes an assembly plan (≥15
+  slides), opens each distinct source package once, imports complete
+  owner-relative OPC closure, preserves exact content types, safely shares or
+  deduplicates immutable dependencies, and emits one native-editable PPTX.
+- [ ] **AC-49-04:** Slot adaptation accepts only declared shape IDs whose
+  replacement binds allowed locked fact/asset IDs and fits recorded capacity.
+  Evidence records source shape/text hash, replacement hash, refs, capacity
+  used/limit; invented/missing facts, unbound literals, unknown slots,
+  over-capacity text, residue, or outside-shape mutation fail before promotion.
+- [ ] **AC-49-05:** `verify-physical-assembly` traverses every `.rels` part and
+  emits total internal relationships, unresolved/unsafe records, imported
+  parts, same-source reuse, cross-source safe dedup, deduplicated/static
+  duplicate bytes, source/output bytes, amplification ratio, 15/15 lineage,
+  `python-pptx`, and LibreOffice results. `pass` requires unresolved=unsafe=0,
+  complete lineage, output ≤33,941,179 bytes, and both required open/render
+  checks.
+- [ ] **AC-49-06:** Build a clean external requirement pack
   `annual-work-report.requirement-pack.v1.json` containing only public data
   (no reference PPTX, no template previews, no private bytes, no historical
-  outputs). The pack contains the locked 15-slide role sequence and the
-  hospital-finance synthetic facts.
-- [ ] **GOAL-49-07:** Run a Codex worker
+  outputs or symlinks). A recursive pre-run manifest records relative path,
+  type, size, and SHA-256.
+- [ ] **AC-49-07:** Run a Codex worker
   (`codex exec --dangerously-bypass-approvals-and-sandbox -c
   'model_provider="OpenAI"' -c 'model_reasoning_effort="medium"' -m
   gpt-5.6-terra --cd <clean-dir>`) against the requirement pack and Skill
-  only, and produce a single PPTX. The PPTX must satisfy 15/15 lineage,
-  open in `python-pptx`, and pass the verifier.
-- [ ] **GOAL-49-08:** Three fresh independent anonymous visual reviews, each
-  with no prior context and no shared images, must each return median ≥8/10
-  on the same acceptance rubric (composition, narrative, brand harmony,
-  editability, native fidelity). Any review returning <8/10 or any Blocker
-  /Important fails the milestone.
-- [ ] **GOAL-49-09:** A fresh independent OpenCode completion audit returns
-  DONE with zero Blocker/Important and an unchanged frozen fingerprint.
-- [ ] **GOAL-49-10:** The integration branch is fast-forwarded/pushed to
-  `master` and the installed Skill is re-synced with content-digest parity.
+  only, and produce exactly one PPTX plus the expected evidence bundle. The
+  run records command, cwd, model/reasoning, requirement/assets/installed-Skill
+  digests, private-root resolution source, and a post-run manifest.
+- [ ] **AC-49-08:** Render the accepted PPTX once into one canonical hash-bound
+  review packet. Three fresh independent anonymous sessions receive identical
+  packet/rubric digests but no reference deck, generator traces, prior scores,
+  other reviewer output, or shared conversational context; each returns median
+  ≥8/10 and no Blocker/Important.
+- [ ] **AC-49-09:** A fresh frozen-point OpenCode premerge implementation audit
+  returns APPROVED/DONE with zero Blocker/Important and unchanged fingerprint.
+- [ ] **AC-49-10:** After AC-49-09, merge/push exact implementation to master,
+  sync the installed Skill from that pushed SHA, prove source/install digest
+  parity, then run a second fresh completion audit frozen to pushed master. It
+  returns DONE with zero Blocker/Important before Phase 49 closes.
+
+### Acceptance Mapping
+
+| Detailed acceptance | Roadmap goal | Requirements |
+|---|---|---|
+| AC-49-01 | GOAL-49-01 | V61-LIB-01 |
+| AC-49-02 | GOAL-49-02 | V61-SEL-01 |
+| AC-49-03 | GOAL-49-03 | V61-ASM-01 |
+| AC-49-04 | GOAL-49-03 | V61-ADAPT-01 |
+| AC-49-05 | GOAL-49-04 | V61-QA-01 |
+| AC-49-06, AC-49-07 | GOAL-49-05 | V61-CLEAN-01, V61-REL-01 |
+| AC-49-08, AC-49-09, AC-49-10 | GOAL-49-06 | V61-REL-01 |
 
 ## Architectural additions
 
@@ -217,8 +236,12 @@ The clean client folder MUST NOT be searched for private templates.
     `/ppt/slides/_rels/slideNNN.xml.rels`).
 2. For each chosen source page:
    - open the source `.pptx` (zipfile.ZipFile read-only),
-   - recursively traverse relationships starting from the chosen slide
-     entry,
+   - recursively traverse queue nodes shaped as `(owner_part,
+     owner_rels_part, relationship_id, relationship_type, target_mode,
+     raw_target)`, starting from the chosen slide,
+   - resolve each internal target relative to `owner_part`, normalize OPC URI
+     path segments, reject encoded or literal package-root escape, and fail on
+     every missing internal target,
    - copy required parts (layouts, slideLayouts, masters, slideMasters,
      themes, media, charts, chart styles/colors, embedded workbooks,
      diagrams, notes, notes masters, comments),
@@ -228,17 +251,21 @@ The clean client folder MUST NOT be searched for private templates.
    - rewrite target slide and relationship IDs,
    - register the slide, slideLayout, slideMaster, theme, and notes
      content types,
-   - preserve any safe HTTPS link targets,
-   - reject file/script/OLE/macro/unresolved targets before commit.
+   - preserve only explicitly allowed hyperlink relationships with
+     `TargetMode="External"` and an HTTPS target,
+   - reject file URLs, scripts, OLE, macros, executable relationships,
+     unsupported external targets, malformed/internal-external mode mismatch,
+     package-root escape, and unresolved targets before commit.
 3. Adapt slot text on the slide after dependency closure, then commit.
 
 ### Style cluster
 
-The dominant style cluster is `ivory-green-gold-editorial` (carried from
-the locked reference `template-pack-v2.json`). Compatible clusters may be
-used as fallback ONLY if they are explicitly registered and the dominant
-cluster has no certified page for the requested role. Cross-cluster mixes
-on a single deck are not allowed.
+The library derives controlled style features and registered clusters from
+source palette, tone, chroma, accent, density, and semantic mode. The assembly
+plan locks one dominant cluster after deck-level candidate scoring. Compatible
+fallback is allowed only when explicitly registered and the dominant cluster
+has no eligible page for the requested role. Random or unregistered
+cross-cluster mixing is forbidden.
 
 ## Gate
 

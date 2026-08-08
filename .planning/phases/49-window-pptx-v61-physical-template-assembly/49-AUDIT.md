@@ -42,6 +42,21 @@
 | GOAL-49-05 | Yes | NOT_RUN | NOT_RUN | Blocker |
 | GOAL-49-06 | Yes | NOT_RUN | NOT_RUN | Blocker |
 
+## Detailed Acceptance Coverage
+
+| Acceptance | Planned | Evidence | Audit | Decision |
+|---|---|---|---|---|
+| AC-49-01 | Yes | NOT_RUN | NOT_RUN | Blocker |
+| AC-49-02 | Yes | NOT_RUN | NOT_RUN | Blocker |
+| AC-49-03 | Yes | NOT_RUN | NOT_RUN | Blocker |
+| AC-49-04 | Yes | NOT_RUN | NOT_RUN | Blocker |
+| AC-49-05 | Yes | NOT_RUN | NOT_RUN | Blocker |
+| AC-49-06 | Yes | NOT_RUN | NOT_RUN | Blocker |
+| AC-49-07 | Yes | NOT_RUN | NOT_RUN | Blocker |
+| AC-49-08 | Yes | NOT_RUN | NOT_RUN | Blocker |
+| AC-49-09 | Yes | NOT_RUN | NOT_RUN | Blocker |
+| AC-49-10 | Yes | NOT_RUN | NOT_RUN | Blocker |
+
 ## Review Findings
 
 - Specification compliance: NOT_RUN

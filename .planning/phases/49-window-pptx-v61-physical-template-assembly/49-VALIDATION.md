@@ -24,12 +24,27 @@
 
 | Goal criterion | Status | Evidence | Observed result |
 |---|---|---|---|
-| GOAL-49-01 | NOT_RUN | TBD | TBD |
+| GOAL-49-01 | NOT_RUN | Focused page-library tests and real-core compile | Not yet accepted |
 | GOAL-49-02 | NOT_RUN | Focused selection tests | Not yet accepted |
 | GOAL-49-03 | NOT_RUN | Recursive assembly tests | Not yet accepted |
 | GOAL-49-04 | NOT_RUN | Private replay/report | Not yet accepted |
 | GOAL-49-05 | NOT_RUN | Clean-room Codex generation | Not started |
 | GOAL-49-06 | NOT_RUN | Independent reviews and delivery evidence | Not started |
+
+## Detailed Acceptance Evidence
+
+| Acceptance | Status | Evidence | Observed result |
+|---|---|---|---|
+| AC-49-01 | NOT_RUN | Page compiler/schema tests and 288-page compile | Not yet accepted |
+| AC-49-02 | NOT_RUN | Eligibility/score-breakdown/determinism tests | Not yet accepted |
+| AC-49-03 | NOT_RUN | Recursive OPC and replay evidence | Not yet accepted |
+| AC-49-04 | NOT_RUN | Fact-binding/capacity/adaptation evidence | Not yet accepted |
+| AC-49-05 | NOT_RUN | Report-schema, recursive QA, size and portability evidence | Not yet accepted |
+| AC-49-06 | NOT_RUN | Clean-room pre-run manifest | Not started |
+| AC-49-07 | NOT_RUN | Exact Codex run and post-run manifest | Not started |
+| AC-49-08 | NOT_RUN | Canonical packet and three isolated visual sessions | Not started |
+| AC-49-09 | NOT_RUN | Frozen premerge implementation audit | Not started |
+| AC-49-10 | NOT_RUN | Pushed SHA, install parity, final completion audit | Not started |
 
 ## Commands
 
@@ -67,9 +82,9 @@
 | Stage | Revision / artifact | Environment | Evidence | Result |
 |---|---|---|---|---|
 | LOCAL | integration worktree | WSL/Linux | Focused/full tests, real replay, clean-room UAT | NOT_RUN |
-| CI / PREMERGE | frozen stabilization commit | Repository CI and OpenCode | CI plus independent audit | NOT_RUN |
+| CI / PREMERGE | frozen stabilization commit | Repository CI and OpenCode | CI plus premerge implementation audit | NOT_RUN |
 | PREVIEW | N/A | N/A | Non-deployable source change | NOT_RUN |
-| POSTMERGE | master merge SHA | Source and installed Skill | Push and digest parity | NOT_RUN |
+| POSTMERGE | pushed master SHA | Source, installed Skill, fresh OpenCode session | Push, digest parity, final completion audit | NOT_RUN |
 
 ### Online-Only Exceptions
 
