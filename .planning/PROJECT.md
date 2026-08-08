@@ -4,7 +4,11 @@
 
 AImagician Skills / Skillbee is a local-first personal skill configuration orchestrator for AI coding CLIs. It lets AImagician keep self-authored skills in-repo, register external skill sources from GitHub or install commands, persist user intent in YAML, preview safe sync plans, and install the resolved skill set into global or project-level CLI skill directories.
 
-The product is for one primary user first: AImagician. The active v6.0 goal is to make the owned `window-pptx` skill a template-intelligent, reference-grade production workflow while preserving the shipped Skillbird configuration and portable PPTX foundation.
+The product is for one primary user first: AImagician. The active v6.1 goal is
+to stabilize certified physical-page assembly so a medium-capability Codex
+agent can generate a reference-grade editable PPTX from a complete requirement
+pack. The approved next milestone renames the specialized Skill to
+`pptx-studio` and completely removes the `window-pptx` identity.
 
 ## Core Value
 
@@ -32,18 +36,21 @@ Skillbird resolves catalog defaults plus user YAML overrides into safe, previewe
 - Deep plugin lifecycle management across every CLI - plugin support is conditional and secondary to skills deployment
 
 
-## Current Milestone: v6.0 Window-PPTX Template-Intelligence Quality Reset
+## Current Milestone: v6.1 Window-PPTX Physical Template Assembly
 
-**Goal:** Combine discussion-locked realistic content, licensed complete-work art direction, a certified template/component catalog, GPT-5.5 constrained visual planning, native-editable portable rendering, bounded repair, and independent AI acceptance.
+**Goal:** Prove that `gpt-5.6-terra` medium can select only eligible certified
+pages and physically assemble a 15-slide work-report deck with complete OPC
+closure, native editability, bounded package size, clean-room provenance, and
+independent AI acceptance.
 
 **Target features:**
-- ProjectBriefPack v1 with Draft, NeedsDiscussion, and Locked states
-- Three complete flagship briefs and twelve realistic locked skeletons
-- Private acquisition, provenance, licensing, quarantine, catalog, dedupe, and retrieval
-- TemplatePack v2, Registry v3, complete-work ArtDirectionProfile, and semantic content-to-layout mapping
-- GPT-5.5 medium NarrativePlan, TemplateSelectionPlan, and SlideBlueprint contracts
-- Native-editable PPTX, deterministic OOXML, LibreOffice proof, quality checks, and bounded repair
-- Anonymous three-model AI review with locked reference-parity thresholds
+- Correct per-slide template metadata and direct-use eligibility
+- Deterministic role/capacity/semantic/style selection
+- Owner-relative recursive OPC import and conservative dependency deduplication
+- Native slot adaptation with immutable-fact and capacity guards
+- Recursive relationship, lineage, size, editability, and portability QA
+- Clean-room Codex generation plus three anonymous visual reviews and a fresh
+  frozen-point completion audit
 
 ## Context
 
@@ -92,6 +99,8 @@ The user expects all major targets to be covered in v1 because the integration i
 | v6.0 uses GPT-5.5 medium inside constrained schemas | Strong visual judgment is allowed without raw coordinates, OOXML, HTML, code, or invented facts | Active |
 | v6.0 keeps portable native PPTX canonical | COM remains optional diagnostics and cannot block daily delivery | Active |
 | v6.0 gates promotion on engineering plus independent AI evidence | Automatic scores alone previously concealed visible quality failures | Active |
+| v6.1 permits only direct-use physical lineage for acceptance | Reference-only pages and generated visual fallbacks cannot prove template reuse | Active |
+| The next milestone uses `pptx-studio` and removes `window-pptx` completely | The capability is a full design studio, not a Windows/COM-specific tool; dual public identities are explicitly rejected | Accepted |
 
 ---
-*Last updated: 2026-07-29 after locking the v6.0 template-intelligence quality reset*
+*Last updated: 2026-08-08 after locking v6.1 physical assembly stabilization*

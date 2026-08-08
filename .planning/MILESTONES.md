@@ -1,5 +1,25 @@
 # Milestones
 
+## v6.1 Window-PPTX Physical Template Assembly (Active)
+
+**Goal:** Make a medium-capability Codex agent turn a complete client
+requirement pack into a native-editable, reference-grade PPTX by selecting
+only direct-use-certified pages and physically assembling their complete OPC
+dependency graphs without mandatory COM, hidden native-renderer fallback, or
+package bloat.
+
+**Phase gates:**
+- Phase 49: Physical Template Assembly and Work-Report Acceptance
+
+**Status:** Active. The v6.1 checkpoint is merged into an isolated
+stabilization worktree, but release remains blocked by incorrect non-first-page
+metadata, lost direct-use eligibility, a single hard-coded style cluster,
+incomplete nested OPC relationship traversal, insufficient recursive
+verification, and a 4.02x package-size amplification. No v6.1 completion or
+release claim is valid until Phase 49 records passing evidence for every gate.
+
+---
+
 ## v6.0 Window-PPTX Template-Intelligence Quality Reset (Shipped: 2026-07-31)
 
 **Goal:** Make Codex GPT-5.5 medium produce native-editable,

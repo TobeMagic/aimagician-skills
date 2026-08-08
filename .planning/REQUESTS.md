@@ -465,3 +465,53 @@ first items or accumulating near-duplicates.
 - First-N selection, title-only classification, downloading all near-duplicate
   items, uploading credentials to a reviewer, or claiming thumbnail diversity
   as final rendered-slide quality.
+
+## USR-V61-01: Physical certified-page assembly before the v7 studio migration
+
+**Status:** Accepted
+**Source:** User instructions to implement the discussed Skill-first generation
+chain, use `gpt-5.6-terra` medium, physically reuse downloaded templates, and
+continue until milestone acceptance.
+
+### Original Request
+
+Given only a realistic complete requirement folder and the installed Skill,
+Codex must independently plan a complete high-quality PPTX, find the most
+suitable certified template for every page, physically reuse and adapt it,
+and deliver a result no worse than the source templates. The clean client
+folder must not contain the reference deck or private template bytes.
+
+### Accepted Decisions
+
+- The locked tracer is a 15-slide hospital-finance annual work report.
+- Every accepted slide has physical template lineage; generated visual
+  fallback does not count.
+- `gpt-5.6-terra` medium chooses narrative, candidate IDs, and fact/asset
+  bindings, but cannot author geometry, raw style tokens, OOXML, or release
+  scores.
+- One dominant style family governs the deck; controlled compatible fallback
+  is explicit, never random.
+- COM is optional read-only certification and cannot block delivery.
+- Recursive OPC integrity, native editability, bounded package size, clean-room
+  generation, three independent visual reviews, and a fresh completion audit
+  are hard release gates.
+- The approved subsequent milestone renames the product to `pptx-studio` and
+  completely removes `window-pptx`; no permanent compatibility shell remains.
+
+### Derived Requirements
+
+- V61-LIB-01
+- V61-SEL-01
+- V61-ASM-01
+- V61-ADAPT-01
+- V61-QA-01
+- V61-CLEAN-01
+- V61-REL-01
+
+### Exclusions
+
+- Shipping reference-only pages as direct-use templates.
+- Rasterized whole-slide delivery, mandatory COM, hidden native-layout
+  fallback, arbitrary model-written geometry/code, or release by self-score.
+- Performing the v7 rename and destructive private-asset pruning inside Phase
+  49; those changes begin only after the stabilized v6.1 baseline is merged.

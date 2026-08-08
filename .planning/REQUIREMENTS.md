@@ -310,6 +310,18 @@ Completion requires the phase evidence and exit gates named in the traceability 
 | **V6R-UAT-01** | Three fresh independent image-capable AI contexts review full-resolution anonymous artifacts; any unresolved Blocker or Important fails |
 | **V6R-REL-01** | A fresh OpenCode completion audit maps every original/latest user request to implementation and evidence; missing auth, private acquisition, materialization, anchor visual review, or ordinary-model evidence keeps v6 open |
 
+## v6.1 Requirements (Physical Template Assembly)
+
+| Requirement | Current | Target | Acceptance |
+|---|---|---|---|
+| **V61-LIB-01** | Multi-page records are compiled from `slide1.xml`, direct-use disposition is lost, and all pages share one hard-coded style cluster | Compile the requested slide and its relationships, preserve pool/decision/direct-use fields, and derive deterministic meaningful style clusters | A synthetic multi-slide fixture proves slide 2 metadata differs from slide 1; all 288 records retain eligibility; direct-use query excludes all 159 reference-only pages; style index contains at least two nonempty clusters |
+| **V61-SEL-01** | Candidate selection can rank unsafe pages and style filtering has no discriminating value | Deterministically rank eligible pages by role, capacity, semantics, style, editability, and asset fit under one dominant compatible style family | Repeated queries are byte-identical, every result is direct-use eligible, score components sum to the locked weights, and incompatible fallback fails closed |
+| **V61-ASM-01** | Dependencies are copied per target slide and nested relationship targets are resolved relative to the wrong owner | Recursively import owner-relative OPC closure, preserve content types, share same-source static dependencies, conservatively deduplicate safe identical binaries, and reject unsafe targets | Synthetic slide→chart→style/colors/workbook and media fixtures have zero missing parts, correct rewritten targets, no unsafe relationship, and no repeated master/layout/theme per repeated source |
+| **V61-ADAPT-01** | Text replacement works on the chosen slide but is not protected by complete dependency closure and direct-use eligibility | Adapt only declared native text slots after dependency closure while preserving geometry, theme, editable charts/media, and immutable facts | Slot adaptation evidence identifies source shape IDs and replacements; over-capacity or unknown slots fail; accepted output opens through `python-pptx` and LibreOffice |
+| **V61-QA-01** | Verification checks slide relationships only and the 15-slide output expands to 4.02x the source | Traverse every internal relationship, report lineage/dedup/size metrics, fail on unresolved or unsafe targets, and bound the reference replay to 1.30x source size | Recursive unresolved count is zero, 15/15 physical lineage passes, output is at most 33,941,179 bytes, editability/portability checks pass, and any defect blocks release |
+| **V61-CLEAN-01** | Existing trials can rely on local reference and historical artifacts | Run from a new folder containing only the complete public requirement pack and business assets while private library access comes exclusively through configured Skill state | Clean-folder manifest contains no reference PPTX, previews, private bytes, or prior outputs; exact Codex command emits one 15-slide PPTX and evidence bundle |
+| **V61-REL-01** | v6.1 has no accepted clean-room Codex run or fresh closure audit | Close only after engineering gates, three independent visual reviews, frozen-point OpenCode audit, merge/push, and installed Skill digest parity | Every Phase 49 goal is PASS, every visual review meets the locked threshold with no Blocker/Important, OpenCode returns DONE, branch is merged/pushed, and source/install digests match |
+
 ### Superseded v5 intent
 
 - V5-UAT-01 intent is subsumed by V6-PORT-01; mandatory PowerPoint sampling is
@@ -551,6 +563,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Reopened/in progress/planned: 0
 - Unmapped: 0
 
+| Requirement | v6.1 Phase | Status |
+|-------------|------------|--------|
+| V61-LIB-01 | Phase 49 | In Progress |
+| V61-SEL-01 | Phase 49 | In Progress |
+| V61-ASM-01 | Phase 49 | In Progress |
+| V61-ADAPT-01 | Phase 49 | In Progress |
+| V61-QA-01 | Phase 49 | In Progress |
+| V61-CLEAN-01 | Phase 49 | Planned |
+| V61-REL-01 | Phase 49 | Planned |
+
+**v6.1 Coverage:**
+- v6.1 requirements: 7 total
+- Mapped to Phase 49: 7
+- Complete: 0
+- In Progress: 5
+- Planned: 2
+- Unmapped: 0
+
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-07-30 after v6 quality rejection and milestone reopening*
+*Last updated: 2026-08-08 after opening v6.1 physical assembly stabilization*

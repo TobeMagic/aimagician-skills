@@ -786,3 +786,44 @@ Blocker or Important.
 | 46. Three Reference-Grade Anchors | Complete | 2026-07-30 |
 | 47. Fifteen Scenarios and Ordinary-Model Mode | Complete | 2026-07-31 |
 | 48. Blind Acceptance and Closure | Complete | 2026-07-31 |
+
+## Milestone v6.1 — Window-PPTX Physical Template Assembly
+
+v6.1 stabilizes the physical page-reuse path before the approved v7 rename,
+asset pruning, Agnes description, and three-layer retrieval work begins. It
+does not preserve `window-pptx` as a long-term public identity.
+
+### Phase 49: Physical Template Assembly and Work-Report Acceptance
+
+**Goal:** Given only a complete 15-slide hospital-finance requirement pack and the installed Skill, let Codex `gpt-5.6-terra` medium select direct-use certified pages, adapt client facts, and emit one native-editable PPTX whose complete OPC graph, physical lineage, package size, portability, and visual quality all pass independent acceptance.
+
+**Success Criteria**:
+
+- **GOAL-49-01:** The library compiler reads the requested source slide,
+  preserves direct-use eligibility, emits more than one meaningful style
+  cluster, and direct-use queries never return a reference-only page.
+- **GOAL-49-02:** Candidate ranking is deterministic and combines role,
+  capacity, semantic, style, editability, and asset fit while locking one
+  dominant compatible style family for the deck.
+- **GOAL-49-03:** Physical assembly recursively imports every owner-relative
+  internal dependency, rejects unsafe relationships, preserves native
+  editability, and safely reuses or deduplicates shared static parts.
+- **GOAL-49-04:** Verification traverses every relationship in the output,
+  reports zero unresolved internal targets, proves per-slide physical lineage,
+  and the 15-slide replay is at most 1.30x the 25 MiB source deck.
+- **GOAL-49-05:** A clean external Codex run using `gpt-5.6-terra` medium
+  produces the accepted 15-slide work report without access to a reference
+  PPTX, historical output, private bytes, or arbitrary visual code.
+- **GOAL-49-06:** Three fresh independent visual-capable AI reviews and one
+  fresh frozen-point OpenCode completion audit report no Blocker or Important;
+  source/install digests match and the implementation is merged and pushed.
+
+**Depends on:** v6.0 Phase 48
+**Requirements:** [V61-LIB-01, V61-SEL-01, V61-ASM-01, V61-ADAPT-01, V61-QA-01, V61-CLEAN-01, V61-REL-01]
+**Status:** In Progress
+
+## v6.1 Progress
+
+| Phase | Status | Completed |
+|-------|--------|-----------|
+| 49. Physical Template Assembly and Work-Report Acceptance | In Progress | — |

@@ -2,7 +2,7 @@
 
 **Context schema:** v1
 **Adoption source:** USR-20260803-001
-**Last reviewed:** 2026-08-03
+**Last reviewed:** 2026-08-08
 
 ## Architecture Snapshot
 
@@ -20,6 +20,8 @@ The repository also contains a planning-managed Window-PPTX production engine. I
 | CTX-WORKFLOW-002 | Off-phase work requires an approved task with parent milestone, parent phase, and return checkpoint. | `.planning/REQUESTS.md` | Active |
 | CTX-AGENT-001 | CLI workers are bounded executors and reviewers; the controller owns architecture, risk, reconciliation, validation, and completion. | `skills/owned/cli-agent-delegator/SKILL.md` | Active |
 | CTX-AGENT-002 | Images are acquired through `vision-analysis`; OpenCode receives sanitized text evidence rather than native Agnes image attachments. | `skills/owned/vision-analysis/SKILL.md` | Active |
+| CTX-PPTX-001 | Direct-use eligibility and complete physical lineage are mandatory for automated template reuse; reference-only pages may guide art direction but cannot be assembled automatically. | USR-V61-01 / Phase 49 | Active |
+| CTX-PPTX-002 | OPC import resolves each target relative to its relationship owner, traverses every internal dependency, rejects unsafe targets, and conservatively deduplicates only safe immutable parts. | Phase 49 specification | Active |
 
 ## Durable Decisions
 
@@ -29,6 +31,8 @@ The repository also contains a planning-managed Window-PPTX production engine. I
 | CTX-DEC-002 | Workflow ceremony is risk-scaled; Quick and Standard work use the shortest reliable delivery path. | USR-20260730-002 | Active | NONE |
 | CTX-DEC-003 | OpenCode models are selected explicitly by the controller from live free inventory; Agnes is the final fallback after better declared models are unavailable. | USR-20260803-001 | Active | DeepSeek-first portion of REQ-MODEL-001 and REQ-ROUTE-002 |
 | CTX-DEC-004 | `opencode/*` uses one shared user-asserted quota pool, Agnes is user-asserted unlimited, and other configured models use model-specific pools. | USR-20260803-001 | Active | NONE |
+| CTX-DEC-005 | The specialized presentation Skill will be renamed to `pptx-studio`; after the v7 migration is verified, `window-pptx` is deleted completely rather than retained as a compatibility shell. | Latest explicit user decision, 2026-08-08 | Accepted for next milestone | NONE |
+| CTX-DEC-006 | The approved active Gaojie library target is 97 highly reusable PPTX assets (about 117–160 pages); other assets are archived or deleted only through a SHA-bound prune manifest after v6.1 stabilization. | User-approved asset-pruning discussion, 2026-08-08 | Accepted for next milestone | NONE |
 
 ## Verification And Delivery Baseline
 

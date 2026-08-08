@@ -1,19 +1,19 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: Window-PPTX Template-Intelligence Quality Reset
-current_phase: 48
-current_phase_name: Blind Acceptance and Closure
-status: completed
-stopped_at: v6.0 milestone complete; Phase 48 GO
-last_updated: "2026-07-31T05:45:00+08:00"
-last_activity: 2026-07-31
+milestone: v6.1
+milestone_name: Window-PPTX Physical Template Assembly
+current_phase: 49
+current_phase_name: Physical Template Assembly and Work-Report Acceptance
+status: in_progress
+stopped_at: v6.1 checkpoint merged into isolated stabilization worktree; page-index and recursive OPC blockers are being repaired
+last_updated: "2026-08-08T22:10:00+08:00"
+last_activity: 2026-08-08
 progress:
-  total_phases: 50
+  total_phases: 51
   completed_phases: 45
-  total_plans: 49
+  total_plans: 50
   completed_plans: 48
-  percent: 90
+  percent: 88
 ---
 
 # Project State
@@ -26,10 +26,13 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v6.0 is complete after the user rejected the former
-generated visual quality and template-reuse claim. The previous Phase 41 GO
-remains invalid historical evidence. Phase 42 restored ground truth; Phases
-43–48 implemented real private
+**Current focus:** v6.1 Phase 49 stabilizes certified physical-page assembly
+before the approved `pptx-studio` v7 migration. The current checkpoint is not
+release-ready: non-first-page metadata, direct-use eligibility, style
+clustering, nested OPC traversal, recursive verification, and package
+deduplication are active blockers. v6.0 remains completed historical evidence;
+the previous Phase 41 GO remains invalid. Phase 42 restored ground truth;
+Phases 43–48 implemented real private
 catalog acquisition, template mining, selection-to-materialization, three
 reference-grade anchors, fifteen-scenario/ordinary-model coverage, and fresh
 independent visual acceptance. Authenticated commercial sync is a mandatory
@@ -63,11 +66,11 @@ fully independent AI blind-review contexts for v6 acceptance.
 
 ## Current Position
 
-Milestone: v6.0 Window-PPTX Template-Intelligence Quality Reset
-Current Phase: 48
-Current Phase Name: Blind Acceptance and Closure
-Status: Complete — v6.0 milestone GO
-Last Activity: 2026-07-31
+Milestone: v6.1 Window-PPTX Physical Template Assembly
+Current Phase: 49
+Current Phase Name: Physical Template Assembly and Work-Report Acceptance
+Status: In Progress — release blocked pending stabilization and acceptance
+Last Activity: 2026-08-08
 
 ### Preserved Control-Plane History
 
