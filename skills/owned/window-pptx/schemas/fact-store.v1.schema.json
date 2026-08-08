@@ -44,6 +44,12 @@
           "id": {"$ref": "#/$defs/id"},
           "kind": {"enum": ["claim", "metric", "quote", "date", "instruction", "label"]},
           "text": {"type": "string", "minLength": 1, "maxLength": 4000},
+          "allowed_renderings": {
+            "type": "array",
+            "maxItems": 64,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1, "maxLength": 4000}
+          },
           "language": {"type": "string", "minLength": 2, "maxLength": 20},
           "source_id": {"$ref": "#/$defs/id"},
           "locator": {"type": "string", "minLength": 1, "maxLength": 500},

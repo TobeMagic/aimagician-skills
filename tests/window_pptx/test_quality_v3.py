@@ -390,6 +390,10 @@ def test_frozen_r2_is_rejected_by_reference_grade_profile() -> None:
         / "evidence"
         / "phase32-consulting-tracer-r2"
     )
+    if not evidence.is_dir():
+        pytest.skip(
+            "local frozen Phase 32 evidence is intentionally gitignored"
+        )
     report = assess_evidence_bundle_v3(evidence)
     codes = {finding.code for finding in report.findings}
 

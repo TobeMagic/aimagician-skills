@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "annual-work-report-requirement-pack.v1.schema.json",
+  "title": "Window-PPTX v6.1 Annual Work Report Requirement Pack",
+  "description": "Locked clean-room authority contract for the 15-slide hospital-finance annual work report acceptance run.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "pack_id",
+    "state",
+    "scenario",
+    "authorities",
+    "generation_contract",
+    "input_policy"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "pack_id": {"$ref": "#/$defs/id"},
+    "state": {"const": "Locked"},
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "language",
+        "slide_count",
+        "aspect_ratio",
+        "subject",
+        "data_classification"
+      ],
+      "properties": {
+        "type": {"const": "annual-work-report"},
+        "language": {"const": "zh-CN"},
+        "slide_count": {"const": 15},
+        "aspect_ratio": {"const": "16:9"},
+        "subject": {"type": "string", "minLength": 1, "maxLength": 300},
+        "data_classification": {"const": "synthetic-acceptance-data"}
+      }
+    },
+    "authorities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "project_brief",
+        "request",
+        "fact_store",
+        "asset_manifest",
+        "connective_copy",
+        "data_manifest"
+      ],
+      "properties": {
+        "project_brief": {"$ref": "#/$defs/projectBriefFile"},
+        "request": {"$ref": "#/$defs/projectFile"},
+        "fact_store": {"$ref": "#/$defs/projectFile"},
+        "asset_manifest": {"$ref": "#/$defs/projectFile"},
+        "connective_copy": {"$ref": "#/$defs/projectFile"},
+        "data_manifest": {"$ref": "#/$defs/projectFile"}
+      }
+    },
+    "generation_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model",
+        "reasoning_effort",
+        "physical_template_lineage_required",
+        "distinct_page_ids_required",
+        "native_editable_required",
+        "generated_visual_fallback_allowed",
+        "author_terminal_state"
+      ],
+      "properties": {
+        "model": {"const": "gpt-5.6-terra"},
+        "reasoning_effort": {"const": "medium"},
+        "physical_template_lineage_required": {"const": 15},
+        "distinct_page_ids_required": {"const": 15},
+        "native_editable_required": {"const": true},
+        "generated_visual_fallback_allowed": {"const": false},
+        "author_terminal_state": {"const": "CANDIDATE_READY_FOR_BLIND_REVIEW"}
+      }
+    },
+    "input_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference_pptx_allowed",
+        "template_preview_allowed",
+        "private_template_bytes_allowed",
+        "historical_output_allowed",
+        "symlinks_allowed",
+        "network_assets_allowed"
+      ],
+      "properties": {
+        "reference_pptx_allowed": {"const": false},
+        "template_preview_allowed": {"const": false},
+        "private_template_bytes_allowed": {"const": false},
+        "historical_output_allowed": {"const": false},
+        "symlinks_allowed": {"const": false},
+        "network_assets_allowed": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 160
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "projectRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "projectFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size"],
+      "properties": {
+        "path": {"$ref": "#/$defs/projectRelativePath"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size": {"type": "integer", "minimum": 0}
+      }
+    },
+    "projectBriefFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size", "lock_sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/projectRelativePath"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size": {"type": "integer", "minimum": 0},
+        "lock_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

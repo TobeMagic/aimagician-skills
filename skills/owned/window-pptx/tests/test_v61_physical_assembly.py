@@ -77,11 +77,29 @@ def test_compiled_library_has_unique_certified_pages_and_query_is_deterministic(
 
 
 @pytest.mark.skipif(not LIBRARY_PATH.is_file(), reason="private template library is not installed")
-def test_query_prefers_exact_reference_roles() -> None:
+def test_query_keeps_reference_only_exact_roles_out_of_direct_use() -> None:
     index = load_library_index(LIBRARY_PATH)
-    data = query_page_templates(index, role="data", style_cluster=index.dominant_style_cluster_id, limit=10)
-    assert data
-    assert all(item.page_role == "data" for item in data)
+    reference_data = next(
+        template
+        for template in index.page_templates
+        if template.page_role == "data"
+    )
+    assert reference_data.direct_use is False
+    assert query_page_templates(
+        index,
+        role="data",
+        style_cluster=reference_data.style_cluster_id,
+        limit=10,
+    ) == ()
+    review_only = query_page_templates(
+        index,
+        role="data",
+        style_cluster=reference_data.style_cluster_id,
+        limit=10,
+        direct_use_only=False,
+    )
+    assert review_only
+    assert all(item.page_role == "data" for item in review_only)
 
 
 @pytest.mark.skipif(not LIBRARY_PATH.is_file(), reason="private template library is not installed")

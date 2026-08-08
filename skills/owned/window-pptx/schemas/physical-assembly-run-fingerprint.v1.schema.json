@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "physical-assembly-run-fingerprint.v1.schema.json",
+  "title": "Window-PPTX v6.1 Physical Assembly Run Fingerprint",
+  "description": "Evidence contract for the exact clean-room Codex author run and its physical-template outputs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "command",
+    "installed_skill",
+    "requirements",
+    "assets",
+    "private_library",
+    "manifests",
+    "artifacts",
+    "exit"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {"$ref": "#/$defs/id"},
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["argv", "cwd", "model_provider", "model", "reasoning_effort"],
+      "properties": {
+        "argv": {
+          "type": "array",
+          "minItems": 14,
+          "maxItems": 14,
+          "prefixItems": [
+            {"const": "codex"},
+            {"const": "exec"},
+            {"const": "--dangerously-bypass-approvals-and-sandbox"},
+            {"const": "--skip-git-repo-check"},
+            {"const": "-c"},
+            {"const": "model_provider=\"OpenAI\""},
+            {"const": "-c"},
+            {"const": "model_reasoning_effort=\"medium\""},
+            {"const": "--cd"},
+            {"type": "string", "minLength": 1},
+            {"const": "-m"},
+            {"const": "gpt-5.6-terra"},
+            {"const": "--json"},
+            {"const": "-"}
+          ],
+          "items": false
+        },
+        "cwd": {"type": "string", "pattern": "^/", "minLength": 2, "maxLength": 2000},
+        "model_provider": {"const": "OpenAI"},
+        "model": {"const": "gpt-5.6-terra"},
+        "reasoning_effort": {"const": "medium"}
+      }
+    },
+    "installed_skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "digest_algorithm", "sha256", "file_count", "total_size"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^/", "minLength": 2, "maxLength": 2000},
+        "digest_algorithm": {"const": "tree-file-bytes-sha256-v1"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "file_count": {"type": "integer", "minimum": 1},
+        "total_size": {"type": "integer", "minimum": 1}
+      }
+    },
+    "requirements": {"$ref": "#/$defs/fileBundle"},
+    "assets": {"$ref": "#/$defs/fileBundle"},
+    "private_library": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resolution_source", "private_root_sha256", "library_index_sha256"],
+      "properties": {
+        "resolution_source": {
+          "enum": [
+            "explicit-private-root",
+            "environment-private-root",
+            "config-private-root"
+          ]
+        },
+        "private_root_sha256": {"$ref": "#/$defs/sha256"},
+        "library_index_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "manifests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pre_run", "post_run"],
+      "properties": {
+        "pre_run": {"$ref": "#/$defs/artifact"},
+        "post_run": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["output_pptx", "physical_assembly_report"],
+      "properties": {
+        "output_pptx": {"$ref": "#/$defs/projectFile"},
+        "physical_assembly_report": {"$ref": "#/$defs/projectFile"}
+      }
+    },
+    "exit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "status"],
+      "properties": {
+        "code": {"type": "integer", "minimum": 0, "maximum": 255},
+        "status": {"enum": ["success", "failed", "terminated"]}
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 160
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "projectRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "projectFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size"],
+      "properties": {
+        "path": {"$ref": "#/$defs/projectRelativePath"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size": {"type": "integer", "minimum": 0}
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size": {"type": "integer", "minimum": 0}
+      }
+    },
+    "fileBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["digest_algorithm", "sha256", "file_count", "total_size", "files"],
+      "properties": {
+        "digest_algorithm": {"const": "canonical-file-records-sha256-v1"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "file_count": {"type": "integer", "minimum": 1},
+        "total_size": {"type": "integer", "minimum": 0},
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/projectFile"}
+        }
+      }
+    }
+  }
+}

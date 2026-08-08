@@ -8,6 +8,7 @@ or PowerPoint's layout engine.
 
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 import os
@@ -48,6 +49,26 @@ class RuleFinding:
 
 
 @dataclass(frozen=True)
+class RuleQAPathPolicy:
+    """Describe how an input spelling is bound to the stored output path."""
+
+    input_path_kind: str
+    relative_input_base: str | None
+    stored_path_format: str = "canonical-absolute"
+    canonicalization: str = "expanduser+resolve(strict=false)"
+    relative_input_resolution: str = "invocation-working-directory"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "input_path_kind": self.input_path_kind,
+            "relative_input_base": self.relative_input_base,
+            "stored_path_format": self.stored_path_format,
+            "canonicalization": self.canonicalization,
+            "relative_input_resolution": self.relative_input_resolution,
+        }
+
+
+@dataclass(frozen=True)
 class PhysicalRuleQAReport:
     schema_version: str
     status: str
@@ -56,17 +77,75 @@ class PhysicalRuleQAReport:
     blocking_findings: tuple[RuleFinding, ...] = field(default_factory=tuple)
     warnings: tuple[RuleFinding, ...] = field(default_factory=tuple)
     checked_rules: tuple[str, ...] = field(default_factory=tuple)
+    output_sha256: str | None = None
+    output_size_bytes: int | None = None
+    output_identity_status: str = "unavailable"
+    path_policy: RuleQAPathPolicy | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema_version": self.schema_version,
             "status": self.status,
             "output_path": self.output_path,
+            "output_sha256": self.output_sha256,
+            "output_size_bytes": self.output_size_bytes,
+            "output_identity_status": self.output_identity_status,
+            "path_policy": self.path_policy.to_dict() if self.path_policy is not None else None,
             "slide_count": self.slide_count,
             "checked_rules": list(self.checked_rules),
             "blocking_findings": [item.to_dict() for item in self.blocking_findings],
             "warnings": [item.to_dict() for item in self.warnings],
         }
+
+
+def _fingerprint_output(path: Path) -> tuple[str, int]:
+    digest = hashlib.sha256()
+    size = 0
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+            size += len(chunk)
+    return digest.hexdigest(), size
+
+
+def _path_policy(input_path: Path) -> RuleQAPathPolicy:
+    is_absolute = input_path.is_absolute()
+    return RuleQAPathPolicy(
+        input_path_kind="absolute" if is_absolute else "relative",
+        relative_input_base=None if is_absolute else str(Path.cwd().resolve(strict=False)),
+    )
+
+
+def _finalize_output_identity(
+    path: Path,
+    before: tuple[str, int],
+    findings: list[RuleFinding],
+) -> tuple[str | None, int | None, str]:
+    """Fail closed unless the same file identity spans the complete QA run."""
+
+    try:
+        after = _fingerprint_output(path)
+    except OSError as exc:
+        findings.append(
+            RuleFinding(
+                "output-identity",
+                "blocker",
+                None,
+                f"cannot fingerprint output after QA: {exc}",
+            )
+        )
+        return None, None, "unavailable"
+    if before != after:
+        findings.append(
+            RuleFinding(
+                "output-identity",
+                "blocker",
+                None,
+                "output content changed during QA; report identity is intentionally withheld",
+            )
+        )
+        return None, None, "changed-during-qa"
+    return before[0], before[1], "verified-stable"
 
 
 def _slide_text(xml: bytes) -> list[str]:
@@ -143,10 +222,13 @@ def run_physical_rule_qa(
 ) -> PhysicalRuleQAReport:
     """Run deterministic checks; visual review remains a separate gate."""
 
-    path = Path(output_path).expanduser().resolve(strict=False)
+    input_path = Path(output_path).expanduser()
+    path_policy = _path_policy(input_path)
+    path = input_path.resolve(strict=False)
     findings: list[RuleFinding] = []
     warnings: list[RuleFinding] = []
     checked = (
+        "output-identity",
         "zip-open",
         "slide-count",
         "placeholder-residue",
@@ -158,7 +240,36 @@ def run_physical_rule_qa(
     )
     if not path.is_file():
         findings.append(RuleFinding("zip-open", "blocker", None, f"output missing: {path}"))
-        return PhysicalRuleQAReport("1.0", "fail", str(path), 0, tuple(findings), tuple(warnings), checked)
+        return PhysicalRuleQAReport(
+            "1.1",
+            "fail",
+            str(path),
+            0,
+            tuple(findings),
+            tuple(warnings),
+            checked,
+            None,
+            None,
+            "unavailable",
+            path_policy,
+        )
+    try:
+        identity_before = _fingerprint_output(path)
+    except OSError as exc:
+        findings.append(RuleFinding("output-identity", "blocker", None, f"cannot fingerprint output before QA: {exc}"))
+        return PhysicalRuleQAReport(
+            "1.1",
+            "fail",
+            str(path),
+            0,
+            tuple(findings),
+            tuple(warnings),
+            checked,
+            None,
+            None,
+            "unavailable",
+            path_policy,
+        )
     try:
         with zipfile.ZipFile(path, "r") as archive:
             slides = sorted(
@@ -169,7 +280,20 @@ def run_physical_rule_qa(
             target_text = {ordinal: _slide_text(archive.read(name)) for ordinal, name in slides}
     except (OSError, zipfile.BadZipFile) as exc:
         findings.append(RuleFinding("zip-open", "blocker", None, str(exc)))
-        return PhysicalRuleQAReport("1.0", "fail", str(path), 0, tuple(findings), tuple(warnings), checked)
+        output_sha256, output_size_bytes, identity_status = _finalize_output_identity(path, identity_before, findings)
+        return PhysicalRuleQAReport(
+            "1.1",
+            "fail",
+            str(path),
+            0,
+            tuple(findings),
+            tuple(warnings),
+            checked,
+            output_sha256,
+            output_size_bytes,
+            identity_status,
+            path_policy,
+        )
 
     if len(slides) != plan.target_slide_count:
         findings.append(RuleFinding("slide-count", "blocker", None, f"expected {plan.target_slide_count} slides, found {len(slides)}"))
@@ -195,8 +319,21 @@ def run_physical_rule_qa(
     for prev, curr in zip(plan.target_slides, plan.target_slides[1:]):
         if prev.page_template.page_id == curr.page_template.page_id:
             warnings.append(RuleFinding("style-lineage", "warning", curr.ordinal, "adjacent slide reuses the same physical page"))
-    status = "pass" if not findings else "fail"
-    return PhysicalRuleQAReport("1.0", status, str(path), len(slides), tuple(findings), tuple(warnings), checked)
+    output_sha256, output_size_bytes, identity_status = _finalize_output_identity(path, identity_before, findings)
+    status = "pass" if not findings and identity_status == "verified-stable" else "fail"
+    return PhysicalRuleQAReport(
+        "1.1",
+        status,
+        str(path),
+        len(slides),
+        tuple(findings),
+        tuple(warnings),
+        checked,
+        output_sha256,
+        output_size_bytes,
+        identity_status,
+        path_policy,
+    )
 
 
 def write_rule_qa_report(report: PhysicalRuleQAReport, output_path: str | os.PathLike[str]) -> str:
@@ -204,8 +341,13 @@ def write_rule_qa_report(report: PhysicalRuleQAReport, output_path: str | os.Pat
     path.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(report.to_dict(), ensure_ascii=False, indent=2)
     path.write_text(text, encoding="utf-8")
-    import hashlib
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-__all__ = ["PhysicalRuleQAReport", "RuleFinding", "run_physical_rule_qa", "write_rule_qa_report"]
+__all__ = [
+    "PhysicalRuleQAReport",
+    "RuleFinding",
+    "RuleQAPathPolicy",
+    "run_physical_rule_qa",
+    "write_rule_qa_report",
+]

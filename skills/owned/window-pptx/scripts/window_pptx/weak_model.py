@@ -91,6 +91,7 @@ class Fact:
     status: str = "active"
     recommended_beat: str | None = None
     recommended_semantic: str | None = None
+    allowed_renderings: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -331,6 +332,7 @@ def validate_fact_store(payload: Any) -> FactStore:
         "id",
         "kind",
         "text",
+        "allowed_renderings",
         "language",
         "source_id",
         "locator",
@@ -363,6 +365,27 @@ def validate_fact_store(payload: Any) -> FactStore:
         status = item.get("status", "active")
         if status not in FACT_STATUSES:
             raise WeakModelValidationError(f"{path}.status is not registered: {status}")
+        allowed_renderings_raw = item.get("allowed_renderings", [])
+        if not isinstance(allowed_renderings_raw, list):
+            raise WeakModelValidationError(
+                f"{path}.allowed_renderings must be an array"
+            )
+        if len(allowed_renderings_raw) > 64:
+            raise WeakModelValidationError(
+                f"{path}.allowed_renderings may contain at most 64 entries"
+            )
+        allowed_renderings = tuple(
+            _strict_string(
+                rendering,
+                f"{path}.allowed_renderings[{rendering_index}]",
+                4000,
+            )
+            for rendering_index, rendering in enumerate(allowed_renderings_raw)
+        )
+        if len(allowed_renderings) != len(set(allowed_renderings)):
+            raise WeakModelValidationError(
+                f"{path}.allowed_renderings must contain unique strings"
+            )
         facts.append(
             Fact(
                 id=_identifier(item.get("id"), f"{path}.id"),
@@ -403,6 +426,7 @@ def validate_fact_store(payload: Any) -> FactStore:
                     if "recommended_semantic" in item
                     else None
                 ),
+                allowed_renderings=allowed_renderings,
             )
         )
         if (

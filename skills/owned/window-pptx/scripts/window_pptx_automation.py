@@ -82,12 +82,15 @@ from window_pptx.page_template_library import (
     resolve_private_root,
 )
 from window_pptx.physical_assembly import (
+    DEFAULT_MAX_OUTPUT_SIZE_BYTES,
     PhysicalAssemblyError,
     assemble_physical_deck,
     load_assembly_plan,
+    resolve_project_file,
     write_assembly_report,
 )
 from window_pptx.physical_rule_qa import run_physical_rule_qa, write_rule_qa_report
+from validate_window_pptx_v61_physical_report import validate_physical_report
 from window_pptx.selection_materialization import (
     materialize_physical_selection,
 )
@@ -2627,48 +2630,135 @@ def main(
 
     if args.render_assembly_plan:
         try:
-            assembly_plan_path = resolve_path(project_dir, args.assembly_plan)
-            if assembly_plan_path is None or not assembly_plan_path.is_file():
-                die("AssemblyPlan path could not be resolved or does not exist.")
-            private_root = resolve_private_root(explicit=args.assembly_private_root)
-            library_path = (
-                resolve_path(project_dir, args.assembly_library)
-                if args.assembly_library
-                else private_root / "v61" / "library-v4.json"
+            raw_project_dir = Path(args.project_dir).expanduser()
+            if raw_project_dir.is_symlink():
+                raise PhysicalAssemblyError(
+                    f"PROJECT_ROOT_SYMLINK_REJECTED: {raw_project_dir}"
+                )
+            project_dir = raw_project_dir.resolve(strict=True)
+            output_path = resolve_project_file(
+                args.output,
+                project_dir,
+                label="OUTPUT",
+                require_file=False,
             )
-            if library_path is None or not library_path.is_file():
+            assembly_plan_path = resolve_project_file(
+                args.assembly_plan,
+                project_dir,
+                label="ASSEMBLY_PLAN",
+            )
+            private_root = resolve_private_root(explicit=args.assembly_private_root)
+            if args.assembly_library:
+                raw_library = Path(args.assembly_library).expanduser()
+                library_path = (
+                    raw_library.resolve(strict=False)
+                    if raw_library.is_absolute()
+                    else (private_root / raw_library).resolve(strict=False)
+                )
+            else:
+                library_path = private_root / "v61" / "library-v4.json"
+            try:
+                library_path.relative_to(project_dir)
+            except ValueError:
+                pass
+            else:
+                raise PhysicalAssemblyError(
+                    "LIBRARY_MUST_REMAIN_OUTSIDE_PROJECT_ROOT"
+                )
+            if not library_path.is_file():
                 die("Compiled page-template library could not be resolved.")
             index = load_library_index(library_path)
             lookup = {template.page_id: template for template in index.page_templates}
-            plan = load_assembly_plan(assembly_plan_path, lookup)
+            plan = load_assembly_plan(
+                assembly_plan_path,
+                lookup,
+                project_root=project_dir,
+            )
+            locked_fact_store_path = resolve_project_file(
+                args.fact_store,
+                project_dir,
+                label="FACT_STORE",
+            )
+            locked_asset_manifest_path = resolve_project_file(
+                args.asset_manifest,
+                project_dir,
+                label="ASSET_MANIFEST",
+            )
+            locked_connective_copy_path = resolve_project_file(
+                args.connective_copy,
+                project_dir,
+                label="CONNECTIVE_COPY",
+            )
             report = assemble_physical_deck(
                 plan,
                 output_path,
                 library_index_sha256=__import__("hashlib").sha256(
                     library_path.read_bytes()
                 ).hexdigest(),
+                fact_store_path=locked_fact_store_path,
+                fact_store_sha256=args.fact_store_sha256,
+                asset_manifest_path=locked_asset_manifest_path,
+                asset_manifest_sha256=args.asset_manifest_sha256,
+                connective_copy_path=locked_connective_copy_path,
+                connective_copy_sha256=args.connective_copy_sha256,
+                project_root=project_dir,
+                require_locked_authority=True,
+                require_libreoffice=True,
+                max_output_size_bytes=(
+                    args.assembly_max_output_size_bytes
+                    or DEFAULT_MAX_OUTPUT_SIZE_BYTES
+                ),
             )
             report_path = (
-                resolve_path(project_dir, args.assembly_report)
+                resolve_project_file(
+                    args.assembly_report,
+                    project_dir,
+                    label="ASSEMBLY_REPORT",
+                    require_file=False,
+                )
                 if args.assembly_report
                 else project_dir / ".window-pptx" / "audits" / "physical-assembly-report.json"
             )
-            if report_path is None:
-                die("Physical assembly report path could not be resolved.")
             report_digest = write_assembly_report(report, report_path)
+            report_validation = validate_physical_report(report_path, project_dir)
+            if (
+                report.status != "pass"
+                or report_validation.get("status") != "pass"
+                or not output_path.is_file()
+            ):
+                output_path.unlink(missing_ok=True)
+                die(
+                    "Physical assembly report validation failed: "
+                    + json.dumps(report_validation, ensure_ascii=False)
+                )
             qa = run_physical_rule_qa(output_path, plan=plan)
-            qa_path = project_dir / ".window-pptx" / "audits" / "physical-rule-qa.json"
+            qa_path = (
+                resolve_project_file(
+                    args.assembly_rule_qa_report,
+                    project_dir,
+                    label="ASSEMBLY_RULE_QA_REPORT",
+                    require_file=False,
+                )
+                if args.assembly_rule_qa_report
+                else project_dir / ".window-pptx" / "audits" / "physical-rule-qa.json"
+            )
             qa_digest = write_rule_qa_report(qa, qa_path)
+            if qa.status != "pass":
+                output_path.unlink(missing_ok=True)
         except (PageTemplateError, PhysicalAssemblyError, OSError, ValueError) as exc:
             die(f"Physical assembly failed: {exc}")
         payload = report.to_dict()
         payload["report_digest"] = report_digest
+        payload["independent_report_validation"] = report_validation
         payload["rule_qa"] = qa.to_dict()
         payload["rule_qa_digest"] = qa_digest
         emit_result(
             {
                 "physical_assembly": payload,
                 "assembly_plan": str(assembly_plan_path),
+                "fact_store": str(locked_fact_store_path),
+                "asset_manifest": str(locked_asset_manifest_path),
+                "connective_copy": str(locked_connective_copy_path),
                 "library": str(library_path),
                 "private_root": str(private_root),
                 "report": str(report_path),

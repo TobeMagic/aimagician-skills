@@ -10,12 +10,23 @@
     "plan_id",
     "output_path",
     "output_sha256",
+    "acceptance_profile",
+    "expected_slide_count",
     "status",
     "target_slide_count",
+    "distinct_page_id_count",
+    "duplicate_page_records",
     "lineage_records",
     "opc_integrity",
     "editability",
-    "style_cluster_adherence"
+    "style_cluster_adherence",
+    "assembly_metrics",
+    "authority",
+    "selection_authority",
+    "binding_evidence",
+    "source_residue",
+    "libreoffice",
+    "size_check"
   ],
   "properties": {
     "schema_version": {"const": "1.0"},
@@ -23,51 +34,113 @@
     "plan_id": {"type": "string", "minLength": 1},
     "output_path": {"type": "string", "minLength": 1},
     "output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "acceptance_profile": {"enum": ["standard", "phase49-work-report-15"]},
+    "expected_slide_count": {"type": ["integer", "null"], "minimum": 1},
     "status": {"type": "string", "enum": ["pass", "fail"]},
     "target_slide_count": {"type": "integer", "minimum": 1},
+    "distinct_page_id_count": {"type": "integer", "minimum": 0},
+    "duplicate_page_records": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/duplicatePageRecord"}
+    },
     "lineage_records": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["ordinal", "page_id", "package_sha256", "slide_number", "source_sha256", "narrative_role", "status"],
+        "required": [
+          "ordinal", "page_id", "package_sha256", "slide_number",
+          "source_sha256", "source_slide_sha256", "target_slide_sha256",
+          "source_package_verified", "source_slide_verified",
+          "structure_signature_source", "structure_signature_target",
+          "structure_match", "imported_part_map_sha256", "imported_part_count",
+          "narrative_role", "title", "status",
+          "binding_count", "byte_match_score"
+        ],
         "properties": {
           "ordinal": {"type": "integer", "minimum": 1},
           "page_id": {"type": "string"},
           "package_sha256": {"type": "string"},
           "slide_number": {"type": "integer"},
-          "source_sha256": {"type": "string"},
+          "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "source_slide_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "target_slide_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "source_package_verified": {"type": "boolean"},
+          "source_slide_verified": {"type": "boolean"},
+          "structure_signature_source": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "structure_signature_target": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "structure_match": {"type": "boolean"},
+          "imported_part_map_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "imported_part_count": {"type": "integer", "minimum": 1},
           "narrative_role": {"type": "string"},
           "title": {"type": "string"},
           "status": {"type": "string", "enum": ["pass", "fail"]},
           "binding_count": {"type": "integer", "minimum": 0},
           "byte_match_score": {"type": "number", "minimum": 0, "maximum": 1}
-        }
+        },
+        "additionalProperties": false
       }
     },
     "opc_integrity": {
       "type": "object",
-      "required": ["zip_open", "content_types_parsed", "slide_rels_resolved", "status"],
+      "required": [
+        "zip_open", "content_types_parsed", "slide_rels_resolved",
+        "package_entry_count", "media_count", "total_relationship_count",
+        "internal_relationship_count", "external_relationship_count",
+        "unresolved_internal_relationship_count", "unresolved_internal_relationships",
+        "unsafe_relationship_count", "unsafe_relationships", "status", "details"
+      ],
       "properties": {
         "zip_open": {"type": "boolean"},
         "content_types_parsed": {"type": "boolean"},
         "slide_rels_resolved": {"type": "boolean"},
-        "package_entry_count": {"type": "integer"},
-        "media_count": {"type": "integer"},
+        "package_entry_count": {"type": "integer", "minimum": 0},
+        "media_count": {"type": "integer", "minimum": 0},
+        "total_relationship_count": {"type": "integer", "minimum": 0},
+        "internal_relationship_count": {"type": "integer", "minimum": 0},
+        "external_relationship_count": {"type": "integer", "minimum": 0},
+        "unresolved_internal_relationship_count": {"type": "integer", "minimum": 0},
+        "unresolved_internal_relationships": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/relationshipRecord"}
+        },
+        "unsafe_relationship_count": {"type": "integer", "minimum": 0},
+        "unsafe_relationships": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/relationshipRecord"}
+        },
         "status": {"type": "string", "enum": ["pass", "fail"]},
         "details": {"type": "string"}
-      }
+      },
+      "additionalProperties": false
     },
     "editability": {
       "type": "object",
-      "required": ["native_editable", "python_pptx_open", "status"],
+      "required": [
+        "native_editable", "python_pptx_open", "slide_count",
+        "text_run_count", "shape_count", "native_object_count",
+        "picture_count", "native_editable_slide_count",
+        "full_slide_raster_count", "raster_dominant_slide_count",
+        "native_editable_coverage", "status"
+      ],
       "properties": {
         "native_editable": {"type": "boolean"},
         "python_pptx_open": {"type": "boolean"},
         "slide_count": {"type": "integer"},
         "text_run_count": {"type": "integer"},
         "shape_count": {"type": "integer"},
+        "native_object_count": {"type": "integer", "minimum": 0},
+        "picture_count": {"type": "integer", "minimum": 0},
+        "native_editable_slide_count": {"type": "integer", "minimum": 0},
+        "full_slide_raster_count": {"type": "integer", "minimum": 0},
+        "raster_dominant_slide_count": {"type": "integer", "minimum": 0},
+        "native_editable_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
         "status": {"type": "string", "enum": ["pass", "fail"]}
-      }
+      },
+      "additionalProperties": false
     },
     "style_cluster_adherence": {
       "type": "object",
@@ -77,8 +150,490 @@
         "matches": {"type": "integer"},
         "total": {"type": "integer"},
         "status": {"type": "string", "enum": ["pass", "fail"]}
+      },
+      "additionalProperties": false
+    },
+    "assembly_metrics": {
+      "type": "object",
+      "required": [
+        "output_size_bytes",
+        "source_size_bytes",
+        "unique_source_package_count",
+        "imported_part_count",
+        "imported_parts",
+        "unique_dependency_part_count",
+        "same_source_reuse_count",
+        "same_source_reuse_bytes",
+        "cross_source_safe_dedup_count",
+        "cross_source_safe_dedup_bytes",
+        "deduplicated_part_count",
+        "deduplicated_bytes",
+        "static_duplicate_bytes",
+        "unresolved_internal_relationship_count",
+        "amplification_ratio",
+        "parts_by_kind"
+      ],
+      "properties": {
+        "output_size_bytes": {"type": "integer", "minimum": 0},
+        "source_size_bytes": {"type": "integer", "minimum": 0},
+        "unique_source_package_count": {"type": "integer", "minimum": 0},
+        "imported_part_count": {"type": "integer", "minimum": 0},
+        "imported_parts": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "unique_dependency_part_count": {"type": "integer", "minimum": 0},
+        "same_source_reuse_count": {"type": "integer", "minimum": 0},
+        "same_source_reuse_bytes": {"type": "integer", "minimum": 0},
+        "cross_source_safe_dedup_count": {"type": "integer", "minimum": 0},
+        "cross_source_safe_dedup_bytes": {"type": "integer", "minimum": 0},
+        "deduplicated_part_count": {"type": "integer", "minimum": 0},
+        "deduplicated_bytes": {"type": "integer", "minimum": 0},
+        "static_duplicate_bytes": {"type": "integer", "minimum": 0},
+        "unresolved_internal_relationship_count": {"type": "integer", "minimum": 0},
+        "amplification_ratio": {"type": "number", "minimum": 0},
+        "parts_by_kind": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        }
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": [
+        "mode",
+        "fact_store_path",
+        "fact_store_sha256",
+        "asset_manifest_path",
+        "asset_manifest_sha256",
+        "connective_copy_path",
+        "connective_copy_sha256",
+        "status"
+      ],
+      "properties": {
+        "mode": {"enum": ["locked", "legacy"]},
+        "fact_store_path": {"type": "string"},
+        "fact_store_sha256": {"type": "string", "pattern": "^$|^[0-9a-f]{64}$"},
+        "asset_manifest_path": {"type": "string"},
+        "asset_manifest_sha256": {"type": "string", "pattern": "^$|^[0-9a-f]{64}$"},
+        "connective_copy_path": {"type": "string"},
+        "connective_copy_sha256": {"type": "string", "pattern": "^$|^[0-9a-f]{64}$"},
+        "status": {"enum": ["pass", "legacy"]}
+      },
+      "additionalProperties": false
+    },
+    "selection_authority": {
+      "type": "object",
+      "required": [
+        "mode", "query_bundle_path", "query_bundle_sha256",
+        "library_index_sha256", "query_count", "selected_count",
+        "distinct_query_id_count", "distinct_page_id_count", "status"
+      ],
+      "properties": {
+        "mode": {"enum": ["locked", "not_required"]},
+        "query_bundle_path": {"type": "string"},
+        "query_bundle_sha256": {
+          "type": "string",
+          "pattern": "^$|^[0-9a-f]{64}$"
+        },
+        "library_index_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "query_count": {"type": "integer", "minimum": 0},
+        "selected_count": {"type": "integer", "minimum": 0},
+        "distinct_query_id_count": {"type": "integer", "minimum": 0},
+        "distinct_page_id_count": {"type": "integer", "minimum": 0},
+        "status": {"enum": ["pass", "not_required"]}
+      },
+      "additionalProperties": false
+    },
+    "binding_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "ordinal", "page_id", "slot_id", "shape_id", "binding_kind", "mode",
+          "source_sha256", "replacement_sha256", "fact_refs",
+          "asset_refs", "connective_ref", "relationship_id", "target_part",
+          "capacity", "status"
+        ],
+        "properties": {
+          "ordinal": {"type": "integer", "minimum": 1},
+          "page_id": {"type": "string", "minLength": 1},
+          "slot_id": {"type": "string", "minLength": 1},
+          "shape_id": {"type": "integer", "minimum": 0},
+          "binding_kind": {"enum": ["text", "asset", "embedded"]},
+          "mode": {"type": "string", "minLength": 1},
+          "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "replacement_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "fact_refs": {"type": "array", "items": {"type": "string"}},
+          "asset_refs": {"type": "array", "items": {"type": "string"}},
+          "connective_ref": {"type": "string"},
+          "relationship_id": {"type": "string"},
+          "target_part": {"type": "string"},
+          "capacity": {
+            "type": "object",
+            "required": ["chars", "items", "images"],
+            "properties": {
+              "chars": {"$ref": "#/$defs/usage"},
+              "items": {"$ref": "#/$defs/usage"},
+              "images": {"$ref": "#/$defs/usage"}
+            },
+            "additionalProperties": false
+          },
+          "status": {"const": "pass"}
+        },
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "required": ["binding_kind"],
+              "properties": {"binding_kind": {"const": "asset"}}
+            },
+            "then": {
+              "properties": {
+                "relationship_id": {"minLength": 1},
+                "target_part": {"minLength": 1}
+              }
+            },
+            "else": {
+              "properties": {
+                "relationship_id": {"const": ""},
+                "target_part": {"const": ""}
+              }
+            }
+          }
+        ]
       }
+    },
+    "source_residue": {
+      "type": "object",
+      "required": [
+        "governed_content_slot_count",
+        "governed_content_binding_count",
+        "verified_governed_content_count",
+        "governed_content_mismatch_count",
+        "peer_group_mismatch_count",
+        "mutation_manifest_sha256",
+        "governed_mutations",
+        "unauthorized_content_count",
+        "tag_part_count",
+        "tag_relationship_count",
+        "layout_master_cached_field_count",
+        "certified_media_count",
+        "media_hash_mismatch_count",
+        "replacement_asset_count",
+        "replacement_asset_hash_mismatch_count",
+        "asset_slot_mismatch_count",
+        "orphan_media_count",
+        "status"
+      ],
+      "properties": {
+        "governed_content_slot_count": {"type": "integer", "minimum": 0},
+        "governed_content_binding_count": {"type": "integer", "minimum": 0},
+        "verified_governed_content_count": {"type": "integer", "minimum": 0},
+        "governed_content_mismatch_count": {"type": "integer", "minimum": 0},
+        "peer_group_mismatch_count": {"type": "integer", "minimum": 0},
+        "mutation_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "governed_mutations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "ordinal", "page_id", "slot_id", "kind", "source_part", "slide_part",
+              "shape_id", "slide_relationship_id", "chart_part",
+              "chart_relationship_id", "target_part", "target_part_sha256",
+              "locator", "actual_sha256", "peer_group_id"
+            ],
+            "properties": {
+              "ordinal": {"type": "integer", "minimum": 1},
+              "page_id": {"type": "string", "pattern": "^[0-9a-f]{64}:[0-9]{3}$"},
+              "slot_id": {"type": "string", "minLength": 1},
+              "kind": {"enum": ["chart-category", "chart-series", "chart-value", "chart-text", "workbook-cell", "table-cell"]},
+              "source_part": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$"},
+              "slide_part": {"type": "string", "pattern": "^ppt/slides/slide[1-9][0-9]*\\.xml$"},
+              "shape_id": {"type": "integer", "minimum": 1},
+              "slide_relationship_id": {"type": "string"},
+              "chart_part": {"type": "string"},
+              "chart_relationship_id": {"type": "string"},
+              "target_part": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$"},
+              "target_part_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "locator": {"type": "string", "minLength": 1},
+              "actual_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "peer_group_id": {"type": "string"}
+            },
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {"properties": {"kind": {"const": "table-cell"}}, "required": ["kind"]},
+                "then": {
+                  "properties": {
+                    "source_part": {"pattern": "^ppt/slides/slide[1-9][0-9]*\\.xml$"},
+                    "slide_relationship_id": {"const": ""},
+                    "chart_part": {"const": ""},
+                    "chart_relationship_id": {"const": ""},
+                    "target_part": {"pattern": "^ppt/slides/slide[1-9][0-9]*\\.xml$"}
+                  }
+                }
+              },
+              {
+                "if": {"properties": {"kind": {"enum": ["chart-category", "chart-series", "chart-value", "chart-text"]}}, "required": ["kind"]},
+                "then": {
+                  "properties": {
+                    "source_part": {"pattern": "^ppt/charts/[^/]+\\.xml$"},
+                    "slide_relationship_id": {"minLength": 1},
+                    "chart_part": {"pattern": "^ppt/charts/[^/]+\\.xml$"},
+                    "chart_relationship_id": {"const": ""},
+                    "target_part": {"pattern": "^ppt/charts/[^/]+\\.xml$"}
+                  }
+                }
+              },
+              {
+                "if": {"properties": {"kind": {"const": "workbook-cell"}}, "required": ["kind"]},
+                "then": {
+                  "properties": {
+                    "source_part": {"pattern": "^ppt/embeddings/[^/]+\\.xlsx$"},
+                    "slide_relationship_id": {"minLength": 1},
+                    "chart_part": {"pattern": "^ppt/charts/[^/]+\\.xml$"},
+                    "chart_relationship_id": {"minLength": 1},
+                    "target_part": {"pattern": "^ppt/embeddings/[^/]+\\.xlsx$"}
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "unauthorized_content_count": {"type": "integer", "minimum": 0},
+        "tag_part_count": {"type": "integer", "minimum": 0},
+        "tag_relationship_count": {"type": "integer", "minimum": 0},
+        "layout_master_cached_field_count": {"type": "integer", "minimum": 0},
+        "certified_media_count": {"type": "integer", "minimum": 0},
+        "media_hash_mismatch_count": {"type": "integer", "minimum": 0},
+        "replacement_asset_count": {"type": "integer", "minimum": 0},
+        "replacement_asset_hash_mismatch_count": {"type": "integer", "minimum": 0},
+        "asset_slot_mismatch_count": {"type": "integer", "minimum": 0},
+        "orphan_media_count": {"type": "integer", "minimum": 0},
+        "status": {"enum": ["pass", "fail"]}
+      },
+      "additionalProperties": false
+    },
+    "libreoffice": {
+      "type": "object",
+      "required": [
+        "available", "executable", "open_result", "render_result", "status", "details"
+      ],
+      "properties": {
+        "available": {"type": "boolean"},
+        "executable": {"type": "string"},
+        "open_result": {"enum": ["pass", "fail", "not_run"]},
+        "render_result": {"enum": ["pass", "fail", "not_run"]},
+        "status": {"enum": ["pass", "fail", "not_run"]},
+        "details": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "size_check": {
+      "type": "object",
+      "required": ["output_size_bytes", "max_output_size_bytes", "status"],
+      "properties": {
+        "output_size_bytes": {"type": "integer", "minimum": 0},
+        "max_output_size_bytes": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "status": {"enum": ["pass", "fail", "not_run"]}
+      },
+      "additionalProperties": false
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {"status": {"const": "pass"}}
+      },
+      "then": {
+        "properties": {
+          "lineage_records": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "source_package_verified": {"const": true},
+                "source_slide_verified": {"const": true},
+                "structure_match": {"const": true},
+                "status": {"const": "pass"}
+              }
+            }
+          },
+          "authority": {
+            "properties": {
+              "mode": {"const": "locked"},
+              "fact_store_path": {"minLength": 1},
+              "fact_store_sha256": {"pattern": "^[0-9a-f]{64}$"},
+              "asset_manifest_path": {"minLength": 1},
+              "asset_manifest_sha256": {"pattern": "^[0-9a-f]{64}$"},
+              "connective_copy_path": {"minLength": 1},
+              "connective_copy_sha256": {"pattern": "^[0-9a-f]{64}$"},
+              "status": {"const": "pass"}
+            }
+          },
+          "libreoffice": {
+            "properties": {
+              "available": {"const": true},
+              "executable": {"minLength": 1},
+              "open_result": {"const": "pass"},
+              "render_result": {"const": "pass"},
+              "status": {"const": "pass"}
+            }
+          },
+          "size_check": {
+            "properties": {
+              "max_output_size_bytes": {"type": "integer", "minimum": 1},
+              "status": {"const": "pass"}
+            }
+          },
+          "editability": {
+            "properties": {
+              "native_editable": {"const": true},
+              "python_pptx_open": {"const": true},
+              "slide_count": {"minimum": 1},
+              "native_editable_slide_count": {"minimum": 1},
+              "raster_dominant_slide_count": {"const": 0},
+              "native_editable_coverage": {"const": 1},
+              "status": {"const": "pass"}
+            }
+          },
+          "opc_integrity": {
+            "properties": {
+              "zip_open": {"const": true},
+              "content_types_parsed": {"const": true},
+              "slide_rels_resolved": {"const": true},
+              "unresolved_internal_relationship_count": {"const": 0},
+              "unresolved_internal_relationships": {"maxItems": 0},
+              "unsafe_relationship_count": {"const": 0},
+              "unsafe_relationships": {"maxItems": 0},
+              "status": {"const": "pass"}
+            }
+          },
+          "assembly_metrics": {
+            "properties": {
+              "static_duplicate_bytes": {"const": 0},
+              "unresolved_internal_relationship_count": {"const": 0}
+            }
+          },
+          "style_cluster_adherence": {"properties": {"status": {"const": "pass"}}},
+          "source_residue": {
+            "properties": {
+              "unauthorized_content_count": {"const": 0},
+              "governed_content_mismatch_count": {"const": 0},
+              "peer_group_mismatch_count": {"const": 0},
+              "tag_part_count": {"const": 0},
+              "tag_relationship_count": {"const": 0},
+              "layout_master_cached_field_count": {"const": 0},
+              "media_hash_mismatch_count": {"const": 0},
+              "replacement_asset_hash_mismatch_count": {"const": 0},
+              "asset_slot_mismatch_count": {"const": 0},
+              "orphan_media_count": {"const": 0},
+              "status": {"const": "pass"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["selection_authority"],
+        "properties": {
+          "selection_authority": {
+            "required": ["mode"],
+            "properties": {"mode": {"const": "locked"}}
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "selection_authority": {
+            "properties": {
+              "query_bundle_path": {"minLength": 1},
+              "query_bundle_sha256": {"pattern": "^[0-9a-f]{64}$"},
+              "status": {"const": "pass"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["acceptance_profile"],
+        "properties": {"acceptance_profile": {"const": "phase49-work-report-15"}}
+      },
+      "then": {
+        "properties": {
+          "expected_slide_count": {"const": 15},
+          "target_slide_count": {"const": 15},
+          "distinct_page_id_count": {"const": 15},
+          "lineage_records": {"minItems": 15, "maxItems": 15},
+          "duplicate_page_records": {"maxItems": 0},
+          "selection_authority": {
+            "properties": {
+              "mode": {"const": "locked"},
+              "query_bundle_path": {"minLength": 1},
+              "query_bundle_sha256": {"pattern": "^[0-9a-f]{64}$"},
+              "query_count": {"const": 15},
+              "selected_count": {"const": 15},
+              "distinct_query_id_count": {"const": 15},
+              "distinct_page_id_count": {"const": 15},
+              "status": {"const": "pass"}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "duplicatePageRecord": {
+      "type": "object",
+      "required": ["page_id", "ordinals"],
+      "properties": {
+        "page_id": {"type": "string", "minLength": 1},
+        "ordinals": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"type": "integer", "minimum": 1},
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "relationshipRecord": {
+      "type": "object",
+      "required": [
+        "owner_rels_part", "relationship_id", "relationship_type", "target_mode",
+        "raw_target", "resolved_target", "reason"
+      ],
+      "properties": {
+        "owner_rels_part": {"type": "string"},
+        "relationship_id": {"type": "string"},
+        "relationship_type": {"type": "string"},
+        "target_mode": {"type": "string"},
+        "raw_target": {"type": "string"},
+        "resolved_target": {"type": "string"},
+        "reason": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "usage": {
+      "type": "object",
+      "required": ["used", "limit"],
+      "properties": {
+        "used": {"type": "integer", "minimum": 0},
+        "limit": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  }
 }

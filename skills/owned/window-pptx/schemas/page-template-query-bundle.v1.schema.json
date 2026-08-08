@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://window-pptx.local/schemas/page-template-query-bundle.v1.schema.json",
+  "title": "Page Template Query Bundle v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "request_sha256",
+    "library_index_sha256",
+    "library_resolution_source",
+    "query_count",
+    "queries"
+  ],
+  "properties": {
+    "schema_version": {"const": "page-template-query-bundle.v1"},
+    "request_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "library_index_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "library_resolution_source": {
+      "enum": [
+        "absolute-library",
+        "explicit-private-root",
+        "environment-private-root",
+        "config-private-root"
+      ]
+    },
+    "query_count": {"type": "integer", "minimum": 1},
+    "queries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["target_ordinal", "query_id", "result"],
+        "properties": {
+          "target_ordinal": {"type": "integer", "minimum": 1},
+          "query_id": {"type": "string", "minLength": 1},
+          "result": {"$ref": "page-template-query-result.v1.schema.json"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

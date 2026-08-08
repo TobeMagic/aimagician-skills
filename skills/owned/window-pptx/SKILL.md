@@ -34,7 +34,7 @@ compatibility:
     - poppler
     - powershell
     - git
-  requires: Python 3.11+, Pillow, Node.js 18+, npm, LibreOffice Impress, Poppler or Ghostscript; Windows PowerPoint and pywin32 are optional
+  requires: Python 3.11+, Pillow, python-pptx, defusedxml, jsonschema, Node.js 18+, npm, LibreOffice Impress, Poppler or Ghostscript; Windows PowerPoint and pywin32 are optional
 category: documents
 subcategory: slides
 tags:
@@ -225,31 +225,154 @@ directly, load [v61-physical-assembly-workflow.md](./references/v61-physical-ass
 This route extends the v6 quality-first contract with a complete
 `INTAKE -> DISCUSSION_REQUIRED -> LOCKED_BRIEF -> ART_DIRECTION_LOCKED ->
 NARRATIVE_LOCKED -> TEMPLATE_PLAN_LOCKED -> PHYSICAL_ASSEMBLY -> RULE_QA ->
-VISUAL_HARNESS -> RELEASED` state machine.
+CANDIDATE_READY_FOR_BLIND_REVIEW` authoring state machine. The authoring Agent
+must not score or release its own work. A separate isolated harness owns
+`VISUAL_HARNESS -> RELEASED`.
+
+The Phase 49 work-report acceptance is a stricter v6.1 profile: author with
+Codex `gpt-5.6-terra` at medium reasoning, use the certified
+`reference-work-summary` package, and require the exact physical sequence
+`target N -> source slide N` for `N=1..15`. The package SHA is identical for
+all fifteen selections; the fifteen `page_id` values and query IDs are
+distinct. Template roles are, in order: `cover`, `contents`, `section`,
+`section`, `data`, `data`, `table`, `case-study`, `kpi`, `section`, `people`,
+`content-blocks`, `section`, `process`, `closing`. No generated-layout,
+PptxGenJS, blank-page, screenshot, duplicate-page, non-adjacent source-page,
+or other native fallback counts for this profile. These acceptance overrides
+take precedence over the older v6.0 authoring defaults elsewhere in this
+document.
+
+For this profile Codex is a bounded decision-maker, not a drawing engine. It
+may choose only the fact-safe narrative, one candidate ID from each locked
+query result, and the fact/asset bindings for certified slots. The Skill and
+locked reference package own page geometry, theme, fonts, colors, masters,
+layouts, shapes, charts, tables, and repair policy. Codex must not emit design
+code, coordinates, raw style values, OOXML, self-scores, release decisions, or
+a replacement layout.
 
 The Agent must compile and query the private page library, choose a page for
 each slide, bind copy to that page's actual `slot_graph` IDs, and then invoke
 the portable cross-package assembler:
 
 ```bash
-python skills/owned/window-pptx/scripts/manage_window_pptx_v61_library.py \
-  compile-pages --private-root <private-root> \
-  --output <private-root>/v61/library-v4.json
+python <skill-root>/scripts/manage_window_pptx_v61_library.py \
+  compile-reference --private-root <private-root> \
+  --deck <skill-root>/design-packs/institutional-annual-editorial/template.pptx \
+  --output v61/reference-work-summary-library-v4.json
 
-python skills/owned/window-pptx/scripts/render_window_pptx_assembly.py \
+python <skill-root>/scripts/manage_window_pptx_v61_library.py \
+  query-bundle --private-root <private-root> \
+  --library v61/reference-work-summary-library-v4.json \
+  --query-request <project>/evidence/page-template-query-request.v1.json \
+  --output <project>/evidence/page-template-query-bundle.v1.json
+
+python <skill-root>/scripts/render_window_pptx_assembly.py \
+  --project-root <project> \
   --private-root <private-root> \
-  --library <private-root>/v61/library-v4.json \
-  --assembly-plan <project>/.window-pptx/audits/assembly-plan.json \
-  --output <project>/output/final.pptx \
-  --report <project>/.window-pptx/audits/physical-assembly-report.json
+  --library v61/reference-work-summary-library-v4.json \
+  --assembly-plan evidence/assembly-plan.v1.json \
+  --fact-store fact-store.v1.json \
+  --fact-store-sha256 <locked-sha256> \
+  --asset-manifest asset-manifest.v1.json \
+  --asset-manifest-sha256 <locked-sha256> \
+  --connective-copy connective-copy.v1.json \
+  --connective-copy-sha256 <locked-sha256> \
+  --output output/final.pptx \
+  --report evidence/physical-assembly-report.v1.json \
+  --rule-qa-report evidence/rule-qa.v1.json \
+  --acceptance-profile phase49-work-report-15 \
+  --max-output-size-bytes 33941179
 ```
+
+All client-side paths in this command are project-relative and must remain
+inside `--project-root`. A relative `--library` is resolved under the private
+root, never under the client project. The renderer rejects symlinks, path
+escape, digest drift, arbitrary source-copy retention, missing LibreOffice
+render evidence, duplicate or out-of-sequence page IDs, and package-size
+overflow. The assembly plan must hash-lock the public query bundle as well as
+the FactStore, asset manifest, and connective-copy authority. For all fifteen
+slides the renderer recomputes the query against the locked library digest and
+checks query ID, candidate rank, score, fallback reason, page ID, package SHA,
+source-slide SHA, source ordinal, and style cluster before mutation.
+
+The independent validator does not accept report query counters as proof. It
+schema- and semantics-validates the locked public query bundle, anchors every
+selected candidate to its lineage ordinal and `page_id`, and requires exact
+coverage of every query-authoritative ordinary-text and governed-content slot.
+It also compares selected-page structure counts and media authority with the
+final package. Missing, duplicate, unexpected, or mismatched evidence fails
+closed.
+
+The page compiler exposes two independent binding surfaces. Ordinary editable
+shape text uses `slot_graph.text_slot_ids`. Native table cells, chart cache
+values/text, embedded workbook cells, notes, comments, and diagram text use
+`governed_content_inventory`. Each governed record has a stable locator and
+source hash. A chart cache value and its embedded XLSX cell share one
+`peer_group_id` only when the certified chart formula/range and point index
+prove the exact cell mapping; equality of displayed values alone is never
+enough. Bind a peer group once so the chart cache and workbook mutate together;
+bind unpaired workbook cells and table cells independently. Every governed
+surface must resolve to a locked fact rendering or exact connective authority,
+whether explicitly bound or deterministically retained. Public query evidence
+redacts private source text; it never grants authority to source copy.
+
+Some certified art-directed titles split one visible phrase across one native
+shape per character. A single character is never authorized merely because it
+appears somewhere in a fact. The assembler derives each fragment group and its
+order only from the hash-locked query candidate's `fragment_groups` plus each
+slot's `group_id/group_order`; every non-empty member must cite the same sole
+FactStore record, and the ordered group must equal one complete registered
+rendering. Unused members may be empty only through the exact locked
+`connective-clear` entry. The independent validator repeats this check against
+the actual final slide text and rejects `character` mode outside such a group.
+
+Phase 49 additionally locks the immutable governed-slot identity tuple
+`(ordinal, page_id, slot_id, kind, source_part, locator, peer_group_id)`. Its
+registered inventory contains exactly 101 records (22/52/27 on slides 5/6/7)
+with SHA-256
+`12ce0f96e70c84c07d3b70ec9f4a4385949ffc05981ef983ed09648c282353c2`.
+`source_part` is required in each mutation record; a locator without its
+certified source part is not lineage proof. Any other acceptance profile that
+contains governed mutations fails closed until that profile has a separately
+registered immutable inventory.
+
+Treat every embedded XLSX as a nested untrusted OPC package. The assembler
+accepts only the certified passive workbook subset and fails closed on macros,
+active/OLE/ActiveX content, external or unresolved relationships, formulas, or
+unsupported parts. It then removes metadata, calculation-chain, and table
+definition residue and rebuilds retained shared strings so replaced or
+unauthorized source values cannot survive in hidden workbook bytes. The
+independent validator repeats this audit for every `.xlsx` reachable from the
+final root relationship graph, including a reachable workbook that the report
+did not declare.
 
 `physical-assembly-report.json` is a release gate, not a diagnostic
 decoration. It must prove per-slide page lineage, source/output hashes, OPC
 relationship closure, native editability, `python-pptx` opening, and dominant
-style-cluster adherence. The clean client folder never contains private
-commercial bytes, previews, cookies, or historical outputs. COM remains an
-optional read-only certification step after portable PASS.
+style-cluster adherence. Source-residue PASS additionally requires complete
+governed-binding verification, chart/workbook peer consistency, and a
+hash-bound final mutation record for every governed target part and locator.
+For a chart or workbook record, that evidence is derived again from the final
+package as `slide -> graphicFrame shape -> slide chart rId -> chart part ->
+externalData/package rId -> XLSX part`, with the final target-part hash; a
+reachable decoy workbook or report-authored target path cannot satisfy it.
+It also requires zero retained tag parts/relationships, zero cached
+layout/master field text, exact hashes for retained certified media, and exact
+slide/shape/slot/relationship-ID/target-part/hash evidence for every permitted
+replacement asset. Root-reachability is recomputed after overrides and
+pruning; unresolved targets and unreachable/orphan media must both be zero.
+Before those semantic checks, the independent validator rejects duplicate,
+noncanonical, case-colliding, directory, encrypted, or symlink ZIP entries.
+It then proves one canonical presentation relationship and ordered slide list,
+exact `slide1..N` parts, no extra slide relationships or parts, and a successful
+`python-pptx` reopen. Native-object and picture coverage are recomputed per
+slide to detect raster-dominant substitution instead of trusting report
+editability counts. External targets are permitted only for an allowlisted
+hyperlink relationship type with a valid credential-free HTTPS URL; other
+external relationship types fail closed.
+The clean client folder never contains private commercial bytes, previews,
+cookies, or historical outputs. COM remains an optional read-only
+certification step after portable PASS.
 
 ### v6.1 Agent execution stages and checkpoints
 
@@ -260,51 +383,59 @@ render command:
    slide budget, facts/sources, brand constraints, asset rights, output path,
    editability and COM policy. Stop with `DISCUSSION_REQUIRED` when any
    release-critical field is unknown.
-2. **Lock the brief and art direction** — write a portable `ProjectBriefPack`,
-   choose one theme palette/font system and record its rationale. Checkpoint:
-   `LOCKED_BRIEF` and `ART_DIRECTION_LOCKED` artifacts must exist.
+2. **Lock the brief and art direction** — write a portable `ProjectBriefPack`.
+   For Phase 49, derive and record the palette, font system, grid and component
+   language from the certified reference package; Codex does not invent or
+   override them. Checkpoint: `LOCKED_BRIEF` and `ART_DIRECTION_LOCKED`
+   artifacts must exist.
 3. **Lock the narrative spine** — map each slide to a role (cover, contents,
    section, evidence, chart, comparison, roadmap, closing, etc.), assign an
    information budget, and bind every fact to a source reference.
-4. **Search and select pages** — query `library-v4.json` by role, capacity,
-   semantic category and dominant style cluster. Select a certified `page_id`
-   for every slide; inspect the returned `slot_graph` and use only those exact
-   `shape_<id>` slots. Never invent slot IDs or geometry.
-   Source-page ordinal is never a semantic role: in the reference work-summary
-   family pages 3/4/10/13 are dividers, pages 5/6 are data pages, page 8 is a
-   project/case-study page, and page 9 is a KPI dashboard.
-   Choose by the query's `page_role`, not by sequential source order; a
-   non-adjacent certified page may be reused when role coverage requires it.
-5. **Assemble physically** — emit `assembly-plan.json`, then run
-   `render_window_pptx_assembly.py` (or
-   `window_pptx_automation.py --render-assembly-plan`). Checkpoint:
+4. **Search and select pages** — generate one locked query request and public
+   query bundle with fifteen ordinal-specific results. For Phase 49 select the
+   certified `reference-work-summary` page whose `slide_number` equals the
+   target ordinal; this is strict N-to-N reuse, not a semantic nearest-neighbor
+   substitution. Bind ordinary text by returned `shape_<id>` slots and embedded
+   content by returned governed slot/peer IDs. Never invent a slot, geometry,
+   candidate, score, or fallback. General v6.1 projects may use non-adjacent
+   certified pages only outside this acceptance profile.
+5. **Assemble physically** — emit `assembly-plan.v1.json`, then run the
+   canonical `render_window_pptx_assembly.py` command above. Checkpoint:
    `physical-assembly-report.json` must be `status=pass`, with one lineage
    record per target slide.
 6. **Rule QA and bounded repair** — check overflow, tiny text, out-of-bounds
-   shapes, relationship closure, editability, style adherence and content
-   density. Repair only through registered slot bindings or a replacement
-   certified page; do not freehand redraw failed slides. For physical
-   assembly, run `python scripts/qa_window_pptx_physical.py` and require its
-   `status=pass` JSON before visual review.
-7. **Visual harness and release** — render previews with the portable verifier,
-   run independent blind visual reviews, compare against the acceptance rubric,
-   and release only when all required rows are `PASS`. COM is an optional
-   read-only certification after portable PASS and never a generation backend
-   requirement.
+   shapes, relationship closure/reachability, governed content and peer
+   consistency, source residue, certified/replacement media hashes,
+   editability, style adherence and content density. Phase 49 repairs only the
+   locked bindings on the same certified source page; page replacement or a
+   generated/native redraw would break the N-to-N contract and requires a
+   replan. The canonical physical renderer writes the rule-QA report named by
+   `--rule-qa-report`; require its `status=pass` before handoff.
+7. **Author handoff** — when structural assembly and rule QA pass, stop at
+   `CANDIDATE_READY_FOR_BLIND_REVIEW`. Emit no visual score and no release
+   claim. A separate isolated harness renders one hash-bound packet, runs the
+   required blind reviews, and alone may transition to `RELEASED`. COM is an
+   optional read-only certification after portable PASS and never a generation
+   backend requirement.
 
-The minimum machine-readable checkpoint set is:
+The author-stage minimum checkpoint set is listed below. Use the project's
+locked output contract for the actual directory and filenames; `.window-pptx`
+is only the default when the client did not specify another evidence root.
 
 ```text
 .window-pptx/audits/brief-pack.json
-.window-pptx/audits/art-direction.json
+.window-pptx/audits/direction-decision.json
 .window-pptx/audits/narrative-plan.json
+.window-pptx/audits/page-template-query-request.json
+.window-pptx/audits/page-template-query-bundle.json
 .window-pptx/audits/assembly-plan.json
 .window-pptx/audits/physical-assembly-report.json
-.window-pptx/audits/visual-review.json
+.window-pptx/audits/rule-qa.json
 ```
 
-If a checkpoint is missing or `FAIL`, stop the release route and return the
-blocking finding plus the smallest safe next action.
+If an author-stage checkpoint is missing or `FAIL`, stop and return the
+blocking finding plus the smallest safe next action. `visual-review.json` is
+never an author-stage requirement.
 
 ## Realistic Brief Corpus
 

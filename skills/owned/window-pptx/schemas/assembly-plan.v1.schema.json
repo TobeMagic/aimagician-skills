@@ -12,7 +12,8 @@
     "created_at",
     "target_slide_count",
     "target_slides",
-    "library_index_sha256"
+    "library_index_sha256",
+    "authority"
   ],
   "properties": {
     "schema_version": {"const": "1.0"},
@@ -39,18 +40,78 @@
           "title": {"type": "string", "minLength": 1, "maxLength": 60},
           "headline": {"type": "string", "maxLength": 80},
           "narrative_intent": {"type": "string", "maxLength": 240},
-          "fact_refs": {"type": "array", "items": {"type": "string"}},
-          "asset_refs": {"type": "array", "items": {"type": "string"}},
           "bindings": {
             "type": "object",
-            "description": "Must contain exactly every text_slot_id in the selected page template; use an empty string to clear a decorative/source slot.",
-            "additionalProperties": {"type": "string"}
+            "description": "Per-shape locked binding. Text shapes carry text+fact_refs; picture shapes carry exactly one asset_ref. The engine infers and validates the allowed fact rendering.",
+            "additionalProperties": {"$ref": "#/$defs/slotBinding"}
+          },
+          "selection": {
+            "type": "object",
+            "required": [
+              "query_id", "candidate_rank", "score_total",
+              "selection_reason", "fallback_reason"
+            ],
+            "properties": {
+              "query_id": {"type": "string", "minLength": 1},
+              "candidate_rank": {"type": "integer", "minimum": 1, "maximum": 10},
+              "score_total": {"type": "number", "minimum": 0, "maximum": 1},
+              "selection_reason": {"type": "string", "minLength": 1, "maxLength": 240},
+              "fallback_reason": {"type": ["string", "null"]}
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false
       }
     },
-    "library_index_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+    "library_index_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "query_bundle": {"$ref": "#/$defs/authorityFile"},
+    "authority": {
+      "type": "object",
+      "required": ["fact_store", "asset_manifest", "connective_copy"],
+      "properties": {
+        "fact_store": {"$ref": "#/$defs/authorityFile"},
+        "asset_manifest": {"$ref": "#/$defs/authorityFile"},
+        "connective_copy": {"$ref": "#/$defs/authorityFile"}
+      },
+      "additionalProperties": false
+    }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "authorityFile": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?![/\\\\])(?![A-Za-z]:)(?!.*(?:^|[/\\\\])\\.\\.(?:[/\\\\]|$))[^\\\\]+$",
+          "description": "Project-relative POSIX path; the production loader also rejects path escape and every symlink component."
+        },
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "slotBinding": {
+      "type": "object",
+      "required": ["text", "fact_refs", "asset_refs"],
+      "properties": {
+        "text": {"type": "string"},
+        "fact_refs": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true,
+          "maxItems": 8
+        },
+        "asset_refs": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true,
+          "maxItems": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
 }

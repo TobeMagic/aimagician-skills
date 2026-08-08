@@ -63,7 +63,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--fact-store",
-        help="Trusted FactStore v1 JSON path for the weak-model route.",
+        help="Trusted FactStore v1 JSON path for weak-model or physical-assembly routes.",
+    )
+    parser.add_argument(
+        "--fact-store-sha256",
+        help="Externally locked FactStore file SHA-256 for physical assembly.",
     )
     parser.add_argument(
         "--brief-plan",
@@ -127,6 +131,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Physical assembly report path. Defaults under .window-pptx/audits.",
     )
     parser.add_argument(
+        "--assembly-rule-qa-report",
+        help="Physical rule-QA report path. Defaults under .window-pptx/audits.",
+    )
+    parser.add_argument(
+        "--assembly-max-output-size-bytes",
+        type=int,
+        default=33_941_179,
+        help="Maximum accepted physical PPTX size. Default: 33941179 bytes.",
+    )
+    parser.add_argument(
         "--template-pack",
         help="Registered TemplatePack id or manifest path for --render-template-pack.",
     )
@@ -184,6 +198,18 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "Governed render asset manifest JSON, relative to --project-dir unless "
             "absolute. Each binding must include Phase 24 provenance evidence."
         ),
+    )
+    parser.add_argument(
+        "--asset-manifest-sha256",
+        help="Externally locked asset-manifest file SHA-256 for physical assembly.",
+    )
+    parser.add_argument(
+        "--connective-copy",
+        help="Locked connective-copy v1 JSON path for physical assembly.",
+    )
+    parser.add_argument(
+        "--connective-copy-sha256",
+        help="Externally locked connective-copy file SHA-256 for physical assembly.",
     )
     parser.add_argument(
         "--generate-assets-with-agnes",
@@ -442,11 +468,34 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "--template-pack and --template-bindings are required for "
             "--render-template-pack"
         )
-    if assembly_route and not args.assembly_plan:
-        parser.error("--assembly-plan is required for --render-assembly-plan")
-    if any((args.assembly_library, args.assembly_private_root, args.assembly_report)) and not assembly_route:
+    if assembly_route and not args.dry_run and not all(
+        (
+            args.assembly_plan,
+            args.fact_store,
+            args.fact_store_sha256,
+            args.asset_manifest,
+            args.asset_manifest_sha256,
+            args.connective_copy,
+            args.connective_copy_sha256,
+        )
+    ):
         parser.error(
-            "--assembly-library/--assembly-private-root/--assembly-report "
+            "--assembly-plan, --fact-store, --fact-store-sha256, "
+            "--asset-manifest, --asset-manifest-sha256, --connective-copy, "
+            "and --connective-copy-sha256 are required for "
+            "--render-assembly-plan"
+        )
+    if any(
+        (
+            args.assembly_library,
+            args.assembly_private_root,
+            args.assembly_report,
+            args.assembly_rule_qa_report,
+        )
+    ) and not assembly_route:
+        parser.error(
+            "--assembly-library/--assembly-private-root/--assembly-report/"
+            "--assembly-rule-qa-report "
             "require --render-assembly-plan"
         )
     if (args.template_pack or args.template_bindings) and not template_pack_route:
@@ -487,8 +536,21 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("slide dimensions must be between 1 and 56 inches")
     if (args.render_deck_plan or args.render_brief_plan) and args.attach_existing:
         parser.error("governed render routes cannot use --attach-existing")
-    if args.asset_manifest and not (args.render_deck_plan or args.render_brief_plan):
+    if args.asset_manifest and not (
+        args.render_deck_plan or args.render_brief_plan or assembly_route
+    ):
         parser.error("--asset-manifest requires a render route")
+    if (
+        args.fact_store_sha256
+        or args.asset_manifest_sha256
+        or args.connective_copy
+        or args.connective_copy_sha256
+    ) and not assembly_route:
+        parser.error(
+            "physical authority paths/hashes require --render-assembly-plan"
+        )
+    if args.assembly_max_output_size_bytes < 1:
+        parser.error("--assembly-max-output-size-bytes must be positive")
     if args.generate_assets_with_agnes and not args.render_brief_plan:
         parser.error(
             "--generate-assets-with-agnes requires --render-brief-plan"
