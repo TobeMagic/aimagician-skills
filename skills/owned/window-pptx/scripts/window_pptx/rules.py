@@ -8,6 +8,12 @@ from typing import Any, Iterable
 
 CONFIDENCE_THRESHOLD = 0.62
 SAFE_DEFAULT_FAMILY = "structured-content"
+STRUCTURAL_ROLE_FAMILIES = {
+    "cover": "cover",
+    "agenda": "agenda",
+    "closing": "cta",
+    "section": "section",
+}
 
 
 _CANDIDATES: dict[str, tuple[tuple[str, float], ...]] = {
@@ -48,6 +54,14 @@ _CANDIDATES: dict[str, tuple[tuple[str, float], ...]] = {
     "comparison": (
         ("comparison", 0.95),
         ("before-after", 0.84),
+        ("bar-chart", 0.80),
+        ("table", 0.69),
+        ("structured-content", 0.58),
+    ),
+    "categorical-comparison": (
+        ("comparison", 0.95),
+        ("before-after", 0.84),
+        ("bar-chart", 0.80),
         ("table", 0.69),
         ("structured-content", 0.58),
     ),
@@ -60,6 +74,7 @@ _CANDIDATES: dict[str, tuple[tuple[str, float], ...]] = {
     "metrics": (
         ("big-number", 0.96),
         ("kpi-dashboard", 0.86),
+        ("focal-statement", 0.70),
         ("bar-chart", 0.65),
         ("structured-content", 0.57),
     ),
@@ -96,12 +111,14 @@ _CANDIDATES: dict[str, tuple[tuple[str, float], ...]] = {
     "risk": (
         ("risk-recommendation", 0.94),
         ("matrix", 0.75),
+        ("focal-statement", 0.72),
         ("cards", 0.69),
         ("structured-content", 0.60),
     ),
     "recommendation": (
         ("recommendation", 0.95),
         ("roadmap", 0.78),
+        ("focal-statement", 0.72),
         ("cards", 0.71),
         ("structured-content", 0.60),
     ),
@@ -188,10 +205,30 @@ def _score_candidate(
     base_score: float,
     item_count: int,
     previous_families: tuple[str, ...],
+    preferred_families: frozenset[str],
 ) -> CandidateScore:
     score = base_score
     rule_ids = [f"SEMANTIC_{semantic_type.upper().replace('-', '_')}"]
     reasons = [f"registered semantic fit for {semantic_type}"]
+
+    governed_family = {
+        "line-chart": "data-chart",
+        "area-chart": "data-chart",
+        "bar-chart": "data-chart",
+        "composition-chart": "data-chart",
+        "stacked-bar": "data-chart",
+        "distribution-chart": "data-chart",
+        "dot-plot": "data-chart",
+        "scatter-plot": "data-chart",
+        "bubble-chart": "data-chart",
+        "before-after": "comparison",
+        "recommendation": "risk-recommendation",
+        "modular-grid": "cards",
+    }.get(candidate_id, candidate_id)
+    if candidate_id in preferred_families or governed_family in preferred_families:
+        score += 0.05
+        rule_ids.append("ART_DIRECTION_FAMILY_PREFERENCE")
+        reasons.append("preferred by the selected governed art direction")
 
     repeat_count = 0
     for previous in reversed(previous_families):
@@ -199,7 +236,7 @@ def _score_candidate(
             break
         repeat_count += 1
     if repeat_count >= 2:
-        score -= 0.20
+        score -= 0.35
         rule_ids.append("RHYTHM_REPEAT_2")
         reasons.append("penalized after two consecutive uses")
     elif repeat_count == 1:
@@ -220,6 +257,59 @@ def _score_candidate(
         score += 0.03
         rule_ids.append("PARALLEL_DENSITY_GRID")
         reasons.append("four parallel points fit a governed grid")
+    if semantic_type == "metrics":
+        if item_count <= 1:
+            if candidate_id == "big-number":
+                score += 0.04
+                rule_ids.append("SINGLE_METRIC_HERO")
+                reasons.append("one metric receives a governed hero treatment")
+                if repeat_count == 1:
+                    score -= 0.25
+                    rule_ids.append("METRIC_HERO_RHYTHM_BREAK")
+                    reasons.append(
+                        "a second consecutive single-metric page switches composition"
+                    )
+            elif candidate_id == "kpi-dashboard":
+                score -= 0.22
+                rule_ids.append("SINGLE_METRIC_AVOID_DASHBOARD")
+                reasons.append("one metric does not require a dashboard grid")
+            elif candidate_id == "bar-chart":
+                score -= 0.15
+                rule_ids.append("SINGLE_METRIC_AVOID_CHART")
+                reasons.append("one scalar does not justify a categorical chart")
+        elif item_count <= 4:
+            if candidate_id == "kpi-dashboard":
+                score += 0.14
+                rule_ids.append("MULTI_METRIC_DASHBOARD")
+                reasons.append("parallel metrics receive a governed KPI composition")
+            elif candidate_id == "big-number":
+                score -= 0.18
+                rule_ids.append("MULTI_METRIC_AVOID_SINGLE_HERO")
+                reasons.append("multiple metrics should not share one hero slot")
+    if (
+        semantic_type == "categorical-comparison"
+        and 2 <= item_count <= 6
+        and candidate_id == "bar-chart"
+        and "data-chart" in preferred_families
+    ):
+        score += 0.16
+        rule_ids.append("ANALYTICAL_COMPARISON_BAR_CHART")
+        reasons.append(
+            "the selected analytical direction turns a structured comparison into a bar chart"
+        )
+    if semantic_type in {"risk", "recommendation"} and item_count == 1:
+        if candidate_id == "focal-statement":
+            score += 0.10
+            rule_ids.append("SPARSE_SINGLE_DECISION")
+            reasons.append("one decision receives a complete focal composition")
+        elif candidate_id == "recommendation" and semantic_type == "recommendation":
+            score += 0.05
+            rule_ids.append("SINGLE_RECOMMENDATION_FOCUS")
+            reasons.append("one recommendation receives a governed focus panel")
+        elif candidate_id in {"risk-recommendation", "matrix", "roadmap", "cards"}:
+            score -= 0.20
+            rule_ids.append("SPARSE_AVOID_EMPTY_PEERS")
+            reasons.append("avoids manufacturing an empty comparison or matrix peer")
 
     return CandidateScore(
         candidate_id=candidate_id,
@@ -234,6 +324,8 @@ def rank_page_families(
     *,
     item_count: int = 0,
     previous_families: Iterable[str] = (),
+    preferred_families: Iterable[str] = (),
+    structural_role: str | None = None,
     confidence_threshold: float = CONFIDENCE_THRESHOLD,
 ) -> DecisionTrace:
     """Rank registered page families with stable ties and rhythm penalties."""
@@ -241,10 +333,44 @@ def rank_page_families(
     normalized = (
         semantic_type.casefold().strip() if isinstance(semantic_type, str) else ""
     )
+    normalized_role = (
+        structural_role.casefold().strip()
+        if isinstance(structural_role, str)
+        else ""
+    )
+    structural_family = STRUCTURAL_ROLE_FAMILIES.get(normalized_role)
+    if structural_family is not None:
+        rule_id = f"STRUCTURAL_ROLE_{normalized_role.upper()}"
+        selected = CandidateScore(
+            candidate_id=structural_family,
+            score=1.0,
+            rule_ids=(rule_id,),
+            reasons=(
+                f"structural role {normalized_role} requires the governed "
+                f"{structural_family} family",
+            ),
+        )
+        return DecisionTrace(
+            semantic_type=normalized or "generic",
+            selected=structural_family,
+            confidence=1.0,
+            confidence_threshold=confidence_threshold,
+            top_candidates=(selected,),
+            rejected_candidates=(),
+            fallback_reason=None,
+        )
     candidates = _CANDIDATES.get(normalized, _CANDIDATES["generic"])
     history = tuple(previous_families)
+    preferences = frozenset(preferred_families)
     scored = [
-        _score_candidate(normalized or "generic", candidate_id, score, item_count, history)
+        _score_candidate(
+            normalized or "generic",
+            candidate_id,
+            score,
+            item_count,
+            history,
+            preferences,
+        )
         for candidate_id, score in candidates
     ]
     ranked = tuple(sorted(scored, key=lambda item: (-item.score, item.candidate_id)))

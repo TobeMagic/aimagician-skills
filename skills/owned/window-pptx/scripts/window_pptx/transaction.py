@@ -26,6 +26,12 @@ MSO_FALSE = 0
 MSO_TRUE = -1
 PP_FIXED_FORMAT_TYPE_PDF = 2
 PP_FIXED_FORMAT_INTENT_PRINT = 2
+POWERPOINT_SAVE_FORMATS = {
+    ".pptx": 24,  # ppSaveAsOpenXMLPresentation
+    ".pptm": 25,  # ppSaveAsOpenXMLPresentationMacroEnabled
+    ".potx": 26,  # ppSaveAsOpenXMLTemplate
+    ".potm": 27,  # ppSaveAsOpenXMLTemplateMacroEnabled
+}
 REQUIRED_OOXML_PARTS = frozenset(
     {
         "[Content_Types].xml",
@@ -157,6 +163,7 @@ def save_candidate(
     *,
     export_pdf: bool = False,
     reopen: Callable[[Path], Any] | None = None,
+    candidate_validator: Callable[[Any], None] | None = None,
     replace: Callable[[str | Path, str | Path], None] = os.replace,
 ) -> CandidateResult:
     """Save, validate, and atomically promote a PowerPoint candidate."""
@@ -197,7 +204,10 @@ def save_candidate(
 
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        presentation.SaveCopyAs(str(candidate))
+        presentation.SaveCopyAs(
+            str(candidate),
+            POWERPOINT_SAVE_FORMATS[output_path.suffix.casefold()],
+        )
         steps.append("save-copy")
 
         validate_ooxml_package(candidate)
@@ -212,6 +222,13 @@ def save_candidate(
         with macro_security(app):
             validation_presentation = open_validation_copy(candidate)
         steps.append("macro-disabled-reopen")
+        validation_error: Exception | None = None
+        if candidate_validator is not None:
+            try:
+                candidate_validator(validation_presentation)
+                steps.append("reopened-content-validation")
+            except Exception as exc:
+                validation_error = exc
         try:
             validation_presentation.Close()
         except Exception as exc:
@@ -219,6 +236,11 @@ def save_candidate(
                 f"Validation presentation could not be closed: {exc}"
             ) from exc
         steps.append("validation-copy-closed")
+        if validation_error is not None:
+            raise WindowPptxError(
+                "Reopened candidate content validation failed: "
+                f"{validation_error}"
+            ) from validation_error
 
         if source_hash_before is not None and source is not None:
             source_hash_after = sha256_file(source)

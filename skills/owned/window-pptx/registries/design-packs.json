@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "packs": [
+    {
+      "id": "institutional-annual-editorial",
+      "manifest": "design-packs/institutional-annual-editorial/pack.json"
+    },
+    {
+      "id": "consulting-executive",
+      "manifest": "design-packs/consulting-executive/pack.json"
+    },
+    {
+      "id": "product-launch-stage",
+      "manifest": "design-packs/product-launch-stage/pack.json"
+    },
+    {
+      "id": "data-research-editorial",
+      "manifest": "design-packs/data-research-editorial/pack.json"
+    }
+  ]
+}

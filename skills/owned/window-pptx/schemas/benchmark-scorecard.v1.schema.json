@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimagician.local/window-pptx/benchmark-scorecard.v1.schema.json",
+  "title": "Window-PPTX Benchmark Trial Scorecard v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "trial_id", "scenario_id", "arm_id", "model_id", "repeat_index", "status", "failure_code", "failure_detail", "raw_response_sha256", "deck_plan_sha256", "compiled_sha256", "render_plan_sha256", "quality_report_sha256", "metrics", "violations", "composite", "artifact_digests"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "trial_id": {"type": "string", "pattern": "^T-[a-z0-9-]+$"},
+    "scenario_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]+$"},
+    "arm_id": {"enum": ["unassisted-json", "governed-plan", "full-v5"]},
+    "model_id": {"type": "string", "minLength": 1},
+    "repeat_index": {"type": "integer", "minimum": 1, "maximum": 2},
+    "status": {"enum": ["unavailable", "invalid", "failed", "evaluated"]},
+    "failure_code": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]+$"},
+    "failure_detail": {"type": ["string", "null"], "minLength": 1},
+    "raw_response_sha256": {"$ref": "#/$defs/nullableSha"},
+    "deck_plan_sha256": {"$ref": "#/$defs/nullableSha"},
+    "compiled_sha256": {"$ref": "#/$defs/nullableSha"},
+    "render_plan_sha256": {"$ref": "#/$defs/nullableSha"},
+    "quality_report_sha256": {"$ref": "#/$defs/nullableSha"},
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}
+    },
+    "violations": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "composite": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+    "artifact_digests": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/artifact"}}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nullableSha": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relative_path", "sha256", "size_bytes"],
+      "properties": {
+        "relative_path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

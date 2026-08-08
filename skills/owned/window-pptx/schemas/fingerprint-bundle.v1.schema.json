@@ -1,0 +1,317 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fingerprint-bundle.v1.schema.json",
+  "title": "window-pptx fingerprint bundle v1",
+  "description": "Version 1.0 accepts the legacy PowerPoint profile and the additive portable PptxGenJS profile with optional evidence-bound PowerPoint certification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "fingerprints", "components"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "fingerprints": {"type": "array", "minItems": 1},
+    "components": {"type": "object"}
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "schema_version": {"const": "1.0"},
+        "fingerprints": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/legacyFingerprint"}
+        },
+        "components": {"$ref": "#/$defs/legacyComponents"}
+      }
+    },
+    {
+      "properties": {
+        "schema_version": {"const": "1.0"},
+        "fingerprints": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/portableFingerprint"}
+        },
+        "components": {"$ref": "#/$defs/portableComponents"}
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "fingerprints": {
+              "items": {"not": {"required": ["powerpoint_build_sha256"]}}
+            },
+            "components": {"not": {"required": ["powerpoint_build"]}}
+          }
+        },
+        {
+          "properties": {
+            "fingerprints": {
+              "items": {"required": ["powerpoint_build_sha256"]}
+            },
+            "components": {"required": ["powerpoint_build"]}
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "legacyFingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "git_commit", "dirty_state", "engine_sha256", "registry_bundle_sha256",
+        "schemas_sha256", "skill_sha256", "corpus_sha256", "protocol_sha256",
+        "prompt_sha256", "thresholds_sha256", "dependencies_sha256",
+        "model_provider_sha256", "environment_sha256", "font_inventory_sha256",
+        "powerpoint_build_sha256", "asset_manifest_sha256", "evidence_generation"
+      ],
+      "properties": {
+        "git_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "dirty_state": {"type": "boolean"},
+        "engine_sha256": {"$ref": "#/$defs/sha"},
+        "registry_bundle_sha256": {"$ref": "#/$defs/sha"},
+        "schemas_sha256": {"$ref": "#/$defs/sha"},
+        "skill_sha256": {"$ref": "#/$defs/sha"},
+        "corpus_sha256": {"$ref": "#/$defs/sha"},
+        "protocol_sha256": {"$ref": "#/$defs/sha"},
+        "prompt_sha256": {"$ref": "#/$defs/sha"},
+        "thresholds_sha256": {"$ref": "#/$defs/sha"},
+        "dependencies_sha256": {"$ref": "#/$defs/sha"},
+        "model_provider_sha256": {"$ref": "#/$defs/sha"},
+        "environment_sha256": {"$ref": "#/$defs/sha"},
+        "font_inventory_sha256": {"$ref": "#/$defs/sha"},
+        "powerpoint_build_sha256": {"$ref": "#/$defs/sha"},
+        "asset_manifest_sha256": {"$ref": "#/$defs/sha"},
+        "evidence_generation": {"enum": ["pre-huashu", "post-huashu"]}
+      }
+    },
+    "portableFingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "git_commit", "dirty_state", "engine_sha256", "registry_bundle_sha256",
+        "schemas_sha256", "skill_sha256", "corpus_sha256", "protocol_sha256",
+        "prompt_sha256", "thresholds_sha256", "dependencies_sha256",
+        "model_provider_sha256", "environment_sha256", "font_inventory_sha256",
+        "portable_runtime_sha256", "asset_manifest_sha256", "evidence_generation"
+      ],
+      "properties": {
+        "git_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "dirty_state": {"type": "boolean"},
+        "engine_sha256": {"$ref": "#/$defs/sha"},
+        "registry_bundle_sha256": {"$ref": "#/$defs/sha"},
+        "schemas_sha256": {"$ref": "#/$defs/sha"},
+        "skill_sha256": {"$ref": "#/$defs/sha"},
+        "corpus_sha256": {"$ref": "#/$defs/sha"},
+        "protocol_sha256": {"$ref": "#/$defs/sha"},
+        "prompt_sha256": {"$ref": "#/$defs/sha"},
+        "thresholds_sha256": {"$ref": "#/$defs/sha"},
+        "dependencies_sha256": {"$ref": "#/$defs/sha"},
+        "model_provider_sha256": {"$ref": "#/$defs/sha"},
+        "environment_sha256": {"$ref": "#/$defs/sha"},
+        "font_inventory_sha256": {"$ref": "#/$defs/sha"},
+        "portable_runtime_sha256": {"$ref": "#/$defs/sha"},
+        "powerpoint_build_sha256": {"$ref": "#/$defs/sha"},
+        "asset_manifest_sha256": {"$ref": "#/$defs/sha"},
+        "evidence_generation": {"const": "post-huashu"}
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "required": ["python", "packages"],
+      "properties": {
+        "python": {"type": "string", "minLength": 1},
+        "packages": {"type": ["object", "array"]}
+      }
+    },
+    "portableDependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["python", "packages"],
+      "properties": {
+        "python": {"type": "string", "minLength": 1},
+        "packages": {"type": ["object", "array"]}
+      }
+    },
+    "modelProvider": {
+      "type": "object",
+      "required": ["opencode_version", "models"],
+      "properties": {
+        "opencode_version": {"type": "string", "minLength": 1},
+        "models": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "portableModelProvider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["opencode_version", "models"],
+      "properties": {
+        "opencode_version": {"type": "string", "minLength": 1},
+        "models": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "legacyEnvironment": {
+      "type": "object",
+      "required": ["system", "release", "locale"],
+      "properties": {
+        "system": {"type": "string", "minLength": 1},
+        "release": {"type": "string", "minLength": 1},
+        "locale": {"type": "string", "minLength": 1}
+      }
+    },
+    "portableEnvironment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "release", "machine", "locale"],
+      "properties": {
+        "system": {"type": "string", "minLength": 1},
+        "release": {"type": "string", "minLength": 1},
+        "machine": {"type": "string", "minLength": 1},
+        "locale": {"type": "string", "minLength": 1}
+      }
+    },
+    "fontInventory": {
+      "type": "object",
+      "required": ["fonts"],
+      "properties": {
+        "fonts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "portableFontInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fonts"],
+      "properties": {
+        "fonts": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "legacyPowerPoint": {
+      "type": "object",
+      "required": ["version"],
+      "properties": {"version": {"type": "string", "minLength": 1}}
+    },
+    "certifiedPowerPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version", "status", "certification_evidence_sha256",
+        "candidate_sha256", "pdf_sha256", "png_sha256", "process_ownership"
+      ],
+      "properties": {
+        "version": {"type": "string", "minLength": 1},
+        "status": {"const": "passed"},
+        "certification_evidence_sha256": {"$ref": "#/$defs/sha"},
+        "candidate_sha256": {"$ref": "#/$defs/sha"},
+        "pdf_sha256": {"$ref": "#/$defs/sha"},
+        "png_sha256": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/sha"}
+        },
+        "process_ownership": {"const": "hwnd-pid-bound"}
+      }
+    },
+    "assetManifest": {
+      "type": "object",
+      "required": ["bindings"],
+      "properties": {"bindings": {"type": "object"}}
+    },
+    "portableAssetManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindings"],
+      "properties": {"bindings": {"type": "object"}}
+    },
+    "portableRuntime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "node", "npm", "pptxgenjs", "libreoffice"],
+      "oneOf": [
+        {"required": ["poppler"], "not": {"required": ["ghostscript"]}},
+        {"required": ["ghostscript"], "not": {"required": ["poppler"]}}
+      ],
+      "properties": {
+        "schema_version": {"const": "1.0"},
+        "node": {"$ref": "#/$defs/executableVersion"},
+        "npm": {"$ref": "#/$defs/executableVersion"},
+        "pptxgenjs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "package_json_sha256", "package_lock_sha256"],
+          "properties": {
+            "version": {"const": "4.0.1"},
+            "package_json_sha256": {"$ref": "#/$defs/sha"},
+            "package_lock_sha256": {"$ref": "#/$defs/sha"}
+          }
+        },
+        "libreoffice": {"$ref": "#/$defs/executableVersion"},
+        "poppler": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pdfinfo_version", "pdfinfo_executable", "pdftoppm_version", "pdftoppm_executable"],
+          "properties": {
+            "pdfinfo_version": {"type": "string", "minLength": 1},
+            "pdfinfo_executable": {"type": "string", "minLength": 1},
+            "pdftoppm_version": {"type": "string", "minLength": 1},
+            "pdftoppm_executable": {"type": "string", "minLength": 1}
+          }
+        },
+        "ghostscript": {"$ref": "#/$defs/executableVersion"}
+      }
+    },
+    "executableVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "executable"],
+      "properties": {
+        "version": {"type": "string", "minLength": 1},
+        "executable": {"type": "string", "minLength": 1}
+      }
+    },
+    "legacyComponents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dependencies", "model_provider", "environment", "font_inventory", "powerpoint_build", "asset_manifest"],
+      "properties": {
+        "dependencies": {"$ref": "#/$defs/dependencies"},
+        "model_provider": {"$ref": "#/$defs/modelProvider"},
+        "environment": {"$ref": "#/$defs/legacyEnvironment"},
+        "font_inventory": {"$ref": "#/$defs/fontInventory"},
+        "powerpoint_build": {"$ref": "#/$defs/legacyPowerPoint"},
+        "asset_manifest": {"$ref": "#/$defs/assetManifest"}
+      }
+    },
+    "portableComponents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dependencies", "model_provider", "environment", "font_inventory", "portable_runtime", "asset_manifest"],
+      "properties": {
+        "dependencies": {"$ref": "#/$defs/portableDependencies"},
+        "model_provider": {"$ref": "#/$defs/portableModelProvider"},
+        "environment": {"$ref": "#/$defs/portableEnvironment"},
+        "font_inventory": {"$ref": "#/$defs/portableFontInventory"},
+        "portable_runtime": {"$ref": "#/$defs/portableRuntime"},
+        "powerpoint_build": {"$ref": "#/$defs/certifiedPowerPoint"},
+        "asset_manifest": {"$ref": "#/$defs/portableAssetManifest"}
+      }
+    }
+  }
+}

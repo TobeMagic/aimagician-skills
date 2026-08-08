@@ -397,7 +397,7 @@ Plans:
 
 ## Milestone v5.0 — Window-PPTX Verified Production Engine
 
-The v5 milestone lowers model-dependence by moving narrative patterns, layout selection, design tokens, editability rules, and delivery checks into deterministic code and registries. It is active and unshipped.
+The v5 milestone lowers model-dependence by moving narrative patterns, layout selection, design tokens, editability rules, portable native rendering, and cross-engine delivery checks into deterministic code and registries. It is active and unshipped.
 
 ### Phase 22: Window-PPTX Baseline and Safety
 
@@ -477,27 +477,56 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
   3. Customer-delivery gates reject package/reopen failures, source mutation, rasterized slides, missing native objects, and insufficient editable text coverage.
 **Plans:** 1/1 complete. The quality pipeline suite passes 19 tests and the complete window-pptx suite passes 404 tests. Multiple OpenCode free-model sessions read the review packet but returned no textual verdict; the mandatory final independent verdict remains Phase 29 gate `V5-UAT-04`.
 
+### Phase 27.1: Huashu Design Reference Assimilation and Visual Calibration (INSERTED)
+
+**Goal:** Convert the strongest Huashu design-planning principles into independently authored, deterministic native-PPTX contracts that raise ordinary-model quality without weakening the DeckPlan raw-design boundary.
+**Depends on:** Phase 27
+**Requirements:** [V5-REF-01, V5-REF-02, V5-REF-03, V5-REF-04, V5-REF-05, V5-REF-06]
+**Status:** Implementation Complete / Evidence Carried Forward
+**Success Criteria**:
+  1. The upstream source, full commit, archive/tree/license hashes, review subtree, license notice, and accept/adapt/reject decisions are reproducible.
+  2. FactStore, BriefPlan, NarrativePlan, BrandSpec, art-direction, layout-selection, QA v2, and two-stage repair contracts are strict, deterministic, and preserve DeckPlan v1 compatibility.
+  3. Six independent calibration scenarios produce same-input before/after artifacts, and no external runtime, prompt, media, named style, or HTML-to-PPTX engine is copied.
+  4. Phase 28 rejects pre-Huashu evidence and mixed engine/registry/schema/skill/prompt/environment fingerprints.
+**Plans:** 1/3 formally complete; implementation tasks in Plans 02-03 are locally verified and their remaining evidence is carried forward without being marked PASS. The full Window-PPTX suite passes 505 historical pre-27.2 tests; six refreshed deterministic calibration packets cover 8-10 slides and 5-7 layout families. The earlier 180-trial manifest remains preserved but becomes pre-27.2/noncanonical after the rendering architecture changes. Portable real-artifact proof moves to Phase 27.2, and the ordinary-model comparison plus clean formal fingerprints move to Phase 28. A later DeepSeek read-only audit completed, but it predates the final portable implementation and cannot satisfy Phase 29's final audit gate.
+
+### Phase 27.2: Portable PptxGenJS Backend and Cross-Engine QA (INSERTED)
+
+**Goal:** Remove COM from governed daily delivery by rendering canonical RenderPlans to deterministic native-editable OOXML, validating the package semantically, and proving the result through an isolated second renderer while retaining PowerPoint as an explicit legacy backend and sampled release certifier.
+**Depends on:** Phase 27.1 local implementation; Phase 27.1's formal ordinary-model evidence may remain open because Phase 28 owns it.
+**Requirements:** [V5-PORT-01, V5-PORT-02, V5-PORT-03, V5-PORT-04, V5-PORT-05, V5-PORT-06, V5-PORT-07, V5-PORT-08, V5-PORT-09]
+**Status:** Complete
+**Completed:** 2026-07-21
+**Success Criteria**:
+  1. Governed `auto` execution uses PptxGenJS 4.0.1 directly from RenderPlan and never silently invokes COM, rasterizes a slide, or accepts an unsupported required capability.
+  2. The normalized PPTX is byte-deterministic, identity-bound, native-editable, atomically promoted, and rejected by stable OOXML semantic findings when it diverges from RenderPlan.
+  3. Isolated LibreOffice/Poppler rendering produces ratio- and page-count-correct proof artifacts without resaving the PPTX, and Quality-v2 fails closed on missing or invalid rendered evidence.
+  4. Six real portable calibration packets pass all portable hard gates; HTML remains proof-only, and PowerPoint doctor/certification is safe, optional, read-only, and non-mutating.
+**Plans:** 3/3 complete. The frozen portable calibration produces 56 pages across six scenarios and passes 6/6 package, OOXML semantic, LibreOffice, Poppler, Quality-v2, source-integrity, and byte-determinism gates. The portable engine supports 16:9, 4:3, and custom ratios and seals 200 root evidence hashes; the frozen Window-PPTX suite passes 602/602 and root Vitest passes 101/101. OpenCode session `ses_07c11cc8bffe8HmjcQX73B1We4` independently confirms engineering PASS, visual FAIL, and release NO_GO. Manual review remains deliberately separate: the visual floor improved materially (empty decoration frames 14→0, orphan agenda continuations 2→0, generic classifier titles 28→0, big-number/KPI pages 0→14), but all six decks still fail the requested customer-delivery/senior-designer visual bar. PowerPoint certification and formal weak-model/blind-review evidence remain `NOT_RUN`, so v5.0 is not shippable.
+
 ### Phase 28: Weak-Model Benchmark
 
 **Goal:** Measure whether the governed v5 workflow improves ordinary-model quality and repeatability across common business scenarios.
-**Depends on:** Phase 27
+**Depends on:** Phase 27.2 and a clean post-27.2 component fingerprint
 **Requirements:** [V5-BENCH-01, V5-BENCH-02, V5-BENCH-03, V5-BENCH-04, V5-BENCH-05]
-**Status:** In Progress
+**Status:** In Progress / Diagnostic Implementation Verified / Release `NO_GO`
 **Success Criteria**:
   1. Fifteen frozen scenario briefs cover business reports, proposals, launches, analysis, sales, investors, reviews, strategy, research, training, brand, kickoff, operations, and marketing/e-commerce.
   2. Three arms, two ordinary models, repeats, deterministic scoring, and blind review are reproducible from frozen hashes.
-  3. Release thresholds demonstrate quality, safety, editability, and repeatability improvement.
+  3. The full-v5 arm uses real PptxGenJS, OOXML, LibreOffice, and Quality-v2 evidence; fake-COM artifacts are not credited as customer delivery evidence.
+  4. Release thresholds demonstrate quality, safety, editability, and repeatability improvement without imputing unavailable trials.
+**Progress:** The real portable full-v5 path and immutable formal run-contract checks are implemented. Preserved real DeepSeek responses regenerate latest-source business-report r12 (98.75), product-launch r8 (98.75), and data-analysis r9 (99.00) visual-floor diagnostic packets with editable PPTX and portable hard-gate passes. The latest rule/compiler/backend layer adds source-grounded relative metric labels, same-family capacity repair, editorial statements, compact label cards and milestones, governed narrow accent/action rails, and verified native percentage-chart axes/labels. All 212 recorded inventory entries independently match their SHA-256 and size contracts. Every packet remains one of 180, fingerprint-missing, and formally ineligible; the data-analysis iterations also proved that high automatic scores can conceal parser defects, so blind review remains mandatory. The clean complete 180-trial matrix, second model/Nemotron, blind review, and sampled PowerPoint certification are `NOT_RUN`.
 
-### Phase 29: Windows Acceptance and Closure
+### Phase 29: Cross-Engine Acceptance, PowerPoint Sampling, and Closure
 
-**Goal:** Prove the complete compiler in real Windows PowerPoint, publish canonical evidence, and close only when every hard gate passes.
+**Goal:** Prove portable production reliability across the complete benchmark, certify a frozen sample read-only in real PowerPoint, publish canonical evidence, and close only when every hard gate passes.
 **Depends on:** Phase 28
 **Requirements:** [V5-UAT-01, V5-UAT-02, V5-UAT-03, V5-UAT-04, V5-UAT-05, V5-UAT-06]
-**Status:** Planned
+**Status:** Never started / cancelled / replaced by v6 phases / not complete
 **Success Criteria**:
-  1. The Windows matrix and ten-run reliability cases pass for sessions, paths, formats, ratios, fonts, add-ins, locks, and edit sentinels.
-  2. All fifteen canonical outputs have exports, contact sheets, reports, hashes, and final human review evidence.
-  3. The final OpenCode audit is independently verified and the Skill documents the production compiler workflow.
+  1. The portable matrix and ten-run reliability cases pass for paths, formats, ratios, fonts, locks, isolated LibreOffice profiles, source protection, and edit sentinels.
+  2. All fifteen canonical portable outputs have exports, contact sheets, reports, hashes, and final human review evidence; a frozen 10% sample plus every high-risk capability sample passes read-only PowerPoint certification without repair prompts or process residue.
+  3. The final post-implementation OpenCode audit is independently verified and the Skill documents portable delivery, capability failures, legacy COM, and sampled certification.
   4. v5.0 remains active if any mapped requirement or customer-delivery hard gate lacks fresh evidence.
 
 ## v5.0 Progress
@@ -510,7 +539,250 @@ The v5 milestone lowers model-dependence by moving narrative patterns, layout se
 | 25. Transactional Core Renderer | Complete | 2026-07-20 |
 | 26. Advanced Editable Objects | Complete | 2026-07-20 |
 | 27. Quality Gates and Repair | Complete | 2026-07-20 |
-| 28. Weak-Model Benchmark | In Progress | — |
-| 29. Windows Acceptance and Closure | Planned | — |
+| 27.1 Huashu Design Reference Assimilation and Visual Calibration | Implementation Complete / Evidence Carried Forward | — |
+| 27.2 Portable PptxGenJS Backend and Cross-Engine QA | Complete | 2026-07-21 |
+| 28. Weak-Model Benchmark | In Progress / Diagnostic Implementation Verified / NO_GO | — |
+| 29. Cross-Engine Acceptance, PowerPoint Sampling, and Closure | Planned | — |
 
-**Current milestone:** 6/8 phases complete. Repository total: 29 phases, 27 complete.
+**Current milestone:** 7/10 phases complete. Repository total: 31 phase entries, 28 complete. Phase 28 diagnostics validate the portable path but do not count as formal benchmark completion; customer visual acceptance, the complete two-model matrix, clean fingerprint, blind review, and Phase 29 certification remain open.
+
+## Milestone v5.1 — Window-PPTX Reference-Grade Visual Engine
+
+v5.1 supersedes the unshipped v5.0 visual architecture while retaining its portable transaction, OOXML, editability, and verification foundations.
+
+### Phase 30: Reference Visual Baseline and Contracts
+
+**Goal:** Freeze the authorized reference, measurable visual floor, TemplatePack/DesignPack contracts, and failure examples.
+**Depends on:** v5.0 portable engineering foundation
+**Requirements:** [V51-REF-01, V51-DESIGN-01, V51-DESIGN-02, V51-QA-01, V51-QA-03]
+**Status:** Complete
+
+### Phase 31: Authorized TemplatePack and Portable OOXML Adapter
+
+**Goal:** Produce the first reference-grade 15-slide editable work-summary deck without COM.
+**Depends on:** Phase 30
+**Requirements:** [V51-TPL-01, V51-TPL-02, V51-TPL-03, V51-DESIGN-04]
+**Status:** Complete
+
+### Phase 32: VisualPlan, DesignPack v2, and Renderer v2
+
+**Goal:** Compile narrative intent into real component compositions and editable native rendering.
+**Depends on:** Phase 31
+**Requirements:** [V51-DESIGN-01, V51-DESIGN-02, V51-DESIGN-03, V51-DESIGN-04]
+**Status:** Complete — superseded failing R6 with accepted Phase 33/34
+reference-method candidates
+
+### Phase 33: Multi-Scenario DesignPacks and Asset System
+
+**Goal:** Complete four extensible DesignPacks and governed asset acquisition/fallback strategies for all fifteen scenarios.
+**Depends on:** Phase 32
+**Requirements:** [V51-DESIGN-01, V51-DESIGN-03, V51-DESIGN-04]
+**Status:** Complete — four DesignPack v2 systems and governed asset
+materialization implemented and verified
+
+### Phase 34: Visual Regression, Auto-Repair, and Four-Scenario UAT
+
+**Goal:** Reject the old sparse floor, repair bounded visual defects, and pass four representative real-artifact scenarios.
+**Depends on:** Phase 33
+**Requirements:** [V51-QA-01, V51-QA-02, V51-QA-03, V51-BENCH-01]
+**Status:** Complete — four representative candidates pass portable,
+Quality v3, and direct Agnes gates
+
+### Phase 35: Weak-Model Benchmark and Cross-Engine Closure
+
+**Goal:** Refreeze the benchmark, execute ordinary-model trials, complete blind review, and close only with fresh cross-engine evidence.
+**Depends on:** Phase 34
+**Requirements:** [V51-BENCH-01, V51-UAT-01]
+**Status:** `NO_GO` / superseded by v6.0 / not complete. The current work is
+preserved at archive commit `e4ed78c` and annotated tag
+`window-pptx-v5.1-no-go-20260729`. The final baseline collects 792 Python
+tests, with 789 passing and three known regressions. The user rejected the
+generated visual floor and replaced the unfinished human-review closure path
+with a new quality-first, AI-only v6 milestone.
+
+## Milestone v6.0 — Window-PPTX Template-Intelligence Quality Reset
+
+v6.0 prioritizes reference-grade customer delivery with Codex GPT-5.5 medium,
+realistic locked briefs, licensed complete-work visual spines, certified
+template intelligence, native-editable portable PPTX, bounded repair, and
+independent AI-only visual acceptance. Weak-model distillation is deferred to
+v6.1.
+
+### Phase 36: v6 Contracts and Realistic Corpus
+
+**Goal:** Lock ProjectBriefPack v1, private-asset safety, three complete
+flagships, twelve realistic skeletons, and v6 traceability.
+**Depends on:** v5.1 `NO_GO` archive
+**Requirements:** [V6-BRIEF-01, V6-CORPUS-01, V6-DOC-01]
+**Status:** Complete — 2026-07-29
+
+### Phase 37: Secure Acquisition and Catalog
+
+**Goal:** Build entitlement-aware private acquisition, quarantine, content
+addressing, stable metadata, and a resumable queryable catalog.
+**Depends on:** Phase 36
+**Requirements:** [V6-ASSET-01, V6-LIB-01]
+**Status:** Complete — 2026-07-29
+
+### Phase 38: Certified Template Intelligence
+
+**Goal:** Add TemplatePack v2, Registry v3, ArtDirectionProfile, semantic
+retrieval, and certified complete-work visual spines.
+**Depends on:** Phase 37 `SEED_READY`; full sync may continue
+**Requirements:** [V6-LIB-01, V6-DESIGN-01, V6-DECK-01]
+**Status:** Complete — 2026-07-30
+
+### Phase 39: Work-Report Flagship Tracer
+
+**Goal:** Generate the 28-main-slide plus 4-appendix work-report flagship with
+GPT-5.5 medium and reference-grade editable output.
+**Depends on:** Phase 38
+**Requirements:** [V6-DESIGN-01, V6-DECK-01, V6-PORT-01, V6-QA-01,
+V6-EVID-01]
+**Status:** Complete — 2026-07-30
+
+### Phase 40: Campus and Academic Flagship Tracers
+
+**Goal:** Generate the complete campus-competition and academic-defense decks
+from locked facts and licensed visual spines.
+**Depends on:** Phase 39 and licensed flagship spines
+**Requirements:** [V6-PORT-01, V6-PORT-02, V6-QA-01, V6-EVID-01]
+**Status:** Complete — 2026-07-30
+
+### Phase 41: AI-Only Acceptance and Closure
+
+**Goal:** Close only after engineering gates, three independent visual-capable
+AI reviews, reference-parity thresholds, and a fresh Agnes completion audit.
+**Depends on:** Phases 39–40
+**Requirements:** [V6-PORT-02, V6-EVID-01, V6-DOC-01, V6-UAT-01,
+V6-AUDIT-01, V6-REL-01]
+**Status:** Reopened / former GO invalidated — 2026-07-30
+
+### Phase 42: v6 Reopen and Ground Truth
+
+**Goal:** Correct the former completion claims, freeze the real
+acquisition-to-delivery architecture, and establish non-bypassable visual
+acceptance.
+**Depends on:** User rejection of Phase 41 output
+**Requirements:** [V6R-GROUND-01]
+**Status:** Complete — 2026-07-30
+
+### Phase 43: Real Playwright Acquisition
+
+**Goal:** Inventory the complete 32-category Gaojie template taxonomy and acquire a secure, resumable, preview-selected high-diversity private core through a same-origin Playwright adapter with a deterministic local fixture.
+**Success Criteria**:
+
+- **GOAL-43-01:** The authenticated adapter inventories exactly 32 route-aware
+  template categories and records every discovered product with category
+  provenance plus either a validated preview or an explicit failure.
+- **GOAL-43-02:** Diversity-first selection is deterministic, suppresses exact
+  and near duplicates, reaches 12 candidates for sufficiently populated
+  categories, and reports real source shortfalls without inventing coverage.
+- **GOAL-43-03:** At least one valid editable PowerPoint package is promoted
+  atomically, and resume reuses valid bytes while repairing missing or corrupt
+  artifacts.
+- **GOAL-43-04:** Credentials never appear in state, reports, logs, tests, or
+  review evidence; every private byte remains below the ignored `.private/`
+  boundary.
+
+**Depends on:** Phase 42
+**Requirements:** [V6R-ACQ-01]
+**Status:** Complete — 2026-07-30
+
+### Phase 44: Private Asset Intelligence
+
+**Goal:** Quarantine, render, structurally inspect, cross-category deduplicate,
+classify, visually review, and certify a 300–500-page high-value core from the
+preview-selected private catalog.
+**Success Criteria**:
+
+- **GOAL-44-01:** Every acquired package is passively quarantined and
+  structurally inspected; every accepted editable package renders every slide
+  into hash-bound normalized evidence.
+- **GOAL-44-02:** Every candidate page receives exactly one full-coverage
+  rendered-pixel disposition: complete layout, named support/specialty pool, or
+  excluded with Blocker/Important reason. Mixed-pool certification is forbidden.
+- **GOAL-44-03:** Cross-package and cross-pool exact/near duplicates have one
+  deterministic canonical page and explicit aliases; every certified page has
+  provenance, private-use rights scope, structure, render, role, pool, and
+  visual-fingerprint evidence.
+- **GOAL-44-04:** The final high-quality usable core contains 300–500 pages, or
+  exhausts every valid acquired candidate with an explicit quality shortfall;
+  full-coverage contact sheets and independent visual review have no unresolved
+  Blocker or Important in the certified pools.
+
+**Depends on:** Phase 43 real acquisition
+**Requirements:** [V6R-MINE-01]
+**Status:** Complete — 2026-07-30
+
+### Phase 45: Selection-to-Materialization Bridge
+
+**Goal:** Make production generation consume TemplateSelectionPlan and SlideBlueprint and prove the selected physical/native candidates were actually materialized.
+**Depends on:** Phase 44
+**Requirements:** [V6R-MAT-01]
+**Success Criteria**:
+
+- **GOAL-45-01:** Supported certified spines emit deterministic selection-plan
+  and complete slide-blueprint artifacts.
+- **GOAL-45-02:** Registered-native selections materialize the exact selected
+  variant or fail closed.
+- **GOAL-45-03:** Physical selections execute through the hash-bound
+  TemplatePack adapter and emit per-slide provenance.
+- **GOAL-45-04:** Unknown, uncertified, mixed, drifted, or incomplete
+  materialization evidence fails; focused and regression verification passes.
+**Status:** Complete — 2026-07-30
+
+### Phase 46: Three Reference-Grade Anchors
+
+**Goal:** Regenerate work-report, campus-competition, and academic-defense anchors from actual certified candidates at the reference art-direction level.
+**Success Criteria**:
+
+- **GOAL-46-01:** Each anchor has a real locked brief, complete commercial
+  anatomy, and an explicit page-by-page art-direction blueprint.
+- **GOAL-46-02:** Every anchor consumes certified physical/native candidates
+  with exact materialization evidence and uses the private reference-only pool
+  only as non-materialized art-direction guidance.
+- **GOAL-46-03:** The three PPTX files remain editable, open and render
+  portably, and pass structural, geometry, typography, asset, and artifact
+  gates.
+- **GOAL-46-04:** Three fresh independent visual-capable AI contexts find no
+  unresolved Blocker or Important and judge the anchors at reference-grade
+  art-direction quality.
+**Depends on:** Phase 45
+**Requirements:** [V6R-ANCHOR-01]
+**Status:** Complete — 2026-07-30
+
+### Phase 47: Fifteen Scenarios and Ordinary-Model Mode
+
+**Goal:** Extend the accepted authoring system to all realistic scenarios and
+measure constrained ordinary-model reliability.
+**Depends on:** Phase 46
+**Requirements:** [V6R-WEAK-01]
+**Status:** Complete — 2026-07-31
+
+### Phase 48: Blind Acceptance and Closure
+
+**Goal:** Close only after three fresh visual-capable AI contexts and a fresh
+nonvisual completion audit pass the exact artifacts with no unresolved
+Blocker or Important.
+**Depends on:** Phases 43–47
+**Requirements:** [V6R-UAT-01, V6R-REL-01]
+**Status:** Complete — 2026-07-31
+
+## v6.0 Progress
+
+| Phase | Status | Completed |
+|-------|--------|-----------|
+| 36. Contracts and Realistic Corpus | Complete | 2026-07-29 |
+| 37. Secure Acquisition and Catalog | Complete | 2026-07-29 |
+| 38. Certified Template Intelligence | Complete | 2026-07-30 |
+| 39. Work-Report Flagship | Complete | 2026-07-30 |
+| 40. Campus and Academic Flagships | Complete | 2026-07-30 |
+| 41. AI-Only Acceptance and Closure | Reopened / invalidated | — |
+| 42. Reopen and Ground Truth | Complete | 2026-07-30 |
+| 43. Real Playwright Acquisition | Complete | 2026-07-30 |
+| 44. Private Asset Intelligence | Complete | 2026-07-30 |
+| 45. Selection-to-Materialization Bridge | Complete | 2026-07-30 |
+| 46. Three Reference-Grade Anchors | Complete | 2026-07-30 |
+| 47. Fifteen Scenarios and Ordinary-Model Mode | Complete | 2026-07-31 |
+| 48. Blind Acceptance and Closure | Complete | 2026-07-31 |

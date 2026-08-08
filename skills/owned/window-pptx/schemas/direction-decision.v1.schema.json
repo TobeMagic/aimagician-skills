@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "direction-decision.v1.schema.json",
+  "title": "window-pptx DirectionDecision v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "candidates", "selected_slot", "selected_profile_id", "confidence", "fallback_reason"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "candidates": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "object", "additionalProperties": false, "required": ["slot", "profile_id", "score", "theme_id", "reasons", "asset_gaps"], "properties": {"slot": {"enum": ["safe", "editorial", "expressive"]}, "profile_id": {"type": "string"}, "score": {"type": "number", "minimum": 0, "maximum": 1}, "theme_id": {"type": "string"}, "reasons": {"type": "array", "items": {"type": "string"}}, "asset_gaps": {"type": "array", "items": {"type": "string"}}}}},
+    "selected_slot": {"enum": ["safe", "editorial", "expressive"]},
+    "selected_profile_id": {"type": "string"},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "fallback_reason": {"type": ["string", "null"]}
+  }
+}

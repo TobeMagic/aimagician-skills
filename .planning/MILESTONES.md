@@ -1,8 +1,63 @@
 # Milestones
 
-## v5.0 Window-PPTX Verified Production Engine (Active)
+## v6.0 Window-PPTX Template-Intelligence Quality Reset (Shipped: 2026-07-31)
 
-**Goal:** Turn `window-pptx` into a deterministic, Windows-first presentation compiler that lets ordinary models produce editable, client-delivery-quality PowerPoint decks through semantic planning, governed design registries, native rendering, and measurable quality gates.
+**Goal:** Make Codex GPT-5.5 medium produce native-editable,
+reference-grade, customer-delivery PPTX from discussion-locked realistic
+briefs and licensed complete-work visual spines, then close only through
+deterministic engineering gates and three independent AI reviews.
+
+**Phase gates:**
+- Phase 36: v6 Contracts and Realistic Corpus
+- Phase 37: Secure Acquisition and Catalog
+- Phase 38: Certified Template Intelligence
+- Phase 39: Work-Report Flagship Tracer
+- Phase 40: Campus and Academic Flagship Tracers
+- Phase 41: AI-Only Acceptance and Closure
+- Phase 42: Reopen and Ground Truth
+- Phase 43: Real Playwright Acquisition
+- Phase 44: Private Asset Intelligence
+- Phase 45: Selection-to-Materialization Bridge
+- Phase 46: Three Reference-Grade Anchors
+- Phase 47: Fifteen Scenarios and Ordinary-Model Mode
+- Phase 48: Blind Acceptance and Closure
+
+**Status:** Complete / `GO`. The former Phase 41 GO remains invalid historical
+evidence. Phases 42–48 performed the real acquisition-to-delivery recovery:
+377 private editable packages, a 288-page certified core, exact
+selection-to-materialization, three accepted anchors, fifteen realistic
+scenario decks across 292 editable pages, 18 fresh blind visual contexts, 96
+focused regression tests, and a stable-worktree OpenCode `DONE` audit with
+zero Blocker or Important. COM is optional diagnostics, not a release
+dependency.
+
+---
+
+## v5.1 Window-PPTX Reference-Grade Visual Engine (Superseded / NO_GO)
+
+**Goal:** Make ordinary models produce editable, customer-delivery-grade PPTX by selecting and composing governed DesignPacks, or by adapting authorized TemplatePacks without flattening their visual language, masters, grouped shapes, charts, gradients, connectors, crops, and media.
+
+**Phase gates:**
+- Phase 30: Reference Visual Baseline and Contracts
+- Phase 31: Authorized TemplatePack and Portable OOXML Adapter
+- Phase 32: VisualPlan, DesignPack v2, and Renderer v2
+- Phase 33: Multi-Scenario DesignPacks and Asset System
+- Phase 34: Visual Regression, Auto-Repair, and Four-Scenario UAT
+- Phase 35: Weak-Model Benchmark and Cross-Engine Closure
+
+**Status:** Superseded / unshipped / `NO_GO`. The final archived baseline
+collects 792 Python tests, with 789 passing and three regressions. Portable
+engineering, TemplatePack adaptation, CompositionPlan, Quality v3, and Agnes
+review infrastructure remain useful foundations, but the user rejected the
+generated trials as materially below the accepted `工作总结.pptx` art-direction
+bar. Phase 35 is not complete; its unfinished human-review closure is replaced
+by the user-authorized v6 AI-only acceptance contract.
+
+---
+
+## v5.0 Window-PPTX Verified Production Engine (Superseded / Unshipped)
+
+**Goal:** Turn `window-pptx` into a deterministic, portable-first presentation compiler that lets ordinary models produce editable, client-delivery-quality PowerPoint decks through semantic planning, governed design registries, native OOXML rendering, cross-engine quality gates, and sampled PowerPoint certification.
 
 **Phase gates:**
 - Phase 22: Baseline and Safety
@@ -11,10 +66,12 @@
 - Phase 25: Transactional Core Renderer
 - Phase 26: Advanced Editable Objects
 - Phase 27: Quality Gates and Repair
+- Phase 27.1: Huashu Design Reference Assimilation and Visual Calibration (INSERTED)
+- Phase 27.2: Portable PptxGenJS Backend and Cross-Engine QA (INSERTED)
 - Phase 28: Weak-Model Benchmark
-- Phase 29: Windows Acceptance and Closure
+- Phase 29: Cross-Engine Acceptance, PowerPoint Sampling, and Closure
 
-**Status:** In progress. Phase 22 is active; 0/8 v5 phases are complete. v4.0 remains shipped history. The milestone must not be marked shipped until Phase 29 hard gates have fresh evidence.
+**Status:** Superseded / unshipped / `NO_GO`. The portable engineering chain remains reusable, but its sparse generated visual floor failed the user's customer-delivery bar. Its incomplete benchmark and closure gates are retained as historical evidence and must not be presented as a shipped release. v5.1 replaces the visual architecture and will refreeze benchmark evidence after reference-grade gates pass.
 
 ---
 

@@ -1,0 +1,227 @@
+{
+  "schema_version": "1.0",
+  "grammars": [
+    {
+      "id": "consulting-project-proposal-v1",
+      "scenario": "project-proposal",
+      "design_pack_id": "consulting-executive",
+      "recipes": [
+        {
+          "id": "proposal.cover",
+          "role_patterns": ["cover"],
+          "semantic_kinds": [],
+          "family": "cover",
+          "variant": "minimal-brand",
+          "density": "sparse",
+          "emphasis": "hero",
+          "components": ["claim-title", "context-line", "brand-mark", "visual-anchor"],
+          "max_items": 3,
+          "max_body_chars": 90
+        },
+        {
+          "id": "proposal.executive-summary",
+          "role_patterns": ["executive-summary", "summary"],
+          "semantic_kinds": ["cards", "statement"],
+          "family": "executive-summary",
+          "variant": "message-evidence",
+          "density": "balanced",
+          "emphasis": "hero",
+          "components": ["claim-title", "message", "three-proof-cards", "takeaway"],
+          "max_items": 4,
+          "max_body_chars": 180
+        },
+      {
+        "id": "proposal.problem-metric",
+        "role_patterns": [
+          "context",
+          "problem",
+          "customer-context",
+          "current-state"
+        ],
+        "semantic_kinds": [
+          "metrics"
+        ],
+        "family": "big-number",
+        "variant": "hero-metric",
+        "density": "sparse",
+        "emphasis": "hero",
+        "components": [
+          "claim-title",
+          "hero-metric",
+          "comparison-context",
+          "source-note"
+        ],
+        "max_items": 2,
+        "max_body_chars": 140
+      },
+      {
+        "id": "proposal.problem",
+          "role_patterns": ["context", "problem", "customer-context", "current-state"],
+          "semantic_kinds": ["comparison", "risk"],
+          "family": "comparison",
+          "variant": "split-contrast",
+          "density": "balanced",
+          "emphasis": "standard",
+          "components": ["claim-title", "current-state", "target-state", "evidence-callout"],
+          "max_items": 6,
+          "max_body_chars": 220
+      },
+      {
+        "id": "proposal.solution",
+        "role_patterns": [
+          "solution",
+          "solution-overview",
+          "pilot-scope"
+        ],
+        "semantic_kinds": [
+          "cards",
+          "bullets"
+        ],
+        "family": "process",
+        "variant": "horizontal-flow",
+        "density": "balanced",
+        "emphasis": "hero",
+        "components": [
+          "claim-title",
+          "native-editable-process",
+          "stage-labels",
+          "flow-connectors"
+        ],
+        "max_items": 6,
+        "max_body_chars": 180
+      },
+      {
+        "id": "proposal.outcomes",
+          "role_patterns": ["objectives", "outcomes", "value", "success"],
+          "semantic_kinds": ["metrics"],
+          "family": "big-number",
+          "variant": "metric-towers",
+          "density": "balanced",
+          "emphasis": "hero",
+          "components": ["claim-title", "hero-metric", "metric-towers", "source-note"],
+          "max_items": 4,
+          "max_body_chars": 120
+        },
+        {
+          "id": "proposal.approach",
+          "role_patterns": ["approach", "method", "implementation"],
+          "semantic_kinds": ["process"],
+          "family": "process",
+          "variant": "horizontal-steps",
+          "density": "balanced",
+          "emphasis": "standard",
+          "components": ["claim-title", "phase-labels", "native-editable-diagram", "takeaway"],
+          "max_items": 5,
+          "max_body_chars": 200
+        },
+        {
+          "id": "proposal.workstreams",
+          "role_patterns": ["workstreams", "scope", "deliverables"],
+          "semantic_kinds": ["matrix", "cards"],
+          "family": "matrix",
+          "variant": "prioritization-grid",
+          "density": "dense",
+          "emphasis": "standard",
+          "components": ["claim-title", "native-editable-matrix", "workstream-labels", "deliverable-tags"],
+          "max_items": 8,
+          "max_body_chars": 260
+        },
+        {
+          "id": "proposal.timeline",
+          "role_patterns": ["timeline", "roadmap", "milestones"],
+          "semantic_kinds": ["timeline"],
+          "family": "timeline",
+          "variant": "milestone-lane",
+          "density": "balanced",
+          "emphasis": "standard",
+          "components": ["claim-title", "native-editable-diagram", "milestone-lane", "decision-gates"],
+          "max_items": 6,
+          "max_body_chars": 180
+        },
+        {
+          "id": "proposal.governance",
+          "role_patterns": ["governance", "team", "roles", "ways-of-working"],
+          "semantic_kinds": ["hierarchy"],
+          "family": "process",
+          "variant": "swimlane",
+          "density": "balanced",
+          "emphasis": "standard",
+          "components": ["claim-title", "swimlanes", "decision-rights", "cadence"],
+          "max_items": 6,
+          "max_body_chars": 220
+        },
+      {
+        "id": "proposal.risk-metric",
+        "role_patterns": [
+          "risks",
+          "issues",
+          "limitations"
+        ],
+        "semantic_kinds": [
+          "metrics"
+        ],
+        "family": "big-number",
+        "variant": "hero-metric",
+        "density": "sparse",
+        "emphasis": "hero",
+        "components": [
+          "claim-title",
+          "hero-metric",
+          "comparison-context",
+          "source-note"
+        ],
+        "max_items": 2,
+        "max_body_chars": 140
+      },
+      {
+        "id": "proposal.risks",
+          "role_patterns": ["risks", "issues", "limitations"],
+          "semantic_kinds": ["risk"],
+          "family": "risk-actions",
+          "variant": "risk-action-pairs",
+          "density": "dense",
+          "emphasis": "standard",
+          "components": ["claim-title", "risk-action-pairs", "owner-tags", "priority-markers"],
+          "max_items": 6,
+          "max_body_chars": 240
+        },
+        {
+          "id": "proposal.next-step",
+          "role_patterns": ["recommendations", "next-steps", "action-plan"],
+          "semantic_kinds": ["recommendation"],
+          "family": "recommendation",
+          "variant": "action-proof",
+          "density": "balanced",
+          "emphasis": "hero",
+          "components": ["claim-title", "recommended-action", "proof-points", "decision-request"],
+          "max_items": 5,
+          "max_body_chars": 180
+        },
+        {
+          "id": "proposal.close",
+          "role_patterns": ["closing", "cta", "call-to-action"],
+          "semantic_kinds": [],
+          "family": "closing",
+          "variant": "summary-close",
+          "density": "sparse",
+          "emphasis": "hero",
+          "components": ["claim-title", "single-action", "contact-line", "brand-mark"],
+          "max_items": 3,
+          "max_body_chars": 100
+        },
+        {
+          "id": "proposal.safe-evidence",
+          "role_patterns": ["*"],
+          "semantic_kinds": [],
+          "family": "executive-summary",
+          "variant": "three-proof-cards",
+          "density": "balanced",
+          "emphasis": "standard",
+          "components": ["claim-title", "three-proof-cards", "visual-anchor", "takeaway"],
+          "max_items": 6,
+          "max_body_chars": 220
+        }
+      ]
+    }
+  ]
+}

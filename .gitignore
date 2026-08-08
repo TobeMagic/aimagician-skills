@@ -7,3 +7,11 @@ __pycache__/
 .superpowers/
 skills/owned/*/references/_external_repos/
 .planning/references/
+
+# Window-PPTX local runtime evidence and reference caches. Durable summaries,
+# manifests, schemas, tests, and owned DesignPacks remain versioned elsewhere.
+/.planning/evidence/
+/.planning/phase-*-evidence/
+/.planning/snapshots/
+/Northstar_Q2_Business_Review_DeckPlan.json
+/deckplan.json

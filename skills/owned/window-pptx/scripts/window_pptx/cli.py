@@ -19,30 +19,158 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse window-pptx arguments, including an explicit argument sequence."""
 
     parser = argparse.ArgumentParser(
-        description="Run PowerPoint COM checks and a minimal request-summary edit."
+        description=(
+            "Generate governed editable PPTX with the portable PptxGenJS backend, "
+            "or explicitly select legacy PowerPoint COM operations."
+        )
     )
     parser.add_argument("--project-dir", required=True, help="PowerPoint project folder.")
     parser.add_argument("--request", default="REQUEST.md", help="Request file name or path.")
     parser.add_argument("--template", help="Template/source deck path. Defaults to auto-detect.")
     parser.add_argument("--output", default="output/final.pptx", help="Output PPTX path.")
     parser.add_argument(
+        "--backend",
+        default="auto",
+        choices=["auto", "pptxgenjs", "com"],
+        help=(
+            "Governed render backend. auto selects the portable PptxGenJS "
+            "backend; COM remains an explicit legacy/high-feature route."
+        ),
+    )
+    parser.add_argument(
+        "--verification",
+        default=None,
+        choices=["portable", "powerpoint"],
+        help=(
+            "Verification level. portable requires OOXML + LibreOffice/Poppler; "
+            "powerpoint adds read-only PowerPoint certification."
+        ),
+    )
+    parser.add_argument(
         "--deck-plan",
         help="DeckPlan v1 JSON path, relative to --project-dir unless absolute.",
     )
-    deck_plan_route = parser.add_mutually_exclusive_group()
-    deck_plan_route.add_argument(
+    generation_route = parser.add_mutually_exclusive_group()
+    generation_route.add_argument(
         "--compile-deck-plan",
         action="store_true",
         help="Validate and compile DeckPlan JSON without starting PowerPoint.",
     )
-    deck_plan_route.add_argument(
+    generation_route.add_argument(
         "--render-deck-plan",
         action="store_true",
-        help="Compile and render DeckPlan JSON through the governed COM pipeline.",
+        help="Compile and render DeckPlan JSON through the governed backend pipeline.",
+    )
+    parser.add_argument(
+        "--fact-store",
+        help="Trusted FactStore v1 JSON path for the weak-model route.",
+    )
+    parser.add_argument(
+        "--brief-plan",
+        help="Restricted BriefPlan v1 JSON path for the weak-model route.",
+    )
+    parser.add_argument(
+        "--brief-retry-plan",
+        action="append",
+        default=[],
+        help=(
+            "Optional replacement BriefPlan after a structured validation failure; "
+            "repeat at most twice. After all supplied attempts fail, the compiler "
+            "uses a deterministic fact-safe default."
+        ),
+    )
+    generation_route.add_argument(
+        "--normalize-brief-plan",
+        action="store_true",
+        help="Normalize harmless BriefPlan serialization aliases without rendering.",
+    )
+    generation_route.add_argument(
+        "--compile-brief-plan",
+        action="store_true",
+        help="Compile FactStore + BriefPlan into NarrativePlan, DeckPlan, and CompiledDeck.",
+    )
+    generation_route.add_argument(
+        "--render-brief-plan",
+        action="store_true",
+        help="Compile and render the governed weak-model route through the selected backend.",
+    )
+    generation_route.add_argument(
+        "--render-template-pack",
+        action="store_true",
+        help=(
+            "Adapt an authorized physical TemplatePack through portable OOXML "
+            "slot replacement, then verify it with LibreOffice/Poppler."
+        ),
+    )
+    generation_route.add_argument(
+        "--render-assembly-plan",
+        action="store_true",
+        help=(
+            "Assemble an editable PPTX by physically reusing certified page "
+            "templates selected in an AssemblyPlan v1."
+        ),
+    )
+    parser.add_argument(
+        "--assembly-plan",
+        help="AssemblyPlan v1 JSON path for --render-assembly-plan.",
+    )
+    parser.add_argument(
+        "--assembly-library",
+        help="Compiled page-template library-v4 JSON path.",
+    )
+    parser.add_argument(
+        "--assembly-private-root",
+        help="Private template-library root; never resolved from the client folder.",
+    )
+    parser.add_argument(
+        "--assembly-report",
+        help="Physical assembly report path. Defaults under .window-pptx/audits.",
+    )
+    parser.add_argument(
+        "--template-pack",
+        help="Registered TemplatePack id or manifest path for --render-template-pack.",
+    )
+    parser.add_argument(
+        "--template-bindings",
+        help="TemplatePack binding JSON path, relative to --project-dir unless absolute.",
+    )
+    parser.add_argument(
+        "--template-selection-plan",
+        help=(
+            "Optional production template-selection-plan.json. Must be paired "
+            "with --slide-blueprints on --render-template-pack."
+        ),
+    )
+    parser.add_argument(
+        "--slide-blueprints",
+        help=(
+            "Optional production slide-blueprints.json. Must be paired with "
+            "--template-selection-plan on --render-template-pack."
+        ),
+    )
+    parser.add_argument(
+        "--brand-spec",
+        help="Optional trusted BrandSpec v1 JSON path for governed rendering.",
+    )
+    parser.add_argument(
+        "--direction-mode",
+        default="auto",
+        choices=["auto", "interactive", "locked"],
+        help="Art-direction decision mode for the BriefPlan route. Default: auto.",
+    )
+    parser.add_argument(
+        "--direction-id",
+        help="Registered art-direction id; required only with --direction-mode locked.",
+    )
+    parser.add_argument(
+        "--design-system-version",
+        default="art-direction-v1",
+        choices=["legacy-v5", "art-direction-v1"],
+        help="Governed design-system selector. Default: art-direction-v1.",
     )
     parser.add_argument(
         "--theme-id",
-        help="Trusted governed theme override for --render-deck-plan.",
+        help="Trusted governed theme override for a render route.",
     )
     parser.add_argument(
         "--installed-font",
@@ -55,6 +183,22 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help=(
             "Governed render asset manifest JSON, relative to --project-dir unless "
             "absolute. Each binding must include Phase 24 provenance evidence."
+        ),
+    )
+    parser.add_argument(
+        "--generate-assets-with-agnes",
+        action="store_true",
+        help=(
+            "Materialize eligible BriefPlan visual intents through the direct "
+            "Agnes image route. Requires AGNES_API_KEY and --render-brief-plan."
+        ),
+    )
+    parser.add_argument(
+        "--asset-output-dir",
+        default=".window-pptx/generated-assets",
+        help=(
+            "Frozen generated-asset directory, relative to --project-dir unless "
+            "absolute. Used only with --generate-assets-with-agnes."
         ),
     )
     parser.add_argument(
@@ -115,6 +259,33 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--clear-com-cache",
         action="store_true",
         help="Remove the current user's temp gen_py cache before creating COM objects.",
+    )
+    parser.add_argument(
+        "--com-doctor",
+        action="store_true",
+        help="Inspect PowerPoint/_Application TypeLib registration without changing it.",
+    )
+    parser.add_argument(
+        "--certify-pptx",
+        help=(
+            "Read-only PowerPoint certification target. Fails closed if an existing "
+            "POWERPNT.EXE process prevents unique ownership proof."
+        ),
+    )
+    parser.add_argument(
+        "--portable-verification-report",
+        help=(
+            "portable-verification.json that hash-binds --certify-pptx to a "
+            "passed PptxGenJS + OOXML + LibreOffice/Poppler result."
+        ),
+    )
+    parser.add_argument(
+        "--no-html-proof",
+        action="store_true",
+        help=(
+            "Skip the optional deterministic RenderPlan-derived HTML proof. "
+            "This never changes PPTX generation or portable hard gates."
+        ),
     )
     parser.add_argument("--export-pdf", action="store_true", help="Export a PDF next to the PPTX.")
     parser.add_argument(
@@ -242,8 +413,71 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Leave PowerPoint open after the run. Use carefully with --attach-existing.",
     )
     args = parser.parse_args(argv)
-    if (args.compile_deck_plan or args.render_deck_plan) and not args.deck_plan:
+    verification_was_explicit = args.verification is not None
+    if args.backend == "com":
+        if verification_was_explicit:
+            parser.error(
+                "--verification applies only to the portable backend; explicit "
+                "COM uses its legacy PowerPoint reopen/export gates"
+            )
+        args.verification = "legacy-com"
+    else:
+        args.verification = args.verification or "portable"
+    deck_route = args.compile_deck_plan or args.render_deck_plan
+    brief_route = (
+        args.normalize_brief_plan
+        or args.compile_brief_plan
+        or args.render_brief_plan
+    )
+    template_pack_route = args.render_template_pack
+    assembly_route = args.render_assembly_plan
+    if deck_route and not args.deck_plan:
         parser.error("--deck-plan is required for DeckPlan compile/render routes")
+    if brief_route and (not args.fact_store or not args.brief_plan):
+        parser.error(
+            "--fact-store and --brief-plan are required for BriefPlan routes"
+        )
+    if template_pack_route and (not args.template_pack or not args.template_bindings):
+        parser.error(
+            "--template-pack and --template-bindings are required for "
+            "--render-template-pack"
+        )
+    if assembly_route and not args.assembly_plan:
+        parser.error("--assembly-plan is required for --render-assembly-plan")
+    if any((args.assembly_library, args.assembly_private_root, args.assembly_report)) and not assembly_route:
+        parser.error(
+            "--assembly-library/--assembly-private-root/--assembly-report "
+            "require --render-assembly-plan"
+        )
+    if (args.template_pack or args.template_bindings) and not template_pack_route:
+        parser.error(
+            "--template-pack/--template-bindings require --render-template-pack"
+        )
+    selection_sidecars = bool(args.template_selection_plan), bool(args.slide_blueprints)
+    if selection_sidecars[0] != selection_sidecars[1]:
+        parser.error(
+            "--template-selection-plan and --slide-blueprints must be supplied together"
+        )
+    if any(selection_sidecars) and not template_pack_route:
+        parser.error(
+            "template selection sidecars require --render-template-pack"
+        )
+    if len(args.brief_retry_plan) > 2:
+        parser.error("--brief-retry-plan may be repeated at most twice")
+    if args.brief_retry_plan and (
+        not brief_route or args.normalize_brief_plan
+    ):
+        parser.error(
+            "--brief-retry-plan requires --compile-brief-plan or --render-brief-plan"
+        )
+    if args.direction_mode == "locked" and not args.direction_id:
+        parser.error("--direction-id is required with --direction-mode locked")
+    if args.direction_id and args.direction_mode != "locked":
+        parser.error("--direction-id requires --direction-mode locked")
+    if (args.direction_mode != "auto" or args.direction_id) and not brief_route:
+        parser.error("art-direction controls require a BriefPlan route")
+    if args.brand_spec and not args.render_brief_plan:
+        parser.error("--brand-spec requires --render-brief-plan")
     if (args.slide_width_in is None) != (args.slide_height_in is None):
         parser.error("--slide-width-in and --slide-height-in must be provided together")
     if args.slide_width_in is not None and not all(
@@ -251,10 +485,40 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         for value in (args.slide_width_in, args.slide_height_in)
     ):
         parser.error("slide dimensions must be between 1 and 56 inches")
-    if args.render_deck_plan and args.attach_existing:
-        parser.error("--render-deck-plan cannot use --attach-existing")
-    if args.asset_manifest and not args.render_deck_plan:
-        parser.error("--asset-manifest requires --render-deck-plan")
+    if (args.render_deck_plan or args.render_brief_plan) and args.attach_existing:
+        parser.error("governed render routes cannot use --attach-existing")
+    if args.asset_manifest and not (args.render_deck_plan or args.render_brief_plan):
+        parser.error("--asset-manifest requires a render route")
+    if args.generate_assets_with_agnes and not args.render_brief_plan:
+        parser.error(
+            "--generate-assets-with-agnes requires --render-brief-plan"
+        )
+    if (args.backend != "auto" or args.verification != "portable") and not (
+        args.render_deck_plan or args.render_brief_plan or template_pack_route or assembly_route
+    ):
+        parser.error("--backend/--verification require a governed render route")
+    if template_pack_route and (
+        args.backend != "auto" or args.verification != "portable"
+    ):
+        parser.error(
+            "TemplatePack adaptation uses portable OOXML and portable verification"
+        )
+    if args.no_html_proof and not (args.render_deck_plan or args.render_brief_plan):
+        parser.error("--no-html-proof requires a governed render route")
+    if args.com_doctor and (
+        deck_route or brief_route or template_pack_route or assembly_route or args.certify_pptx
+    ):
+        parser.error("--com-doctor cannot be combined with generation or certification")
+    if args.certify_pptx and (deck_route or brief_route or template_pack_route or assembly_route):
+        parser.error("--certify-pptx is a standalone verification route")
+    if args.certify_pptx and not args.portable_verification_report:
+        parser.error(
+            "--portable-verification-report is required with --certify-pptx"
+        )
+    if args.portable_verification_report and not args.certify_pptx:
+        parser.error(
+            "--portable-verification-report requires --certify-pptx"
+        )
     conflicting_deck_actions = {
         "init_project",
         "search_images",
@@ -272,16 +536,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "export_qa",
         "audit_deck",
     }
-    if args.compile_deck_plan or args.render_deck_plan:
+    if deck_route or brief_route or template_pack_route or assembly_route:
         route_conflicts = set(conflicting_deck_actions)
-        if args.render_deck_plan:
+        if args.render_deck_plan or args.render_brief_plan:
             route_conflicts -= {"export_slides", "export_qa"}
         conflicts = sorted(
             name for name in route_conflicts if getattr(args, name)
         )
         if conflicts:
             parser.error(
-                "DeckPlan compile/render routes cannot be combined with: "
+                "governed generation routes cannot be combined with: "
                 + ", ".join(f"--{name.replace('_', '-')}" for name in conflicts)
             )
     if args.no_save:
@@ -297,6 +561,11 @@ def collect_requested_actions(args: argparse.Namespace) -> list[str]:
     for attribute in (
         "compile_deck_plan",
         "render_deck_plan",
+        "normalize_brief_plan",
+        "compile_brief_plan",
+        "render_brief_plan",
+        "render_template_pack",
+        "render_assembly_plan",
         "init_project",
         "search_images",
         "download_image",
@@ -308,6 +577,8 @@ def collect_requested_actions(args: argparse.Namespace) -> list[str]:
         "list_addins",
         "probe_plugin_apis",
         "clear_com_cache",
+        "com_doctor",
+        "certify_pptx",
         "add_master_watermark",
         "export_slides",
         "export_qa",
@@ -351,6 +622,31 @@ def build_dry_run_result(args: argparse.Namespace, project_dir: str | Path) -> d
             "warnings": warnings,
         }
 
+    if args.com_doctor or args.certify_pptx:
+        return {
+            "schema_version": "1.0",
+            "mode": "dry-run",
+            "would_run": collect_requested_actions(args),
+            "would_write": (
+                []
+                if args.com_doctor
+                else [str(base / ".window-pptx" / "audits" / "powerpoint-certification")]
+            ),
+            "warnings": warnings,
+        }
+
+    if args.render_brief_plan and args.direction_mode == "interactive":
+        return {
+            "schema_version": "1.0",
+            "mode": "dry-run",
+            "would_run": collect_requested_actions(args),
+            "would_write": [],
+            "warnings": [
+                *warnings,
+                "Interactive art-direction selection stops before COM and file writes.",
+            ],
+        }
+
     if args.init_project:
         would_write.extend(
             str(base / name)
@@ -388,14 +684,91 @@ def build_dry_run_result(args: argparse.Namespace, project_dir: str | Path) -> d
         would_write.append(str(base / ".window-pptx" / "exports" / "qa"))
     if args.audit_deck:
         would_write.append(str(base / ".window-pptx" / "audits" / "deck_audit.json"))
-    if args.render_deck_plan:
+    if args.render_deck_plan or args.render_brief_plan:
+        if args.backend == "com":
+            would_write.extend(
+                [
+                    str(base / ".window-pptx" / "audits" / "quality-report.json"),
+                    str(base / ".window-pptx" / "audits" / "repair-log.json"),
+                ]
+            )
+        else:
+            would_write.extend(
+                [
+                    str(base / ".window-pptx" / "audits" / "quality-report.v2.json"),
+                    str(base / ".window-pptx" / "audits" / "portable-proof"),
+                ]
+            )
+            if not args.no_html_proof:
+                would_write.append(
+                    str(base / ".window-pptx" / "audits" / "render-proof.html")
+                )
+    if args.render_template_pack:
         would_write.extend(
             [
-                str(base / ".window-pptx" / "audits" / "quality-report.json"),
-                str(base / ".window-pptx" / "audits" / "repair-log.json"),
+                str(base / ".window-pptx" / "audits" / "template-adaptation-report.json"),
+                str(base / ".window-pptx" / "audits" / "template-portable-proof"),
             ]
         )
-    if not args.no_output_deck and not args.intake_template_library:
+        if args.template_selection_plan:
+            would_write.append(
+                str(
+                    base
+                    / ".window-pptx"
+                    / "audits"
+                    / "candidate-materialization-report.json"
+                )
+            )
+    if args.render_assembly_plan:
+        would_write.extend(
+            [
+                str(base / ".window-pptx" / "audits" / "physical-assembly-report.json"),
+                str(_requested_path(base, args.output)),
+            ]
+        )
+    if args.render_brief_plan:
+        would_write.extend(
+            [
+                str(base / ".window-pptx" / "audits" / "quality-report.v2.json"),
+                str(base / ".window-pptx" / "audits" / "repair-log.v2.json"),
+                str(base / ".window-pptx" / "audits" / "quality-v2-previews"),
+                str(base / ".window-pptx" / "audits" / "narrative-plan.json"),
+                str(
+                    base
+                    / ".window-pptx"
+                    / "audits"
+                    / "asset-materialization.json"
+                ),
+                str(base / ".window-pptx" / "audits" / "generation-manifest.json"),
+                str(base / ".window-pptx" / "audits" / "template-selection-plan.json"),
+                str(base / ".window-pptx" / "audits" / "slide-blueprints.json"),
+                str(
+                    base
+                    / ".window-pptx"
+                    / "audits"
+                    / "candidate-materialization-report.json"
+                ),
+            ]
+        )
+        if args.generate_assets_with_agnes:
+            generated = Path(args.asset_output_dir)
+            would_write.append(
+                str(generated if generated.is_absolute() else base / generated)
+            )
+        if args.design_system_version == "art-direction-v1":
+            would_write.append(
+                str(base / ".window-pptx" / "audits" / "direction-decision.json")
+            )
+    non_render_compile = (
+        args.compile_deck_plan
+        or args.normalize_brief_plan
+        or args.compile_brief_plan
+    )
+    if (
+        not args.no_output_deck
+        and not args.intake_template_library
+        and not non_render_compile
+    ):
         output_path = _requested_path(base, args.output)
         would_write.append(str(output_path))
         if args.export_pdf:

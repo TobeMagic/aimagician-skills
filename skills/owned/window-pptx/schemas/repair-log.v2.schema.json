@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "repair-log.v2.schema.json",
+  "title": "window-pptx bounded RepairLog v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "passes"],
+  "properties": {
+    "schema_version": {"const": "2.0"},
+    "passes": {"type": "array", "maxItems": 2, "items": {"type": "object", "additionalProperties": false, "required": ["stage", "before_vector", "after_vector", "accepted", "rolled_back", "failure_code"], "properties": {"stage": {"enum": ["pre-render", "post-render"]}, "before_vector": {"type": "array", "minItems": 5, "maxItems": 5, "items": {"type": "integer", "minimum": 0}}, "after_vector": {"type": "array", "minItems": 5, "maxItems": 5, "items": {"type": "integer", "minimum": 0}}, "accepted": {"type": "boolean"}, "rolled_back": {"type": "boolean"}, "failure_code": {"type": ["string", "null"]}}}}
+  }
+}

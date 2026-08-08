@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://window-pptx.local/schemas/page-template.v1.schema.json",
+  "title": "Page Template v1",
+  "description": "One certified physical page template, distilled from a source package.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "page_id",
+    "package_sha256",
+    "slide_number",
+    "source_path",
+    "source_sha256",
+    "page_role",
+    "category_names",
+    "style_cluster_id",
+    "deck_family_id",
+    "theme_palette",
+    "capacity",
+    "editability",
+    "certification"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "page_id": {"type": "string", "pattern": "^[0-9a-f]{64}:[0-9]{3}$"},
+    "package_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "slide_number": {"type": "integer", "minimum": 1},
+    "source_path": {"type": "string", "minLength": 1},
+    "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "page_role": {
+      "type": "string",
+      "enum": [
+        "cover", "agenda", "contents", "section", "body", "decision", "closing", "cta", "appendix",
+        "cover-2", "contents-2", "section-2", "body-2", "decision-2",
+        "data-chart", "process", "timeline", "team", "table", "case-study",
+        "big-number", "comparison", "matrix", "quote", "roadmap",
+        "awards", "people", "mockup", "logo-wall", "business-model", "image-text",
+        "map", "supporting-asset", "data", "kpi", "statement", "content-blocks"
+      ]
+    },
+    "category_names": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "style_cluster_id": {"type": "string", "minLength": 1},
+    "deck_family_id": {"type": "string", "minLength": 1},
+    "theme_palette": {"type": "array", "items": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"}, "minItems": 3, "maxItems": 6},
+    "capacity": {
+      "type": "object",
+      "required": ["max_text_chars"],
+      "properties": {
+        "max_text_chars": {"type": "integer", "minimum": 0},
+        "max_text_runs": {"type": "integer", "minimum": 0}
+      }
+    },
+    "editability": {"type": "string", "enum": ["native_editable", "image_only"]},
+    "certification": {"const": "certified"},
+    "visual_quality": {"type": "number", "minimum": 0, "maximum": 1},
+    "structure": {
+      "type": "object",
+      "required": ["slide_count", "shape_count", "layout_count", "master_count", "theme_count", "media_count"],
+      "properties": {
+        "slide_count": {"type": "integer", "minimum": 1},
+        "shape_count": {"type": "integer", "minimum": 0},
+        "layout_count": {"type": "integer", "minimum": 1},
+        "master_count": {"type": "integer", "minimum": 1},
+        "theme_count": {"type": "integer", "minimum": 1},
+        "media_count": {"type": "integer", "minimum": 0},
+        "chart_count": {"type": "integer", "minimum": 0},
+        "table_count": {"type": "integer", "minimum": 0},
+        "fonts": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "slot_graph": {
+      "type": "object",
+      "properties": {
+        "text_slot_ids": {"type": "array", "items": {"type": "string"}},
+        "text_slot_count": {"type": "integer", "minimum": 0},
+        "slots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["slot_id", "shape_id", "kind", "max_chars", "source_text"],
+            "properties": {
+              "slot_id": {"type": "string"},
+              "shape_id": {"type": "integer", "minimum": 1},
+              "kind": {"type": "string"},
+              "max_chars": {"type": "integer", "minimum": 1},
+              "source_text": {"type": "string"}
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

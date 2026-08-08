@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "product-launch",
+  "groups": [
+    {"id": "proof-group-1", "fact_refs": ["proof-1"], "beat_hint": "value-proposition", "semantic_hint": "statement", "importance": "high"},
+    {"id": "proof-group-2", "fact_refs": ["proof-2"], "beat_hint": "value-proposition", "semantic_hint": "statement", "importance": "high"},
+    {"id": "proof-group-3", "fact_refs": ["proof-3"], "beat_hint": "value-proposition", "semantic_hint": "statement", "importance": "high"},
+    {"id": "proof-group-4", "fact_refs": ["proof-4"], "beat_hint": "value-proposition", "semantic_hint": "statement", "importance": "high"},
+    {"id": "proof-group-5", "fact_refs": ["proof-5"], "beat_hint": "value-proposition", "semantic_hint": "statement", "importance": "high"}
+  ],
+  "preferences": {
+    "tone": "professional",
+    "density": "balanced",
+    "audience_mode": "executive",
+    "motion": "off"
+  }
+}

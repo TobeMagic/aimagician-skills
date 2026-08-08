@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
+from .layouts import load_layout_registry
 from .registry import Archetype, RegistryError, resolve_archetype
 
 
@@ -59,6 +60,51 @@ FORBIDDEN_RAW_FIELDS = {
     "python",
     "javascript",
 }
+
+
+def _composition_layout_capacity_matches(
+    layout_id: object,
+    *,
+    item_count: int,
+    density: str,
+    semantic_type: str,
+    structural_role: str,
+) -> bool:
+    """Fail open when an art layout cannot hold or express the actual content."""
+
+    if not isinstance(layout_id, str):
+        return False
+    registry = load_layout_registry()
+    variant = registry.variants.get(layout_id)
+    if variant is None:
+        return False
+    capacity = registry.recipe_capacities.get(variant.recipe_id)
+    if capacity is None:
+        return False
+    compatible_semantics = {
+        "big-number": {"metrics", "comparison"},
+        "cards": {"bullets", "generic", "statement", "recommendation"},
+        "comparison": {"comparison", "metrics"},
+        "data-chart": {"trend", "comparison", "composition"},
+        "executive-summary": {"bullets", "generic", "statement"},
+        "focal-statement": {"statement", "quote", "generic"},
+        "matrix": {"matrix", "bullets"},
+        # A source-grounded parallel list may be promoted to a process only
+        # when CompositionPlan has already selected a governed process recipe
+        # (for example proposal.solution). This lets weak-model evidence such
+        # as "intake, triage, routing, status notifications" render as an
+        # editable flow without requiring the model to invent descriptions.
+        "process": {"process", "sequence", "matrix", "bullets"},
+        "recommendation": {"recommendation", "bullets"},
+        "risk-recommendation": {"risk", "recommendation"},
+        "timeline": {"timeline", "roadmap", "sequence"},
+    }
+    semantic_match = (
+        structural_role in {"cover", "section", "agenda", "contents", "closing"}
+        or semantic_type
+        in compatible_semantics.get(variant.family_id, {semantic_type})
+    )
+    return semantic_match and capacity.accepts(item_count, density)
 
 CONTENT_KINDS = {
     "bullets",
@@ -662,7 +708,7 @@ def _dominant_semantic_block(
 ) -> tuple[ContentBlock, str, int]:
     ranked: list[tuple[int, int, int, ContentBlock, str]] = []
     for index, block in enumerate(slide.blocks):
-        semantic_type = block.chart_intent or block.kind
+        semantic_type = _block_semantic_type(block)
         priority = (
             200
             if block.chart_intent is not None
@@ -676,7 +722,21 @@ def _dominant_semantic_block(
     return block, semantic_type, -negative_index
 
 
-def compile_deck_plan(payload: Any) -> dict[str, Any]:
+def _block_semantic_type(block: ContentBlock) -> str:
+    if block.kind == "comparison" and block.chart_intent == "comparison":
+        return "categorical-comparison"
+    return block.chart_intent or block.kind
+
+
+def compile_deck_plan(
+    payload: Any,
+    *,
+    preferred_families: tuple[str, ...] = (),
+    visual_family_by_slide: Mapping[str, str] | None = None,
+    visual_recipe_by_slide: Mapping[str, str] | None = None,
+    composition_by_slide: Mapping[str, Mapping[str, Any]] | None = None,
+    template_layout_by_slide: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
     """Compile validated semantic intent into deterministic, design-neutral slides."""
 
     from .capacity import split_slide
@@ -686,27 +746,198 @@ def compile_deck_plan(payload: Any) -> dict[str, Any]:
         _deck_plan_payload(payload) if isinstance(payload, DeckPlan) else payload
     )
     archetype = resolve_archetype(plan.project.scenario)
+    governed_visual_families = dict(visual_family_by_slide or {})
+    governed_visual_recipes = dict(visual_recipe_by_slide or {})
+    governed_compositions = {
+        key: dict(value) for key, value in (composition_by_slide or {}).items()
+    }
+    governed_template_layouts = dict(template_layout_by_slide or {})
+    slide_ids = {slide.id for slide in plan.slides}
+    unknown_visual_slides = sorted(
+        (
+            set(governed_visual_families)
+            | set(governed_visual_recipes)
+            | set(governed_compositions)
+            | set(governed_template_layouts)
+        )
+        - slide_ids
+    )
+    if unknown_visual_slides:
+        raise DeckPlanValidationError(
+            "VisualPlan references unknown slide ids: "
+            + ", ".join(unknown_visual_slides)
+        )
     compiled_slides: list[dict[str, Any]] = []
     previous_families: list[str] = []
     density = plan.preferences_dict().get("density", "balanced")
     for source_slide in plan.slides:
         for slide in split_slide(source_slide, density=density):
             primary, semantic_type, block_index = _dominant_semantic_block(slide)
-            item_count = len(primary.items) or (1 if primary.text or primary.title else 0)
+            item_count = sum(
+                len(block.items) or int(bool(block.text or block.title))
+                for block in slide.blocks
+                if _block_semantic_type(block) == semantic_type
+            )
             decision = rank_page_families(
                 semantic_type,
                 item_count=item_count,
                 previous_families=previous_families,
+                preferred_families=(
+                    *preferred_families,
+                    *(
+                        (governed_visual_families[source_slide.id],)
+                        if source_slide.id in governed_visual_families
+                        else ()
+                    ),
+                ),
+                structural_role=slide.role,
             )
+            visual_family = governed_visual_families.get(source_slide.id)
+            visual_recipe = governed_visual_recipes.get(source_slide.id)
+            composition = governed_compositions.get(source_slide.id)
             compiled = slide.to_dict()
             compiled["page_family"] = decision.selected
+            template_layout = governed_template_layouts.get(source_slide.id)
+            if template_layout is not None:
+                compiled["materializer_layout_id"] = template_layout
+            if visual_recipe is not None:
+                compiled["layout_variant_seed"] = visual_recipe
+            if composition is not None:
+                required_composition_fields = {
+                    "composition_id",
+                    "variant_id",
+                    "layout_id",
+                    "background_mode",
+                    "emphasis",
+                    "density",
+                    "energy",
+                    "fact_refs",
+                    "slot_bindings",
+                    "asset_bindings",
+                    "motif",
+                    "repair_variant_ids",
+                    "decision_trace",
+                }
+                missing = sorted(required_composition_fields - set(composition))
+                if missing:
+                    raise DeckPlanValidationError(
+                        "CompositionPlan slide is incomplete: "
+                        + ", ".join(missing)
+                    )
+                raw_geometry = sorted(
+                    {
+                        "x",
+                        "y",
+                        "width",
+                        "height",
+                        "bounds",
+                        "coordinates",
+                    }
+                    & set(composition)
+                )
+                if raw_geometry:
+                    raise DeckPlanValidationError(
+                        "CompositionPlan cannot contain raw geometry: "
+                        + ", ".join(raw_geometry)
+                    )
+                compiled.update(
+                    {
+                        "composition_id": composition["composition_id"],
+                        "composition_variant_id": composition["variant_id"],
+                        "composition_layout_id": composition["layout_id"],
+                        "composition_layout_enforced": (
+                            _composition_layout_capacity_matches(
+                                composition["layout_id"],
+                                item_count=item_count,
+                                density=density,
+                                semantic_type=semantic_type,
+                                structural_role=slide.role,
+                            )
+                            and (
+                                composition["motif"].get("motif_id")
+                                == "knowledge-wayfinding"
+                                or (
+                                    composition["motif"].get("motif_id")
+                                    == "evidence-margin"
+                                    and composition["layout_id"]
+                                    in {
+                                        "cover.editorial",
+                                        "big-number.editorial-left",
+                                        "big-number.centered",
+                                        "focal-statement.editorial-left",
+                                        "data-chart.focus",
+                                        "big-number.split",
+                                        "recommendation.focus",
+                                        "cta.decision-three",
+                                    }
+                                )
+                                or (
+                                    any(
+                                        isinstance(binding, dict)
+                                        and binding.get("status")
+                                        in {"resolved", "generated"}
+                                        for binding in composition["asset_bindings"]
+                                    )
+                                    and any(
+                                        isinstance(binding, dict)
+                                        and binding.get("component_id") == "image-frame"
+                                        for binding in composition["slot_bindings"]
+                                    )
+                                )
+                            )
+                        ),
+                        "composition_background_mode": composition[
+                            "background_mode"
+                        ],
+                        "composition_emphasis": composition["emphasis"],
+                        "composition_density": composition["density"],
+                        "composition_energy": composition["energy"],
+                        "composition_fact_refs": copy.deepcopy(
+                            composition["fact_refs"]
+                        ),
+                        "composition_slot_bindings": copy.deepcopy(
+                            composition["slot_bindings"]
+                        ),
+                        "composition_asset_bindings": copy.deepcopy(
+                            composition["asset_bindings"]
+                        ),
+                        "composition_motif": copy.deepcopy(composition["motif"]),
+                        "composition_repair_variant_ids": copy.deepcopy(
+                            composition["repair_variant_ids"]
+                        ),
+                    }
+                )
+                compiled["layout_variant_seed"] = composition["variant_id"]
             compiled["semantic_basis"] = {
                 "block_id": primary.id,
                 "block_index": block_index,
                 "semantic_type": semantic_type,
                 "rule_id": "DOMINANT_SEMANTIC_BLOCK",
             }
-            compiled["decision_trace"] = decision.to_dict()
+            trace = decision.to_dict()
+            if visual_family is not None:
+                trace["visual_plan_recommendation"] = {
+                    "source_slide_id": source_slide.id,
+                    "preferred_family": visual_family,
+                    "selected": decision.selected == visual_family,
+                    "rule_id": "VISUAL_PLAN_GOVERNED_FAMILY",
+                }
+            if visual_recipe is not None:
+                trace["composition_recipe"] = {
+                    "source_slide_id": source_slide.id,
+                    "recipe_id": visual_recipe,
+                    "rule_id": "COMPOSITION_GRAMMAR_VARIANT_SEED",
+                }
+            if composition is not None:
+                trace["composition_plan"] = {
+                    "source_slide_id": source_slide.id,
+                    "composition_id": composition["composition_id"],
+                    "variant_id": composition["variant_id"],
+                    "layout_id": composition["layout_id"],
+                    "fact_refs": copy.deepcopy(composition["fact_refs"]),
+                    "rule_id": "COMPOSITION_PLAN_MATERIALIZED",
+                }
+            compiled["decision_trace"] = trace
             compiled_slides.append(compiled)
             previous_families.append(decision.selected)
     return {

@@ -216,6 +216,27 @@ Completion requires the phase evidence and exit gates named in the traceability 
 - [x] **V5-QA-04**: Validation reports and repair logs use stable versioned schemas
 - [x] **V5-QA-05**: Customer-delivery hard gates enforce package/reopen success, source integrity, editability, and native object coverage
 
+### Huashu Reference Assimilation and Visual Calibration
+
+- [x] **V5-REF-01**: The Huashu source URL, full commit, reviewed subtree, source/archive hash, LICENSE hash, MIT notice, and accept/adapt/reject decisions are frozen and reproducible
+- [x] **V5-REF-02**: Trusted inputs, immutable FactStore, strict model BriefPlan, deterministic NarrativePlan, canonical DeckPlan v1, and native rendering form one fail-closed authority chain
+- [x] **V5-REF-03**: Twelve neutral art directions, three deterministic candidate proofs, BrandSpec, 24 governed page families, and layout/theme/component rules are machine-consumable and native-PPTX safe
+- [x] **V5-REF-04**: Quality-report v2 merges narrative, compiler, renderer, preview, package, and editability findings and applies at most one pre-render and one post-render monotonic repair without rewriting facts
+- [ ] **V5-REF-05**: Weak-model normalization, retries, safe defaults, progressive Skill references, and skill TDD measurably reduce schema and planning failures without accepting raw design fields
+- [ ] **V5-REF-06**: Six calibration cases and all later formal trials carry complete engine, renderer, verifier, registry, schema, skill, corpus, protocol, prompt, environment, font, and asset fingerprints; PowerPoint fingerprints are mandatory only for PowerPoint-certification artifacts, and pre-Huashu evidence is noncanonical
+
+### Portable Rendering and Cross-Engine QA
+
+- [x] **V5-PORT-01**: RenderPlan execution is backend-neutral, governed `auto` generation selects PptxGenJS without COM, and unsupported required capabilities fail before candidate or process mutation
+- [x] **V5-PORT-02**: PptxGenJS 4.0.1 generates identity-bound native editable text, shapes, images, tables, charts, diagrams, notes, links, masters, and footers across supported page ratios without whole-slide raster fallback
+- [x] **V5-PORT-03**: Normalized OOXML packages are byte-deterministic for an identical RenderPlan and environment fingerprint while preserving candidate-only validation, source hashes, and atomic promotion
+- [x] **V5-PORT-04**: A RenderPlan-aware OOXML inspector fails closed on package, relationship, identity, content, media, chart, table, note, link, master, or embedded-data mismatches before promotion
+- [x] **V5-PORT-05**: Isolated LibreOffice Impress and Poppler rendering produces page-count- and ratio-correct PDF/PNG proof without modifying the canonical PPTX, and its real PNG output feeds Quality-v2 hard gates
+- [x] **V5-PORT-06**: HTML is generated deterministically from RenderPlan and governed tokens for proof and QA only; model-authored HTML/CSS and HTML-as-canonical-PPTX-intermediate are rejected
+- [x] **V5-PORT-07**: PowerPoint doctor and certification accurately diagnose early/late binding, use only safely owned sessions, never repair the registry automatically, and certify portable artifacts read-only without becoming a daily delivery dependency
+- [x] **V5-PORT-08**: Public backend and verification options, capability decisions, staged verification results, and Node/PptxGenJS/LibreOffice/Poppler/font/OS fingerprints are stable, machine-readable, and backward-compatible with legacy COM report readers
+- [x] **V5-PORT-09**: Six calibration scenarios produce real portable PPTX, PDF, slide PNG, contact-sheet, OOXML, and Quality-v2 evidence with all portable customer hard gates passing; PowerPoint evidence remains a later sampled release gate
+
 ### Weak-Model Benchmark
 
 - [ ] **V5-BENCH-01**: Fifteen business scenarios cover the required commercial presentation types
@@ -224,14 +245,83 @@ Completion requires the phase evidence and exit gates named in the traceability 
 - [ ] **V5-BENCH-04**: Inputs, model outputs, generated artifacts, and scorecards carry frozen hashes
 - [ ] **V5-BENCH-05**: Release thresholds quantify improvement, reliability, and customer-delivery readiness
 
-### Windows Acceptance and Closure
+### Cross-Engine Acceptance and Closure
 
-- [ ] **V5-UAT-01**: A real Windows PowerPoint matrix covers isolated/attached sessions, formats, sizes, fonts, add-ins, and path variants
-- [ ] **V5-UAT-02**: Ten-run reliability, locking, source protection, and format/path cases pass without hidden state leakage
-- [ ] **V5-UAT-03**: Canonical outputs, exports, contact sheets, and quality reports exist for all benchmark scenarios
+- [ ] **V5-UAT-01**: A real portable-engine matrix covers formats, sizes, fonts, and path variants, while read-only PowerPoint certification covers a frozen 10% sample plus every high-risk capability sample
+- [ ] **V5-UAT-02**: Ten-run portable reliability, locking, source protection, format/path, isolated LibreOffice, and optional PowerPoint ownership cases pass without hidden state or process leakage
+- [ ] **V5-UAT-03**: Canonical portable outputs, exports, contact sheets, and quality reports exist for all benchmark scenarios, with PowerPoint comparison evidence for the frozen certification sample
 - [ ] **V5-UAT-04**: A final read-only OpenCode audit is independently checked against repository and runtime evidence
 - [ ] **V5-UAT-05**: The Skill and references describe the compiler, weak-model mode, QA loop, failures, and output contract
 - [ ] **V5-UAT-06**: v5.0 closes only when every customer-delivery hard gate and mapped requirement has fresh evidence
+
+## v5.1 Requirements (Window-PPTX Reference-Grade Visual Engine)
+
+### Reference Contract and TemplatePack
+
+- [ ] **V51-REF-01**: The authorized `工作总结.pptx` reference is packaged with provenance, hash, license/authorization status, slide inventory, stable shape-slot map, and visual baseline evidence
+- [ ] **V51-TPL-01**: A portable OOXML TemplatePack adapter replaces governed editable text/data slots while preserving masters, layouts, groups, gradients, connectors, charts, media, crop geometry, and all unbound package parts
+- [ ] **V51-TPL-02**: TemplatePack adaptation is atomic, source-safe, deterministic for the same input, rejects stale slot hashes/capacity violations, and emits a machine-readable adaptation report
+- [ ] **V51-TPL-03**: The first 15-slide work-summary acceptance deck uses new content, remains editable, opens in LibreOffice/PowerPoint-compatible OOXML, and retains non-slot decorative visual similarity of at least 0.98
+
+### DesignPack and Visual Planning
+
+- [ ] **V51-DESIGN-01**: Four governed DesignPacks cover all fifteen commercial scenarios with explicit themes, page families, variants, capacities, pacing, asset requirements, and safe fallbacks
+- [ ] **V51-DESIGN-02**: AssetPlan and VisualPlan form deterministic seams between narrative planning and rendering; ordinary models choose semantic intent/fact IDs but never raw coordinates, fonts, colors, HTML, OOXML, or executable code
+- [ ] **V51-DESIGN-03**: Content semantics map to ranked component compositions, including hero, KPI, comparison, process, timeline, matrix, roadmap, chart, table, product, case, team, risk, summary, and CTA forms
+- [ ] **V51-DESIGN-04**: Text, numbers, charts, tables, processes, and core shapes remain editable; decorative SVG/PNG/photos/illustrations remain traceable and replaceable
+
+### Visual Quality and Weak-Model Reliability
+
+- [ ] **V51-QA-01**: Visual regression checks reject sparse, repetitive, low-coverage, low-entropy, misaligned, overflowing, overlapping, distorted, unreadable, incompatible, or non-editable output
+- [ ] **V51-QA-02**: Auto-repair can safely adjust text fit, split/merge choices, asset fallback, alignment, crop, density, and variant choice without changing immutable facts
+- [ ] **V51-QA-03**: Historical sparse r12 output fails the new reference-grade profile, while accepted TemplatePack/DesignPack outputs pass structural, editable, render, and visual gates
+- [ ] **V51-BENCH-01**: DeepSeek V4 Flash Free completes four representative scenario trials before a refrozen two-model formal benchmark
+- [ ] **V51-UAT-01**: Blind review averages at least 4.2/5 with no relevant dimension below 4, and every accepted requirement has fresh reproducible evidence
+
+## v6.0 Requirements (Template-Intelligence Quality Reset)
+
+| Requirement | Current | Target | Acceptance |
+|---|---|---|---|
+| **V6-BRIEF-01** | v5 briefs are shallow and allow generation without a full discussion-locked client contract | ProjectBriefPack v1 owns facts, sources, assets, audience, goals, timing, anatomy, decisions, prohibitions, rubric, status, and lock digest | `Draft` and `NeedsDiscussion` formal generation fail; only a complete `Locked` pack produces a plan |
+| **V6-CORPUS-01** | Fifteen scenarios average few facts and usually have no required assets | Three complete realistic flagships plus twelve locked skeletons cover all accepted scenarios | Every scenario validates; all accepted flagship facts, sources, asset roles, slide budgets, and decisions are present |
+| **V6-ASSET-01** | No governed private commercial-template acquisition boundary exists | Entitled assets use ignored private storage, host-scoped auth, redirect stripping, quarantine, provenance, rights, and resumable state | No credential/private byte is staged; auth, redirect, quarantine, rights, and resume tests pass |
+| **V6-LIB-01** | Four legacy single-slide files are unverified and disconnected from generation | Stable catalog IDs, TemplatePack v2 slots, dedupe, dependency closure, retrieval, and Registry v3 make certified templates selectable | Old registries remain compatible; certified items are queryable and uncertified legacy items are never auto-selected |
+| **V6-DESIGN-01** | Ordinary models rely on deterministic but visually shallow composition rules | GPT-5.5 medium creates grounded NarrativePlan, TemplateSelectionPlan, and SlideBlueprint from visual candidates | Unknown IDs, raw coordinates, raw OOXML/HTML/code, unsupported claims, and capacity violations fail closed |
+| **V6-DECK-01** | Generated decks omit or weaken directory, section rhythm, motif continuity, and complete-work art direction | Cover, directory, chapter pages, evidence body, decision/conclusion, closing, appendix, theme, motif, grid, type, imagery, and pacing are governed | All three flagships pass anatomy, rhythm, diversity, consistency, and reference-parity inspection |
+| **V6-PORT-01** | Portable rendering is editable but v5.1 visual quality is rejected | Complete-work OOXML materialization preserves masters, themes, groups, crops, charts/workbooks, tables, media, and unrelated parts | Three flagship PPTX files open, render, remain editable, and pass OOXML/source-integrity checks without COM |
+| **V6-PORT-02** | v5 cross-engine closure never started | Portable reliability covers repeated runs, paths, ratios, fonts, source protection, locks, and isolated rendering | Every mandatory portable case passes; real PowerPoint remains optional diagnostics only |
+| **V6-QA-01** | Repair is broad and can accumulate redundant component fixes | One deterministic local repair, one same-family reselection, and one visual replan are the complete bounded loop | Repair is monotonic, fact-safe, art-direction-safe, capped, and rejects unresolved candidates |
+| **V6-EVID-01** | Automatic scores obscure visible quality failures | Every delivery carries hashes, lineage, PPTX/PDF/PNG/contact sheet, structural/editability reports, and anonymous before/after evidence | Exact artifacts reproduce and all reviewer packets rehash successfully |
+| **V6-DOC-01** | Skill docs describe v5 compiler and human-review closure | Skill docs make quality-first generation, brief discussion, private library, GPT-5.5 route, QA, failures, and output bundle executable | Formatter and workflow behavior evals pass and no stale v5 default remains |
+| **V6-UAT-01** | v5.1 human review is `NOT_RUN` and generated trials are rejected by the user | Three fresh isolated visual-capable AIs perform anonymous reference-parity review | At least 2/3 parity PASS; overall `>=4.3`, dimensions `>=4.1`, flagships `>=4.2`, zero two-reviewer Blocker/Important consensus |
+| **V6-AUDIT-01** | No v6 completion audit exists | A fresh OpenCode Agnes audit maps original requests through requirements, implementation, tests, artifacts, and UAT | Every requirement is `PASS` and no Blocker or Important remains |
+| **V6-REL-01** | v5.1 remains `NO_GO` | v6.0 closes and becomes merge-ready only after all hard gates pass | Any `FAIL`, `NOT_RUN`, unmapped requirement, Blocker, or Important keeps the milestone open |
+
+### v6 recovery requirements
+
+| Requirement | Acceptance |
+|---|---|
+| **V6R-GROUND-01** | Planning and Skill docs state the actual physical/code/alias inventory, invalidate the former GO, and map Phases 42–48 without contradictory completion claims |
+| **V6R-ACQ-01** | A real Playwright adapter and deterministic browser fixture prove authenticated state, full category/pagination discovery, same-origin download, resume, dedupe, redaction, disk guard, and fail-closed site drift; external sync remains `NEEDS_AUTH` until the private credential file exists |
+| **V6R-MINE-01** | Real private packages are passively quarantined, rendered, page-inventoried, deduplicated, classified, and a rights-bound 300–500-page core is certified |
+| **V6R-MAT-01** | Production consumes TemplateSelectionPlan and SlideBlueprint; every selected physical or registered candidate has exact materializer evidence and unknown/unmaterialized choices fail |
+| **V6R-ANCHOR-01** | Work-report, campus-competition, and academic-defense anchors use actual certified candidates and pass anatomy, editability, artifact, and reference-grade pixel review |
+| **V6R-WEAK-01** | All fifteen realistic scenarios run through the accepted system and ordinary models are measured against the strong-author baseline without raw geometry/style authority |
+| **V6R-UAT-01** | Three fresh independent image-capable AI contexts review full-resolution anonymous artifacts; any unresolved Blocker or Important fails |
+| **V6R-REL-01** | A fresh OpenCode completion audit maps every original/latest user request to implementation and evidence; missing auth, private acquisition, materialization, anchor visual review, or ordinary-model evidence keeps v6 open |
+
+### Superseded v5 intent
+
+- V5-UAT-01 intent is subsumed by V6-PORT-01; mandatory PowerPoint sampling is
+  removed.
+- V5-UAT-02 intent is subsumed by V6-PORT-02.
+- V5-UAT-03 intent is subsumed by V6-EVID-01.
+- V5-UAT-04 intent is subsumed by V6-AUDIT-01.
+- V5-UAT-05 intent is subsumed by V6-DOC-01.
+- V5-UAT-06 intent is subsumed by V6-REL-01.
+
+These mappings preserve intent only. Phase 29 never started and supplies no v5
+implementation or evidence.
 
 ## Out of Scope
 
@@ -392,11 +482,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 | V5-QA-03 | Phase 27 | Complete |
 | V5-QA-04 | Phase 27 | Complete |
 | V5-QA-05 | Phase 27 | Complete |
-| V5-BENCH-01 | Phase 28 | In Progress |
-| V5-BENCH-02 | Phase 28 | In Progress |
-| V5-BENCH-03 | Phase 28 | In Progress |
-| V5-BENCH-04 | Phase 28 | In Progress |
-| V5-BENCH-05 | Phase 28 | In Progress |
+| V5-REF-01 | Phase 27.1 | Complete |
+| V5-REF-02 | Phase 27.1 | Complete |
+| V5-REF-03 | Phase 27.1 | Complete — portable native-PPTX proof closed in Phase 27.2 |
+| V5-REF-04 | Phase 27.1 | Complete |
+| V5-REF-05 | Phase 27.1 | Partial — ordinary-model comparison carried to Phase 28 |
+| V5-REF-06 | Phase 27.1 | Partial — clean post-27.2 formal benchmark NOT_RUN |
+| V5-PORT-01 | Phase 27.2 | Complete |
+| V5-PORT-02 | Phase 27.2 | Complete |
+| V5-PORT-03 | Phase 27.2 | Complete |
+| V5-PORT-04 | Phase 27.2 | Complete |
+| V5-PORT-05 | Phase 27.2 | Complete |
+| V5-PORT-06 | Phase 27.2 | Complete |
+| V5-PORT-07 | Phase 27.2 | Complete |
+| V5-PORT-08 | Phase 27.2 | Complete |
+| V5-PORT-09 | Phase 27.2 | Complete — portable hard gates PASS; manual senior-designer visual bar remains a v5 milestone blocker |
+| V5-BENCH-01 | Phase 28 | Planned |
+| V5-BENCH-02 | Phase 28 | Planned |
+| V5-BENCH-03 | Phase 28 | Planned |
+| V5-BENCH-04 | Phase 28 | Planned |
+| V5-BENCH-05 | Phase 28 | Planned |
 | V5-UAT-01 | Phase 29 | Planned |
 | V5-UAT-02 | Phase 29 | Planned |
 | V5-UAT-03 | Phase 29 | Planned |
@@ -405,14 +510,47 @@ Which phases cover which requirements. Updated during roadmap creation.
 | V5-UAT-06 | Phase 29 | Planned |
 
 **V5 Coverage:**
-- v5 requirements: 44 total
-- Mapped to exactly one phase: 44
-- Complete: 33
-- In Progress: 5
-- Planned: 6
-- Open: 11
+- v5 requirements: 59 total
+- Mapped to exactly one phase: 59
+- Complete: 36
+- Partial: 3
+- In Progress: 9
+- Planned: 11
+- Open: 23
+- Unmapped: 0
+
+| Requirement | V6 Phase | Status |
+|-------------|----------|--------|
+| V6-BRIEF-01 | Phase 36 | Complete |
+| V6-CORPUS-01 | Phase 36 | Complete |
+| V6-ASSET-01 | Phase 37 | Complete via recovery Phase 43 |
+| V6-LIB-01 | Phase 37 | Complete via recovery Phases 43–44 |
+| V6-DESIGN-01 | Phase 38 | Complete via recovery Phases 45–47 |
+| V6-DECK-01 | Phase 38 | Complete via recovery Phases 46–48 |
+| V6-PORT-01 | Phase 39 | Complete via recovery Phases 45–48 |
+| V6-PORT-02 | Phase 40 | Complete via recovery Phase 48 |
+| V6-QA-01 | Phase 39 | Complete via recovery Phases 45–48 |
+| V6-EVID-01 | Phase 39 | Complete via recovery Phases 43–48 |
+| V6-DOC-01 | Phase 36 | Complete |
+| V6-UAT-01 | Phase 41 | Complete via stricter recovery Phase 48 |
+| V6-AUDIT-01 | Phase 41 | Complete via fresh recovery Phase 48 audit |
+| V6-REL-01 | Phase 41 | Complete via recovery Phase 48 |
+| V6R-GROUND-01 | Phase 42 | Complete |
+| V6R-ACQ-01 | Phase 43 | Complete |
+| V6R-MINE-01 | Phase 44 | Complete |
+| V6R-MAT-01 | Phase 45 | Complete |
+| V6R-ANCHOR-01 | Phase 46 | Complete |
+| V6R-WEAK-01 | Phase 47 | Complete |
+| V6R-UAT-01 | Phase 48 | Complete |
+| V6R-REL-01 | Phase 48 | Complete |
+
+**V6 Coverage:**
+- v6 requirements: 22 total
+- Mapped to exactly one primary phase: 22
+- Complete and still accepted, including recovery evidence: 22
+- Reopened/in progress/planned: 0
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-07-20 after defining v5.0 Window-PPTX requirements*
+*Last updated: 2026-07-30 after v6 quality rejection and milestone reopening*

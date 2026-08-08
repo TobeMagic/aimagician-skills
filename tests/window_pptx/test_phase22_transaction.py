@@ -57,11 +57,13 @@ class RecordingPresentation:
         self.save_error = save_error
         self.pdf_bytes = pdf_bytes
         self.save_copy_paths: list[Path] = []
+        self.save_copy_formats: list[int] = []
         self.save_as_calls = 0
 
-    def SaveCopyAs(self, value: str) -> None:
+    def SaveCopyAs(self, value: str, file_format: int) -> None:
         self.events.append("save-copy")
         self.save_copy_paths.append(Path(value))
+        self.save_copy_formats.append(file_format)
         if self.save_error is not None:
             raise self.save_error
         write_ooxml(Path(value))
@@ -210,6 +212,71 @@ def test_happy_path_validates_reopens_closes_and_promotes_in_order(
     )
     assert output.exists()
     assert presentation.save_as_calls == 0
+    assert presentation.save_copy_formats == [24]
+
+
+@pytest.mark.parametrize(
+    ("suffix", "expected_format"),
+    [(".pptx", 24), (".pptm", 25), (".potx", 26), (".potm", 27)],
+)
+def test_transaction_uses_explicit_ooxml_format_for_requested_extension(
+    tmp_path: Path,
+    suffix: str,
+    expected_format: int,
+) -> None:
+    events: list[str] = []
+    presentation = RecordingPresentation(events)
+
+    save_candidate(
+        presentation,
+        RecordingApp(events),
+        OutputPolicy(None, tmp_path / f"final{suffix}"),
+    )
+
+    assert presentation.save_copy_formats == [expected_format]
+
+
+def test_reopened_candidate_content_validation_runs_before_promotion(
+    tmp_path: Path,
+) -> None:
+    events: list[str] = []
+    presentation = RecordingPresentation(events)
+
+    result = save_candidate(
+        presentation,
+        RecordingApp(events),
+        OutputPolicy(None, tmp_path / "final.pptx"),
+        candidate_validator=lambda _candidate: events.append("validate-content"),
+        replace=recording_replace(events),
+    )
+
+    assert events.index("validate-content") < events.index("close-validation")
+    assert events.index("close-validation") < events.index("replace-.pptx")
+    assert "reopened-content-validation" in result.validation_steps
+
+
+def test_reopened_candidate_content_drift_blocks_promotion_and_still_closes(
+    tmp_path: Path,
+) -> None:
+    events: list[str] = []
+    output = tmp_path / "final.pptx"
+
+    def reject(_candidate: object) -> None:
+        events.append("validate-content")
+        raise ValueError("saved text drifted")
+
+    with pytest.raises(TransactionError, match="content validation failed"):
+        save_candidate(
+            RecordingPresentation(events),
+            RecordingApp(events),
+            OutputPolicy(None, output),
+            candidate_validator=reject,
+            replace=recording_replace(events),
+        )
+
+    assert "close-validation" in events
+    assert not output.exists()
+    assert not any(output.parent.glob(".window-pptx-*"))
 
 
 def test_default_reopen_is_read_only_and_windowless_and_restores_security(

@@ -1,0 +1,71 @@
+{
+  "schema_version": "2.0",
+  "id": "consulting-executive",
+  "name": "Consulting Executive",
+  "runtime_theme_id": "executive-light",
+  "scenarios": ["business-report", "project-proposal", "market-analysis", "sales-proposal", "strategy-planning", "operations-review"],
+  "theme": {
+    "mode": "light",
+    "primary": "12213A",
+    "accent": "8A5C16",
+    "background": "F4F0E7",
+    "heading_font": ["Aptos Display", "Arial", "Noto Sans CJK SC"],
+    "body_font": ["Aptos", "Arial", "Noto Sans CJK SC"]
+  },
+  "page_families": ["cover", "section", "executive-summary", "issue-tree", "big-number", "comparison", "process", "timeline", "matrix", "quadrant", "chart-story", "table", "case-study", "risk-actions", "recommendation", "closing"],
+  "pacing": {
+    "max_same_family_run": 2,
+    "hero_interval": 5,
+    "density_pattern": ["balanced", "dense", "balanced", "sparse"]
+  },
+  "asset_strategy": {
+    "priority": ["user", "licensed", "generated", "native"],
+    "required_for": ["cover", "case-study"]
+  },
+  "safe_fallback": {
+    "family": "consulting-message-with-evidence-grid",
+    "max_body_chars": 220,
+    "max_items": 6
+  },
+  "art_direction": {
+    "id": "knowledge-wayfinding",
+    "palette_roles": {
+      "canvas": "F4F0E7",
+      "ink": "12213A",
+      "teal": "197C78",
+      "gold": "8A5C16",
+      "surface": "FBF8F1",
+      "muted": "6E746F"
+    },
+    "grid": {
+      "columns": 12,
+      "safe_margin_in": 0.62,
+      "spacing_scale_pt": [4, 8, 12, 16, 24, 32, 48]
+    },
+    "typography_scale_pt": {
+      "display": 48,
+      "title": 32,
+      "subtitle": 22,
+      "body": 16,
+      "caption": 11
+    },
+    "motif": {
+      "variants": ["portal", "path", "node", "frame"]
+    },
+    "image_crop": "cover-with-focal-safe-zone",
+    "icon_style": "monoline-rounded-consistent",
+    "surface": {
+      "corner_radius_pt": 8,
+      "stroke_pt": 1,
+      "shadow_mode": "low-elevation-only"
+    },
+    "energy_pattern": ["peak", "flow", "flow", "pause"],
+    "quality_thresholds": {
+      "engineering": 100,
+      "visual": 80,
+      "art": 75,
+      "release": 84,
+      "axis_floor": 75
+    }
+  }
+}

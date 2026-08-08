@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://window-pptx.local/schemas/assembly-plan.v1.schema.json",
+  "title": "Assembly Plan v1",
+  "description": "Codex-authored plan linking each target slide to a chosen page_id and required bindings.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "plan_id",
+    "scenario_id",
+    "dominant_style_cluster_id",
+    "created_at",
+    "target_slide_count",
+    "target_slides",
+    "library_index_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "plan_id": {"type": "string", "minLength": 1},
+    "scenario_id": {"type": "string", "minLength": 1},
+    "dominant_style_cluster_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "target_slide_count": {"type": "integer", "minimum": 1, "maximum": 200},
+    "target_slides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "ordinal", "narrative_role", "page_id", "package_sha256", "slide_number",
+          "title", "bindings"
+        ],
+        "properties": {
+          "ordinal": {"type": "integer", "minimum": 1},
+          "narrative_role": {"type": "string", "minLength": 1},
+          "page_id": {"type": "string", "pattern": "^[0-9a-f]{64}:[0-9]{3}$"},
+          "package_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "slide_number": {"type": "integer", "minimum": 1},
+          "title": {"type": "string", "minLength": 1, "maxLength": 60},
+          "headline": {"type": "string", "maxLength": 80},
+          "narrative_intent": {"type": "string", "maxLength": 240},
+          "fact_refs": {"type": "array", "items": {"type": "string"}},
+          "asset_refs": {"type": "array", "items": {"type": "string"}},
+          "bindings": {
+            "type": "object",
+            "description": "Must contain exactly every text_slot_id in the selected page template; use an empty string to clear a decorative/source slot.",
+            "additionalProperties": {"type": "string"}
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "library_index_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

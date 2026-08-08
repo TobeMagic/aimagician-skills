@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://window-pptx.local/schemas/template-library-index.v4.schema.json",
+  "title": "Template Library Index v4",
+  "description": "Compiled index over all certified page templates available to physical assembly.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "library_id",
+    "compiled_at",
+    "source_core_schema",
+    "private_root_sha256",
+    "page_template_count",
+    "role_index",
+    "style_cluster_index",
+    "deck_family_index",
+    "category_index",
+    "page_templates",
+    "scoring"
+  ],
+  "properties": {
+    "schema_version": {"const": "4.0"},
+    "library_id": {"type": "string", "minLength": 1},
+    "compiled_at": {"type": "string", "format": "date-time"},
+    "source_core_schema": {"const": "gaojie-certified-core.v2"},
+    "private_root_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "page_template_count": {"type": "integer", "minimum": 0},
+    "role_index": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "style_cluster_index": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "deck_family_index": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "category_index": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "scoring": {
+      "type": "object",
+      "required": ["role", "capacity", "semantic", "style", "editability"],
+      "properties": {
+        "role": {"type": "number", "minimum": 0, "maximum": 1},
+        "capacity": {"type": "number", "minimum": 0, "maximum": 1},
+        "semantic": {"type": "number", "minimum": 0, "maximum": 1},
+        "style": {"type": "number", "minimum": 0, "maximum": 1},
+        "editability": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "dominant_style_cluster_id": {"type": "string", "minLength": 1},
+    "compatible_style_cluster_ids": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "page_templates": {
+      "type": "array",
+      "items": {"$ref": "page-template.v1.schema.json"}
+    }
+  },
+  "additionalProperties": false
+}

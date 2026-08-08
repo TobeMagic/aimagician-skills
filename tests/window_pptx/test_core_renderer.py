@@ -24,6 +24,7 @@ from window_pptx.deck_plan import DeckPlanValidationError
 from window_pptx.errors import OutputPolicyError
 from window_pptx.layouts import SlideSize
 from window_pptx.models import CandidateResult, OutputPolicy, PowerPointHandle
+from window_pptx.preview_quality import inspect_render_plan_delivery
 from window_pptx.recording_com import RecordingPresentation
 from window_pptx.render_plan import (
     AssetBinding,
@@ -35,7 +36,7 @@ from window_pptx.render_plan import (
 )
 from window_pptx.renderer import PowerPointRenderer, RenderError
 from window_pptx.runner import run_render_pipeline
-from window_pptx.themes import BrandOverrides
+from window_pptx.themes import BrandOverrides, contrast_ratio, load_themes
 
 
 def sample_deck() -> dict[str, object]:
@@ -206,11 +207,151 @@ def test_render_plan_is_deterministic_governed_and_serializable() -> None:
     assert first.to_dict() == second.to_dict()
 
 
+def test_single_action_close_with_visual_falls_back_from_poster_without_fabrication(
+    tmp_path: Path,
+) -> None:
+    image = tmp_path / "closing.png"
+    write_png(image, width=1800, height=1200)
+    deck = {
+        "schema_version": "1.0",
+        "project": {
+            "title": "Discovery proposal",
+            "scenario": "project-proposal",
+            "audience": "executive",
+            "language": "en-US",
+        },
+        "preferences": {"density": "balanced", "tone": "professional"},
+        "slides": [
+            {
+                "id": "decision",
+                "role": "closing",
+                "title": "Decision required",
+                "importance": "critical",
+                "blocks": [
+                    {
+                        "id": "decision-action",
+                        "kind": "recommendation",
+                        "text": "Approve a twelve-week discovery and pilot.",
+                    }
+                ],
+            }
+        ],
+    }
+    composition = {
+        "composition_id": "proposal.close",
+        "variant_id": "poster-with-visual",
+        "layout_id": "cta.poster-editorial",
+        "background_mode": "dark",
+        "emphasis": "critical",
+        "density": "balanced",
+        "energy": "high",
+        "fact_refs": [],
+        "slot_bindings": [
+            {"slot_id": "visual", "component_id": "image-frame"},
+            {"slot_id": "primary", "component_id": "cta"},
+        ],
+        "asset_bindings": [
+            {
+                "asset_id": "closing-visual",
+                "slot_id": "visual",
+                "status": "resolved",
+            }
+        ],
+        "motif": {"motif_id": "editorial-stage"},
+        "repair_variant_ids": ["cta.full-visual-stage"],
+        "decision_trace": {},
+    }
+
+    plan = build_render_plan(
+        deck,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        asset_bindings={
+            "closing-visual": asset_binding(
+                image,
+                asset_id="closing-visual",
+                width=1800,
+                height=1200,
+            )
+        },
+        composition_by_slide={"decision": composition},
+    )
+
+    assert plan.slides[0].layout_id == "cta.full-visual-stage", (
+        plan.slides[0].layout_id,
+        [(finding.code, finding.message) for finding in plan.findings],
+    )
+    texts = [
+        obj.text for obj in plan.slides[0].objects if obj.text is not None
+    ]
+    assert "Approve a twelve-week discovery and pilot." in texts
+    assert not any("decision chip" in text.casefold() for text in texts)
+    assert any(
+        finding.code == "POSTER_CTA_SEMANTIC_FALLBACK"
+        for finding in plan.findings
+    )
+
+
 def test_core_renderer_is_exposed_from_the_public_package() -> None:
     assert window_pptx.build_render_plan is build_render_plan
     assert window_pptx.PowerPointRenderer is PowerPointRenderer
     assert window_pptx.RecordingPresentation is RecordingPresentation
     assert window_pptx.run_render_pipeline is run_render_pipeline
+
+
+def test_three_decision_layout_falls_back_for_one_grounded_action() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "closing",
+            "role": "closing",
+            "title": "Next action",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "closing.action",
+                    "kind": "recommendation",
+                    "text": (
+                        "Enable managers to communicate a service incident "
+                        "accurately and calmly."
+                    ),
+                }
+            ],
+        }
+    ]
+    composition = {
+        "composition_id": "training.close",
+        "variant_id": "contact-close",
+        "layout_id": "cta.decision-three",
+        "background_mode": "navy-stage",
+        "emphasis": "hero",
+        "density": "sparse",
+        "energy": "peak",
+        "fact_refs": [],
+        "slot_bindings": [],
+        "asset_bindings": [],
+        "motif": {"motif_id": "evidence-margin"},
+        "repair_variant_ids": ["cta.top-band"],
+        "decision_trace": {},
+    }
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        composition_by_slide={"closing": composition},
+    )
+
+    assert plan.slides[0].layout_id == "cta.top-band"
+    assert any(
+        finding.code == "DECISION_CTA_SEMANTIC_FALLBACK"
+        for finding in plan.findings
+    )
+    assert any(
+        item.text
+        == "Enable managers to communicate a service incident accurately and calmly."
+        for item in plan.slides[0].objects
+    )
 
 
 @pytest.mark.parametrize(
@@ -238,7 +379,7 @@ def test_render_plan_preserves_absolute_safe_geometry_across_sizes(
             assert obj.height > 0
             assert obj.x + obj.width <= size.width + 1e-6
             assert obj.y + obj.height <= size.height + 1e-6
-            if obj.component != "footer":
+            if obj.component not in {"footer", "decoration"}:
                 assert obj.x >= 0.5 - 1e-6
                 assert obj.y >= 0.4 - 1e-6
                 assert obj.x + obj.width <= size.width - 0.5 + 1e-6
@@ -283,12 +424,14 @@ def test_render_plan_uses_trusted_asset_mapping_or_native_fallback(
     assert any(
         finding.code == "ASSET_NATIVE_FALLBACK" for finding in fallback.findings
     )
-    fallback_visual = next(
-        obj for obj in fallback.slides[0].objects if obj.component == "image-frame"
+    assert any(
+        finding.code == "ASSETLESS_LAYOUT_FALLBACK"
+        for finding in fallback.findings
     )
-    assert fallback_visual.text
-    assert fallback_visual.text != "Visual asset unavailable"
-    assert fallback.slides[0].title in fallback_visual.text
+    assert fallback.slides[0].family_id == "executive-summary"
+    assert not any(
+        obj.component == "image-frame" for obj in fallback.slides[0].objects
+    )
 
     readme = tmp_path / "README.md"
     readme.write_text("not an image", encoding="utf-8")
@@ -327,6 +470,458 @@ def test_render_plan_uses_trusted_asset_mapping_or_native_fallback(
     assert any(
         "dimensions do not match" in finding.message
         for finding in forged.findings
+    )
+
+
+def test_non_image_evidence_reference_is_not_treated_as_visual_asset() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "claim",
+            "role": "insights",
+            "title": "Evidence-backed claim",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "claim-text",
+                    "kind": "statement",
+                    "text": "The governed evidence supports this conclusion.",
+                    "source_ref": "request#line:7",
+                }
+            ],
+        }
+    ]
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    )
+
+    assert not any(
+        finding.code.startswith("ASSET_") for finding in plan.findings
+    )
+    assert not any(
+        item.component == "image-frame" for item in plan.slides[0].objects
+    )
+
+
+def test_short_focal_statement_title_uses_governed_display_scale() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "claim",
+            "role": "insights",
+            "title": "Churn fell",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "claim-text",
+                    "kind": "statement",
+                    "text": "Retention improved after the onboarding redesign.",
+                }
+            ],
+        }
+    ]
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    )
+    slide = plan.slides[0]
+    title = next(item for item in slide.objects if item.component == "title")
+
+    assert slide.family_id == "focal-statement"
+    assert title.font_size_pt == 44
+    assert validate_render_plan(plan) is plan
+
+
+def test_plain_focal_statement_uses_editorial_statement_not_quote() -> None:
+    payload = sample_deck()
+    evidence = "Retention improved after the onboarding redesign."
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "plain-claim",
+            "role": "insights",
+            "title": "Retention improved",
+            "importance": "high",
+            "blocks": [
+                {"id": "plain-claim-text", "kind": "statement", "text": evidence}
+            ],
+        }
+    ]
+
+    slide = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    ).slides[0]
+
+    assert slide.layout_id == "focal-statement.centered"
+    assert any(item.component == "accent" for item in slide.objects)
+    statement = next(item for item in slide.objects if item.component == "statement")
+    assert statement.kind == "text"
+    assert f"{slide.title} {statement.text}" == evidence
+    assert not any(item.component == "quote" for item in slide.objects)
+
+
+def test_single_kpi_uses_metric_spotlight_with_exact_large_integer() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "sample",
+            "role": "key-metrics",
+            "title": "Analysis sample",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "sample.metric",
+                    "kind": "metrics",
+                    "items": [
+                        {"label": "Sample", "value": 42180, "unit": "subscriptions"}
+                    ],
+                }
+            ],
+        }
+    ]
+
+    slide = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    ).slides[0]
+    metric = next(item for item in slide.objects if item.component == "kpi")
+
+    assert slide.layout_id == "big-number.centered"
+    assert metric.kind == "shape"
+    assert "42,180 subscriptions" in (metric.text or "")
+    assert any(item.component == "accent" for item in slide.objects)
+    assert {
+        item.id.rsplit(".", 1)[-1]: item.text
+        for item in slide.objects
+        if ".art.metric-status-" in item.id
+    } == {
+        "metric-status-mark": "◎",
+        "metric-status-label": "KEY METRIC",
+    }
+
+
+def test_single_kpi_status_icon_is_not_a_fake_bar_chart() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "churn",
+            "role": "performance",
+            "title": "Enterprise churn improved to 3.1 percent.",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "churn.metric",
+                    "kind": "metrics",
+                    "source_ref": "benchmark#business-report/churn",
+                    "items": [
+                        {"label": "Churn", "value": 3.1, "unit": "percent"}
+                    ],
+                }
+            ],
+        }
+    ]
+
+    slide = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    ).slides[0]
+    status = {
+        item.id.rsplit(".", 1)[-1]: item.text
+        for item in slide.objects
+        if ".art.metric-status-" in item.id
+    }
+    assert status == {
+        "metric-status-mark": "◎",
+        "metric-status-label": "KEY METRIC",
+    }
+    assert not any(item.kind == "chart" for item in slide.objects)
+
+
+def test_prose_only_trend_gets_editable_directional_motif_without_fake_data() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "trends",
+            "role": "trends",
+            "title": "Trends",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "trends.statement",
+                    "kind": "statement",
+                    "text": (
+                        "Cohort retention declined four percentage points "
+                        "from January to June."
+                    ),
+                }
+            ],
+        }
+    ]
+
+    slide = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    ).slides[0]
+    trend_objects = tuple(
+        item
+        for item in slide.objects
+        if ".art.trend-" in item.id
+    )
+
+    assert slide.family_id == "focal-statement"
+    assert len(trend_objects) == 17
+    assert any(item.id.endswith(".art.trend-axis") for item in trend_objects)
+    assert all(item.native_editable for item in trend_objects)
+    assert all(item.advanced is None for item in trend_objects)
+    assert {
+        item.id.rsplit(".", 1)[-1]: item.text
+        for item in trend_objects
+        if item.text is not None
+    } == {
+        "trend-period": "JAN → JUN",
+        "trend-delta": "Δ −4 PP",
+        "trend-y-label": "RETENTION",
+        "trend-start-label": "JAN · BASELINE",
+        "trend-end-label": "JUN · BASELINE −4 PP",
+    }
+
+
+def test_prose_only_timeline_uses_source_bound_duration_annotation() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "timeline",
+            "role": "timeline",
+            "title": "Discovery and pilot will run for twelve weeks.",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "timeline.statement",
+                    "kind": "statement",
+                    "text": "Discovery and pilot will run for twelve weeks.",
+                }
+            ],
+        }
+    ]
+
+    slide = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    ).slides[0]
+    timeline_labels = {
+        item.id.rsplit(".", 1)[-1]: item.text
+        for item in slide.objects
+        if ".art.timeline-" in item.id
+    }
+
+    assert slide.family_id == "focal-statement"
+    assert timeline_labels["timeline-start-label"] == "DISCOVERY"
+    assert timeline_labels["timeline-end-label"] == "PILOT"
+    assert timeline_labels["timeline-duration"] == "12 WEEKS"
+    assert timeline_labels["timeline-track"] is None
+    assert timeline_labels["timeline-start-node"] is None
+    assert timeline_labels["timeline-end-node"] is None
+    assert not any(".art.wayfinding-path-" in item.id for item in slide.objects)
+
+
+def test_word_form_metric_keeps_a_capacity_safe_big_number_variant() -> None:
+    payload = sample_deck()
+    exact_evidence = (
+        "Sixty-four percent of pilot users assembled weekly updates from four "
+        "separate tools before using Pulse."
+    )
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "customer-problem",
+            "role": "customer-problem",
+            "title": "Customer Problem",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "fragmentation",
+                    "kind": "metrics",
+                    "text": exact_evidence,
+                    "items": [
+                        {
+                            "label": "Fragmentation",
+                            "value": "Sixty-four",
+                            "unit": "percent",
+                            "description": exact_evidence,
+                        }
+                    ],
+                }
+            ],
+        }
+    ]
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        art_direction_id="quiet-assertion-evidence",
+    )
+    slide = plan.slides[0]
+    metric = next(item for item in slide.objects if item.component == "kpi")
+
+    assert slide.family_id == "big-number"
+    assert exact_evidence in (metric.text or "")
+    assert not any(item.component == "body-text" for item in slide.objects)
+
+
+def test_three_short_labels_use_compact_cards_without_oversized_containers() -> None:
+    payload = sample_deck()
+    labels = ["Microsoft Teams", "Slack", "email summaries"]
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "integrations",
+            "role": "product-showcase",
+            "title": "Product Showcase",
+            "importance": "normal",
+            "blocks": [
+                {"id": "integrations.items", "kind": "bullets", "items": labels}
+            ],
+        }
+    ]
+
+    slide = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    ).slides[0]
+    cards = [item for item in slide.objects if item.component == "card"]
+
+    assert slide.layout_id == "cards.compact-three"
+    assert [item.text for item in cards] == labels
+    assert all(item.height <= 2.1 for item in cards)
+    assert len({round(item.width, 6) for item in cards}) == 1
+
+
+@pytest.mark.parametrize("theme_id", sorted(load_themes()))
+def test_closing_uses_contrasting_native_action_band_not_a_fake_button(
+    theme_id: str,
+) -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "closing",
+            "role": "closing",
+            "title": "Decision required",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "closing.action",
+                    "kind": "recommendation",
+                    "text": "Prioritize the highest-impact retention intervention.",
+                }
+            ],
+        }
+    ]
+
+    slide = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        theme_id=theme_id,
+    ).slides[0]
+    action = next(item for item in slide.objects if item.component == "cta")
+    theme = load_themes()[theme_id]
+
+    assert slide.layout_id == "cta.centered"
+    assert action.kind == "shape"
+    assert action.hyperlink is None
+    assert action.native_editable is True
+    assert action.width / action.height >= 5
+    assert action.fill_color == theme.colors["primary"]
+    assert contrast_ratio(action.text_color, action.fill_color) >= 4.5
+
+
+def test_long_body_selects_a_capacity_safe_assetless_composition() -> None:
+    payload = sample_deck()
+    long_evidence = (
+        "Customer retention improved across enterprise cohorts while onboarding "
+        "time declined and support response quality remained stable throughout Q2. "
+        "The improvement held across regions and contract sizes without changing "
+        "the service model or the measurement basis. The evidence therefore supports "
+        "continued investment in the governed onboarding program for the next quarter."
+    )
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": "long-claim",
+            "role": "insights",
+            "title": "Retention improved without a service trade-off",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": "long-claim-text",
+                    "kind": "statement",
+                    "text": long_evidence,
+                }
+            ],
+        }
+    ]
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+    )
+    findings = inspect_render_plan_delivery(plan)
+
+    # ``focal-statement.centered`` resolves to the governed statement-stage
+    # recipe, whose wider/taller content slot can safely carry this evidence
+    # without manufacturing a fallback warning.
+    assert plan.slides[0].layout_id == "focal-statement.centered"
+    assert not any(
+        finding.code == "TEXT_CAPACITY_LAYOUT_FALLBACK"
+        for finding in plan.findings
+    )
+    assert long_evidence in {
+        item.text for item in plan.slides[0].objects if item.text
+    }
+    assert not any(finding.severity == "hard-gate" for finding in findings)
+
+
+def test_repeated_sparse_statements_cycle_assetless_compositions() -> None:
+    payload = sample_deck()
+    payload["slides"] = [  # type: ignore[index]
+        {
+            "id": f"claim-{index}",
+            "role": "insights",
+            "title": f"Distinct claim {index}",
+            "importance": "high",
+            "blocks": [
+                {
+                    "id": f"claim-text-{index}",
+                    "kind": "statement",
+                    "text": f"Evidence for distinct claim {index}",
+                }
+            ],
+        }
+        for index in range(1, 6)
+    ]
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        art_direction_id="safe-corporate-grid",
+    )
+    layout_ids = [slide.layout_id for slide in plan.slides]
+
+    assert len(set(layout_ids)) >= 3
+    assert all(
+        current != previous
+        for previous, current in zip(layout_ids, layout_ids[1:])
     )
 
 
@@ -408,7 +1003,7 @@ def test_multiple_image_frames_consume_distinct_governed_assets(
     )
 
 
-def test_multi_image_layout_marks_missing_slot_as_native_fallback(
+def test_multi_image_layout_never_leaves_an_unresolved_image_frame(
     tmp_path: Path,
 ) -> None:
     image = tmp_path / "only.png"
@@ -442,10 +1037,53 @@ def test_multi_image_layout_marks_missing_slot_as_native_fallback(
     )
 
     assert sum(item.kind == "image" for item in plan.slides[1].objects) == 1
+    assert not any(
+        item.component == "image-frame" and item.kind != "image"
+        for item in plan.slides[1].objects
+    )
+
+
+def test_invalid_image_source_cannot_shadow_a_later_valid_source(
+    tmp_path: Path,
+) -> None:
+    valid_image = tmp_path / "valid.png"
+    invalid_image = tmp_path / "invalid.txt"
+    write_png(valid_image)
+    invalid_image.write_text("not an image", encoding="utf-8")
+    payload = image_deck()
+    payload["slides"][0]["blocks"] = [  # type: ignore[index]
+        {
+            "id": "invalid-first",
+            "kind": "image",
+            "source_ref": "asset:invalid",
+        },
+        {
+            "id": "valid-second",
+            "kind": "image",
+            "source_ref": "asset:valid",
+        },
+    ]
+
+    plan = build_render_plan(
+        payload,
+        slide_size=SlideSize(13.333, 7.5),
+        installed_fonts={"Arial"},
+        asset_bindings={
+            "asset:invalid": asset_binding(invalid_image, asset_id="invalid"),
+            "asset:valid": asset_binding(valid_image, asset_id="valid"),
+        },
+    )
+
+    images = [item for item in plan.slides[0].objects if item.kind == "image"]
+    assert [item.source_path for item in images] == [valid_image.resolve()]
     assert any(
-        finding.code == "ASSET_NATIVE_FALLBACK"
-        and "no asset reference" in finding.message
+        finding.code == "ASSET_POLICY_REJECTED"
+        and "asset:invalid" in finding.message
         for finding in plan.findings
+    )
+    assert not any(
+        item.component == "image-frame" and item.kind != "image"
+        for item in plan.slides[0].objects
     )
 
 
@@ -475,7 +1113,19 @@ def test_renderer_creates_native_named_tagged_grouped_and_layered_objects(
     slide = presentation.Slides.items[0]
     assert all(shape.Name for shape in slide.Shapes.items)
     assert any(shape.kind == "group" for shape in slide.Shapes.items)
-    assert not any(shape.Name in report.object_names[:-1] for shape in slide.Shapes.items)
+    group_sizes: dict[str, int] = {}
+    for item in plan.slides[0].objects:
+        if item.group_id is not None:
+            group_sizes[item.group_id] = group_sizes.get(item.group_id, 0) + 1
+    expected_ungrouped = {
+        item.name
+        for item in plan.slides[0].objects
+        if item.group_id is None or group_sizes[item.group_id] < 2
+    }
+    actual_ungrouped = {
+        shape.Name for shape in slide.Shapes.items if shape.Name in report.object_names
+    }
+    assert actual_ungrouped == expected_ungrouped
     assert any(call.operation == "group" for call in presentation.calls)
     assert any(call.operation == "z-order" for call in presentation.calls)
     assert any(call.operation == "crop-cover" for call in presentation.calls)
@@ -831,8 +1481,9 @@ def test_cli_exposes_explicit_compile_and_render_routes() -> None:
     )
     assert dry["would_run"] == ["render_deck_plan"]
     assert dry["would_write"] == [
-        "project/.window-pptx/audits/quality-report.json",
-        "project/.window-pptx/audits/repair-log.json",
+        "project/.window-pptx/audits/quality-report.v2.json",
+        "project/.window-pptx/audits/portable-proof",
+        "project/.window-pptx/audits/render-proof.html",
         "project/output/final.pptx",
     ]
 
@@ -1007,6 +1658,8 @@ def test_render_cli_route_uses_governed_pipeline_and_cleanup(
             "--deck-plan",
             plan_path.name,
             "--render-deck-plan",
+            "--backend",
+            "com",
             "--installed-font",
             "Arial",
             "--template",
@@ -1076,6 +1729,8 @@ def test_render_cli_uses_ooxml_size_and_governed_asset_manifest(
             "--deck-plan",
             plan_path.name,
             "--render-deck-plan",
+            "--backend",
+            "com",
             "--template",
             template.name,
             "--asset-manifest",

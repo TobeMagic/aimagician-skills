@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "scenario": "project-proposal",
+  "design_pack_id": "consulting-executive",
+  "composition_grammar_id": "consulting-project-proposal-v1",
+  "fact_store_sha256": "8f71c4681020bdad9b5a61741d82ba0b5f5573e3d8b8f13333411c88e55767ca",
+  "brief_plan_sha256": "a6a3c37d4cff532ed100951c3bdbc8deefac0047bff14e4e9a46a64b85667338",
+  "candidate_sha256": "18627091c2a01d895def85621bb6d2bdb44e58de7588fa92104f221ae40f91ca",
+  "preview_sha256": "3c754d0a89d7c8e57ee7457d6be6370eca6ddd6619a9ef6e76ba6736ef555476",
+  "slide_count": 12,
+  "quality_v2_passed": true,
+  "hard_gate_failures": [],
+  "generated_visual_floor": {
+    "layout_signature_count": 9,
+    "layout_signature_threshold": 5,
+    "rich_slide_ratio": 1.0,
+    "rich_slide_ratio_threshold": 0.6,
+    "average_objects_per_slide": 14.25,
+    "average_objects_threshold": 9.0
+  },
+  "manual_visual_status": "PARTIAL_NOT_REFERENCE_GRADE",
+  "manual_notes": [
+    "r2 replaces single-node process, timeline, governance, and risk pages with source-preserving structured components",
+    "generic Chinese role titles and the English Next Steps filler are removed",
+    "the lane still needs stronger cover art, denser evidence annotation, and reference-grade component styling before Phase 32 acceptance"
+  ],
+  "committed_preview": "previews/consulting-project-proposal-r2.png",
+  "passed": false
+}

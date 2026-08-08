@@ -51,12 +51,27 @@ class RecordingFont:
     Name: str = ""
     Size: float = 0.0
     Color: RecordingColor = field(default_factory=RecordingColor)
+    Bold: int = 0
+    Italic: int = 0
 
 
 @dataclass
 class RecordingTextRange:
     Text: str = ""
     Font: RecordingFont = field(default_factory=RecordingFont)
+    _segments: dict[tuple[int, int], "RecordingTextRange"] = field(
+        default_factory=dict,
+        repr=False,
+    )
+
+    def Characters(self, start: int, length: int) -> "RecordingTextRange":
+        key = (start, length)
+        if key not in self._segments:
+            offset = max(0, start - 1)
+            self._segments[key] = RecordingTextRange(
+                Text=self.Text[offset : offset + length]
+            )
+        return self._segments[key]
 
 
 @dataclass

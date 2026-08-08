@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimagician.local/window-pptx/template-pack.v2.schema.json",
+  "title": "TemplatePack v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "pack_id", "name", "source_mode", "deck_family_id", "style_cluster_id", "certification", "rights", "materializer", "art_direction"],
+  "properties": {
+    "schema_version": {"const": "2.0"},
+    "pack_id": {"type": "string", "minLength": 1},
+    "name": {"type": "string", "minLength": 1},
+    "source_mode": {"enum": ["physical_ooxml", "registered_composition"]},
+    "deck_family_id": {"type": "string", "minLength": 1},
+    "style_cluster_id": {"type": "string", "minLength": 1},
+    "certification": {"const": "certified"},
+    "rights": {"type": "object"},
+    "source": {"type": "object"},
+    "materializer": {"enum": ["template_pack_v1_adapter", "registered_native_renderer"]},
+    "art_direction": {"type": "object"},
+    "pages": {"type": "array"},
+    "choreography": {"type": "array"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"source_mode": {"const": "physical_ooxml"}}},
+      "then": {"required": ["source", "pages"]},
+      "else": {"required": ["choreography"]}
+    }
+  ]
+}

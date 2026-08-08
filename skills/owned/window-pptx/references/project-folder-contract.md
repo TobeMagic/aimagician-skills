@@ -174,7 +174,7 @@ Optional. Examples:
 
 - iSlide allowed only if detected and callable
 - OKPlus allowed only if detected and callable
-- native PowerPoint COM only
+- no plugin (governed portable backend); explicit COM only for a declared COM-only capability
 
 ### Macro Policy
 
@@ -204,7 +204,7 @@ If `REQUEST.md` omits a detail:
 | overwrite policy | do not overwrite source decks |
 | template | auto-detect `template.*`; ask if ambiguous |
 | macros | disabled |
-| plugins | native COM only |
+| plugins | none; governed portable backend |
 | PDF export | disabled |
 | API keys | environment variables only |
 | stock image hotlinking | disabled; download local copies |

@@ -97,6 +97,23 @@ def test_schema_artifact_is_versioned_and_strict() -> None:
     assert schema["$defs"]["contentBlock"]["properties"]["items"]["minItems"] == 1
 
 
+def test_composition_recipe_is_carried_into_compiler_variant_seed() -> None:
+    payload = minimal_plan(kind="comparison")
+    compiled = compile_deck_plan(
+        payload,
+        visual_family_by_slide={"summary": "comparison"},
+        visual_recipe_by_slide={"summary": "proposal.problem"},
+    )
+
+    slide = compiled["slides"][0]
+    assert slide["layout_variant_seed"] == "proposal.problem"
+    assert slide["decision_trace"]["composition_recipe"] == {
+        "source_slide_id": "summary",
+        "recipe_id": "proposal.problem",
+        "rule_id": "COMPOSITION_GRAMMAR_VARIANT_SEED",
+    }
+
+
 def test_schema_and_manual_validator_agree_on_whitespace_and_data_item_types() -> None:
     jsonschema = pytest.importorskip("jsonschema")
     schema = json.loads(
@@ -309,6 +326,7 @@ def test_all_fifteen_business_archetypes_are_unique_and_ordered() -> None:
         assert len(set(archetype.sections)) == len(archetype.sections)
         assert archetype.sections[0] == "cover"
         assert archetype.sections[-1] == "closing"
+        assert 5 <= archetype.slide_count_min <= archetype.slide_count_max <= 30
 
 
 def test_scenario_aliases_resolve_to_stable_archetypes() -> None:
@@ -324,7 +342,7 @@ def test_scenario_aliases_resolve_to_stable_archetypes() -> None:
         ("timeline", "timeline"),
         ("comparison", "comparison"),
         ("bullets", "cards"),
-        ("metrics", "big-number"),
+        ("metrics", "kpi-dashboard"),
         ("trend", "line-chart"),
         ("composition", "composition-chart"),
         ("matrix", "matrix"),
@@ -374,6 +392,91 @@ def test_single_parallel_point_uses_quiet_sparse_form() -> None:
     assert decision.top_candidates[0].candidate_id == "text-media"
 
 
+def test_single_metric_uses_hero_while_parallel_metrics_use_dashboard() -> None:
+    single = rank_page_families("metrics", item_count=1)
+    parallel = rank_page_families("metrics", item_count=3)
+
+    assert single.selected == "big-number"
+    assert "SINGLE_METRIC_HERO" in single.top_candidates[0].rule_ids
+    assert parallel.selected == "kpi-dashboard"
+    assert "MULTI_METRIC_DASHBOARD" in parallel.top_candidates[0].rule_ids
+
+
+def test_repeated_single_metric_switches_to_a_governed_rhythm_break() -> None:
+    decision = rank_page_families(
+        "metrics",
+        item_count=1,
+        previous_families=("big-number",),
+    )
+
+    assert decision.selected == "focal-statement"
+
+
+def test_analytical_direction_maps_structured_comparison_to_bar_chart() -> None:
+    decision = rank_page_families(
+        "categorical-comparison",
+        item_count=2,
+        preferred_families=("data-chart",),
+    )
+
+    assert decision.selected == "bar-chart"
+    assert "ANALYTICAL_COMPARISON_BAR_CHART" in decision.top_candidates[0].rule_ids
+
+
+@pytest.mark.parametrize("semantic_type", ["risk", "recommendation"])
+def test_single_decision_avoids_empty_peer_compositions(
+    semantic_type: str,
+) -> None:
+    decision = rank_page_families(semantic_type, item_count=1)
+
+    expected = "recommendation" if semantic_type == "recommendation" else "focal-statement"
+    expected_rule = (
+        "SINGLE_RECOMMENDATION_FOCUS"
+        if semantic_type == "recommendation"
+        else "SPARSE_SINGLE_DECISION"
+    )
+    assert decision.selected == expected
+    assert expected_rule in decision.top_candidates[0].rule_ids
+
+
+def test_structural_roles_override_incidental_block_semantics() -> None:
+    payload = minimal_plan(kind="statement", items=[])
+    payload["slides"] = [
+        {
+            "id": role,
+            "role": role,
+            "title": role.title(),
+            "importance": "normal",
+            "blocks": [
+                {
+                    "id": f"{role}-content",
+                    "kind": "statement",
+                    "text": f"{role} content",
+                }
+            ],
+        }
+        for role in ("cover", "agenda", "section", "closing")
+    ]
+
+    compiled = compile_deck_plan(payload)
+
+    assert [slide["page_family"] for slide in compiled["slides"]] == [
+        "cover",
+        "agenda",
+        "section",
+        "cta",
+    ]
+    assert [
+        slide["decision_trace"]["top_candidates"][0]["rule_ids"][0]
+        for slide in compiled["slides"]
+    ] == [
+        "STRUCTURAL_ROLE_COVER",
+        "STRUCTURAL_ROLE_AGENDA",
+        "STRUCTURAL_ROLE_SECTION",
+        "STRUCTURAL_ROLE_CLOSING",
+    ]
+
+
 @pytest.mark.parametrize(
     ("chart_intent", "expected"),
     [
@@ -403,7 +506,9 @@ def test_repetition_penalty_changes_third_parallel_page() -> None:
 
     assert decision.selected == "modular-grid"
     cards = next(
-        item for item in decision.top_candidates if item.candidate_id == "cards"
+        item
+        for item in (*decision.top_candidates, *decision.rejected_candidates)
+        if item.candidate_id == "cards"
     )
     assert "RHYTHM_REPEAT_2" in cards.rule_ids
 
@@ -425,6 +530,49 @@ def test_capacity_split_preserves_every_item_and_continuation_order() -> None:
     assert [len(part.blocks[0].items) for part in split] == [4, 4, 3]
     assert [item for part in split for item in part.blocks[0].items] == [
         f"point-{number}" for number in range(1, 12)
+    ]
+
+
+def test_five_item_agenda_uses_one_structural_page_without_orphan() -> None:
+    payload = minimal_plan(
+        kind="bullets", items=[f"section-{number}" for number in range(1, 6)]
+    )
+    payload["slides"][0]["role"] = "agenda"
+    payload["slides"][0]["title"] = "Agenda"
+    slide = validate_deck_plan(payload).slides[0]
+
+    split = split_slide(slide, density="balanced")
+    compiled = compile_deck_plan(payload)
+
+    assert len(split) == 1
+    assert split[0].blocks[0].items == tuple(
+        f"section-{number}" for number in range(1, 6)
+    )
+    assert [item["id"] for item in compiled["slides"]] == ["summary"]
+    assert compiled["slides"][0]["page_family"] == "agenda"
+
+
+@pytest.mark.parametrize(
+    ("item_count", "expected_groups"),
+    ((6, [6]), (9, [6, 3]), (10, [7, 3]), (17, [8, 6, 3])),
+)
+def test_agenda_continuations_rebalance_away_from_orphan_tail(
+    item_count: int,
+    expected_groups: list[int],
+) -> None:
+    payload = minimal_plan(
+        kind="bullets",
+        items=[f"section-{number}" for number in range(1, item_count + 1)],
+    )
+    payload["slides"][0]["role"] = "agenda"
+    slide = validate_deck_plan(payload).slides[0]
+
+    split = split_slide(slide, density="balanced")
+
+    assert [len(part.blocks[0].items) for part in split] == expected_groups
+    assert len(split) == 1 or len(split[-1].blocks[0].items) >= 3
+    assert [item for part in split for item in part.blocks[0].items] == [
+        f"section-{number}" for number in range(1, item_count + 1)
     ]
 
 

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "backend-render-result.v1.schema.json",
+  "title": "window-pptx backend render result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version", "backend_id", "backend_version", "output_path",
+    "slide_count", "planned_object_count", "native_editable_count",
+    "diagram_child_count", "object_names", "group_names", "warnings"
+  ],
+  "properties": {
+    "protocol_version": {"const": "1.0"},
+    "backend_id": {"const": "pptxgenjs"},
+    "backend_version": {"const": "4.0.1"},
+    "output_path": {"type": "string", "minLength": 1},
+    "slide_count": {"type": "integer", "minimum": 1},
+    "planned_object_count": {"type": "integer", "minimum": 0},
+    "native_editable_count": {"type": "integer", "minimum": 0},
+    "diagram_child_count": {"type": "integer", "minimum": 0},
+    "object_names": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "group_names": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

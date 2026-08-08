@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import struct
+import xml.etree.ElementTree as ET
 from datetime import date
 from dataclasses import dataclass
 from pathlib import Path
@@ -102,6 +104,124 @@ def read_raster_dimensions(path: Path | str) -> tuple[int, int]:
     if width_px <= 0 or height_px <= 0:
         raise ValueError(f"asset has invalid dimensions: {asset_path}")
     return width_px, height_px
+
+
+_SVG_LENGTH = re.compile(
+    r"^\s*(?P<value>(?:\d+(?:\.\d*)?|\.\d+))(?:px|pt|pc|in|cm|mm)?\s*$",
+    re.IGNORECASE,
+)
+_SVG_FORBIDDEN_TEXT = re.compile(
+    r"<!DOCTYPE|<!ENTITY|@import|javascript\s*:|data\s*:|file\s*:|url\s*\(",
+    re.IGNORECASE,
+)
+_SVG_FORBIDDEN_ELEMENTS = {
+    "script",
+    "foreignobject",
+    "image",
+    "iframe",
+    "object",
+    # SMIL can mutate otherwise-passive artwork or run indefinitely.  Office
+    # imports are governed as static pictures, so animation/timing nodes have
+    # no legitimate role in this path.
+    "animate",
+    "animatecolor",
+    "animatemotion",
+    "animatetransform",
+    "discard",
+    "mpath",
+    "set",
+}
+
+
+def read_svg_aspect_ratio(path: Path | str) -> float:
+    """Read a safe local SVG ratio without permitting active or embedded content.
+
+    PowerPoint can import SVG as a picture on supported Office versions, but the
+    weak-model path must not treat arbitrary XML as a trusted media asset.  This
+    parser deliberately accepts only passive, self-contained vector artwork.
+    """
+
+    asset_path = Path(path)
+    try:
+        payload = asset_path.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"asset cannot be read: {asset_path}") from exc
+    if not payload or len(payload) > 5 * 1024 * 1024:
+        raise ValueError(f"SVG asset is empty or exceeds 5 MiB: {asset_path}")
+    try:
+        source = payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"SVG asset must be UTF-8: {asset_path}") from exc
+    if _SVG_FORBIDDEN_TEXT.search(source):
+        raise ValueError(f"SVG asset contains prohibited active content: {asset_path}")
+    normalized_source = source.lstrip("\ufeff \t\r\n")
+    if normalized_source.startswith("<?xml"):
+        declaration = re.match(r"<\?xml\s+[^?]*\?>", normalized_source, re.I)
+        if declaration is None:
+            raise ValueError(f"SVG XML declaration is invalid: {asset_path}")
+        normalized_source = normalized_source[declaration.end() :]
+    if "<?" in normalized_source or "\\" in source:
+        raise ValueError(
+            f"SVG asset contains a processing instruction or escape: {asset_path}"
+        )
+    try:
+        root = ET.fromstring(source)
+    except ET.ParseError as exc:
+        raise ValueError(f"asset is not a valid SVG: {asset_path}") from exc
+    if root.tag.rsplit("}", 1)[-1].casefold() != "svg":
+        raise ValueError(f"asset root is not SVG: {asset_path}")
+    for element in root.iter():
+        local_name = element.tag.rsplit("}", 1)[-1].casefold()
+        if local_name in _SVG_FORBIDDEN_ELEMENTS:
+            raise ValueError(
+                f"SVG asset contains prohibited element {local_name}: {asset_path}"
+            )
+        for raw_name, raw_value in element.attrib.items():
+            attribute = raw_name.rsplit("}", 1)[-1].casefold()
+            value = raw_value.strip()
+            if attribute == "base":
+                # In particular, xml:base can turn an apparently local
+                # ``href="#id"`` into a remote reference.
+                raise ValueError(
+                    f"SVG asset contains a base URI: {asset_path}"
+                )
+            if attribute.startswith("on"):
+                raise ValueError(
+                    f"SVG asset contains an event handler: {asset_path}"
+                )
+            if attribute == "href" and value and not value.startswith("#"):
+                raise ValueError(
+                    f"SVG asset contains an external reference: {asset_path}"
+                )
+            if _SVG_FORBIDDEN_TEXT.search(value):
+                raise ValueError(
+                    f"SVG asset contains prohibited attribute content: {asset_path}"
+                )
+
+    view_box = root.attrib.get("viewBox") or root.attrib.get("viewbox")
+    if view_box is not None:
+        try:
+            values = [float(value) for value in re.split(r"[\s,]+", view_box.strip())]
+        except ValueError as exc:
+            raise ValueError(f"SVG viewBox is invalid: {asset_path}") from exc
+        if len(values) != 4:
+            raise ValueError(f"SVG viewBox must contain four numbers: {asset_path}")
+        width, height = values[2], values[3]
+    else:
+        width = _svg_length(root.attrib.get("width"), "width", asset_path)
+        height = _svg_length(root.attrib.get("height"), "height", asset_path)
+    if not all(math.isfinite(value) and value > 0 for value in (width, height)):
+        raise ValueError(f"SVG dimensions must be finite and positive: {asset_path}")
+    return width / height
+
+
+def _svg_length(value: str | None, label: str, path: Path) -> float:
+    if not isinstance(value, str):
+        raise ValueError(f"SVG {label} or viewBox is required: {path}")
+    match = _SVG_LENGTH.fullmatch(value)
+    if match is None:
+        raise ValueError(f"SVG {label} is invalid: {path}")
+    return float(match.group("value"))
 
 
 def _jpeg_dimensions(payload: bytes, path: Path) -> tuple[int, int]:

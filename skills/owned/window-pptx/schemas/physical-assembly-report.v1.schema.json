@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://window-pptx.local/schemas/physical-assembly-report.v1.schema.json",
+  "title": "Physical Assembly Report v1",
+  "description": "Output of verify_physical_assembly: per-slide lineage, OPC integrity, editability, status.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "report_id",
+    "plan_id",
+    "output_path",
+    "output_sha256",
+    "status",
+    "target_slide_count",
+    "lineage_records",
+    "opc_integrity",
+    "editability",
+    "style_cluster_adherence"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "report_id": {"type": "string", "minLength": 1},
+    "plan_id": {"type": "string", "minLength": 1},
+    "output_path": {"type": "string", "minLength": 1},
+    "output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "status": {"type": "string", "enum": ["pass", "fail"]},
+    "target_slide_count": {"type": "integer", "minimum": 1},
+    "lineage_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ordinal", "page_id", "package_sha256", "slide_number", "source_sha256", "narrative_role", "status"],
+        "properties": {
+          "ordinal": {"type": "integer", "minimum": 1},
+          "page_id": {"type": "string"},
+          "package_sha256": {"type": "string"},
+          "slide_number": {"type": "integer"},
+          "source_sha256": {"type": "string"},
+          "narrative_role": {"type": "string"},
+          "title": {"type": "string"},
+          "status": {"type": "string", "enum": ["pass", "fail"]},
+          "binding_count": {"type": "integer", "minimum": 0},
+          "byte_match_score": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    },
+    "opc_integrity": {
+      "type": "object",
+      "required": ["zip_open", "content_types_parsed", "slide_rels_resolved", "status"],
+      "properties": {
+        "zip_open": {"type": "boolean"},
+        "content_types_parsed": {"type": "boolean"},
+        "slide_rels_resolved": {"type": "boolean"},
+        "package_entry_count": {"type": "integer"},
+        "media_count": {"type": "integer"},
+        "status": {"type": "string", "enum": ["pass", "fail"]},
+        "details": {"type": "string"}
+      }
+    },
+    "editability": {
+      "type": "object",
+      "required": ["native_editable", "python_pptx_open", "status"],
+      "properties": {
+        "native_editable": {"type": "boolean"},
+        "python_pptx_open": {"type": "boolean"},
+        "slide_count": {"type": "integer"},
+        "text_run_count": {"type": "integer"},
+        "shape_count": {"type": "integer"},
+        "status": {"type": "string", "enum": ["pass", "fail"]}
+      }
+    },
+    "style_cluster_adherence": {
+      "type": "object",
+      "required": ["dominant_style_cluster_id", "matches", "total", "status"],
+      "properties": {
+        "dominant_style_cluster_id": {"type": "string"},
+        "matches": {"type": "integer"},
+        "total": {"type": "integer"},
+        "status": {"type": "string", "enum": ["pass", "fail"]}
+      }
+    }
+  },
+  "additionalProperties": false
+}

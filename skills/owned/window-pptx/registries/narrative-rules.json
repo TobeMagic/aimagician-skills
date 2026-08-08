@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "archetypes": [
+    {"id": "business-report", "critical_beats": ["performance"]},
+    {"id": "project-proposal", "critical_beats": ["problem"]},
+    {"id": "product-launch", "critical_beats": ["value-proposition"]},
+    {"id": "market-analysis", "critical_beats": ["market-size"]},
+    {"id": "sales-proposal", "critical_beats": ["customer-context"]},
+    {"id": "investor-pitch", "critical_beats": ["traction"]},
+    {"id": "annual-review", "critical_beats": ["performance"]},
+    {"id": "strategic-plan", "critical_beats": ["strategic-pillars"]},
+    {"id": "data-analysis", "critical_beats": ["key-metrics"]},
+    {"id": "research-report", "critical_beats": ["findings"]},
+    {"id": "training", "critical_beats": ["framework"]},
+    {"id": "brand-introduction", "critical_beats": ["positioning"]},
+    {"id": "project-kickoff", "critical_beats": ["objectives"]},
+    {"id": "operations-review", "critical_beats": ["performance"]},
+    {"id": "ecommerce-marketing", "critical_beats": ["objectives"]}
+  ]
+}

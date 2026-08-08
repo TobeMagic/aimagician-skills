@@ -1,0 +1,202 @@
+# Reference-Grade Template Workflow
+
+Use this workflow when the user supplies a polished PPTX as the visual target
+and authorizes its design assets for reuse. It raises the visual floor without
+asking a weak model to recreate hundreds of coordinates, crop settings,
+vector decorations, charts, and master relationships.
+
+## 1. Authorization and provenance
+
+A TemplatePack must contain:
+
+- a source PPTX copied into the owned skill only with explicit authorization;
+- `ORIGIN.md` recording source path, authorization scope, and SHA-256;
+- `template-pack.json` declaring the source hash, slide count, supported
+  scenarios, shape slots, chart slots, capacity, and source-derived visual
+  masks;
+- a DesignPack manifest that selects the TemplatePack only for compatible
+  scenarios.
+
+Never register an internet-downloaded deck, unlicensed font, or third-party
+media bundle without a compatible license or explicit user authorization.
+
+## 2. Stable binding boundary
+
+Text slots target `(slide number, cNvPr shape id)`. Chart slots target
+`(chart part, cache index)` plus an embedded workbook coordinate.
+
+The model supplies only slot values. It cannot supply:
+
+- an OOXML path;
+- a shape id;
+- coordinates, font, color, or arbitrary XML;
+- a chart-part path or workbook path;
+- code, macros, or COM instructions.
+
+Unknown slots, missing required slots, duplicate targets, over-capacity text,
+non-finite chart values, source-hash mismatch, and slide-count mismatch fail
+before output mutation.
+
+## 3. Rich text and line behavior
+
+Each text shape keeps its existing paragraphs and run properties. A binding
+value separated by `\n` maps successive fragments to existing rich-text runs.
+It does not create a paragraph. Use this only when the TemplatePack author
+intentionally exposes multiple differently styled runs, for example:
+
+```json
+{
+  "s01.title": "参考级\n交付系统"
+}
+```
+
+If a shape has one run, provide one compact string and let the existing text
+frame perform normal wrapping. Capacity is a hard maximum, not a design
+recommendation; use shorter action titles whenever a fallback font expands.
+
+## 4. Editable charts
+
+Chart labels and values are not edited as screenshots. The adapter updates:
+
+1. the chart XML cache used by PowerPoint and preview engines;
+2. the corresponding shared string or worksheet cell in the embedded XLSX.
+
+Numeric values must be finite JSON numbers. Text and numeric slots use
+different workbook coordinate types. A chart update that cannot update both
+representations is rejected.
+
+## 5. Package preservation
+
+Adaptation writes a temporary OOXML package, validates it, and atomically
+promotes a new candidate. The source is hash-checked before and after.
+Unbound package parts must be byte-identical. A no-op adaptation must produce a
+byte-identical copy.
+
+The adapter preserves:
+
+- masters, layouts, themes, and slide sizes;
+- images, crop rectangles, transparencies, and gradients;
+- vector shapes, groups, connectors, and z-order;
+- native tables, charts, chart caches, and embedded workbooks;
+- speaker notes, links, and package relationships unless explicitly bound.
+
+## 6. Reference-grade quality gate
+
+Openability and lack of overlap are necessary but insufficient. The structural
+profile rejects decks below explicit floors for:
+
+- average visual/editable object count per slide;
+- distinct page-composition signatures;
+- packaged media count and bytes;
+- editable chart count;
+- grouped/vector composition;
+- gradients, crops, connectors, and other decorative primitives.
+
+The generated candidate is then opened by an isolated LibreOffice process,
+exported to PDF, and rasterized page by page with Poppler or Ghostscript.
+Page count, geometry, source hash, and candidate hash must remain stable.
+
+PNG inspection detects near-empty pages, unusually dense pages, non-decorative
+content touching edges, missing previews, and adjacent near-duplicates.
+Structural and PNG gates complement each other: neither is a pixel-perfect
+PowerPoint certification.
+
+## 7. Trusted non-slot visual preservation
+
+`visual_masks` are an authoring artifact, not a generation decision. Produce
+them only from the hash-bound source PPTX with:
+
+```bash
+python scripts/inventory_window_pptx_template.py \
+  --template-pack <id-or-manifest> \
+  --output template-geometry-inventory.json
+```
+
+The inventory composes nested group affine transforms, resolves chart frames
+through slide relationships, and normalizes target rectangles to page
+coordinates. The TemplatePack loader recomputes those rectangles from the
+source and rejects a manifest whose masks differ. It also rejects unknown
+targets, invalid or off-page geometry, nonzero padding, duplicate targets, or
+source-hash drift.
+
+Golden replay renders the authorized source and adapted candidate through the
+same renderer fingerprint. It ignores only the union of trusted masks and
+measures all remaining RGB pixels:
+
+- mean absolute similarity must be at least `0.98` on every page;
+- changed-pixel ratio must be at most `0.02`;
+- a pixel is changed when any RGB channel differs by more than `8`;
+- mask union coverage must not exceed `0.80` on any page.
+
+Masks are never inferred from observed source/candidate differences. An
+out-of-mask mutation is a hard failure even when package structure remains
+valid.
+
+## 8. Font portability
+
+LibreOffice can substitute Windows or commercial fonts. This can visibly
+change line breaks or make calligraphic titles appear oversized even when the
+OOXML and original reference render the same way under LibreOffice.
+
+Therefore:
+
+- preserve the authorized source font declarations by default;
+- when a declared display font produces proven cross-engine overlap, apply a
+  manifest-owned `text_style_rules` clamp to selected slot kinds/slides; never
+  let the model choose the fallback font or font size;
+- record installed-font fingerprints;
+- keep binding copy compact enough for declared capacities;
+- treat LibreOffice as a deterministic cross-engine floor;
+- use optional native PowerPoint certification for final pixel judgment when
+  the customer environment depends on those fonts;
+- never claim PowerPoint pixel identity from LibreOffice proof alone.
+
+## 9. Delivery evidence
+
+Keep these files under `.window-pptx/audits/`:
+
+- `template-adaptation-report.json`
+- `reference-quality-report.json`
+- `template-geometry-inventory.json`
+- `visual-similarity-report.json`
+- `golden-replay-manifest.json`
+- `template-portable-proof/portable-proof.pdf`
+- one PNG per slide
+- engine versions, candidate hash before/after, and source-template hash
+
+The final response must link the promoted PPTX and report unresolved font or
+cross-engine differences explicitly.
+
+The repeatable owned command is
+`scripts/run_window_pptx_golden_replay.py`. Two clean output directories must
+produce byte-identical candidates and semantically identical compact
+manifests. PDF/PNG proof files remain local; commit only compact manifests and
+selected previews when required.
+
+## 10. Visual reviewer routing
+
+Pixel-level judgment must come from a reviewer that demonstrably decoded the
+rendered slide images in the current session. Use the direct provider adapter
+in `scripts/window_pptx/agnes_direct.py`:
+
+- use route `agnes-direct/agnes-2.0-flash` for PNG review;
+- first send a session-bound challenge Data URI and require its probe token;
+- only then send high-resolution pages in batches of at most four plus one
+  full-deck contact sheet;
+- persist strict `visual-review.v1` JSON, request/response hashes,
+  normalization trace, and deterministic cache/replay evidence;
+- do not infer vision support from the model family or provider name;
+- if Agnes rejects the attachment, reports no image support, or returns an
+  ambiguous result, mark visual UAT `NOT_RUN`;
+- never route pixel judgment to `opencode/deepseek-v4-flash-free`; use
+  DeepSeek for code, contract, rule, and schema audits.
+
+A reviewer needs the anonymized PNG evidence and its hash-bound PPTX. JSON
+metrics, structural inspection, or a textual description of the slides cannot
+substitute for seeing the pixels.
+
+Quality v2 may promote an engineering-safe candidate, but reference-grade
+release additionally requires Quality v3: six axes at least `75`, total at
+least `84`, no visual hard gate, and an Agnes/human art-review PASS.
+Provider scores are an upper bound on internal automatic scores, never a
+replacement for OOXML, fact, editability, or package truth.
