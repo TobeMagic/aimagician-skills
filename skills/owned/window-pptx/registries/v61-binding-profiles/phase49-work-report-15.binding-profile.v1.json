@@ -451,6 +451,10 @@
           "kind": "fact",
           "renderings": [
             {
+              "fact_id": "governance-headline",
+              "rendering_sha256": "b74e259cce401f9d3917dbaa5e892883f037a7f3ba54c84b333dd054d164f13e"
+            },
+            {
               "fact_id": "governance-study",
               "rendering_sha256": "4ecfe5ef8316cb2b001fd3e45f997848d804068be4827e05eaadd9a6cbdff127"
             },
@@ -470,14 +474,8 @@
           "separator": " · "
         },
         "shape_2": {
-          "kind": "fact",
-          "renderings": [
-            {
-              "fact_id": "governance-headline",
-              "rendering_sha256": "b74e259cce401f9d3917dbaa5e892883f037a7f3ba54c84b333dd054d164f13e"
-            }
-          ],
-          "separator": ""
+          "kind": "connective",
+          "connective_id": "section-two"
         },
         "shape_20": {
           "kind": "fact",
@@ -1150,7 +1148,7 @@
         "renderings": [
           {
             "fact_id": "projects-title",
-            "rendering_sha256": "177842d175953fc375e5121f6a41fa982ca1f585bf9294a01332734071a2277f"
+            "rendering_sha256": "7bd28c0e7ad64b7e0dadde15d64d231f109819a0d82c0417fb8447a9c39e3855"
           }
         ],
         "separator": ""
@@ -1160,7 +1158,7 @@
         "renderings": [
           {
             "fact_id": "projects-total",
-            "rendering_sha256": "f6af55aeac6718a1998256f216959f6f2b13d172ac9577ec98c3dc654c173aad"
+            "rendering_sha256": "92aa10a883182c4f6cdfc37da317ea4f0176af28ebeaf2c179b7322fb996f2f0"
           }
         ],
         "separator": ""
@@ -1184,7 +1182,7 @@
           "renderings": [
             {
               "fact_id": "projects-title",
-              "rendering_sha256": "aa3fdbc9f18af1c2c7ec9ce74947ebd1a8ef1d5cff75317a19a3a8e150c4a689"
+              "rendering_sha256": "8e6fcd3c0e8870d5c78f772de569c3a8fec010994fb521d7cd34d99465f9368e"
             }
           ],
           "separator": ""
@@ -1194,7 +1192,7 @@
           "renderings": [
             {
               "fact_id": "projects-total",
-              "rendering_sha256": "3cb09f823507c0c7a6c5196acfbea7ee594c23fe21a555931679593620b8dbf0"
+              "rendering_sha256": "380869d4ade7b8d9e40f8864ab9c5e0728e1757e8b1c4be1bfd37385d636e343"
             }
           ],
           "separator": ""
@@ -1234,7 +1232,7 @@
           "renderings": [
             {
               "fact_id": "projects-total",
-              "rendering_sha256": "48b7451579f572223976988f77a3ad671475a7cdcfda4d56480c235301a83af9"
+              "rendering_sha256": "a3f9dfabecbc5073e6b7acf8b06f8ed7324241fffc09f5315ff2a1dee23073d1"
             }
           ],
           "separator": ""
@@ -1425,7 +1423,7 @@
           "renderings": [
             {
               "fact_id": "projects-total",
-              "rendering_sha256": "569fd8020dc613f6acb264d4b121497a77b947c0e434b1307b651f7e5f973423"
+              "rendering_sha256": "daabd20a5b699aed55f7e3b6fd0dd47f4e8d20073c4b8b18584bcfafbe60ca6e"
             }
           ],
           "separator": ""
