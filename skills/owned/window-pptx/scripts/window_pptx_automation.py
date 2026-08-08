@@ -76,6 +76,18 @@ from window_pptx.template_intelligence import (
     selection_plan_from_payload,
     slide_blueprints_from_payload,
 )
+from window_pptx.page_template_library import (
+    PageTemplateError,
+    load_library_index,
+    resolve_private_root,
+)
+from window_pptx.physical_assembly import (
+    PhysicalAssemblyError,
+    assemble_physical_deck,
+    load_assembly_plan,
+    write_assembly_report,
+)
+from window_pptx.physical_rule_qa import run_physical_rule_qa, write_rule_qa_report
 from window_pptx.selection_materialization import (
     materialize_physical_selection,
 )
@@ -2612,6 +2624,60 @@ def main(
             sys.stderr,
         )
         return 0
+
+    if args.render_assembly_plan:
+        try:
+            assembly_plan_path = resolve_path(project_dir, args.assembly_plan)
+            if assembly_plan_path is None or not assembly_plan_path.is_file():
+                die("AssemblyPlan path could not be resolved or does not exist.")
+            private_root = resolve_private_root(explicit=args.assembly_private_root)
+            library_path = (
+                resolve_path(project_dir, args.assembly_library)
+                if args.assembly_library
+                else private_root / "v61" / "library-v4.json"
+            )
+            if library_path is None or not library_path.is_file():
+                die("Compiled page-template library could not be resolved.")
+            index = load_library_index(library_path)
+            lookup = {template.page_id: template for template in index.page_templates}
+            plan = load_assembly_plan(assembly_plan_path, lookup)
+            report = assemble_physical_deck(
+                plan,
+                output_path,
+                library_index_sha256=__import__("hashlib").sha256(
+                    library_path.read_bytes()
+                ).hexdigest(),
+            )
+            report_path = (
+                resolve_path(project_dir, args.assembly_report)
+                if args.assembly_report
+                else project_dir / ".window-pptx" / "audits" / "physical-assembly-report.json"
+            )
+            if report_path is None:
+                die("Physical assembly report path could not be resolved.")
+            report_digest = write_assembly_report(report, report_path)
+            qa = run_physical_rule_qa(output_path, plan=plan)
+            qa_path = project_dir / ".window-pptx" / "audits" / "physical-rule-qa.json"
+            qa_digest = write_rule_qa_report(qa, qa_path)
+        except (PageTemplateError, PhysicalAssemblyError, OSError, ValueError) as exc:
+            die(f"Physical assembly failed: {exc}")
+        payload = report.to_dict()
+        payload["report_digest"] = report_digest
+        payload["rule_qa"] = qa.to_dict()
+        payload["rule_qa_digest"] = qa_digest
+        emit_result(
+            {
+                "physical_assembly": payload,
+                "assembly_plan": str(assembly_plan_path),
+                "library": str(library_path),
+                "private_root": str(private_root),
+                "report": str(report_path),
+            },
+            args.json,
+            sys.stdout,
+            sys.stderr,
+        )
+        return 0 if report.status == "pass" and qa.status == "pass" else 1
 
     if args.render_template_pack:
         if prepared_template_pack is None or prepared_template_bindings is None:

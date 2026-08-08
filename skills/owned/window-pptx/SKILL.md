@@ -218,6 +218,94 @@ Read [certified-template-intelligence.md](./references/certified-template-intell
 for the v2/v3 manifests, 84-candidate derivation, selection contract, and
 materialization boundary.
 
+## v6.1 Physical Template Assembly
+
+When the user expects the Agent to reuse the downloaded certified page library
+directly, load [v61-physical-assembly-workflow.md](./references/v61-physical-assembly-workflow.md).
+This route extends the v6 quality-first contract with a complete
+`INTAKE -> DISCUSSION_REQUIRED -> LOCKED_BRIEF -> ART_DIRECTION_LOCKED ->
+NARRATIVE_LOCKED -> TEMPLATE_PLAN_LOCKED -> PHYSICAL_ASSEMBLY -> RULE_QA ->
+VISUAL_HARNESS -> RELEASED` state machine.
+
+The Agent must compile and query the private page library, choose a page for
+each slide, bind copy to that page's actual `slot_graph` IDs, and then invoke
+the portable cross-package assembler:
+
+```bash
+python skills/owned/window-pptx/scripts/manage_window_pptx_v61_library.py \
+  compile-pages --private-root <private-root> \
+  --output <private-root>/v61/library-v4.json
+
+python skills/owned/window-pptx/scripts/render_window_pptx_assembly.py \
+  --private-root <private-root> \
+  --library <private-root>/v61/library-v4.json \
+  --assembly-plan <project>/.window-pptx/audits/assembly-plan.json \
+  --output <project>/output/final.pptx \
+  --report <project>/.window-pptx/audits/physical-assembly-report.json
+```
+
+`physical-assembly-report.json` is a release gate, not a diagnostic
+decoration. It must prove per-slide page lineage, source/output hashes, OPC
+relationship closure, native editability, `python-pptx` opening, and dominant
+style-cluster adherence. The clean client folder never contains private
+commercial bytes, previews, cookies, or historical outputs. COM remains an
+optional read-only certification step after portable PASS.
+
+### v6.1 Agent execution stages and checkpoints
+
+Run these stages in order; do not jump directly from a prose request to a
+render command:
+
+1. **Intake and discussion** — collect audience, meeting decision, time limit,
+   slide budget, facts/sources, brand constraints, asset rights, output path,
+   editability and COM policy. Stop with `DISCUSSION_REQUIRED` when any
+   release-critical field is unknown.
+2. **Lock the brief and art direction** — write a portable `ProjectBriefPack`,
+   choose one theme palette/font system and record its rationale. Checkpoint:
+   `LOCKED_BRIEF` and `ART_DIRECTION_LOCKED` artifacts must exist.
+3. **Lock the narrative spine** — map each slide to a role (cover, contents,
+   section, evidence, chart, comparison, roadmap, closing, etc.), assign an
+   information budget, and bind every fact to a source reference.
+4. **Search and select pages** — query `library-v4.json` by role, capacity,
+   semantic category and dominant style cluster. Select a certified `page_id`
+   for every slide; inspect the returned `slot_graph` and use only those exact
+   `shape_<id>` slots. Never invent slot IDs or geometry.
+   Source-page ordinal is never a semantic role: in the reference work-summary
+   family pages 3/4/10/13 are dividers, pages 5/6 are data pages, page 8 is a
+   project/case-study page, and page 9 is a KPI dashboard.
+   Choose by the query's `page_role`, not by sequential source order; a
+   non-adjacent certified page may be reused when role coverage requires it.
+5. **Assemble physically** — emit `assembly-plan.json`, then run
+   `render_window_pptx_assembly.py` (or
+   `window_pptx_automation.py --render-assembly-plan`). Checkpoint:
+   `physical-assembly-report.json` must be `status=pass`, with one lineage
+   record per target slide.
+6. **Rule QA and bounded repair** — check overflow, tiny text, out-of-bounds
+   shapes, relationship closure, editability, style adherence and content
+   density. Repair only through registered slot bindings or a replacement
+   certified page; do not freehand redraw failed slides. For physical
+   assembly, run `python scripts/qa_window_pptx_physical.py` and require its
+   `status=pass` JSON before visual review.
+7. **Visual harness and release** — render previews with the portable verifier,
+   run independent blind visual reviews, compare against the acceptance rubric,
+   and release only when all required rows are `PASS`. COM is an optional
+   read-only certification after portable PASS and never a generation backend
+   requirement.
+
+The minimum machine-readable checkpoint set is:
+
+```text
+.window-pptx/audits/brief-pack.json
+.window-pptx/audits/art-direction.json
+.window-pptx/audits/narrative-plan.json
+.window-pptx/audits/assembly-plan.json
+.window-pptx/audits/physical-assembly-report.json
+.window-pptx/audits/visual-review.json
+```
+
+If a checkpoint is missing or `FAIL`, stop the release route and return the
+blocking finding plus the smallest safe next action.
+
 ## Realistic Brief Corpus
 
 The bundled corpus contains exactly fifteen locked scenarios: three complete

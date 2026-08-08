@@ -102,6 +102,30 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "slot replacement, then verify it with LibreOffice/Poppler."
         ),
     )
+    generation_route.add_argument(
+        "--render-assembly-plan",
+        action="store_true",
+        help=(
+            "Assemble an editable PPTX by physically reusing certified page "
+            "templates selected in an AssemblyPlan v1."
+        ),
+    )
+    parser.add_argument(
+        "--assembly-plan",
+        help="AssemblyPlan v1 JSON path for --render-assembly-plan.",
+    )
+    parser.add_argument(
+        "--assembly-library",
+        help="Compiled page-template library-v4 JSON path.",
+    )
+    parser.add_argument(
+        "--assembly-private-root",
+        help="Private template-library root; never resolved from the client folder.",
+    )
+    parser.add_argument(
+        "--assembly-report",
+        help="Physical assembly report path. Defaults under .window-pptx/audits.",
+    )
     parser.add_argument(
         "--template-pack",
         help="Registered TemplatePack id or manifest path for --render-template-pack.",
@@ -406,6 +430,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         or args.render_brief_plan
     )
     template_pack_route = args.render_template_pack
+    assembly_route = args.render_assembly_plan
     if deck_route and not args.deck_plan:
         parser.error("--deck-plan is required for DeckPlan compile/render routes")
     if brief_route and (not args.fact_store or not args.brief_plan):
@@ -416,6 +441,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error(
             "--template-pack and --template-bindings are required for "
             "--render-template-pack"
+        )
+    if assembly_route and not args.assembly_plan:
+        parser.error("--assembly-plan is required for --render-assembly-plan")
+    if any((args.assembly_library, args.assembly_private_root, args.assembly_report)) and not assembly_route:
+        parser.error(
+            "--assembly-library/--assembly-private-root/--assembly-report "
+            "require --render-assembly-plan"
         )
     if (args.template_pack or args.template_bindings) and not template_pack_route:
         parser.error(
@@ -462,7 +494,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "--generate-assets-with-agnes requires --render-brief-plan"
         )
     if (args.backend != "auto" or args.verification != "portable") and not (
-        args.render_deck_plan or args.render_brief_plan or template_pack_route
+        args.render_deck_plan or args.render_brief_plan or template_pack_route or assembly_route
     ):
         parser.error("--backend/--verification require a governed render route")
     if template_pack_route and (
@@ -474,10 +506,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     if args.no_html_proof and not (args.render_deck_plan or args.render_brief_plan):
         parser.error("--no-html-proof requires a governed render route")
     if args.com_doctor and (
-        deck_route or brief_route or template_pack_route or args.certify_pptx
+        deck_route or brief_route or template_pack_route or assembly_route or args.certify_pptx
     ):
         parser.error("--com-doctor cannot be combined with generation or certification")
-    if args.certify_pptx and (deck_route or brief_route or template_pack_route):
+    if args.certify_pptx and (deck_route or brief_route or template_pack_route or assembly_route):
         parser.error("--certify-pptx is a standalone verification route")
     if args.certify_pptx and not args.portable_verification_report:
         parser.error(
@@ -504,7 +536,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "export_qa",
         "audit_deck",
     }
-    if deck_route or brief_route or template_pack_route:
+    if deck_route or brief_route or template_pack_route or assembly_route:
         route_conflicts = set(conflicting_deck_actions)
         if args.render_deck_plan or args.render_brief_plan:
             route_conflicts -= {"export_slides", "export_qa"}
@@ -533,6 +565,7 @@ def collect_requested_actions(args: argparse.Namespace) -> list[str]:
         "compile_brief_plan",
         "render_brief_plan",
         "render_template_pack",
+        "render_assembly_plan",
         "init_project",
         "search_images",
         "download_image",
@@ -686,6 +719,13 @@ def build_dry_run_result(args: argparse.Namespace, project_dir: str | Path) -> d
                     / "candidate-materialization-report.json"
                 )
             )
+    if args.render_assembly_plan:
+        would_write.extend(
+            [
+                str(base / ".window-pptx" / "audits" / "physical-assembly-report.json"),
+                str(_requested_path(base, args.output)),
+            ]
+        )
     if args.render_brief_plan:
         would_write.extend(
             [
