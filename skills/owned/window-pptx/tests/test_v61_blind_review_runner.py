@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pytest
 from PIL import Image
 
 
@@ -21,14 +22,49 @@ from window_pptx.v61_blind_acceptance import (  # noqa: E402
     load_hashed_document,
 )
 from window_pptx.v61_blind_reviews import (  # noqa: E402
+    BlindReviewError,
     REVIEWER_LENSES,
     REVIEW_DIMENSIONS,
+    _parse_exact_json,
     canonical_json_bytes,
     sha256_file,
 )
 
 
 SHA = "a" * 64
+
+
+@pytest.mark.parametrize(
+    ("response", "expected"),
+    (
+        ('{"value":1}', {"value": 1}),
+        (' \n\t```json\n{"value":1}\n```\r\n ', {"value": 1}),
+    ),
+)
+def test_exact_json_parser_accepts_plain_or_one_complete_json_fence(
+    response: str,
+    expected: dict[str, int],
+) -> None:
+    assert _parse_exact_json(response, "VISION_RESPONSE_INVALID") == expected
+
+
+@pytest.mark.parametrize(
+    "response",
+    (
+        'Here is the result:\n```json\n{"value":1}\n```',
+        '```json\n{"value":1}\n```\n```json\n{"value":2}\n```',
+        '```text\n{"value":1}\n```',
+        '```JSON\n{"value":1}\n```',
+        '```json\n{"value":1}\n```\ntrailing text',
+    ),
+)
+def test_exact_json_parser_rejects_nonexclusive_or_non_json_fences(
+    response: str,
+) -> None:
+    with pytest.raises(BlindReviewError) as error:
+        _parse_exact_json(response, "VISION_RESPONSE_INVALID")
+
+    assert error.value.code == "VISION_RESPONSE_INVALID"
 
 
 def _labels(ordinals: list[int]) -> list[dict[str, Any]]:

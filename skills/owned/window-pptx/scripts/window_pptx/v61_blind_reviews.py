@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import statistics
 import subprocess
@@ -60,6 +61,10 @@ REVIEWER_LENSES = {
 SEGMENTS = (
     ("SLIDES_01_08", tuple(range(1, 9)), tuple(range(1, 5))),
     ("SLIDES_09_15", tuple(range(9, 16)), tuple(range(5, 9))),
+)
+_EXCLUSIVE_JSON_FENCE = re.compile(
+    r"\A```json[ \t]*\r?\n(?P<payload>.*?)\r?\n```\Z",
+    re.DOTALL,
 )
 
 
@@ -358,8 +363,14 @@ def _segment_prompt(
 
 
 def _parse_exact_json(text: str, code: str) -> Mapping[str, Any]:
+    response = text.strip()
+    if response.startswith("```"):
+        fenced = _EXCLUSIVE_JSON_FENCE.fullmatch(response)
+        if fenced is None:
+            raise BlindReviewError(code, "model response is not exact JSON")
+        response = fenced.group("payload")
     try:
-        value = json.loads(text)
+        value = json.loads(response)
     except json.JSONDecodeError as exc:
         raise BlindReviewError(code, "model response is not exact JSON") from exc
     if not isinstance(value, Mapping):
