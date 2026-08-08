@@ -127,15 +127,32 @@ dominant style cluster locked.
 
 The Agent must bind title/headline/body copy to the selected page's actual slot
 IDs. It must not assume `shape_9` or any other shape number across packages.
-One page ID may not be used twice in the first acceptance scenario unless the
-library has no certified alternative and the report records the exception.
+For the locked Phase 49 acceptance scenario, all 15 `page_id` values must be
+distinct; there is no duplicate-page exception. A later scenario may declare
+a different reuse policy only in its own locked brief and acceptance schema.
 Bindings are complete, not sparse: the JSON object must contain exactly every
-ID in `slot_graph.text_slot_ids`. Use `""` to intentionally clear a source
-label or decorative copy. A page with no editable text slots is not eligible
-for a content slide. The query response exposes `slot_graph.slots` and a
-deterministic `reuse_risk`; reject or replace candidates with named brands,
-product claims, or unrelated source copy rather than hoping a later visual
-review will catch residue.
+ID in `slot_graph.text_slot_ids`. Every value is an object containing `text`,
+`fact_refs`, and `asset_refs`, for example:
+
+```json
+{
+  "shape_17": {
+    "text": "门诊收入同比增长 8.4%",
+    "fact_refs": ["fact-finance-017"],
+    "asset_refs": []
+  }
+}
+```
+
+The assembly plan references an external locked fact store and asset manifest
+using project-relative paths and SHA-256 values. Those files, not Agent-authored
+plan text, define the allowed IDs and renderings. Empty refs are valid only for
+copy listed in the locked connective-copy allowlist. Use empty `text` with an
+authorized connective entry to intentionally clear a decorative/source slot.
+A page with no editable text slots is not eligible for a content slide. The
+query response exposes `slot_graph.slots` and deterministic residue/eligibility
+evidence; reject or replace candidates with named brands, product claims, or
+unrelated source copy rather than hoping a later visual review will catch it.
 
 ## Asset manifest
 
@@ -163,7 +180,11 @@ random web image or a placeholder string.
 
 ## Assembly and QA
 
-Create an `assembly-plan.v1` with one `target_slides` item per narrative slide.
+Create an `assembly-plan.v1` with one `target_slides` item per narrative slide,
+plus locked `fact_store` and `asset_manifest` path/digest authorities. The
+production assembler resolves those paths only inside the clean project root,
+rejects symlinks and path escape, verifies their hashes, and fails on unknown,
+unused, or unbound references before any PPTX mutation.
 Then run:
 
 ```bash

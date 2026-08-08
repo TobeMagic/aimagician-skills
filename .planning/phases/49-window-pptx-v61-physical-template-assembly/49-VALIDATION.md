@@ -35,16 +35,16 @@
 
 | Acceptance | Status | Evidence | Observed result |
 |---|---|---|---|
-| AC-49-01 | NOT_RUN | Page compiler/schema tests and 288-page compile | Not yet accepted |
-| AC-49-02 | NOT_RUN | Eligibility/score-breakdown/determinism tests | Not yet accepted |
-| AC-49-03 | NOT_RUN | Recursive OPC and replay evidence | Not yet accepted |
-| AC-49-04 | NOT_RUN | Fact-binding/capacity/adaptation evidence | Not yet accepted |
-| AC-49-05 | NOT_RUN | Report-schema, recursive QA, size and portability evidence | Not yet accepted |
-| AC-49-06 | NOT_RUN | Clean-room pre-run manifest | Not started |
-| AC-49-07 | NOT_RUN | Exact Codex run and post-run manifest | Not started |
-| AC-49-08 | NOT_RUN | Canonical packet and three isolated visual sessions | Not started |
-| AC-49-09 | NOT_RUN | Frozen premerge implementation audit | Not started |
-| AC-49-10 | NOT_RUN | Pushed SHA, install parity, final completion audit | Not started |
+| Criterion AC-49-01 | NOT_RUN | Page compiler/schema tests and 288-page compile | Not yet accepted |
+| Criterion AC-49-02 | NOT_RUN | Eligibility/score-breakdown/determinism tests | Not yet accepted |
+| Criterion AC-49-03 | NOT_RUN | Recursive OPC and replay evidence | Not yet accepted |
+| Criterion AC-49-04 | NOT_RUN | Fact-binding/capacity/adaptation evidence | Not yet accepted |
+| Criterion AC-49-05 | NOT_RUN | Report-schema, recursive QA, size and portability evidence | Not yet accepted |
+| Criterion AC-49-06 | NOT_RUN | Clean-room pre-run manifest | Not started |
+| Criterion AC-49-07 | NOT_RUN | Exact Codex run and post-run manifest | Not started |
+| Criterion AC-49-08 | NOT_RUN | Canonical packet and three isolated visual sessions | Not started |
+| Criterion AC-49-09 | NOT_RUN | Frozen premerge implementation audit | Not started |
+| Criterion AC-49-10 | NOT_RUN | Pushed SHA, install parity, final completion audit | Not started |
 
 ## Commands
 

@@ -32,3 +32,26 @@
   completion-audit gates.
 - A fresh re-review of the revised committed plan is required; it must return
   APPROVED with zero Blocker/Important before the plan-review gate closes.
+
+## Re-review 02
+
+**Review point:** `841ed7dba2eb83d97ec604cf60937b1426efd425`
+**Fingerprint:** `164314544e45c47b338fcb784faf0433c1bb795a138e8f221271a32011535663`
+**Provider:** OpenCode
+**Primary/final model:** `sub2api_openai/gpt-5.6-sol`
+**Session:** `ses_01e45a14fffeAFN4q1ggoRkGoU`
+**Run status:** DONE
+**Review result:** REVISE / DONE_WITH_CONCERNS
+
+| Severity | Finding | Accepted remediation |
+|---|---|---|
+| Blocker | `AC-49-*` evidence rows are treated as unknown Requirement IDs by the current trace parser | Keep the detailed checklist and mapping in the locked spec, but use descriptive first cells in validation so machine trace remains scoped to declared `V61-*` requirements and roadmap `GOAL-*` criteria; require zero unknown IDs before freeze |
+| Important | Slide-level refs plus string bindings cannot prove each replacement's authority | Lock every binding as `{text, fact_refs, asset_refs}` and verify external fact/asset manifests by path and SHA-256 before per-slot adaptation |
+| Important | The 15-distinct-page invariant is stated but not executable | Reject duplicate page IDs, report distinct/duplicate counts, add a duplicate fixture, and require 15 target/lineage/distinct IDs in replay and clean-room gates |
+
+The Blocker is addressed without modifying workflow infrastructure: detailed
+criteria remain human- and audit-traceable under their mapped requirements,
+while the workflow's stable requirement parser receives only declared IDs.
+The two Important findings are now explicit schema/runtime/test tasks. A fresh
+committed re-review is still required and must return APPROVED with zero
+Blocker/Important.

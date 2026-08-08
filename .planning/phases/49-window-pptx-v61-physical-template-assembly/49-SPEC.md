@@ -144,22 +144,28 @@ phase, not a completion claim for that checkpoint.
   returned candidate exposes gate decisions plus role 0.30, capacity 0.25,
   semantic 0.20, style 0.15, editability 0.10, and total score; repeated
   serialized results are byte-identical.
-- [ ] **AC-49-03:** `assemble-physical-deck` takes an assembly plan (≥15
-  slides), opens each distinct source package once, imports complete
+- [ ] **AC-49-03:** `assemble-physical-deck` takes the locked 15-slide
+  acceptance plan, rejects duplicate `page_id` values, opens each distinct
+  source package once, imports complete
   owner-relative OPC closure, preserves exact content types, safely shares or
   deduplicates immutable dependencies, and emits one native-editable PPTX.
-- [ ] **AC-49-04:** Slot adaptation accepts only declared shape IDs whose
-  replacement binds allowed locked fact/asset IDs and fits recorded capacity.
-  Evidence records source shape/text hash, replacement hash, refs, capacity
-  used/limit; invented/missing facts, unbound literals, unknown slots,
+- [ ] **AC-49-04:** Slot adaptation accepts only declared shape IDs. Every
+  binding is a versioned object with `text`, `fact_refs`, and `asset_refs`;
+  the plan names an external locked fact-store and asset-manifest path plus
+  SHA-256, and the assembler verifies those bytes before trusting any ID.
+  Empty references are allowed only for copy explicitly registered as
+  non-factual connective text. Evidence records source shape/text hash,
+  replacement hash, exact refs, capacity used/limit, and mutation result;
+  invented/missing/unused references, unbound factual literals, unknown slots,
   over-capacity text, residue, or outside-shape mutation fail before promotion.
 - [ ] **AC-49-05:** `verify-physical-assembly` traverses every `.rels` part and
   emits total internal relationships, unresolved/unsafe records, imported
   parts, same-source reuse, cross-source safe dedup, deduplicated/static
   duplicate bytes, source/output bytes, amplification ratio, 15/15 lineage,
   `python-pptx`, and LibreOffice results. `pass` requires unresolved=unsafe=0,
-  complete lineage, output ≤33,941,179 bytes, and both required open/render
-  checks.
+  complete lineage, `target_slide_count == lineage_records ==
+  distinct_page_id_count == 15`, no duplicate-page records, output
+  ≤33,941,179 bytes, and both required open/render checks.
 - [ ] **AC-49-06:** Build a clean external requirement pack
   `annual-work-report.requirement-pack.v1.json` containing only public data
   (no reference PPTX, no template previews, no private bytes, no historical
@@ -206,6 +212,30 @@ phase, not a completion claim for that checkpoint.
 - `schemas/assembly-plan.v1.schema.json` — Codex-authored plan linking each
   target slide to a chosen `page_id`.
 - `schemas/physical-assembly-report.v1.schema.json` — verifier output.
+
+### Locked binding authority
+
+The Agent may choose registered fact/asset IDs but cannot create their
+authority. `assembly-plan.v1` references `fact-store.v1` and the client asset
+manifest by path and SHA-256. The production CLI resolves both paths relative
+to the clean project root, rejects symlinks and path escape, verifies the
+digests, then validates every per-slot binding against those immutable
+records. A binding is shaped as:
+
+```json
+{
+  "text": "门诊收入同比增长 8.4%",
+  "fact_refs": ["fact-finance-017"],
+  "asset_refs": []
+}
+```
+
+The locked fact record supplies approved literal renderings; the locked asset
+record supplies ID, locator, SHA-256, rights, and allowed uses. A separate
+locked `connective_copy_allowlist` may authorize titles, section labels, and
+transitional copy without factual refs. Slide-level refs are summaries only
+and cannot satisfy a slot binding. Every declared reference must be consumed
+by at least one binding or placement; otherwise the plan fails.
 
 ### New modules
 
