@@ -1,11 +1,11 @@
-TASK_ID: V61-P49-PLAN-REVIEW-01
+TASK_ID: V61-P49-PLAN-REVIEW-03
 ROLE: plan-reviewer
 TASK_TYPE: review
 MODALITY: text
-OBJECTIVE: Independently determine whether the locked Phase 49 specification and approved plan are complete, executable, safely ordered, and sufficient to prove USR-V61-01 without hidden scope or weak acceptance.
+OBJECTIVE: Re-review whether the twice-revised locked Phase 49 specification and approved plan now fully remediate all prior Blocker and Important findings and are complete, executable, safely ordered, and sufficient to prove USR-V61-01.
 DELIVERABLE: Findings-first plan review with one requirement row per V61-* item, finding counts, final status, and exact remediation for every Blocker or Important.
-REVIEW_POINT: Commit 215e1d3 on integration/window-pptx-v61-final-20260808.
-REVIEW_BINDING: --review-ref 215e1d3
+REVIEW_POINT: Commit 2e8d42d on integration/window-pptx-v61-final-20260808.
+REVIEW_BINDING: --review-ref 2e8d42d
 
 SOURCE_OF_TRUTH:
 - .planning/REQUESTS.md: USR-V61-01
@@ -32,6 +32,8 @@ KNOWN_CONTEXT:
 - Audit found: non-first pages read slide1.xml; the compiler drops direct-use disposition; all pages use one style cluster; nested relationship resolution uses the wrong owner; the verifier checks only slide rels; output/source size is 4.02x.
 - The certified core has 288 pages from 266 packages: 129 direct-use-capable and 159 reference-only.
 - Phase 49 workflow align/spec/plan/execute gates pass at the frozen review point.
+- The first independent review at commit 215e1d3 returned REVISE with 2 Blocker and 7 Important. The revised plan claims to fix: unique AC IDs and mapping; premerge plus pushed-SHA completion audits; asset-fit gating and score breakdown; precise OPC queue/security rules; concrete report metrics; fact/asset binding and capacity evidence; clean-room/reviewer fingerprints; explicit new test files; and index/install rollback.
+- The second independent review at commit 841ed7d returned REVISE with 1 Blocker and 2 Important: machine trace rejected AC evidence IDs; per-replacement fact/asset authority was not versioned; and 15 distinct page IDs were not enforced. Commit 2e8d42d uses descriptive AC evidence row labels so trace recognizes only declared V61/GOAL IDs, locks `{text,fact_refs,asset_refs}` against external path+SHA authorities, and requires/reports 15 distinct page IDs with no exception.
 
 REQUIRED_SKILLS:
 - cli-agent-delegator: apply the independent review contract, permissions, severity, and status protocol.

@@ -246,8 +246,8 @@ by at least one binding or placement; otherwise the plan fails.
 
 ### New CLI
 
-- `scripts/manage_window_pptx_library.py compile-pages`
-- `scripts/manage_window_pptx_library.py query-pages`
+- `scripts/manage_window_pptx_v61_library.py compile-pages`
+- `scripts/manage_window_pptx_v61_library.py query-pages`
 - `scripts/window_pptx_automation.py --render-assembly-plan` accepts an
   assembly plan and produces the target PPTX.
 
