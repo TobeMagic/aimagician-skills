@@ -1017,6 +1017,8 @@ def test_relative_library_and_batch_query_bundle_use_private_root(
                         "query_id": "timeline",
                         "role": "timeline",
                         "capacity_budget": 1,
+                        "required_source_ordinal": 3,
+                        "style_cluster": "research-editorial-evidence",
                         "limit": 3,
                         "allow_fallback": True,
                     },
@@ -1067,6 +1069,12 @@ def test_relative_library_and_batch_query_bundle_use_private_root(
     assert [item["target_ordinal"] for item in first["queries"]] == [1, 2]
     assert first["query_count"] == 2
     assert first["library_resolution_source"] == "explicit-private-root"
+    timeline_result = first["queries"][1]["result"]
+    assert timeline_result["required_source_ordinal"] == 3
+    assert {
+        candidate["page_template"]["slide_number"]
+        for candidate in timeline_result["candidates"]
+    } == {3}
     serialized = output.read_text(encoding="utf-8")
     assert str(root) not in serialized
     for query in first["queries"]:
@@ -1110,6 +1118,94 @@ def test_relative_library_and_batch_query_bundle_use_private_root(
         bundle_schema,
         resolver=resolver,
     ).validate(first)
+
+
+def test_query_bundle_required_source_ordinal_fails_closed_without_match(
+    tmp_path: Path,
+) -> None:
+    root = _private_root(tmp_path)
+    library_path = root / "v61" / "library-v4.json"
+    write_library_index(compile_page_templates(root), library_path)
+    request_path = tmp_path / "query-request.json"
+    request_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "page-template-query-request.v1",
+                "slides": [
+                    {
+                        "target_ordinal": 1,
+                        "role": "body",
+                        "capacity_budget": 1,
+                        # Slide 2 is intentionally reference-only in this
+                        # fixture, so it cannot satisfy a production query.
+                        "required_source_ordinal": 2,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    import pytest
+
+    with pytest.raises(
+        SystemExit,
+        match="required_source_ordinal=2",
+    ):
+        run_library_cli(
+            [
+                "query-bundle",
+                "--private-root",
+                str(root),
+                "--library",
+                "v61/library-v4.json",
+                "--query-request",
+                str(request_path),
+                "--output",
+                str(tmp_path / "bundle.json"),
+            ]
+        )
+    assert not (tmp_path / "bundle.json").exists()
+
+
+def test_query_request_rejects_nonpositive_required_source_ordinal(
+    tmp_path: Path,
+) -> None:
+    root = _private_root(tmp_path)
+    library_path = root / "v61" / "library-v4.json"
+    write_library_index(compile_page_templates(root), library_path)
+    request_path = tmp_path / "query-request.json"
+    request_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "page-template-query-request.v1",
+                "slides": [
+                    {
+                        "target_ordinal": 1,
+                        "role": "body",
+                        "capacity_budget": 1,
+                        "required_source_ordinal": 0,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    import pytest
+
+    with pytest.raises(SystemExit, match="schema validation failed"):
+        run_library_cli(
+            [
+                "query-bundle",
+                "--private-root",
+                str(root),
+                "--library",
+                "v61/library-v4.json",
+                "--query-request",
+                str(request_path),
+                "--output",
+                str(tmp_path / "bundle.json"),
+            ]
+        )
 
 
 def test_query_bundle_rejects_duplicate_ordinals(tmp_path: Path) -> None:

@@ -20,6 +20,11 @@ import zipfile
 import xml.etree.ElementTree as ET
 
 from . import template_geometry as _geometry
+from .independent_validation_security import (
+    PPTX_ZIP_RESOURCE_LIMITS,
+    ZipResourceLimits,
+    audit_zip_resources,
+)
 
 
 PRESENTATIONML_NS = (
@@ -195,6 +200,10 @@ class _Relationship:
     relationship_type: str
     target: str
     target_mode: str
+
+
+class _PackageResourceRejected(RuntimeError):
+    """Internal control flow after a metadata-only resource preflight fails."""
 
 
 class _IssueCollector:
@@ -753,7 +762,23 @@ def _leaf_shapes(
                 slide_height=slide_height,
             )
             if str(exc) == "shape extent must be positive":
-                native_countable = False
+                # A straight horizontal or vertical connector is represented
+                # by DrawingML with one zero extent.  It has no two-dimensional
+                # area to contribute to raster/native coverage, but remains a
+                # legal, natively editable object.  Other non-positive extents
+                # continue to fail closed as non-countable geometry.
+                try:
+                    element_local_name = shape.element.tag.rsplit("}", 1)[-1]
+                    width = int(shape.width)
+                    height = int(shape.height)
+                except Exception:
+                    element_local_name = ""
+                    width = -1
+                    height = -1
+                native_countable = (
+                    element_local_name == "cxnSp"
+                    and ((width == 0 and height > 0) or (height == 0 and width > 0))
+                )
             if parent_transform != _geometry.IDENTITY and str(exc) != (
                 "shape extent must be positive"
             ):
@@ -1000,6 +1025,7 @@ def inspect_presentation_topology(
     package_path: str | Path,
     *,
     raster_thresholds: RasterThresholds | None = None,
+    archive_limits: ZipResourceLimits = PPTX_ZIP_RESOURCE_LIMITS,
 ) -> PresentationTopologyResult:
     """Validate strict slide topology and recompute editability statistics.
 
@@ -1017,6 +1043,18 @@ def inspect_presentation_topology(
 
     try:
         with zipfile.ZipFile(path, "r") as archive:
+            resource_findings = audit_zip_resources(
+                archive,
+                limits=archive_limits,
+            )
+            if resource_findings:
+                for finding in resource_findings:
+                    issues.add(
+                        finding.code,
+                        f"{path}!/{finding.location}",
+                        finding.detail,
+                    )
+                raise _PackageResourceRejected
             file_names = [
                 info.filename
                 for info in archive.infolist()
@@ -1127,6 +1165,8 @@ def inspect_presentation_topology(
                         f"output.pptx!/{part_name}",
                         f"expected {SLIDE_TAG!r}, observed {root.tag!r}",
                     )
+    except _PackageResourceRejected:
+        pass
     except (OSError, KeyError, RuntimeError, zipfile.BadZipFile) as exc:
         issues.add(
             "PRESENTATION_PACKAGE_READ_FAILED",

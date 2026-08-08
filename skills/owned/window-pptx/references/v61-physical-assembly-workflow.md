@@ -13,10 +13,32 @@ native generated-layout/PptxGenJS fallback, non-adjacent substitution,
 screenshots, whole-slide rasterization, blank pages, and duplicate physical
 pages.
 
-Codex may decide only the fact-safe narrative, the candidate ID selected from
-each locked query result, and bindings to certified ordinary/governed slots.
-It does not own art direction, geometry, raw colors/fonts, masters/layouts,
-OOXML, executable design code, repair code, scoring, approval, or release.
+Codex may decide only the fact-safe narrative, certified page IDs, and
+slide-level fact/asset intent. It does not author physical slot IDs, source
+locators, source copy, chart/workbook coordinates, candidate scores, or an
+AssemblyPlan. A hash-locked Skill profile expands those details
+deterministically. Codex does not own art direction, geometry, raw
+colors/fonts, masters/layouts, OOXML, executable design code, repair code,
+scoring, approval, or release.
+
+## Phase 49 production fast path
+
+After the clean requirement pack is locked, the author runs exactly one Skill
+harness command:
+
+```bash
+python <skill-root>/scripts/run_window_pptx_v61_profile_job.py \
+  --project-root <project> \
+  --profile-id phase49-work-report-15
+```
+
+The harness validates the clean pack, builds and hash-locks the exact-source
+query bundle, creates schema-valid direction/narrative evidence, expands all
+ordinary and fragment bindings from the Skill profile, delegates governed
+chart/table/workbook values to the deterministic authorizer, assembles the
+full OPC graph, and runs rule QA. Do not create a query request, slot mapping,
+or AssemblyPlan by hand for this profile. The lower-level commands below are
+debugging and general-library integration APIs only.
 
 ## Operating state machine
 
@@ -144,8 +166,9 @@ python <skill-root>/scripts/manage_window_pptx_v61_library.py query-pages \
   --limit 6
 ```
 
-For production, persist all ordinal-specific requests and redacted results as
-one immutable bundle rather than copying terminal output:
+For general/debug flows, persist all ordinal-specific requests and redacted
+results as one immutable bundle rather than copying terminal output. Phase 49
+uses the production fast path and creates no temporary request file:
 
 ```bash
 python <skill-root>/scripts/manage_window_pptx_v61_library.py query-bundle \
@@ -164,9 +187,10 @@ fallback evidence.
 
 The query score is deterministic: role 0.30, capacity 0.25, semantic fit
 0.20, style 0.15, editability 0.10. The Agent may return only the chosen
-`page_id`, fact/asset bindings, and a short selection reason. It must not
-return geometry, raw colors/fonts, OOXML, HTML/CSS, executable code, a score,
-or a release judgment.
+`page_id` and slide-level fact/asset intent. The compiler derives rank, score,
+selection evidence, package identity, and all physical bindings. The Agent
+must not return geometry, raw colors/fonts, OOXML, HTML/CSS, executable code,
+a score, or a release judgment.
 
 The JSON wrapper is nested: eligibility and scoring are at
 `candidates[i]`, while page lineage/capacity/slots are under
@@ -230,16 +254,16 @@ general core is still a Phase 49 failure. Non-adjacent certified selection is
 available only to a different v6.1 profile whose locked brief and acceptance
 schema explicitly allow it.
 
-The Agent must bind title/headline/body copy to the selected page's actual slot
-IDs. It must not assume `shape_9` or any other shape number across packages.
-For the locked Phase 49 acceptance scenario, all 15 `page_id` and query ID
-values must be distinct; there is no duplicate-page or source-ordinal
-exception. A later scenario may declare a different reuse policy only in its
-own locked brief and acceptance schema.
-Query results deliberately redact the private source path and literal source
-copy. Bindings are complete, not sparse: the JSON object must contain exactly every
-ID in `slot_graph.text_slot_ids`. Every value is an object containing `text`,
-`fact_refs`, and `asset_refs`, for example:
+The deterministic binder, not the Agent, binds title/headline/body copy to the
+selected page's actual slot IDs. The Agent never assumes `shape_9` or any other
+shape number across packages. For the locked Phase 49 acceptance scenario, all
+15 `page_id` and query ID values are distinct; there is no duplicate-page or
+source-ordinal exception. A later scenario may declare a different reuse
+policy only in its own locked brief and acceptance schema. Query results
+deliberately redact the private source path and literal source copy. The
+compiler expands complete, not sparse, bindings: the AssemblyPlan contains
+exactly every ID in `slot_graph.text_slot_ids`. Every value is an internal
+evidence object containing `text`, `fact_refs`, and `asset_refs`, for example:
 
 ```json
 {
@@ -251,8 +275,9 @@ ID in `slot_graph.text_slot_ids`. Every value is an object containing `text`,
 }
 ```
 
-When `slot_graph.fragment_groups` is non-empty, fill a group as one governed
-phrase rather than validating its characters independently. Membership comes
+When `slot_graph.fragment_groups` is non-empty, the profile/compiler fills a
+group as one governed phrase rather than validating its characters
+independently. Membership comes
 from the locked group's `slot_ids`; order comes from the corresponding locked
 slots' contiguous `group_order` values. Every non-empty one-character member
 uses the same sole FactStore record, and their ordered concatenation must be an
@@ -286,7 +311,7 @@ A chart/workbook peer is structural, never guessed by matching displayed
 values. The compiler accepts only a supported one-dimensional A1 reference in
 the chart's `c:f`, maps `c:pt/@idx` to the exact worksheet cell, and emits a
 peer only when one chart value and one workbook cell form an unambiguous pair.
-Bind that `peer_group_id` once; the assembler applies one fact-authorized value
+The compiler binds that `peer_group_id` once; the assembler applies one fact-authorized value
 to both chart cache and XLSX cell and rejects disagreement. An unpaired
 workbook cell and every table cell use their own governed slot ID.
 
@@ -299,7 +324,8 @@ rebuilds shared strings from still-referenced authorized cells. Replaced,
 ungoverned, whitespace-only, or otherwise unauthorized source strings must not
 remain in the sanitized package.
 
-Governed bindings use the same locked object as ordinary text:
+Internal governed bindings use the same locked object as ordinary text; the
+Agent never authors this structure:
 
 ```json
 {
@@ -391,6 +417,13 @@ inventoried source hash. Phase 49 does not expose picture slot IDs through page
 queries, so production picture replacement is deliberately out of scope until
 the next catalog version adds certified picture-slot records.
 
+This is a clean-project and serialization boundary, not an OS confidentiality
+claim. With `--dangerously-bypass-approvals-and-sandbox` under the same local
+user, the Agent can technically read the configured private root. Strong
+secrecy requires an out-of-process broker or separate service account; Phase
+49 instead proves that no private bytes or literal source copy are serialized
+into the client folder or public evidence.
+
 For any later profile that permits a replacement asset, evidence is slot-exact:
 the selected slide, shape, certified slot, relationship ID, resolved image
 target part, and final bytes hash must all match the locked asset manifest. A
@@ -398,14 +431,14 @@ correct image elsewhere in the package does not satisfy that binding.
 
 ## Assembly and QA
 
-Create an `assembly-plan.v1` with one `target_slides` item per narrative slide,
-plus a locked query-bundle path/digest and locked `fact_store`,
+The profile compiler creates an `assembly-plan.v1` with one `target_slides`
+item per narrative slide, plus a locked query-bundle path/digest and locked `fact_store`,
 `asset_manifest`, and `connective_copy` path/digest authorities. Every target
 slide carries its locked selection evidence. The production assembler resolves
 those paths only inside the clean project root, rejects symlinks and path
 escape, verifies their hashes, recomputes query results, and fails on unknown,
 unused, unbound, or drifted references before any PPTX mutation.
-Then run:
+For lower-level debugging only, the equivalent assembler command is:
 
 ```bash
 python <skill-root>/scripts/render_window_pptx_assembly.py \
@@ -505,9 +538,20 @@ direction are external visual-harness responsibilities in v6.1; do not claim
 the rule engine implements them.
 
 After author-stage PASS, an external visual harness renders every slide once
-through an isolated LibreOffice/Poppler proof path and sends the hash-bound
-contact sheets to fresh blind reviewers. The authoring Agent cannot score or
-release its own deck. A failed rule gets a
+through one isolated LibreOffice/Poppler proof path. It produces eight
+hash-bound, labeled same-slide reference/candidate raster pairs covering
+slides 1–15. Reviewers never receive the reference PPTX, candidate PPTX,
+private bytes, generator trace, prior score, or another reviewer's output.
+`run_window_pptx_v61_blind_reviews.py` starts three isolated reviewer chains;
+each chain uses two fresh, one-attempt Agnes image calls and one fresh
+ephemeral Codex synthesis. `aggregate_window_pptx_v61_blind_reviews.py`
+revalidates the six raw visual segments and three reviews, their packet/rubric
+hashes, global invocation/context uniqueness, exact page coverage, and score
+math. PASS requires every reviewer to confirm reference parity, median at
+least 8.0/10 across the frozen nine visual dimensions, and no Blocker or
+Important. Missing or replayed evidence is `NOT_RUN`; complete but substandard
+evidence is `FAIL`. The authoring Agent cannot score or release its own deck.
+A failed rule gets a
 bounded repair of bindings on the same certified page. Page replacement,
 native redraw, or a declared asset/layout fallback breaks the Phase 49 N-to-N
 profile and must stop with `NEEDS_REPLAN`.

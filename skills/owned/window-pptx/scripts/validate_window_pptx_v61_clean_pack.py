@@ -13,19 +13,66 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import stat
+import subprocess
 import sys
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable, Mapping, Sequence
+
+from validate_window_pptx_v61_physical_report import validate_physical_report
+from window_pptx.page_template_library import load_library_index
+from window_pptx.v61_acceptance_settlement import (
+    AcceptanceSettlementError,
+    reject_symlink_components,
+    validate_distinct_file_paths,
+    validate_harness_topology,
+    verify_settlement_evidence,
+)
+from window_pptx.v61_runtime_identity import (
+    CONTROLLER_RELATIVE,
+    RUNTIME_SCHEMA_NAME,
+    RuntimeIdentityError,
+    verify_runtime_identity_payload,
+)
 
 
 SCHEMA_VERSION = "1.0"
 CONTRACT_ID = "window-pptx-v61-clean-pack"
 REQUIREMENT_SCHEMA = "annual-work-report-requirement-pack.v1.schema.json"
 RUN_SCHEMA = "physical-assembly-run-fingerprint.v1.schema.json"
+POST_RUN_SCHEMA = "physical-assembly-post-run-manifest.v1.schema.json"
 SCHEMA_ROOT = Path(__file__).resolve().parents[1] / "schemas"
+
+OUTPUT_PPTX_PATH = "output/hospital-finance-annual-2025.pptx"
+EVIDENCE_OUTPUT_PATHS = (
+    "evidence/direction-decision.v1.json",
+    "evidence/narrative-plan.v1.json",
+    "evidence/assembly-plan.v1.json",
+    "evidence/template-query-results.v1.json",
+    "evidence/physical-assembly-report.v1.json",
+    "evidence/rule-qa.v1.json",
+    "evidence/fingerprint-bundle.v1.json",
+    "evidence/run-summary.md",
+)
+PHYSICAL_REPORT_PATH = "evidence/physical-assembly-report.v1.json"
+RULE_QA_PATH = "evidence/rule-qa.v1.json"
+QUERY_BUNDLE_PATH = "evidence/template-query-results.v1.json"
+FINGERPRINT_BUNDLE_PATH = "evidence/fingerprint-bundle.v1.json"
+PHASE49_LIBRARY_RELATIVE = "v61/reference-work-summary-library-v4.json"
+REQUIRED_RULE_QA_RULES = {
+    "output-identity",
+    "zip-open",
+    "slide-count",
+    "placeholder-residue",
+    "named-brand-residue",
+    "source-template-residue",
+    "text-bounds",
+    "tiny-text",
+    "style-lineage",
+}
 
 PRESENTATION_EXTENSIONS = {
     ".ppt",
@@ -73,7 +120,23 @@ HISTORY_MARKERS = {
     "reference-output",
     "reference-outputs",
 }
+REFERENCE_MARKERS = {
+    "reference",
+    "references",
+    "reference-deck",
+    "reference-decks",
+    "reference-pptx",
+    "reference-pptxs",
+}
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+EVIDENCE_JSON_SCHEMAS = {
+    "evidence/direction-decision.v1.json": "direction-decision.v1.schema.json",
+    "evidence/narrative-plan.v1.json": "narrative-plan.v1.schema.json",
+    "evidence/assembly-plan.v1.json": "assembly-plan.v1.schema.json",
+    "evidence/template-query-results.v1.json": "page-template-query-bundle.v1.schema.json",
+    "evidence/physical-assembly-report.v1.json": "physical-assembly-report.v1.schema.json",
+    "evidence/fingerprint-bundle.v1.json": "fingerprint-bundle.v1.schema.json",
+}
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -223,6 +286,205 @@ def _validate_schema(
     return not errors
 
 
+def _validate_evidence_schema(
+    payload: Any,
+    schema_name: str,
+    issues: list[dict[str, str]],
+    location: str,
+) -> bool:
+    """Validate one evidence document with local-only cross-schema refs."""
+
+    try:
+        import jsonschema
+        from referencing import Registry, Resource
+    except ImportError:
+        _issue(issues, "JSONSCHEMA_UNAVAILABLE", location, "jsonschema is required")
+        return False
+    schema_path = SCHEMA_ROOT / schema_name
+    schema = _read_json(schema_path, issues, f"schema:{schema_name}")
+    if not isinstance(schema, Mapping):
+        return False
+    resources: list[tuple[str, Any]] = []
+    for candidate in SCHEMA_ROOT.glob("*.schema.json"):
+        try:
+            candidate_schema = json.loads(candidate.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if not isinstance(candidate_schema, Mapping):
+            continue
+        resource = Resource.from_contents(candidate_schema)
+        schema_id = candidate_schema.get("$id")
+        if isinstance(schema_id, str) and schema_id.startswith(("http://", "https://")):
+            resources.append((schema_id, resource))
+        resources.append(
+            (f"https://window-pptx.local/schemas/{candidate.name}", resource)
+        )
+    try:
+        jsonschema.Draft202012Validator.check_schema(schema)
+        registry = Registry().with_resources(resources)
+        validator = jsonschema.Draft202012Validator(schema, registry=registry)
+        errors = sorted(
+            validator.iter_errors(payload),
+            key=lambda error: tuple(str(part) for part in error.absolute_path),
+        )
+    except Exception as exc:
+        _issue(issues, "EVIDENCE_SCHEMA_INVALID", f"schema:{schema_name}", str(exc))
+        return False
+    for error in errors:
+        suffix = ".".join(str(part) for part in error.absolute_path)
+        error_location = f"{location}.{suffix}" if suffix else location
+        _issue(
+            issues,
+            "EVIDENCE_SCHEMA_VALIDATION_FAILED",
+            error_location,
+            error.message,
+        )
+    return not errors
+
+
+def _validate_run_summary(
+    path: Path,
+    *,
+    output_path: Path | None,
+    report_payload: Any,
+    issues: list[dict[str, str]],
+) -> None:
+    """Validate the minimum human-readable Phase 49 run-summary contract."""
+
+    location = "run_fingerprint.artifacts.evidence_outputs.run_summary"
+    try:
+        payload = path.read_bytes()
+        text = payload.decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        _issue(issues, "RUN_SUMMARY_UNREADABLE", location, str(exc))
+        return
+    if not payload or len(payload) > 1_000_000 or "\0" in text:
+        _issue(
+            issues,
+            "RUN_SUMMARY_INVALID",
+            location,
+            "summary must be non-empty UTF-8 text no larger than 1 MiB",
+        )
+        return
+    lines = text.splitlines()
+    required_exact = {
+        "# Phase 49 candidate run",
+        "Author state: `CANDIDATE_READY_FOR_BLIND_REVIEW`",
+        "## Machine-gate result",
+        "- Physical assembly: pass",
+        "- Rule QA: pass",
+        "- Unresolved warnings: none from blocking machine gates; visual release remains pending independent blind review.",
+    }
+    for required in sorted(required_exact):
+        if lines.count(required) != 1:
+            _issue(
+                issues,
+                "RUN_SUMMARY_REQUIRED_LINE_INVALID",
+                location,
+                required,
+            )
+    table_header = (
+        "| Page | Narrative role | Title | Page ID | Package SHA-256 | "
+        "Style cluster | Fact IDs | Rule QA |"
+    )
+    if lines.count(table_header) != 1:
+        _issue(issues, "RUN_SUMMARY_TABLE_HEADER_INVALID", location, table_header)
+    row_ordinals: list[int] = []
+    for line in lines:
+        match = re.match(r"^\|\s*(\d+)\s*\|", line)
+        if match:
+            row_ordinals.append(int(match.group(1)))
+    expected_slide_count = (
+        report_payload.get("target_slide_count")
+        if isinstance(report_payload, Mapping)
+        else None
+    )
+    if type(expected_slide_count) is not int or expected_slide_count < 1:
+        expected_slide_count = 15
+    if row_ordinals != list(range(1, expected_slide_count + 1)):
+        _issue(
+            issues,
+            "RUN_SUMMARY_PAGE_ROWS_INVALID",
+            location,
+            f"expected 1..{expected_slide_count}, got {row_ordinals}",
+        )
+
+    fields: dict[str, list[str]] = {}
+    for line in lines:
+        match = re.match(r"^- ([^:]+):\s*(.*)$", line)
+        if match:
+            fields.setdefault(match.group(1), []).append(match.group(2))
+    required_fields = {
+        "Final PPTX SHA-256",
+        "Slide count",
+        "Distinct page IDs",
+        "Physical lineage coverage",
+        "Native editable coverage",
+        "Ordinary bindings expanded by Skill",
+    }
+    for field in sorted(required_fields):
+        if len(fields.get(field, [])) != 1:
+            _issue(
+                issues,
+                "RUN_SUMMARY_MACHINE_FIELD_INVALID",
+                location,
+                field,
+            )
+    if output_path is not None and len(fields.get("Final PPTX SHA-256", [])) == 1:
+        summary_sha = fields["Final PPTX SHA-256"][0].strip("`")
+        if not SHA256_RE.fullmatch(summary_sha) or summary_sha != _sha256_file(output_path):
+            _issue(
+                issues,
+                "RUN_SUMMARY_OUTPUT_SHA256_MISMATCH",
+                location,
+                summary_sha,
+            )
+    for field, expected in (
+        ("Slide count", expected_slide_count),
+        ("Distinct page IDs", expected_slide_count),
+    ):
+        values = fields.get(field, [])
+        if len(values) == 1:
+            try:
+                observed = int(values[0])
+            except ValueError:
+                observed = -1
+            if observed != expected:
+                _issue(
+                    issues,
+                    "RUN_SUMMARY_MACHINE_VALUE_MISMATCH",
+                    location,
+                    f"{field}: expected {expected}, got {values[0]}",
+                )
+    for field in ("Physical lineage coverage", "Native editable coverage"):
+        values = fields.get(field, [])
+        if len(values) == 1:
+            try:
+                observed = float(values[0])
+            except ValueError:
+                observed = -1.0
+            if not math.isfinite(observed) or not math.isclose(observed, 1.0):
+                _issue(
+                    issues,
+                    "RUN_SUMMARY_COVERAGE_INCOMPLETE",
+                    location,
+                    f"{field}: {values[0]}",
+                )
+    ordinary = fields.get("Ordinary bindings expanded by Skill", [])
+    if len(ordinary) == 1:
+        try:
+            ordinary_count = int(ordinary[0])
+        except ValueError:
+            ordinary_count = 0
+        if ordinary_count < 1:
+            _issue(
+                issues,
+                "RUN_SUMMARY_BINDING_COUNT_INVALID",
+                location,
+                ordinary[0],
+            )
+
+
 def _project_path_parts(raw: Any) -> tuple[str, ...] | None:
     if not isinstance(raw, str) or not raw or "\0" in raw or "\\" in raw:
         return None
@@ -352,6 +614,67 @@ def _contamination_scan(root: Path, issues: list[dict[str, str]]) -> list[dict[s
                 {"path": relative, "sha256": _sha256_file(path), "size": path.stat().st_size}
             )
     return _normalised_records(records)
+
+
+def _post_run_inventory(
+    root: Path,
+    issues: list[dict[str, str]],
+) -> list[dict[str, Any]]:
+    """Return the exact post-run tree while applying output-safe hygiene rules."""
+
+    records: list[dict[str, Any]] = []
+    for directory, directory_names, file_names in os.walk(root, followlinks=False):
+        directory_path = Path(directory)
+        for name in tuple(directory_names):
+            path = directory_path / name
+            relative = path.relative_to(root).as_posix()
+            if path.is_symlink():
+                _issue(issues, "SYMLINK_FORBIDDEN", relative, "directory symlink")
+                directory_names.remove(name)
+                continue
+            _check_post_run_forbidden_path(relative, issues)
+        for name in file_names:
+            path = directory_path / name
+            relative = path.relative_to(root).as_posix()
+            try:
+                mode = path.lstat().st_mode
+            except OSError as exc:
+                _issue(issues, "PATH_INSPECTION_FAILED", relative, str(exc))
+                continue
+            if stat.S_ISLNK(mode):
+                _issue(issues, "SYMLINK_FORBIDDEN", relative, "file symlink")
+                continue
+            if not stat.S_ISREG(mode):
+                _issue(issues, "SPECIAL_FILE_FORBIDDEN", relative, "not a regular file")
+                continue
+            _check_post_run_forbidden_path(relative, issues)
+            records.append(
+                {
+                    "path": relative,
+                    "sha256": _sha256_file(path),
+                    "size": path.stat().st_size,
+                }
+            )
+    return _normalised_records(records)
+
+
+def _check_post_run_forbidden_path(
+    relative: str,
+    issues: list[dict[str, str]],
+) -> None:
+    path = PurePosixPath(relative)
+    folded = [part.casefold().replace("_", "-") for part in path.parts]
+    folded_set = set(folded)
+    if folded_set & GIT_MARKERS or any(part.startswith(".git") for part in folded):
+        _issue(issues, "GIT_MARKER_FORBIDDEN", relative, "Git metadata is not a clean output")
+    if folded_set & PRIVATE_MARKERS:
+        _issue(issues, "PRIVATE_MARKER_FORBIDDEN", relative, "private-library marker")
+    if folded_set & PREVIEW_MARKERS:
+        _issue(issues, "TEMPLATE_PREVIEW_FORBIDDEN", relative, "template preview marker")
+    if folded_set & REFERENCE_MARKERS:
+        _issue(issues, "REFERENCE_MATERIAL_FORBIDDEN", relative, "reference material marker")
+    if folded_set & HISTORY_MARKERS:
+        _issue(issues, "HISTORICAL_OUTPUT_FORBIDDEN", relative, "historical output marker")
 
 
 def _check_forbidden_path(
@@ -649,8 +972,10 @@ def _verify_external_artifact(
     candidate = Path(raw_path)
     if not candidate.is_absolute():
         candidate = base / candidate
-    if candidate.is_symlink():
-        _issue(issues, "SYMLINK_FORBIDDEN", f"{location}.path", raw_path)
+    try:
+        candidate = reject_symlink_components(candidate)
+    except AcceptanceSettlementError as exc:
+        _issue(issues, exc.code, f"{location}.path", exc.detail or raw_path)
         return None
     try:
         mode = candidate.lstat().st_mode
@@ -667,6 +992,42 @@ def _verify_external_artifact(
     if candidate.stat().st_size != expected_size:
         _issue(issues, "ARTIFACT_SIZE_MISMATCH", location, raw_path)
     return candidate
+
+
+def _validate_codex_events_jsonl(
+    path: Path,
+    issues: list[dict[str, str]],
+) -> None:
+    location = "run_fingerprint.process_evidence.events_jsonl"
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError) as exc:
+        _issue(issues, "CODEX_EVENTS_UNREADABLE", location, str(exc))
+        return
+    count = 0
+    for ordinal, line in enumerate(lines, 1):
+        if not line.strip():
+            continue
+        count += 1
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError as exc:
+            _issue(
+                issues,
+                "CODEX_EVENT_JSON_INVALID",
+                f"{location}[{ordinal}]",
+                exc.msg,
+            )
+            continue
+        if not isinstance(payload, Mapping):
+            _issue(
+                issues,
+                "CODEX_EVENT_NOT_OBJECT",
+                f"{location}[{ordinal}]",
+                type(payload).__name__,
+            )
+    if count == 0:
+        _issue(issues, "CODEX_EVENTS_EMPTY", location, "at least one event is required")
 
 
 def _verify_file_bundle(
@@ -695,10 +1056,460 @@ def _verify_file_bundle(
         )
 
 
+def _validate_post_run_manifest(
+    root: Path,
+    path: Path,
+    issues: list[dict[str, str]],
+) -> list[dict[str, Any]]:
+    payload = _read_json(path, issues, "run_fingerprint.manifests.post_run")
+    if payload is None or not _validate_schema(
+        payload,
+        POST_RUN_SCHEMA,
+        issues,
+        "run_fingerprint.manifests.post_run",
+    ):
+        return []
+    if not isinstance(payload, Mapping):
+        return []
+    if payload.get("project_root") != str(root):
+        _issue(
+            issues,
+            "POST_MANIFEST_ROOT_MISMATCH",
+            "run_fingerprint.manifests.post_run.project_root",
+            str(payload.get("project_root")),
+        )
+    declared: list[dict[str, Any]] = []
+    for index, raw in enumerate(payload.get("entries", [])):
+        record = _verify_project_record(
+            root,
+            raw,
+            issues,
+            f"run_fingerprint.manifests.post_run.entries[{index}]",
+        )
+        if record is not None:
+            declared.append(record)
+    declared = _unique_records(
+        declared,
+        issues,
+        "run_fingerprint.manifests.post_run.entries",
+    )
+    calculated = bundle_fingerprint(declared)
+    expected_fields = {
+        "digest_algorithm": calculated["digest_algorithm"],
+        "inventory_sha256": calculated["sha256"],
+        "entry_count": calculated["file_count"],
+        "total_size": calculated["total_size"],
+    }
+    for field, expected in expected_fields.items():
+        if payload.get(field) != expected:
+            _issue(
+                issues,
+                "POST_MANIFEST_FINGERPRINT_MISMATCH",
+                f"run_fingerprint.manifests.post_run.{field}",
+                f"expected {expected}, got {payload.get(field)}",
+            )
+    actual = _post_run_inventory(root, issues)
+    if declared != actual:
+        _issue(
+            issues,
+            "POST_MANIFEST_SNAPSHOT_MISMATCH",
+            "run_fingerprint.manifests.post_run.entries",
+            "manifest does not exactly cover the current post-run project tree",
+        )
+    return actual
+
+
+def _pre_run_declared_paths(
+    root: Path,
+    raw_path: str,
+    issues: list[dict[str, str]],
+) -> set[str]:
+    path = _resolve_project_file(root, raw_path, issues, "pre_run_manifest.path")
+    if path is None:
+        return set()
+    payload = _read_json(path, issues, "pre_run_manifest")
+    if not isinstance(payload, Mapping) or not isinstance(payload.get("entries"), list):
+        return set()
+    result = {raw_path}
+    for index, raw in enumerate(payload["entries"]):
+        candidate = raw.get("path") if isinstance(raw, Mapping) else None
+        if _project_path_parts(candidate) is None:
+            _issue(
+                issues,
+                "PRE_MANIFEST_ENTRY_INVALID",
+                f"pre_run_manifest.entries[{index}].path",
+                str(candidate),
+            )
+            continue
+        result.add(str(candidate))
+    return result
+
+
+def _validate_rule_qa_report(
+    path: Path,
+    output_path: Path,
+    physical_observed: Mapping[str, Any],
+    issues: list[dict[str, str]],
+) -> None:
+    location = "run_fingerprint.artifacts.rule_qa_report"
+    payload = _read_json(path, issues, location)
+    if not isinstance(payload, Mapping):
+        _issue(issues, "RULE_QA_REPORT_INVALID", location, "root must be an object")
+        return
+    required_fields = {
+        "schema_version",
+        "status",
+        "output_path",
+        "output_sha256",
+        "output_size_bytes",
+        "output_identity_status",
+        "path_policy",
+        "slide_count",
+        "checked_rules",
+        "blocking_findings",
+        "warnings",
+    }
+    missing = sorted(required_fields - set(payload))
+    if missing:
+        _issue(issues, "RULE_QA_REPORT_INVALID", location, f"missing fields: {missing}")
+    if payload.get("schema_version") != "1.1":
+        _issue(issues, "RULE_QA_REPORT_INVALID", f"{location}.schema_version", "1.1 required")
+    if payload.get("status") != "pass":
+        _issue(issues, "RULE_QA_REPORT_NOT_PASS", f"{location}.status", "pass required")
+    if payload.get("output_identity_status") != "verified-stable":
+        _issue(
+            issues,
+            "RULE_QA_OUTPUT_IDENTITY_INVALID",
+            f"{location}.output_identity_status",
+            "verified-stable required",
+        )
+    reported_output = payload.get("output_path")
+    try:
+        reported_path = Path(reported_output).expanduser().resolve(strict=False)
+    except (TypeError, OSError):
+        reported_path = None
+    if reported_path != output_path:
+        _issue(
+            issues,
+            "RULE_QA_OUTPUT_PATH_MISMATCH",
+            f"{location}.output_path",
+            str(reported_output),
+        )
+    actual_sha = _sha256_file(output_path)
+    actual_size = output_path.stat().st_size
+    if payload.get("output_sha256") != actual_sha:
+        _issue(
+            issues,
+            "RULE_QA_OUTPUT_SHA256_MISMATCH",
+            f"{location}.output_sha256",
+            f"expected {actual_sha}",
+        )
+    if payload.get("output_size_bytes") != actual_size:
+        _issue(
+            issues,
+            "RULE_QA_OUTPUT_SIZE_MISMATCH",
+            f"{location}.output_size_bytes",
+            f"expected {actual_size}",
+        )
+    checked = payload.get("checked_rules")
+    if not isinstance(checked, list) or not REQUIRED_RULE_QA_RULES.issubset(
+        {item for item in checked if isinstance(item, str)}
+    ):
+        _issue(
+            issues,
+            "RULE_QA_RULE_COVERAGE_INCOMPLETE",
+            f"{location}.checked_rules",
+            "all deterministic Phase 49 rules are required",
+        )
+    blockers = payload.get("blocking_findings")
+    if blockers != []:
+        _issue(
+            issues,
+            "RULE_QA_BLOCKERS_PRESENT",
+            f"{location}.blocking_findings",
+            "must be an empty array",
+        )
+    if not isinstance(payload.get("warnings"), list):
+        _issue(issues, "RULE_QA_REPORT_INVALID", f"{location}.warnings", "array required")
+    slide_count = payload.get("slide_count")
+    observed_slide_count = physical_observed.get("pptx_slide_count")
+    if (
+        type(slide_count) is not int
+        or slide_count < 1
+        or (type(observed_slide_count) is int and slide_count != observed_slide_count)
+    ):
+        _issue(
+            issues,
+            "RULE_QA_SLIDE_COUNT_MISMATCH",
+            f"{location}.slide_count",
+            f"physical validator observed {observed_slide_count}",
+        )
+    policy = payload.get("path_policy")
+    if not isinstance(policy, Mapping) or any(
+        policy.get(key) != value
+        for key, value in {
+            "stored_path_format": "canonical-absolute",
+            "canonicalization": "expanduser+resolve(strict=false)",
+            "relative_input_resolution": "invocation-working-directory",
+        }.items()
+    ):
+        _issue(
+            issues,
+            "RULE_QA_PATH_POLICY_INVALID",
+            f"{location}.path_policy",
+            "canonical path policy required",
+        )
+
+
+def _validate_private_library_cross_bind(
+    root: Path,
+    raw: Any,
+    report_payload: Any,
+    issues: list[dict[str, str]],
+    *,
+    private_root: Path | str | None,
+    installed_skill_root: Path | str | None = None,
+) -> None:
+    location = "run_fingerprint.private_library"
+    if not isinstance(raw, Mapping):
+        _issue(issues, "PRIVATE_LIBRARY_RECORD_INVALID", location, "object required")
+        return
+    expected_sha = raw.get("library_index_sha256")
+    expected_root_sha = raw.get("private_root_sha256")
+    expected_source = raw.get("resolution_source")
+
+    query_path = _resolve_project_file(
+        root,
+        QUERY_BUNDLE_PATH,
+        issues,
+        f"{location}.query_bundle",
+    )
+    query = (
+        _read_json(query_path, issues, f"{location}.query_bundle")
+        if query_path is not None
+        else None
+    )
+    fingerprint_path = _resolve_project_file(
+        root,
+        FINGERPRINT_BUNDLE_PATH,
+        issues,
+        f"{location}.fingerprint_bundle",
+    )
+    fingerprint = (
+        _read_json(fingerprint_path, issues, f"{location}.fingerprint_bundle")
+        if fingerprint_path is not None
+        else None
+    )
+    observed: list[tuple[str, Any, Any]] = []
+    if isinstance(query, Mapping):
+        observed.extend(
+            (
+                (
+                    f"{location}.query_bundle.library_index_sha256",
+                    query.get("library_index_sha256"),
+                    expected_sha,
+                ),
+                (
+                    f"{location}.query_bundle.library_resolution_source",
+                    query.get("library_resolution_source"),
+                    expected_source,
+                ),
+            )
+        )
+    if isinstance(report_payload, Mapping):
+        selection = report_payload.get("selection_authority")
+        if isinstance(selection, Mapping):
+            observed.append(
+                (
+                    f"{location}.physical_report.library_index_sha256",
+                    selection.get("library_index_sha256"),
+                    expected_sha,
+                )
+            )
+        else:
+            _issue(
+                issues,
+                "PRIVATE_LIBRARY_CROSS_BIND_MISSING",
+                f"{location}.physical_report.selection_authority",
+                "selection authority is required",
+            )
+    if isinstance(fingerprint, Mapping):
+        records = fingerprint.get("fingerprints")
+        components = fingerprint.get("components")
+        if isinstance(records, list) and len(records) == 1 and isinstance(records[0], Mapping):
+            observed.append(
+                (
+                    f"{location}.fingerprint_bundle.library_index_sha256",
+                    records[0].get("library_index_sha256"),
+                    expected_sha,
+                )
+            )
+        else:
+            _issue(
+                issues,
+                "PRIVATE_LIBRARY_CROSS_BIND_MISSING",
+                f"{location}.fingerprint_bundle.fingerprints",
+                "one physical fingerprint is required",
+            )
+        if isinstance(components, Mapping):
+            observed.append(
+                (
+                    f"{location}.fingerprint_bundle.private_library_resolution_source",
+                    components.get("private_library_resolution_source"),
+                    expected_source,
+                )
+            )
+        else:
+            _issue(
+                issues,
+                "PRIVATE_LIBRARY_CROSS_BIND_MISSING",
+                f"{location}.fingerprint_bundle.components",
+                "components object is required",
+            )
+    for field_location, actual, expected in observed:
+        if actual != expected:
+            _issue(
+                issues,
+                "PRIVATE_LIBRARY_CROSS_BIND_MISMATCH",
+                field_location,
+                f"expected {expected}, got {actual}",
+            )
+
+    if private_root is None:
+        return
+    requested = Path(private_root).expanduser()
+    if requested.is_symlink() or not requested.is_dir():
+        _issue(
+            issues,
+            "PRIVATE_LIBRARY_ROOT_INVALID",
+            f"{location}.private_root",
+            str(requested),
+        )
+        return
+    resolved_root = requested.resolve()
+    library_path = resolved_root / PHASE49_LIBRARY_RELATIVE
+    if library_path.is_symlink() or not library_path.is_file():
+        _issue(
+            issues,
+            "PRIVATE_LIBRARY_INDEX_MISSING",
+            f"{location}.library_index",
+            str(library_path),
+        )
+        return
+    if not library_path.resolve().is_relative_to(resolved_root):
+        _issue(
+            issues,
+            "PRIVATE_LIBRARY_INDEX_ESCAPE",
+            f"{location}.library_index",
+            str(library_path),
+        )
+        return
+    actual_sha = _sha256_file(library_path)
+    if actual_sha != expected_sha:
+        _issue(
+            issues,
+            "PRIVATE_LIBRARY_INDEX_SHA256_MISMATCH",
+            f"{location}.library_index_sha256",
+            f"expected {expected_sha}, got {actual_sha}",
+        )
+    allowed_source_roots = [resolved_root]
+    if installed_skill_root is not None:
+        installed_requested = Path(installed_skill_root).expanduser()
+        if installed_requested.is_symlink() or not installed_requested.is_dir():
+            _issue(
+                issues,
+                "INSTALLED_SKILL_ROOT_INVALID",
+                f"{location}.installed_skill_root",
+                str(installed_requested),
+            )
+        else:
+            allowed_source_roots.append(installed_requested.resolve())
+    try:
+        identity = _phase49_private_library_identity(
+            library_path,
+            allowed_source_roots=allowed_source_roots,
+        )
+    except (OSError, ValueError) as exc:
+        _issue(
+            issues,
+            "PRIVATE_LIBRARY_SOURCE_IDENTITY_INVALID",
+            f"{location}.library_index",
+            str(exc),
+        )
+        actual_root_sha = None
+    else:
+        actual_root_sha = identity["private_root_sha256"]
+    if actual_root_sha != expected_root_sha:
+        _issue(
+            issues,
+            "PRIVATE_LIBRARY_ROOT_SHA256_MISMATCH",
+            f"{location}.private_root_sha256",
+            f"expected {expected_root_sha}, got {actual_root_sha}",
+        )
+
+
+def _phase49_private_library_identity(
+    library_path: Path,
+    *,
+    allowed_source_roots: Sequence[Path] | None = None,
+) -> dict[str, Any]:
+    """Recompute the locked reference library and backing package identity."""
+
+    index = load_library_index(library_path)
+    if index.source_core_schema != "user-certified-reference-deck.v1":
+        raise ValueError("PHASE49_PRIVATE_LIBRARY_SOURCE_SCHEMA_MISMATCH")
+    package_ids = set(index.source_package_index)
+    if len(package_ids) != 1:
+        raise ValueError("PHASE49_PRIVATE_LIBRARY_PACKAGE_COUNT_MISMATCH")
+    package_sha = next(iter(package_ids))
+    if index.private_root_sha256 != package_sha:
+        raise ValueError("PHASE49_PRIVATE_ROOT_PACKAGE_SHA256_MISMATCH")
+    # Synthetic schema fixtures may intentionally contain no pages.  Real
+    # Phase 49 indexes contain fifteen pages; whenever page records exist,
+    # every referenced source package is independently re-hashed here.
+    if allowed_source_roots is None:
+        allowed_source_roots = (library_path.resolve().parent.parent,)
+    canonical_allowed_roots: tuple[Path, ...] = tuple(
+        root.expanduser().resolve(strict=True) for root in allowed_source_roots
+    )
+    observed_packages: set[str] = set()
+    observed_paths: set[Path] = set()
+    for template in index.page_templates:
+        source = Path(template.source_path).expanduser()
+        try:
+            reject_symlink_components(source)
+        except AcceptanceSettlementError as exc:
+            raise ValueError(f"PHASE49_SOURCE_PACKAGE_PATH_INVALID: {exc}") from exc
+        if source.is_symlink() or not source.is_file():
+            raise ValueError(f"PHASE49_SOURCE_PACKAGE_MISSING: {source}")
+        source = source.resolve()
+        if not any(source.is_relative_to(root) for root in canonical_allowed_roots):
+            raise ValueError(
+                f"PHASE49_SOURCE_PACKAGE_AUTHORITY_ESCAPE: {source}"
+            )
+        if _sha256_file(source) != template.package_sha256:
+            raise ValueError(f"PHASE49_SOURCE_PACKAGE_SHA256_MISMATCH: {source}")
+        if template.source_sha256 != template.package_sha256:
+            raise ValueError(f"PHASE49_SOURCE_IDENTITY_MISMATCH: {source}")
+        observed_packages.add(template.package_sha256)
+        observed_paths.add(source)
+    if index.page_templates and observed_packages != package_ids:
+        raise ValueError("PHASE49_SOURCE_PACKAGE_COVERAGE_MISMATCH")
+    return {
+        "private_root_sha256": index.private_root_sha256,
+        "library_index_sha256": _sha256_file(library_path),
+        "source_package_sha256": package_sha,
+        "source_package_count": len(observed_packages),
+        "source_path_count": len(observed_paths),
+    }
+
+
 def validate_run_fingerprint(
     root: Path | str,
     requirement_pack: str,
     fingerprint_path: Path | str,
+    *,
+    private_root: Path | str,
 ) -> dict[str, Any]:
     """Validate the external physical-assembly run fingerprint."""
 
@@ -711,12 +1522,18 @@ def validate_run_fingerprint(
     )
     issues = list(pack_report["issues"])
     canonical_root = Path(pack_report["root"])
-    fingerprint = Path(fingerprint_path)
+    fingerprint_requested = Path(fingerprint_path).expanduser()
+    fingerprint = fingerprint_requested
+    try:
+        fingerprint_lexical = reject_symlink_components(fingerprint_requested)
+    except AcceptanceSettlementError as exc:
+        _issue(issues, exc.code, "run_fingerprint.path", exc.detail)
+        fingerprint_lexical = fingerprint_requested
     if fingerprint.is_symlink() or not fingerprint.is_file():
         _issue(issues, "RUN_FINGERPRINT_MISSING", "run_fingerprint", str(fingerprint))
         payload = None
     else:
-        fingerprint = fingerprint.resolve()
+        fingerprint = fingerprint_lexical.resolve()
         payload = _read_json(fingerprint, issues, "run_fingerprint")
     schema_valid = payload is not None and _validate_schema(
         payload, RUN_SCHEMA, issues, "run_fingerprint"
@@ -726,6 +1543,10 @@ def validate_run_fingerprint(
         "post_run_manifest": None,
         "output_pptx": None,
         "physical_assembly_report": None,
+        "rule_qa_report": None,
+        "codex_events_jsonl": None,
+        "codex_stderr": None,
+        "runtime_identity_manifest": None,
     }
     if schema_valid and isinstance(payload, Mapping):
         expected_argv = [
@@ -734,7 +1555,7 @@ def validate_run_fingerprint(
             "--dangerously-bypass-approvals-and-sandbox",
             "--skip-git-repo-check",
             "-c",
-            'model_provider="OpenAI"',
+            'model_provider="openai"',
             "-c",
             'model_reasoning_effort="medium"',
             "--cd",
@@ -754,6 +1575,72 @@ def validate_run_fingerprint(
                 "run_fingerprint.command.argv",
                 "argv must exactly match the locked Phase 49 command",
             )
+        stdin_record = _verify_project_record(
+            canonical_root,
+            command["stdin"],
+            issues,
+            "run_fingerprint.command.stdin",
+        )
+        executable = command["executable"]
+        executable_path = _verify_external_artifact(
+            {
+                "path": executable["resolved_path"],
+                "sha256": executable["sha256"],
+                "size": executable["size"],
+            },
+            fingerprint.parent,
+            issues,
+            "run_fingerprint.command.executable",
+        )
+        if executable_path is not None:
+            try:
+                requested_resolved = Path(executable["requested_path"]).resolve(
+                    strict=True
+                )
+            except OSError as exc:
+                _issue(
+                    issues,
+                    "CODEX_REQUESTED_PATH_INVALID",
+                    "run_fingerprint.command.executable.requested_path",
+                    str(exc),
+                )
+            else:
+                if requested_resolved != executable_path.resolve():
+                    _issue(
+                        issues,
+                        "CODEX_EXECUTABLE_RESOLUTION_MISMATCH",
+                        "run_fingerprint.command.executable.requested_path",
+                        str(requested_resolved),
+                    )
+            try:
+                version_probe = subprocess.run(
+                    [str(executable_path), "--version"],
+                    check=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=15,
+                )
+            except (OSError, subprocess.SubprocessError) as exc:
+                _issue(
+                    issues,
+                    "CODEX_VERSION_PROBE_FAILED",
+                    "run_fingerprint.command.executable.version",
+                    str(exc),
+                )
+            else:
+                actual_version = version_probe.stdout.decode(
+                    "utf-8", errors="replace"
+                ).strip()
+                if (
+                    version_probe.returncode != 0
+                    or actual_version != executable["version"]
+                ):
+                    _issue(
+                        issues,
+                        "CODEX_VERSION_MISMATCH",
+                        "run_fingerprint.command.executable.version",
+                        actual_version,
+                    )
         installed = payload["installed_skill"]
         try:
             actual_tree = tree_fingerprint(Path(installed["path"]))
@@ -768,11 +1655,123 @@ def validate_run_fingerprint(
                         f"run_fingerprint.installed_skill.{key}",
                         f"expected actual value {actual}",
                     )
+            if installed.get("expected_sha256") != actual_tree.get("sha256"):
+                _issue(
+                    issues,
+                    "INSTALLED_SKILL_EXPECTED_DIGEST_MISMATCH",
+                    "run_fingerprint.installed_skill.expected_sha256",
+                    "externally frozen digest must equal the installed tree digest",
+                )
+        runtime_identity = payload["runtime_identity"]
+        runtime_record = runtime_identity["manifest"]
+        runtime_path = _verify_external_artifact(
+            runtime_record,
+            fingerprint.parent,
+            issues,
+            "run_fingerprint.runtime_identity.manifest",
+        )
+        if runtime_record.get("sha256") != runtime_identity.get("expected_sha256"):
+            _issue(
+                issues,
+                "RUNTIME_IDENTITY_EXPECTED_SHA256_MISMATCH",
+                "run_fingerprint.runtime_identity.expected_sha256",
+                "expected SHA must equal the externally frozen manifest bytes",
+            )
+        if runtime_path is not None:
+            runtime_payload = _read_json(
+                runtime_path,
+                issues,
+                "run_fingerprint.runtime_identity.manifest",
+            )
+            runtime_schema_valid = runtime_payload is not None and _validate_schema(
+                runtime_payload,
+                RUNTIME_SCHEMA_NAME,
+                issues,
+                "run_fingerprint.runtime_identity.manifest",
+            )
+            if runtime_schema_valid and isinstance(runtime_payload, Mapping):
+                try:
+                    expected_controller = (
+                        Path(installed["path"]) / CONTROLLER_RELATIVE
+                    ).resolve(strict=True)
+                    runtime_components = verify_runtime_identity_payload(
+                        runtime_payload,
+                        installed_skill_root=Path(installed["path"]),
+                        expected_installed_skill_sha256=installed["expected_sha256"],
+                        actual_controller_entry=expected_controller,
+                        production=True,
+                        enforce_current_process=False,
+                    )
+                except (OSError, RuntimeIdentityError, ValueError) as exc:
+                    _issue(
+                        issues,
+                        "RUNTIME_IDENTITY_COMPONENT_MISMATCH",
+                        "run_fingerprint.runtime_identity.manifest",
+                        str(exc),
+                    )
+                else:
+                    native = runtime_payload["codex"]["native_executable"]
+                    executable = command["executable"]
+                    expected_executable = {
+                        "requested_path": native["path"],
+                        "resolved_path": native["path"],
+                        "sha256": native["sha256"],
+                        "size": native["size"],
+                        "version": native["version"],
+                    }
+                    if executable != expected_executable:
+                        _issue(
+                            issues,
+                            "CODEX_RUNTIME_IDENTITY_CROSS_BIND_MISMATCH",
+                            "run_fingerprint.command.executable",
+                            "command executable must equal the frozen native Codex record",
+                        )
+                    if runtime_components["codex_native_executable"] != Path(
+                        native["path"]
+                    ):
+                        _issue(
+                            issues,
+                            "CODEX_RUNTIME_IDENTITY_PATH_MISMATCH",
+                            "run_fingerprint.runtime_identity.manifest",
+                            str(native["path"]),
+                        )
+            verified_artifacts["runtime_identity_manifest"] = {
+                "path": str(runtime_path),
+                "sha256": _sha256_file(runtime_path),
+                "size": runtime_path.stat().st_size,
+            }
         _verify_file_bundle(payload["requirements"], pack_report["requirements"], issues, "run_fingerprint.requirements")
         _verify_file_bundle(payload["assets"], pack_report["assets"], issues, "run_fingerprint.assets")
+        process_evidence = payload["process_evidence"]
+        events_path = _verify_external_artifact(
+            process_evidence["events_jsonl"],
+            fingerprint.parent,
+            issues,
+            "run_fingerprint.process_evidence.events_jsonl",
+        )
+        if events_path is not None:
+            _validate_codex_events_jsonl(events_path, issues)
+            verified_artifacts["codex_events_jsonl"] = {
+                "path": str(events_path),
+                "sha256": _sha256_file(events_path),
+                "size": events_path.stat().st_size,
+            }
+        stderr_path = _verify_external_artifact(
+            process_evidence["stderr"],
+            fingerprint.parent,
+            issues,
+            "run_fingerprint.process_evidence.stderr",
+        )
+        if stderr_path is not None:
+            verified_artifacts["codex_stderr"] = {
+                "path": str(stderr_path),
+                "sha256": _sha256_file(stderr_path),
+                "size": stderr_path.stat().st_size,
+            }
         pre_raw = payload["manifests"]["pre_run"]
         pre_path_value = pre_raw.get("path") if isinstance(pre_raw, Mapping) else None
         pre_path = None
+        pre_declared_paths: set[str] = set()
         if _project_path_parts(pre_path_value) is None:
             _issue(
                 issues,
@@ -795,6 +1794,18 @@ def validate_run_fingerprint(
                     issues,
                     enforce_snapshot=False,
                 )
+                pre_declared_paths = _pre_run_declared_paths(
+                    canonical_root,
+                    str(pre_path_value),
+                    issues,
+                )
+        if stdin_record is not None and stdin_record["path"] not in pre_declared_paths:
+            _issue(
+                issues,
+                "CODEX_STDIN_NOT_PREDECLARED",
+                "run_fingerprint.command.stdin",
+                stdin_record["path"],
+            )
         post_path = _verify_external_artifact(
             payload["manifests"]["post_run"],
             fingerprint.parent,
@@ -807,9 +1818,10 @@ def validate_run_fingerprint(
                 "sha256": _sha256_file(post_path),
                 "size": post_path.stat().st_size,
             }
-            _read_json(post_path, issues, "run_fingerprint.manifests.post_run")
+        post_inventory: list[dict[str, Any]] = []
         output_raw = payload["artifacts"]["output_pptx"]
         report_raw = payload["artifacts"]["physical_assembly_report"]
+        qa_raw = payload["artifacts"]["rule_qa_report"]
         output_path = _resolve_project_file(
             canonical_root,
             output_raw["path"],
@@ -822,6 +1834,12 @@ def validate_run_fingerprint(
             issues,
             "run_fingerprint.artifacts.physical_assembly_report.path",
         )
+        qa_path = _resolve_project_file(
+            canonical_root,
+            qa_raw["path"],
+            issues,
+            "run_fingerprint.artifacts.rule_qa_report.path",
+        )
         if output_path is not None:
             _verify_project_record(canonical_root, output_raw, issues, "run_fingerprint.artifacts.output_pptx")
             if output_path.suffix.casefold() != ".pptx" or output_path.stat().st_size == 0:
@@ -831,6 +1849,7 @@ def validate_run_fingerprint(
                 "sha256": _sha256_file(output_path),
                 "size": output_path.stat().st_size,
             }
+        report_payload: Any = None
         if report_path is not None:
             _verify_project_record(
                 canonical_root,
@@ -849,11 +1868,250 @@ def validate_run_fingerprint(
                 _issue(issues, "ASSEMBLY_REPORT_NOT_PASS", "run_fingerprint.artifacts.physical_assembly_report.status", "pass required")
             elif output_path is not None and report_payload.get("output_sha256") != _sha256_file(output_path):
                 _issue(issues, "ASSEMBLY_REPORT_OUTPUT_MISMATCH", "run_fingerprint.artifacts.physical_assembly_report.output_sha256", "output digest drift")
+            try:
+                physical_validation = validate_physical_report(
+                    report_path,
+                    canonical_root,
+                )
+            except Exception as exc:
+                physical_validation = {
+                    "status": "fail",
+                    "issues": [
+                        {
+                            "code": "VALIDATOR_EXCEPTION",
+                            "location": "validator",
+                            "detail": f"{exc.__class__.__name__}: {exc}",
+                        }
+                    ],
+                    "observed": {},
+                }
+            if physical_validation.get("status") != "pass":
+                _issue(
+                    issues,
+                    "PHYSICAL_REPORT_INDEPENDENT_VALIDATION_FAILED",
+                    "run_fingerprint.artifacts.physical_assembly_report",
+                    f"{len(physical_validation.get('issues', []))} independent issue(s)",
+                )
+                for finding in physical_validation.get("issues", []):
+                    if not isinstance(finding, Mapping):
+                        continue
+                    _issue(
+                        issues,
+                        f"PHYSICAL_REPORT_{finding.get('code', 'INVALID')}",
+                        f"physical_report.{finding.get('location', 'unknown')}",
+                        str(finding.get("detail", "")),
+                    )
             verified_artifacts["physical_assembly_report"] = {
                 "path": report_raw["path"],
                 "sha256": _sha256_file(report_path),
                 "size": report_path.stat().st_size,
             }
+        else:
+            physical_validation = {"status": "fail", "issues": [], "observed": {}}
+        _validate_private_library_cross_bind(
+            canonical_root,
+            payload["private_library"],
+            report_payload,
+            issues,
+            private_root=private_root,
+            installed_skill_root=installed["path"],
+        )
+        if qa_path is not None:
+            _verify_project_record(
+                canonical_root,
+                qa_raw,
+                issues,
+                "run_fingerprint.artifacts.rule_qa_report",
+            )
+            if output_path is not None:
+                _validate_rule_qa_report(
+                    qa_path,
+                    output_path,
+                    physical_validation.get("observed", {}),
+                    issues,
+                )
+            verified_artifacts["rule_qa_report"] = {
+                "path": qa_raw["path"],
+                "sha256": _sha256_file(qa_path),
+                "size": qa_path.stat().st_size,
+            }
+
+        evidence_records: list[dict[str, Any]] = []
+        for index, raw in enumerate(payload["artifacts"]["evidence_outputs"]):
+            record = _verify_project_record(
+                canonical_root,
+                raw,
+                issues,
+                f"run_fingerprint.artifacts.evidence_outputs[{index}]",
+            )
+            if record is not None:
+                evidence_records.append(record)
+        evidence_records = _unique_records(
+            evidence_records,
+            issues,
+            "run_fingerprint.artifacts.evidence_outputs",
+        )
+        evidence_paths = {record["path"] for record in evidence_records}
+        if evidence_paths != set(EVIDENCE_OUTPUT_PATHS):
+            _issue(
+                issues,
+                "EVIDENCE_OUTPUT_SET_MISMATCH",
+                "run_fingerprint.artifacts.evidence_outputs",
+                "the exact eight Phase 49 evidence outputs are required",
+            )
+        if evidence_paths == set(EVIDENCE_OUTPUT_PATHS):
+            try:
+                validate_distinct_file_paths(
+                    root=canonical_root,
+                    relative_paths=[record["path"] for record in evidence_records],
+                )
+            except (AcceptanceSettlementError, OSError) as exc:
+                code = (
+                    exc.code
+                    if isinstance(exc, AcceptanceSettlementError)
+                    else "EVIDENCE_PATH_INSPECTION_FAILED"
+                )
+                detail = (
+                    exc.detail
+                    if isinstance(exc, AcceptanceSettlementError)
+                    else str(exc)
+                )
+                _issue(
+                    issues,
+                    code,
+                    "run_fingerprint.artifacts.evidence_outputs",
+                    detail,
+                )
+            for relative, schema_name in EVIDENCE_JSON_SCHEMAS.items():
+                evidence_path = canonical_root / relative
+                evidence_payload = _read_json(
+                    evidence_path,
+                    issues,
+                    f"run_fingerprint.artifacts.evidence_outputs.{relative}",
+                )
+                if evidence_payload is not None:
+                    _validate_evidence_schema(
+                        evidence_payload,
+                        schema_name,
+                        issues,
+                        f"run_fingerprint.artifacts.evidence_outputs.{relative}",
+                    )
+            _validate_run_summary(
+                canonical_root / "evidence/run-summary.md",
+                output_path=output_path,
+                report_payload=report_payload,
+                issues=issues,
+            )
+        evidence_by_path = {record["path"]: record for record in evidence_records}
+        for role_path, role_raw, role_name in (
+            (PHYSICAL_REPORT_PATH, report_raw, "physical_assembly_report"),
+            (RULE_QA_PATH, qa_raw, "rule_qa_report"),
+        ):
+            if evidence_by_path.get(role_path) != {
+                "path": role_raw.get("path"),
+                "sha256": role_raw.get("sha256"),
+                "size": role_raw.get("size"),
+            }:
+                _issue(
+                    issues,
+                    "EVIDENCE_ROLE_RECORD_MISMATCH",
+                    f"run_fingerprint.artifacts.{role_name}",
+                    "role record must exactly equal its evidence_outputs record",
+                )
+
+        if post_path is not None:
+            post_inventory = _validate_post_run_manifest(
+                canonical_root,
+                post_path,
+                issues,
+            )
+        actual_paths = {record["path"] for record in post_inventory}
+        pptx_paths = {
+            record["path"]
+            for record in post_inventory
+            if PurePosixPath(record["path"]).suffix.casefold() == ".pptx"
+        }
+        if pptx_paths != {OUTPUT_PPTX_PATH}:
+            _issue(
+                issues,
+                "POST_RUN_PPTX_SET_MISMATCH",
+                "run_fingerprint.manifests.post_run.entries",
+                f"expected only {OUTPUT_PPTX_PATH}, got {sorted(pptx_paths)}",
+            )
+        actual_evidence_paths = {
+            record["path"]
+            for record in post_inventory
+            if PurePosixPath(record["path"]).parts[:1] == ("evidence",)
+        }
+        if actual_evidence_paths != set(EVIDENCE_OUTPUT_PATHS):
+            _issue(
+                issues,
+                "POST_RUN_EVIDENCE_SET_MISMATCH",
+                "run_fingerprint.manifests.post_run.entries",
+                "project evidence directory must contain exactly the eight declared outputs",
+            )
+        expected_paths = pre_declared_paths | {OUTPUT_PPTX_PATH} | set(EVIDENCE_OUTPUT_PATHS)
+        if actual_paths != expected_paths:
+            undeclared = sorted(actual_paths - expected_paths)
+            missing = sorted(expected_paths - actual_paths)
+            _issue(
+                issues,
+                "POST_RUN_OUTPUT_SET_MISMATCH",
+                "run_fingerprint.manifests.post_run.entries",
+                f"undeclared={undeclared}; missing={missing}",
+            )
+        if (
+            events_path is not None
+            and stderr_path is not None
+            and post_path is not None
+        ):
+            authority_paths: dict[str, Path | str] = {
+                "project": Path(root),
+                "installed_skill": installed["path"],
+                "private_root": private_root,
+                "codex_runtime": executable["resolved_path"],
+            }
+            runtime_identity = payload.get("runtime_identity")
+            if isinstance(runtime_identity, Mapping):
+                manifest_record = runtime_identity.get("manifest")
+                if isinstance(manifest_record, Mapping):
+                    value = manifest_record.get("path")
+                    if isinstance(value, str) and value:
+                        authority_paths["runtime_identity.manifest"] = value
+            try:
+                validate_harness_topology(
+                    artifact_paths={
+                        "events_jsonl": process_evidence["events_jsonl"]["path"],
+                        "stderr": process_evidence["stderr"]["path"],
+                        "post_run_manifest": payload["manifests"]["post_run"]["path"],
+                        "run_fingerprint": fingerprint_requested,
+                    },
+                    authority_paths=authority_paths,
+                )
+            except (AcceptanceSettlementError, OSError) as exc:
+                code = (
+                    exc.code
+                    if isinstance(exc, AcceptanceSettlementError)
+                    else "HARNESS_TOPOLOGY_INSPECTION_FAILED"
+                )
+                detail = (
+                    exc.detail
+                    if isinstance(exc, AcceptanceSettlementError)
+                    else str(exc)
+                )
+                _issue(issues, code, "run_fingerprint.external_harness", detail)
+            try:
+                verify_settlement_evidence(
+                    process_evidence.get("settlement"),
+                    post_inventory=post_inventory,
+                )
+            except AcceptanceSettlementError as exc:
+                _issue(
+                    issues,
+                    exc.code,
+                    "run_fingerprint.process_evidence.settlement",
+                    exc.detail,
+                )
         exit_record = payload["exit"]
         if exit_record["status"] != "success" or exit_record["code"] != 0:
             _issue(issues, "CODEX_RUN_NOT_SUCCESSFUL", "run_fingerprint.exit", json.dumps(exit_record, sort_keys=True))
@@ -893,6 +2151,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--root", type=Path, required=True)
     run.add_argument("--requirement-pack", default="annual-work-report.requirement-pack.v1.json")
     run.add_argument("--fingerprint", type=Path, required=True)
+    run.add_argument("--private-root", type=Path, required=True)
     return parser
 
 
@@ -910,6 +2169,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.root,
                 args.requirement_pack,
                 args.fingerprint,
+                private_root=args.private_root,
             )
     except Exception as exc:  # pragma: no cover - last-resort machine-readable gate
         report = {

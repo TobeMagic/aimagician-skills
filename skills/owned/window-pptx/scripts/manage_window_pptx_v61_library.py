@@ -60,6 +60,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--output")
     parser.add_argument("--role")
     parser.add_argument(
+        "--required-source-ordinal",
+        type=int,
+        help="hard-filter candidates to this positive source slide number",
+    )
+    parser.add_argument(
         "--capacity-budget",
         type=int,
         default=0,
@@ -155,9 +160,22 @@ def _query_result(
     limit: int,
     allow_fallback: bool,
     include_ineligible: bool,
+    required_source_ordinal: int | None = None,
 ) -> dict[str, Any]:
+    if required_source_ordinal is not None and required_source_ordinal < 1:
+        raise SystemExit("--required-source-ordinal must be a positive integer")
     selected_style = style_cluster or index.dominant_style_cluster_id
-    candidates = query_page_template_candidates(
+    # Preserve the established scoring and ranking algorithm.  When an exact
+    # source ordinal is locked, ask it for the complete ranked universe first,
+    # then apply the hard constraint and only then enforce the public limit.
+    # This avoids a false no-match when the required page ranks just outside
+    # the requested result window.
+    query_limit = (
+        max(limit, index.page_template_count)
+        if required_source_ordinal is not None
+        else limit
+    )
+    ranked_candidates = query_page_template_candidates(
         index,
         role=role,
         capacity_budget=capacity_budget,
@@ -165,11 +183,25 @@ def _query_result(
         style_cluster=selected_style,
         asset_requirements=tuple(asset_requirements),
         customer_assets_available=customer_assets_available,
-        limit=limit,
+        limit=query_limit,
         allow_fallback=allow_fallback,
         include_ineligible=include_ineligible,
     )
-    return {
+    candidates = (
+        tuple(
+            candidate
+            for candidate in ranked_candidates
+            if candidate.page_template.slide_number == required_source_ordinal
+        )[:limit]
+        if required_source_ordinal is not None
+        else ranked_candidates
+    )
+    if required_source_ordinal is not None and not candidates:
+        raise SystemExit(
+            "no eligible page-template candidate matches "
+            f"required_source_ordinal={required_source_ordinal}"
+        )
+    result = {
         "schema_version": "page-template-query-result.v1",
         "library_index_sha256": library_index_sha256,
         "role": role,
@@ -187,6 +219,9 @@ def _query_result(
         "eligible_count": sum(candidate.eligibility for candidate in candidates),
         "candidates": [candidate.to_dict() for candidate in candidates],
     }
+    if required_source_ordinal is not None:
+        result["required_source_ordinal"] = required_source_ordinal
+    return result
 
 
 def _run_query_pages(args: argparse.Namespace) -> dict[str, Any]:
@@ -206,6 +241,7 @@ def _run_query_pages(args: argparse.Namespace) -> dict[str, Any]:
         limit=args.limit,
         allow_fallback=args.allow_fallback,
         include_ineligible=args.include_ineligible,
+        required_source_ordinal=args.required_source_ordinal,
     )
     result["library_resolution_source"] = resolution_source
     return result
@@ -279,6 +315,7 @@ def _run_query_bundle(args: argparse.Namespace) -> dict[str, Any]:
             limit=item.get("limit", 6),
             allow_fallback=bool(item.get("allow_fallback", False)),
             include_ineligible=False,
+            required_source_ordinal=item.get("required_source_ordinal"),
         )
         queries.append(
             {

@@ -18,6 +18,7 @@ TemplatePack). Finally the target is committed and a
 from __future__ import annotations
 
 import hashlib
+import html
 import io
 import json
 import math
@@ -134,6 +135,7 @@ class TextBindingSpec:
     replacement: str
     fact_refs: tuple[str, ...]
     mode: str
+    fit_policy: str = "preserve"
     field: str = "text"
     separator: str = ""
     slice_start: int | None = None
@@ -177,6 +179,7 @@ class BindingEvidence:
     image_used: int
     image_limit: int
     status: str
+    fit_policy: str = "preserve"
     relationship_id: str = ""
     target_part: str = ""
 
@@ -188,6 +191,7 @@ class BindingEvidence:
             "shape_id": self.shape_id,
             "binding_kind": self.binding_kind,
             "mode": self.mode,
+            "fit_policy": self.fit_policy,
             "source_sha256": self.source_sha256,
             "replacement_sha256": self.replacement_sha256,
             "fact_refs": list(self.fact_refs),
@@ -329,6 +333,7 @@ class AssemblyTargetSlide:
                         "text": spec.replacement,
                         "fact_refs": list(spec.fact_refs),
                         "asset_refs": [],
+                        "fit_policy": spec.fit_policy,
                     }
                     for slot_id, spec in self.text_binding_specs.items()
                 } | {
@@ -336,6 +341,7 @@ class AssemblyTargetSlide:
                         "text": spec.replacement,
                         "fact_refs": list(spec.fact_refs),
                         "asset_refs": [],
+                        "fit_policy": spec.fit_policy,
                     }
                     for slot_id, spec in self.governed_content_binding_specs.items()
                 })
@@ -1506,16 +1512,127 @@ def _rewrite_slide_references(slide_xml: bytes, target_map: Mapping[str, str]) -
     return text.encode("utf-8")
 
 
+_BODY_PR_RE = re.compile(
+    r"<a:bodyPr\b[^>]*(?:/>|>.*?</a:bodyPr>)",
+    re.DOTALL,
+)
+_AUTOFIT_PAIRED_RE = re.compile(
+    r"<a:(?P<fit>spAutoFit|normAutofit|noAutofit)\b[^>]*>.*?</a:(?P=fit)>",
+    re.DOTALL,
+)
+_AUTOFIT_EMPTY_RE = re.compile(
+    r"<a:(?:spAutoFit|normAutofit|noAutofit)\b[^>]*/>",
+    re.DOTALL,
+)
+_TEXT_SIZE_ATTRIBUTE_RE = re.compile(
+    r'(<a:(?:rPr|defRPr|endParaRPr)\b[^>]*\bsz=")(\d+)(")',
+    re.DOTALL,
+)
+
+
+def _scale_shape_text_runs(
+    segment: str,
+    *,
+    slot_id: str,
+    font_scale: int,
+) -> str:
+    """Scale only declared text-run sizes for a governed shrink-to-fit slot."""
+
+    changed = 0
+
+    def replace_size(match: re.Match[str]) -> str:
+        nonlocal changed
+        changed += 1
+        source_size = int(match.group(2))
+        scaled_size = max(800, round(source_size * font_scale / 100_000))
+        return match.group(1) + str(scaled_size) + match.group(3)
+
+    updated = _TEXT_SIZE_ATTRIBUTE_RE.sub(replace_size, segment)
+    if changed == 0:
+        raise PhysicalAssemblyError(
+            f"shrink-to-fit binding requires explicit run size: {slot_id}"
+        )
+    return updated
+
+
+def _normalise_shape_fit_policy(
+    segment: str,
+    *,
+    slot_id: str,
+    fit_policy: str,
+    font_scale: int | None = None,
+) -> str:
+    """Set one shape bodyPr fit node without touching other shape styling."""
+
+    fit_tag = {
+        "no-autofit": "noAutofit",
+        "shrink-to-fit": "normAutofit",
+    }.get(fit_policy)
+    if fit_tag is None:
+        raise PhysicalAssemblyError(f"binding fit_policy is invalid: {slot_id}")
+    if fit_policy == "shrink-to-fit":
+        if type(font_scale) is not int or not 10_000 <= font_scale <= 100_000:
+            raise PhysicalAssemblyError(
+                f"shrink-to-fit scale is invalid: {slot_id}"
+            )
+        fit_xml = (
+            f'<a:normAutofit fontScale="{font_scale}" '
+            'lnSpcReduction="20000"/>'
+        )
+    else:
+        fit_xml = "<a:noAutofit/>"
+
+    matches = list(_BODY_PR_RE.finditer(segment))
+    if len(matches) != 1:
+        raise PhysicalAssemblyError(
+            f"{fit_policy} binding requires one target bodyPr: {slot_id}"
+        )
+    match = matches[0]
+    body_pr = match.group(0)
+    if body_pr.endswith("/>"):
+        replacement = body_pr[:-2] + f">{fit_xml}</a:bodyPr>"
+    else:
+        opening_end = body_pr.find(">") + 1
+        opening = body_pr[:opening_end]
+        inner = body_pr[opening_end:-len("</a:bodyPr>")]
+        autofit_matches = sorted(
+            [*_AUTOFIT_PAIRED_RE.finditer(inner), *_AUTOFIT_EMPTY_RE.finditer(inner)],
+            key=lambda item: item.start(),
+        )
+        if autofit_matches:
+            pieces: list[str] = []
+            cursor = 0
+            for index, autofit in enumerate(autofit_matches):
+                pieces.append(inner[cursor:autofit.start()])
+                if index == 0:
+                    pieces.append(fit_xml)
+                cursor = autofit.end()
+            pieces.append(inner[cursor:])
+            inner = "".join(pieces)
+        else:
+            inner = fit_xml + inner
+        replacement = opening + inner + "</a:bodyPr>"
+    return segment[:match.start()] + replacement + segment[match.end():]
+
+
 def _adapt_slide_text(
     slide_xml: bytes,
     bindings: Mapping[str, str],
     *,
     allowed_slots: Iterable[str] | None = None,
+    fit_policies: Mapping[str, str] | None = None,
 ) -> bytes:
     """Apply declared bindings and fail closed on stale or invented slots."""
 
     text = slide_xml.decode("utf-8", errors="replace")
     allowed = set(allowed_slots or ())
+    policies = dict(fit_policies or {})
+    extra_policy_slots = set(policies) - set(bindings)
+    if extra_policy_slots:
+        raise PhysicalAssemblyError(
+            "fit_policy targets an unbound slot: "
+            + ",".join(sorted(extra_policy_slots))
+        )
     for slot_id, replacement in bindings.items():
         if not slot_id.startswith("shape_"):
             raise PhysicalAssemblyError(f"invalid text slot id: {slot_id}")
@@ -1541,7 +1658,39 @@ def _adapt_slide_text(
             raise PhysicalAssemblyError(
                 f"declared text slot has no editable text nodes: {slot_id}"
             )
+        source_text = "".join(
+            html.unescape(match.group(1)) for match in _TEXT_RE.finditer(segment)
+        )
         new_segment = _replace_shape_text(segment, replacement)
+        fit_policy = policies.get(slot_id, "preserve")
+        if fit_policy not in TEXT_FIT_POLICIES:
+            raise PhysicalAssemblyError(f"binding fit_policy is invalid: {slot_id}")
+        if fit_policy in {"no-autofit", "shrink-to-fit"}:
+            source_chars = len("".join(source_text.split()))
+            replacement_chars = len("".join(replacement.split()))
+            font_scale = (
+                max(
+                    40_000,
+                    min(
+                        100_000,
+                        round(source_chars / replacement_chars * 100_000),
+                    ),
+                )
+                if fit_policy == "shrink-to-fit" and replacement_chars > 0
+                else None
+            )
+            if fit_policy == "shrink-to-fit" and font_scale is not None:
+                new_segment = _scale_shape_text_runs(
+                    new_segment,
+                    slot_id=slot_id,
+                    font_scale=font_scale,
+                )
+            new_segment = _normalise_shape_fit_policy(
+                new_segment,
+                slot_id=slot_id,
+                fit_policy=fit_policy,
+                font_scale=font_scale,
+            )
         text = text[:start] + new_segment + text[end:]
     return text.encode("utf-8")
 
@@ -2090,6 +2239,7 @@ TEXT_RENDER_MODES = frozenset(
 )
 TEXT_RENDER_FIELDS = frozenset({"text", "value", "value_unit"})
 TEXT_RENDER_SEPARATORS = frozenset({"", " ", "\n", " / ", " · ", "：", ": "})
+TEXT_FIT_POLICIES = frozenset({"preserve", "no-autofit", "shrink-to-fit"})
 ASSET_FIT_MODES = frozenset({"cover"})
 
 
@@ -2098,7 +2248,7 @@ def _parse_text_binding_spec(slot_id: str, value: Any) -> TextBindingSpec:
         raise PhysicalAssemblyError(
             f"production binding must be an evidence object: {slot_id}"
         )
-    allowed = {"replacement", "fact_refs", "render"}
+    allowed = {"replacement", "fact_refs", "render", "fit_policy"}
     unknown = set(value) - allowed
     if unknown:
         raise PhysicalAssemblyError(
@@ -2107,6 +2257,7 @@ def _parse_text_binding_spec(slot_id: str, value: Any) -> TextBindingSpec:
     replacement = value.get("replacement")
     refs = value.get("fact_refs")
     render = value.get("render")
+    fit_policy = value.get("fit_policy", "preserve")
     if not isinstance(replacement, str):
         raise PhysicalAssemblyError(f"binding replacement must be text: {slot_id}")
     if not isinstance(refs, list) or not all(
@@ -2115,6 +2266,8 @@ def _parse_text_binding_spec(slot_id: str, value: Any) -> TextBindingSpec:
         raise PhysicalAssemblyError(f"binding fact_refs must be a string array: {slot_id}")
     if not isinstance(render, Mapping):
         raise PhysicalAssemblyError(f"binding render must be an object: {slot_id}")
+    if fit_policy not in TEXT_FIT_POLICIES:
+        raise PhysicalAssemblyError(f"binding fit_policy is invalid: {slot_id}")
     render_allowed = {"mode", "field", "separator", "slice_start", "slice_end"}
     render_unknown = set(render) - render_allowed
     if render_unknown:
@@ -2144,6 +2297,7 @@ def _parse_text_binding_spec(slot_id: str, value: Any) -> TextBindingSpec:
         replacement=replacement,
         fact_refs=tuple(refs),
         mode=str(mode),
+        fit_policy=str(fit_policy),
         field=str(field_name),
         separator=str(separator),
         slice_start=slice_start,
@@ -2267,14 +2421,26 @@ def _plan_from_payload(
                 raise PhysicalAssemblyError("binding slot IDs must be strings")
             if isinstance(value, str):
                 legacy_bindings[slot_id] = value
-            elif isinstance(value, Mapping) and set(value) == {
+            elif isinstance(value, Mapping) and {
                 "text",
                 "fact_refs",
                 "asset_refs",
-            }:
+            }.issubset(value):
+                unknown_binding_fields = set(value) - {
+                    "text",
+                    "fact_refs",
+                    "asset_refs",
+                    "fit_policy",
+                }
+                if unknown_binding_fields:
+                    raise PhysicalAssemblyError(
+                        f"unknown binding fields for {slot_id}: "
+                        + ",".join(sorted(unknown_binding_fields))
+                    )
                 text = value.get("text")
                 fact_refs = value.get("fact_refs")
                 asset_refs = value.get("asset_refs")
+                fit_policy = value.get("fit_policy", "preserve")
                 if not isinstance(text, str):
                     raise PhysicalAssemblyError(f"binding text is invalid: {slot_id}")
                 if not isinstance(fact_refs, list) or not all(
@@ -2293,6 +2459,10 @@ def _plan_from_payload(
                     set(asset_refs)
                 ):
                     raise PhysicalAssemblyError(f"binding refs must be unique: {slot_id}")
+                if fit_policy not in TEXT_FIT_POLICIES:
+                    raise PhysicalAssemblyError(
+                        f"binding fit_policy is invalid: {slot_id}"
+                    )
                 if slot_id in expected_text_slots:
                     if asset_refs:
                         raise PhysicalAssemblyError(
@@ -2303,6 +2473,7 @@ def _plan_from_payload(
                         replacement=text,
                         fact_refs=tuple(fact_refs),
                         mode="auto",
+                        fit_policy=str(fit_policy),
                     )
                 elif slot_id in expected_content_slots or slot_id in expected_content_groups:
                     if asset_refs:
@@ -2313,11 +2484,16 @@ def _plan_from_payload(
                         replacement=text,
                         fact_refs=tuple(fact_refs),
                         mode="auto",
+                        fit_policy=str(fit_policy),
                     )
                 else:
                     if text or fact_refs or len(asset_refs) != 1:
                         raise PhysicalAssemblyError(
                             f"picture slot requires empty text/fact_refs and one asset_ref: {slot_id}"
+                        )
+                    if fit_policy != "preserve":
+                        raise PhysicalAssemblyError(
+                            f"picture slot cannot declare text fit_policy: {slot_id}"
                         )
                     asset_binding_specs[slot_id] = AssetBindingSpec(asset_refs[0], "cover")
             else:
@@ -3320,6 +3496,7 @@ def _prepare_governed_content_replacements(
                 image_used=0,
                 image_limit=0,
                 status="pass",
+                fit_policy=(spec.fit_policy if spec is not None else "preserve"),
             )
         )
 
@@ -3378,6 +3555,12 @@ def _slot_metadata(template: PageTemplate) -> dict[str, Mapping[str, Any]]:
 
 def _item_count(value: str) -> int:
     return sum(1 for item in value.splitlines() if item.strip()) if value else 0
+
+
+def _semantic_character_count(value: str) -> int:
+    """Count copy characters using the certified slot-graph convention."""
+
+    return len("".join(value.split()))
 
 
 def _validate_fragment_group_bindings(
@@ -3553,7 +3736,7 @@ def _build_text_binding_evidence(
                 if slot and slot.get("max_items")
                 else max(1, _item_count(source_text))
             )
-            char_used = len(replacement)
+            char_used = _semantic_character_count(replacement)
             item_used = _item_count(replacement)
             if require_locked_authority and char_used > char_limit:
                 raise PhysicalAssemblyError(
@@ -3608,6 +3791,9 @@ def _build_text_binding_evidence(
                     image_used=0,
                     image_limit=0,
                     status="pass",
+                    fit_policy=(
+                        spec.fit_policy if spec is not None else "preserve"
+                    ),
                 )
             )
         page_char_limit = slide.page_template.capacity.get("max_text_chars")
@@ -3827,6 +4013,7 @@ def _prepare_asset_replacements(
                 image_used=1,
                 image_limit=1,
                 status="pass",
+                fit_policy="preserve",
                 relationship_id=relationship_id,
                 target_part=target_part,
             )
@@ -4153,6 +4340,7 @@ def _validate_query_selection_evidence(
     *,
     project_root: str | os.PathLike[str] | None,
     library_index: LibraryIndex | None,
+    require_phase49_ordinals: bool = False,
 ) -> SelectionAuthorityEvidence:
     if library_index is None:
         raise PhysicalAssemblyError("QUERY_LIBRARY_INDEX_REQUIRED")
@@ -4242,7 +4430,14 @@ def _validate_query_selection_evidence(
             raise PhysicalAssemblyError(
                 f"QUERY_SELECTION_ROLE_MISMATCH: {slide.ordinal}"
             )
-        recomputed = query_page_template_candidates(
+        required_source_ordinal = result.get("required_source_ordinal")
+        query_limit = int(result["limit"])
+        recompute_limit = (
+            max(query_limit, library_index.page_template_count)
+            if required_source_ordinal is not None
+            else query_limit
+        )
+        ranked_recomputed = query_page_template_candidates(
             library_index,
             role=str(result["role"]),
             capacity_budget=int(result["capacity_budget"]),
@@ -4250,11 +4445,35 @@ def _validate_query_selection_evidence(
             style_cluster=str(result["style_cluster"]),
             asset_requirements=tuple(result["asset_requirements"]),
             customer_assets_available=bool(result["customer_assets_available"]),
-            limit=int(result["limit"]),
+            limit=recompute_limit,
             allow_fallback=bool(result["allow_fallback"]),
             direct_use_only=True,
             include_ineligible=bool(result["include_ineligible"]),
         )
+        recomputed = (
+            tuple(
+                candidate
+                for candidate in ranked_recomputed
+                if candidate.page_template.slide_number
+                == required_source_ordinal
+            )[:query_limit]
+            if required_source_ordinal is not None
+            else ranked_recomputed
+        )
+        if required_source_ordinal is not None and not recomputed:
+            raise PhysicalAssemblyError(
+                "QUERY_REQUIRED_SOURCE_ORDINAL_NO_MATCH: "
+                f"{slide.ordinal}:{required_source_ordinal}"
+            )
+        if require_phase49_ordinals and (
+            required_source_ordinal != slide.ordinal
+            or slide.page_template.slide_number != required_source_ordinal
+        ):
+            raise PhysicalAssemblyError(
+                "PHASE49_QUERY_SOURCE_ORDINAL_MISMATCH: "
+                f"target={slide.ordinal} required={required_source_ordinal} "
+                f"selected={slide.page_template.slide_number}"
+            )
         recomputed_payload = [candidate.to_dict() for candidate in recomputed]
         if (
             result.get("weights") != dict(DEFAULT_SCORING)
@@ -4309,6 +4528,10 @@ def _validate_query_selection_evidence(
                 abs_tol=1e-9,
             )
             or candidate.get("fallback_reason") != selection.fallback_reason
+            or (
+                required_source_ordinal is not None
+                and slide.page_template.slide_number != required_source_ordinal
+            )
         ):
             raise PhysicalAssemblyError(
                 f"QUERY_SELECTION_CANDIDATE_MISMATCH: {slide.ordinal}"
@@ -4359,19 +4582,38 @@ def _slide_structure_signature(slide_xml: bytes) -> str:
         root = ET.fromstring(slide_xml)
     except ET.ParseError:
         return ""
-    def canonical(node: ET.Element) -> Any:
+    def canonical(node: ET.Element, governed_text_size: bool = False) -> Any:
         local = node.tag.rsplit("}", 1)[-1]
+        if local in {"sp", "graphicFrame", "cxnSp"}:
+            governed_text_size = any(
+                descendant.tag.rsplit("}", 1)[-1]
+                in {"spAutoFit", "normAutofit", "noAutofit"}
+                for descendant in node.iter()
+            )
         if local == "srcRect":
             return None
+        if local in {"spAutoFit", "normAutofit", "noAutofit"}:
+            return ["__GOVERNED_FIT_POLICY__"]
         children = [
             value
             for child in list(node)
-            if (value := canonical(child)) is not None
+            if (value := canonical(child, governed_text_size)) is not None
         ]
         text = "__GOVERNED_TEXT__" if local == "t" else (node.text or "").strip()
+        attributes = [
+            (
+                key,
+                "__GOVERNED_TEXT_SIZE__"
+                if governed_text_size
+                and local in {"rPr", "defRPr", "endParaRPr"}
+                and key == "sz"
+                else value,
+            )
+            for key, value in sorted(node.attrib.items())
+        ]
         return [
             node.tag,
-            sorted(node.attrib.items()),
+            attributes,
             text,
             children,
         ]
@@ -5671,6 +5913,9 @@ def verify_physical_assembly(
             plan,
             project_root=project_root,
             library_index=library_index,
+            require_phase49_ordinals=(
+                acceptance_profile == "phase49-work-report-15"
+            ),
         )
     elif _selection_authority_evidence is not None:
         selection_authority_evidence = _selection_authority_evidence
@@ -5893,6 +6138,9 @@ def assemble_physical_deck(
             plan,
             project_root=project_root,
             library_index=library_index,
+            require_phase49_ordinals=(
+                acceptance_profile == "phase49-work-report-15"
+            ),
         )
     if locked_requested:
         fact_store, locked_assets, connective_copy, authority_evidence = _validate_locked_authority(
@@ -6062,6 +6310,10 @@ def assemble_physical_deck(
                 governed_mutations.get(graph.root_slide_name, graph.slide_xml),
                 slide.bindings,
                 allowed_slots=slide.page_template.slot_graph.get("text_slot_ids", ()),
+                fit_policies={
+                    slot_id: spec.fit_policy
+                    for slot_id, spec in slide.text_binding_specs.items()
+                },
             )
             relationship_overrides, cover_crops, asset_evidence = _prepare_asset_replacements(
                 slide,

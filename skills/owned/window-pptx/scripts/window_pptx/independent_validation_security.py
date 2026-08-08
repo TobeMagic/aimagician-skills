@@ -38,6 +38,10 @@ NUMERIC_RE = re.compile(
     r"^[-+]?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?"
     r"(?:[Ee][-+]?\d+)?([%％])?$"
 )
+NUMERIC_TOKEN_RE = re.compile(
+    r"(?<![A-Za-z0-9])[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)"
+    r"(?:\.\d+)?(?:[Ee][-+]?\d+)?(?:[%％])?(?![A-Za-z0-9])"
+)
 FRAME_LOCATOR_RE = re.compile(r"^(?:graphicFrame|chartFrame)\[id=([1-9][0-9]*)\]")
 SCHEMA_ROOT = Path(__file__).resolve().parents[2] / "schemas"
 
@@ -206,6 +210,71 @@ class ZipEntryAudit:
     @property
     def status(self) -> str:
         return "pass" if not self.findings else "fail"
+
+
+@dataclass(frozen=True)
+class ZipResourceLimits:
+    """Metadata-only decompression limits for one ZIP/OPC package.
+
+    These limits are checked from the central directory before any member is
+    decompressed.  They therefore bound both aggregate allocation and the XML
+    inputs passed to downstream parsers.
+    """
+
+    max_entries: int
+    max_entry_uncompressed_bytes: int
+    max_total_uncompressed_bytes: int
+    max_compression_ratio: float
+    max_xml_uncompressed_bytes: int
+    max_relationship_uncompressed_bytes: int
+
+    def validate(self) -> None:
+        for name, value in (
+            ("max_entries", self.max_entries),
+            ("max_entry_uncompressed_bytes", self.max_entry_uncompressed_bytes),
+            ("max_total_uncompressed_bytes", self.max_total_uncompressed_bytes),
+            ("max_xml_uncompressed_bytes", self.max_xml_uncompressed_bytes),
+            (
+                "max_relationship_uncompressed_bytes",
+                self.max_relationship_uncompressed_bytes,
+            ),
+        ):
+            if type(value) is not int or value <= 0:
+                raise ValueError(f"{name} must be a positive integer")
+        if (
+            not isinstance(self.max_compression_ratio, (int, float))
+            or isinstance(self.max_compression_ratio, bool)
+            or float(self.max_compression_ratio) <= 1
+        ):
+            raise ValueError("max_compression_ratio must be greater than 1")
+        if self.max_xml_uncompressed_bytes > self.max_entry_uncompressed_bytes:
+            raise ValueError(
+                "max_xml_uncompressed_bytes cannot exceed the per-entry limit"
+            )
+        if (
+            self.max_relationship_uncompressed_bytes
+            > self.max_xml_uncompressed_bytes
+        ):
+            raise ValueError(
+                "max_relationship_uncompressed_bytes cannot exceed the XML limit"
+            )
+        if (
+            self.max_entry_uncompressed_bytes
+            > self.max_total_uncompressed_bytes
+        ):
+            raise ValueError(
+                "max_entry_uncompressed_bytes cannot exceed the aggregate limit"
+            )
+
+
+PPTX_ZIP_RESOURCE_LIMITS = ZipResourceLimits(
+    max_entries=10_000,
+    max_entry_uncompressed_bytes=256 * 1024 * 1024,
+    max_total_uncompressed_bytes=1024 * 1024 * 1024,
+    max_compression_ratio=200.0,
+    max_xml_uncompressed_bytes=32 * 1024 * 1024,
+    max_relationship_uncompressed_bytes=8 * 1024 * 1024,
+)
 
 
 def _finding(
@@ -1175,15 +1244,132 @@ def _numeric_literal(value: str) -> tuple[Decimal, bool] | None:
         return None
 
 
-def _numeric_equal(left: tuple[Decimal, bool], right: tuple[Decimal, bool]) -> bool:
-    left_value, left_percent = left
-    right_value, right_percent = right
-    if left_percent != right_percent:
-        if left_percent:
-            right_value *= Decimal(100)
+def _numeric_tokens(value: str) -> tuple[str, ...]:
+    """Extract complete numeric tokens from one registered fact rendering.
+
+    The actual governed value must still be a complete numeric literal.  Token
+    extraction is restricted to immutable FactStore renderings and rejects
+    fragments of malformed comma/decimal sequences or alphanumeric IDs.
+    """
+
+    tokens: list[str] = []
+    for match in NUMERIC_TOKEN_RE.finditer(value):
+        start, end = match.span()
+        if (
+            start >= 2
+            and value[start - 1] in {",", "."}
+            and value[start - 2].isdigit()
+        ):
+            continue
+        if (
+            end + 1 < len(value)
+            and value[end] in {",", "."}
+            and value[end + 1].isdigit()
+        ):
+            continue
+        token = match.group(0)
+        if _numeric_literal(token) is not None:
+            tokens.append(token)
+    return tuple(dict.fromkeys(tokens))
+
+
+def _numeric_rendering_matches(
+    source: str,
+    candidate: str,
+    *,
+    allow_percent_scale: bool,
+) -> bool:
+    """Match one governed literal to an authoritative numeric rendering.
+
+    This is an independent implementation of the producer contract: percent
+    and decimal forms may be equivalent only for a percent-aware fact, and
+    native chart/workbook caches may round to the precision explicitly present
+    in the governed source literal.
+    """
+
+    source_number = _numeric_literal(source)
+    candidate_number = _numeric_literal(candidate)
+    if source_number is None or candidate_number is None:
+        return False
+    source_value, source_percent = source_number
+    candidate_value, candidate_percent = candidate_number
+    if source_percent != candidate_percent:
+        if not allow_percent_scale:
+            return False
+        if source_percent:
+            candidate_value *= Decimal(100)
         else:
-            left_value *= Decimal(100)
-    return abs(left_value - right_value) <= Decimal("0.000000000001")
+            source_value *= Decimal(100)
+    if abs(source_value - candidate_value) <= Decimal("0.000000000001"):
+        return True
+
+    compact_source = _normalise_fact_text(source).replace(",", "").rstrip("%")
+    decimal_places = (
+        len(compact_source.split(".", 1)[1]) if "." in compact_source else 0
+    )
+    quantum = Decimal(1).scaleb(-decimal_places)
+    try:
+        return source_value == candidate_value.quantize(quantum)
+    except InvalidOperation:
+        return False
+
+
+def _fact_numeric_candidates(
+    fact: Mapping[str, Any],
+    *,
+    scalar_only: bool,
+) -> tuple[str, ...]:
+    """Return numeric candidates governed by immutable FactStore fields."""
+
+    values: list[str] = []
+    value = fact.get("value")
+    if isinstance(value, (str, int, float)) and not isinstance(value, bool):
+        scalar = str(value)
+        values.extend((scalar, scalar + str(fact.get("unit") or "")))
+    if not scalar_only:
+        for rendering in _fact_renderings(fact):
+            values.extend(_numeric_tokens(rendering))
+    return tuple(dict.fromkeys(values))
+
+
+def _fact_allows_percent_scale(fact: Mapping[str, Any]) -> bool:
+    return fact.get("unit") == "%" or any(
+        "%" in rendering or "％" in rendering
+        for rendering in _fact_renderings(fact)
+    )
+
+
+def _matching_numeric_fact_refs(
+    actual: str,
+    *,
+    facts_by_id: Mapping[str, Mapping[str, Any]],
+    scalar_only: bool,
+) -> frozenset[str]:
+    """Recompute numeric authority across all active facts, fail-closed."""
+
+    if _numeric_literal(actual) is None:
+        return frozenset()
+    matches: set[str] = set()
+    for fact_ref, fact in facts_by_id.items():
+        if (
+            not isinstance(fact_ref, str)
+            or not isinstance(fact, Mapping)
+            or fact.get("status", "active") != "active"
+        ):
+            continue
+        if any(
+            _numeric_rendering_matches(
+                actual,
+                candidate,
+                allow_percent_scale=_fact_allows_percent_scale(fact),
+            )
+            for candidate in _fact_numeric_candidates(
+                fact,
+                scalar_only=scalar_only,
+            )
+        ):
+            matches.add(fact_ref)
+    return frozenset(matches)
 
 
 def _joined_rendering_matches(
@@ -1282,16 +1468,20 @@ def validate_fact_evidence_value(
         if not matches:
             _finding(findings, "FACT_NORMALIZED_RENDERING_MISMATCH", location, hashlib.sha256(actual.encode()).hexdigest())
     elif evidence_mode in NUMERIC_FACT_MODES:
-        actual_number = _numeric_literal(actual)
-        candidates = [
-            parsed
-            for rendering in _fact_renderings(facts[0]) if len(facts) == 1
-            for parsed in [_numeric_literal(rendering)]
-            if parsed is not None
-        ]
-        if actual_number is None or not any(
-            _numeric_equal(actual_number, candidate) for candidate in candidates
-        ):
+        matching_refs = _matching_numeric_fact_refs(
+            actual,
+            facts_by_id=facts_by_id,
+            scalar_only=evidence_mode == "source-numeric-scalar",
+        )
+        expected_refs = frozenset(fact_refs)
+        if len(matching_refs) > 1:
+            _finding(
+                findings,
+                "FACT_NUMERIC_AUTHORITY_AMBIGUOUS",
+                location,
+                repr(sorted(matching_refs)),
+            )
+        elif len(facts) != 1 or matching_refs != expected_refs:
             _finding(findings, "FACT_NUMERIC_RENDERING_MISMATCH", location, hashlib.sha256(actual.encode()).hexdigest())
     elif evidence_mode in JOIN_FACT_MODES:
         rendering_sets = [_fact_renderings(fact) for fact in facts]
@@ -1332,10 +1522,108 @@ def validate_fact_evidence_value(
     return _sorted_findings(findings)
 
 
-def audit_zip_entries(archive: zipfile.ZipFile) -> ZipEntryAudit:
-    """Reject ambiguous, noncanonical, directory, encrypted, or symlink entries."""
+def audit_zip_resources(
+    archive: zipfile.ZipFile,
+    *,
+    limits: ZipResourceLimits = PPTX_ZIP_RESOURCE_LIMITS,
+) -> tuple[ContractFinding, ...]:
+    """Reject ZIP bombs and oversized parser inputs without reading members."""
 
+    limits.validate()
     findings: list[ContractFinding] = []
+    infos = archive.infolist()
+    if len(infos) > limits.max_entries:
+        _finding(
+            findings,
+            "ZIP_RESOURCE_ENTRY_COUNT_EXCEEDED",
+            "package.entries",
+            f"observed={len(infos)} limit={limits.max_entries}",
+        )
+
+    total_uncompressed = 0
+    for index, info in enumerate(infos):
+        location = f"package.entries.{index}"
+        size = int(info.file_size)
+        compressed_size = int(info.compress_size)
+        total_uncompressed += size
+        if size > limits.max_entry_uncompressed_bytes:
+            _finding(
+                findings,
+                "ZIP_RESOURCE_ENTRY_SIZE_EXCEEDED",
+                location,
+                (
+                    f"{info.filename}: observed={size} "
+                    f"limit={limits.max_entry_uncompressed_bytes}"
+                ),
+            )
+        lower_name = info.filename.casefold()
+        if (
+            lower_name.endswith(".rels")
+            and size > limits.max_relationship_uncompressed_bytes
+        ):
+            _finding(
+                findings,
+                "ZIP_RESOURCE_RELATIONSHIP_SIZE_EXCEEDED",
+                location,
+                (
+                    f"{info.filename}: observed={size} "
+                    f"limit={limits.max_relationship_uncompressed_bytes}"
+                ),
+            )
+        elif (
+            lower_name.endswith(".xml")
+            and size > limits.max_xml_uncompressed_bytes
+        ):
+            _finding(
+                findings,
+                "ZIP_RESOURCE_XML_SIZE_EXCEEDED",
+                location,
+                (
+                    f"{info.filename}: observed={size} "
+                    f"limit={limits.max_xml_uncompressed_bytes}"
+                ),
+            )
+        if size:
+            if compressed_size <= 0:
+                ratio_detail = "infinite"
+                ratio_exceeded = True
+            else:
+                ratio = size / compressed_size
+                ratio_detail = f"{ratio:.6f}"
+                ratio_exceeded = ratio > float(limits.max_compression_ratio)
+            if ratio_exceeded:
+                _finding(
+                    findings,
+                    "ZIP_RESOURCE_COMPRESSION_RATIO_EXCEEDED",
+                    location,
+                    (
+                        f"{info.filename}: observed={ratio_detail} "
+                        f"limit={float(limits.max_compression_ratio):.6f}"
+                    ),
+                )
+    if total_uncompressed > limits.max_total_uncompressed_bytes:
+        _finding(
+            findings,
+            "ZIP_RESOURCE_TOTAL_SIZE_EXCEEDED",
+            "package.entries",
+            (
+                f"observed={total_uncompressed} "
+                f"limit={limits.max_total_uncompressed_bytes}"
+            ),
+        )
+    return _sorted_findings(findings)
+
+
+def audit_zip_entries(
+    archive: zipfile.ZipFile,
+    *,
+    limits: ZipResourceLimits = PPTX_ZIP_RESOURCE_LIMITS,
+) -> ZipEntryAudit:
+    """Reject resource abuse and ambiguous or active ZIP entries."""
+
+    findings: list[ContractFinding] = list(
+        audit_zip_resources(archive, limits=limits)
+    )
     canonical_names: list[str] = []
     exact_seen: set[str] = set()
     portable_seen: dict[str, str] = {}
@@ -1378,10 +1666,14 @@ def audit_zip_entries(archive: zipfile.ZipFile) -> ZipEntryAudit:
     return ZipEntryAudit(tuple(sorted(canonical_names)), _sorted_findings(findings))
 
 
-def audit_zip_package(path: str | os.PathLike[str]) -> ZipEntryAudit:
+def audit_zip_package(
+    path: str | os.PathLike[str],
+    *,
+    limits: ZipResourceLimits = PPTX_ZIP_RESOURCE_LIMITS,
+) -> ZipEntryAudit:
     try:
         with zipfile.ZipFile(path, "r") as archive:
-            return audit_zip_entries(archive)
+            return audit_zip_entries(archive, limits=limits)
     except (OSError, zipfile.BadZipFile) as exc:
         return ZipEntryAudit(
             (),
@@ -1461,6 +1753,8 @@ def audit_output_text_coverage(
         with zipfile.ZipFile(stream, "r") as archive:
             entry_audit = audit_zip_entries(archive)
             findings.extend(entry_audit.findings)
+            if entry_audit.status != "pass":
+                return _sorted_findings(findings)
             canonical = set(entry_audit.canonical_names)
             for page in authority.selected_pages:
                 slide_part = f"ppt/slides/slide{page.ordinal}.xml"
@@ -1573,6 +1867,8 @@ def audit_output_media_authority(
         with zipfile.ZipFile(stream, "r") as archive:
             entry_audit = audit_zip_entries(archive)
             findings.extend(entry_audit.findings)
+            if entry_audit.status != "pass":
+                return _sorted_findings(findings)
             actual_hashes: set[str] = set()
             for info in archive.infolist():
                 name = info.filename
@@ -1599,10 +1895,13 @@ __all__ = [
     "QueryCoverageResult",
     "SelectedPageAuthority",
     "ZipEntryAudit",
+    "ZipResourceLimits",
+    "PPTX_ZIP_RESOURCE_LIMITS",
     "audit_output_media_authority",
     "audit_output_text_coverage",
     "audit_zip_entries",
     "audit_zip_package",
+    "audit_zip_resources",
     "validate_external_relationship",
     "validate_fact_evidence_value",
     "validate_query_bundle_and_coverage",

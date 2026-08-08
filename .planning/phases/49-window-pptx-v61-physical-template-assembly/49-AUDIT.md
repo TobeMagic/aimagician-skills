@@ -59,14 +59,29 @@
 
 ## Review Findings
 
-- Specification compliance: NOT_RUN
+- Intermediate implementation audit at commit `c1c0e14` returned `REVISE`
+  with 0 Blocker, 2 Important, and 1 Nitpick. The two Important findings were
+  that the clean-run fingerprint could trust a weak report/manifest and that
+  PPTX/XLSX archives lacked pre-decompression resource budgets. Both have
+  since been implemented test-first in the live worktree; this is not the
+  required fresh final audit.
+- First clean-UAT root-cause audit found rejected-interface blockers: manual
+  physical binding volume, schema-invalid Agent-authored evidence, missing
+  exact-source-ordinal filtering, and an overstated private secrecy claim
+  under same-user danger mode. The deterministic profile harness and query
+  hard filter address the executable failures; documentation now states the
+  actual project-folder isolation boundary.
+- Specification compliance: IN_PROGRESS
 - Quality review: NOT_RUN
 - Integration audit: NOT_RUN
 - Fresh OpenCode phase auditor: NOT_RUN
 
 | Severity | Finding | Evidence | Disposition |
 |---|---|---|---|
-| Blocker | Audit has not run | Phase 49 is still executing | open |
+| Important | Clean-run validator trusted weak producer evidence | OpenCode audit of `c1c0e14` | fixed; fresh audit pending |
+| Important | PPTX/XLSX had no ZIP resource budgets | OpenCode audit of `c1c0e14` | fixed; fresh audit pending |
+| Blocker | Agent was required to hand-author 358 physical records | rejected clean UAT attempt 1 | deterministic binder implemented; rerun pending |
+| Blocker | Final fresh audit has not run | Phase 49 is still executing | open |
 
 ## Gaps
 

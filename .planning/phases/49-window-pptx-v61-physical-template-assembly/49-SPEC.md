@@ -149,8 +149,12 @@ phase, not a completion claim for that checkpoint.
   source package once, imports complete
   owner-relative OPC closure, preserves exact content types, safely shares or
   deduplicates immutable dependencies, and emits one native-editable PPTX.
-- [ ] **AC-49-04:** Slot adaptation accepts only declared shape IDs. Every
-  binding is a versioned object with `text`, `fact_refs`, and `asset_refs`;
+- [ ] **AC-49-04:** Slot adaptation accepts only declared shape IDs. The Agent
+  supplies only `assembly-intent.v1` (`page_id`, narrative role, and fact IDs);
+  a hash-locked Skill-owned profile expands every ordinary slot, fragment
+  group, and governed-content policy into the full `assembly-plan.v1`. Every
+  expanded binding is a versioned object with `text`, `fact_refs`, and
+  `asset_refs`;
   the plan names an external locked fact-store and asset-manifest path plus
   SHA-256, and the assembler verifies those bytes before trusting any ID.
   Empty references are allowed only for copy explicitly registered as
@@ -173,16 +177,22 @@ phase, not a completion claim for that checkpoint.
   type, size, and SHA-256.
 - [ ] **AC-49-07:** Run a Codex worker
   (`codex exec --dangerously-bypass-approvals-and-sandbox -c
-  'model_provider="OpenAI"' -c 'model_reasoning_effort="medium"' -m
+  'model_provider="openai"' -c 'model_reasoning_effort="medium"' -m
   gpt-5.6-terra --cd <clean-dir>`) against the requirement pack and Skill
-  only, and produce exactly one PPTX plus the expected evidence bundle. The
+  only. The Agent calls one installed profile-job harness and does not author
+  shape IDs, source locators, raw source copy, chart/workbook coordinates, or
+  OOXML. It produces exactly one PPTX plus the expected evidence bundle. The
   run records command, cwd, model/reasoning, requirement/assets/installed-Skill
-  digests, private-root resolution source, and a post-run manifest.
+  digests, an externally frozen installed-Skill digest, the resolved Codex
+  executable path/version/SHA-256 before and after the child, private-root
+  resolution source, and a post-run manifest.
 - [ ] **AC-49-08:** Render the accepted PPTX once into one canonical hash-bound
-  review packet. Three fresh independent anonymous sessions receive identical
-  packet/rubric digests but no reference deck, generator traces, prior scores,
-  other reviewer output, or shared conversational context; each returns median
-  ≥8/10 and no Blocker/Important.
+  review packet. Reviewers receive anonymous same-slide reference/candidate
+  raster pairs bound to the exact reference SHA-256, but never the reference
+  PPTX, private bytes, generator traces, prior scores, other reviewer output,
+  or shared conversational context. Three fresh independent review chains each
+  cover all 15 pages, return median ≥8/10, confirm reference parity, and report
+  no Blocker/Important.
 - [ ] **AC-49-09:** A fresh frozen-point OpenCode premerge implementation audit
   returns APPROVED/DONE with zero Blocker/Important and unchanged fingerprint.
 - [ ] **AC-49-10:** After AC-49-09, merge/push exact implementation to master,
@@ -209,14 +219,19 @@ phase, not a completion claim for that checkpoint.
 - `schemas/page-template.v1.schema.json` — single certified page manifest.
 - `schemas/template-library-index.v4.schema.json` — full library output of
   `compile-page-templates`.
-- `schemas/assembly-plan.v1.schema.json` — Codex-authored plan linking each
-  target slide to a chosen `page_id`.
+- `schemas/assembly-plan.v1.schema.json` — compiler-authored physical plan
+  linking each target slide to a chosen `page_id`.
+- `schemas/assembly-intent.v1.schema.json` — compact Agent decision surface.
+- `schemas/binding-profile.v1.schema.json` — Skill-owned page/slot recipe.
+- `schemas/auto-binding-report.v1.schema.json` — deterministic expansion
+  evidence.
 - `schemas/physical-assembly-report.v1.schema.json` — verifier output.
 
 ### Locked binding authority
 
-The Agent may choose registered fact/asset IDs but cannot create their
-authority. `assembly-plan.v1` references `fact-store.v1` and the client asset
+The Agent may choose registered page and fact/asset IDs but cannot create their
+authority or physical bindings. `assembly-intent.v1` is compiled through a
+hash-locked profile; `assembly-plan.v1` references `fact-store.v1` and the client asset
 manifest by path and SHA-256. The production CLI resolves both paths relative
 to the clean project root, rejects symlinks and path escape, verifies the
 digests, then validates every per-slot binding against those immutable
@@ -233,9 +248,11 @@ records. A binding is shaped as:
 The locked fact record supplies approved literal renderings; the locked asset
 record supplies ID, locator, SHA-256, rights, and allowed uses. A separate
 locked `connective_copy_allowlist` may authorize titles, section labels, and
-transitional copy without factual refs. Slide-level refs are summaries only
-and cannot satisfy a slot binding. Every declared reference must be consumed
-by at least one binding or placement; otherwise the plan fails.
+transitional copy without factual refs. Slide-level refs are scopes only and
+cannot satisfy a slot binding. Required chart/table/workbook facts are
+consumed later by the deterministic governed-content authorizer. Every
+required fact must be scoped and ultimately consumed by ordinary or governed
+binding evidence.
 
 ### New modules
 
@@ -243,6 +260,9 @@ by at least one binding or placement; otherwise the plan fails.
   `query_page_templates`, deterministic scoring.
 - `scripts/window_pptx/physical_assembly.py` — `assemble_physical_deck`,
   `adapt_slot_text`, `verify_physical_assembly`.
+- `scripts/window_pptx/assembly_autobinder.py` — compact intent, exact-source
+  query bundle, fragment expansion, profile-driven slot binding, and
+  fail-closed feasibility checks.
 
 ### New CLI
 
@@ -250,6 +270,9 @@ by at least one binding or placement; otherwise the plan fails.
 - `scripts/manage_window_pptx_v61_library.py query-pages`
 - `scripts/window_pptx_automation.py --render-assembly-plan` accepts an
   assembly plan and produces the target PPTX.
+- `scripts/run_window_pptx_v61_profile_job.py` validates the clean pack and
+  executes query, binding, physical assembly, rule QA, and evidence in one
+  production command.
 
 ### Private-root precedence
 
@@ -257,7 +280,11 @@ by at least one binding or placement; otherwise the plan fails.
 2. `WINDOW_PPTX_PRIVATE_ROOT` env var
 3. `~/.config/window-pptx/library.json`
 
-The clean client folder MUST NOT be searched for private templates.
+The clean client folder MUST NOT be searched for private templates. In the
+current local single-user `--dangerously-bypass-approvals-and-sandbox` setup,
+this is a project-folder isolation boundary, not an OS confidentiality claim:
+the same user can read the configured private root. Strong secrecy would
+require a broker/service account and is outside Phase 49.
 
 ### Cross-package OPC importer (single algorithm)
 

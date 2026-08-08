@@ -33,6 +33,7 @@
         "config-private-root"
       ]
     },
+    "required_source_ordinal": {"type": "integer", "minimum": 1},
     "role": {"type": "string", "minLength": 1},
     "capacity_budget": {"type": "integer", "minimum": 0},
     "semantic_categories": {

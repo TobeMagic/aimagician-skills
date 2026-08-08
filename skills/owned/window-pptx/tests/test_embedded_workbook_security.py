@@ -26,6 +26,12 @@ from window_pptx.physical_assembly import (
     _prepare_governed_content_replacements,
 )
 from window_pptx.weak_model import Fact, FactSource, FactStore, TrustedProject
+from window_pptx.independent_validation_security import ZipResourceLimits
+from window_pptx import workbook_security
+from window_pptx.workbook_security import (
+    WorkbookSecurityError,
+    audit_governed_xlsx,
+)
 
 
 PACKAGE_REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
@@ -279,6 +285,99 @@ def _mutate(workbook_bytes: bytes) -> bytes:
         workbook_bytes,
         [(_governed_record(), REPLACEMENT_TEXT)],
     )
+
+
+def _workbook_resource_limits(
+    *,
+    max_entries: int = 100,
+    max_entry: int = 100_000,
+    max_total: int = 200_000,
+    max_ratio: float = 1_000.0,
+    max_xml: int = 50_000,
+    max_rels: int = 25_000,
+) -> ZipResourceLimits:
+    return ZipResourceLimits(
+        max_entries=max_entries,
+        max_entry_uncompressed_bytes=max_entry,
+        max_total_uncompressed_bytes=max_total,
+        max_compression_ratio=max_ratio,
+        max_xml_uncompressed_bytes=max_xml,
+        max_relationship_uncompressed_bytes=max_rels,
+    )
+
+
+def test_nested_workbook_default_resource_limits_are_stricter_than_pptx() -> None:
+    limits = workbook_security.WORKBOOK_ZIP_RESOURCE_LIMITS
+    limits.validate()
+
+    assert limits.max_entries == 2_048
+    assert limits.max_entry_uncompressed_bytes == 32 * 1024 * 1024
+    assert limits.max_total_uncompressed_bytes == 128 * 1024 * 1024
+    assert limits.max_compression_ratio == 100
+    assert limits.max_xml_uncompressed_bytes == 16 * 1024 * 1024
+    assert limits.max_relationship_uncompressed_bytes == 4 * 1024 * 1024
+
+
+@pytest.mark.parametrize(
+    ("limits", "expected_code"),
+    [
+        (
+            _workbook_resource_limits(max_entries=3),
+            "ZIP_RESOURCE_ENTRY_COUNT_EXCEEDED",
+        ),
+        (
+            _workbook_resource_limits(
+                max_entry=128,
+                max_total=10_000,
+                max_xml=128,
+                max_rels=64,
+            ),
+            "ZIP_RESOURCE_ENTRY_SIZE_EXCEEDED",
+        ),
+        (
+            _workbook_resource_limits(
+                max_entry=512,
+                max_total=512,
+                max_xml=512,
+                max_rels=256,
+            ),
+            "ZIP_RESOURCE_TOTAL_SIZE_EXCEEDED",
+        ),
+        (
+            _workbook_resource_limits(max_ratio=2),
+            "ZIP_RESOURCE_COMPRESSION_RATIO_EXCEEDED",
+        ),
+        (
+            _workbook_resource_limits(max_xml=128, max_rels=64),
+            "ZIP_RESOURCE_XML_SIZE_EXCEEDED",
+        ),
+        (
+            _workbook_resource_limits(max_rels=64),
+            "ZIP_RESOURCE_RELATIONSHIP_SIZE_EXCEEDED",
+        ),
+    ],
+    ids=(
+        "too-many-entries",
+        "oversized-entry",
+        "oversized-total",
+        "high-compression-ratio",
+        "oversized-xml",
+        "oversized-relationships",
+    ),
+)
+def test_nested_workbook_resource_preflight_rejects_before_member_reads(
+    monkeypatch: pytest.MonkeyPatch,
+    limits: ZipResourceLimits,
+    expected_code: str,
+) -> None:
+    monkeypatch.setattr(
+        workbook_security,
+        "WORKBOOK_ZIP_RESOURCE_LIMITS",
+        limits,
+    )
+
+    with pytest.raises(WorkbookSecurityError, match=expected_code):
+        audit_governed_xlsx(_workbook_bytes())
 
 
 def _shared_strings(archive: zipfile.ZipFile) -> tuple[ET.Element, list[str]]:

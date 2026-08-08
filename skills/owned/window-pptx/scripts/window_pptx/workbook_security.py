@@ -22,6 +22,11 @@ from decimal import Decimal, InvalidOperation
 from pathlib import PurePosixPath
 from typing import Any, Mapping, Sequence
 
+from .independent_validation_security import (
+    ZipResourceLimits,
+    audit_zip_resources,
+)
+
 
 REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 SS_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
@@ -94,6 +99,15 @@ _TABLE_CONTENT_TYPE = (
 )
 _THEME_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.theme+xml"
 _RELS_CONTENT_TYPE = "application/vnd.openxmlformats-package.relationships+xml"
+
+WORKBOOK_ZIP_RESOURCE_LIMITS = ZipResourceLimits(
+    max_entries=2_048,
+    max_entry_uncompressed_bytes=32 * 1024 * 1024,
+    max_total_uncompressed_bytes=128 * 1024 * 1024,
+    max_compression_ratio=100.0,
+    max_xml_uncompressed_bytes=16 * 1024 * 1024,
+    max_relationship_uncompressed_bytes=4 * 1024 * 1024,
+)
 
 
 class WorkbookSecurityError(ValueError):
@@ -208,6 +222,18 @@ def _serialize_relationships(entries: Sequence[Mapping[str, str]]) -> bytes:
 def _load_parts(package_bytes: bytes) -> dict[str, bytes]:
     try:
         with zipfile.ZipFile(io.BytesIO(package_bytes), "r") as archive:
+            resource_findings = audit_zip_resources(
+                archive,
+                limits=WORKBOOK_ZIP_RESOURCE_LIMITS,
+            )
+            if resource_findings:
+                raise WorkbookSecurityError(
+                    "WORKBOOK_PACKAGE_RESOURCE_LIMIT: "
+                    + ";".join(
+                        f"{finding.code}@{finding.location}:{finding.detail}"
+                        for finding in resource_findings
+                    )
+                )
             raw_names = archive.namelist()
             if len(raw_names) != len(set(raw_names)):
                 raise WorkbookSecurityError("WORKBOOK_DUPLICATE_ZIP_ENTRY")
@@ -883,6 +909,7 @@ def read_governed_xlsx_slot(package_bytes: bytes, locator: str) -> str:
 
 
 __all__ = [
+    "WORKBOOK_ZIP_RESOURCE_LIMITS",
     "WorkbookSecurityError",
     "audit_governed_xlsx",
     "mutate_governed_xlsx",

@@ -16,7 +16,15 @@
 - **Expected side effect:** Evidence proves 15/15 direct-use physical lineage,
   zero unresolved OPC targets, and no generated visual fallback.
 - **Result:** NOT_RUN
-- **Evidence:** TBD
+- **Evidence:** Attempt 1 on 2026-08-08 used the requested model and completed
+  brief/narrative/query work, but produced no AssemblyPlan or PPTX. It consumed
+  1,744,792 input tokens and stopped because the old Skill contract required
+  hand-authoring 257 ordinary slots plus 101 governed records from a 762,952
+  byte query bundle. The three partial evidence files were moved intact to
+  `/mnt/d/growth_up_youth/pptx-v61-failed-uat-20260808-run1/`; the clean pack
+  was restored and independently revalidated PASS. This attempt is rejected,
+  not acceptance evidence. Attempt 2 will exercise the deterministic profile
+  harness.
 
 ### UAT-02: Ineligible or capacity-incompatible candidates
 
@@ -53,5 +61,6 @@
 ## UAT Decision
 
 **Status:** NOT_RUN
-**Residual risk:** Phase remains open until all four scenarios and independent
-visual/audit gates pass.
+**Residual risk:** The first run proved an interface-design failure rather
+than a model-quality failure. Phase remains open until the profile compiler,
+second clean run, all four scenarios, and independent visual/audit gates pass.

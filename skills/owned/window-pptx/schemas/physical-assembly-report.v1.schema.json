@@ -256,6 +256,7 @@
         "type": "object",
         "required": [
           "ordinal", "page_id", "slot_id", "shape_id", "binding_kind", "mode",
+          "fit_policy",
           "source_sha256", "replacement_sha256", "fact_refs",
           "asset_refs", "connective_ref", "relationship_id", "target_part",
           "capacity", "status"
@@ -267,6 +268,7 @@
           "shape_id": {"type": "integer", "minimum": 0},
           "binding_kind": {"enum": ["text", "asset", "embedded"]},
           "mode": {"type": "string", "minLength": 1},
+          "fit_policy": {"enum": ["preserve", "no-autofit", "shrink-to-fit"]},
           "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "replacement_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "fact_refs": {"type": "array", "items": {"type": "string"}},
@@ -385,9 +387,9 @@
                   "properties": {
                     "source_part": {"pattern": "^ppt/charts/[^/]+\\.xml$"},
                     "slide_relationship_id": {"minLength": 1},
-                    "chart_part": {"pattern": "^ppt/charts/[^/]+\\.xml$"},
+                    "chart_part": {"pattern": "^ppt/(?:v61_[0-9a-f]{12}/)?charts/[^/\\\\]+\\.xml$"},
                     "chart_relationship_id": {"const": ""},
-                    "target_part": {"pattern": "^ppt/charts/[^/]+\\.xml$"}
+                    "target_part": {"pattern": "^ppt/(?:v61_[0-9a-f]{12}/)?charts/[^/\\\\]+\\.xml$"}
                   }
                 }
               },
@@ -397,9 +399,9 @@
                   "properties": {
                     "source_part": {"pattern": "^ppt/embeddings/[^/]+\\.xlsx$"},
                     "slide_relationship_id": {"minLength": 1},
-                    "chart_part": {"pattern": "^ppt/charts/[^/]+\\.xml$"},
+                    "chart_part": {"pattern": "^ppt/(?:v61_[0-9a-f]{12}/)?charts/[^/\\\\]+\\.xml$"},
                     "chart_relationship_id": {"minLength": 1},
-                    "target_part": {"pattern": "^ppt/embeddings/[^/]+\\.xlsx$"}
+                    "target_part": {"pattern": "^ppt/(?:v61_[0-9a-f]{12}/)?embeddings/[^/\\\\]+\\.xlsx$"}
                   }
                 }
               }

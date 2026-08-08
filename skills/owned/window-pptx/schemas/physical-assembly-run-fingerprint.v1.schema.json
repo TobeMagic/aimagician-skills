@@ -10,9 +10,11 @@
     "run_id",
     "command",
     "installed_skill",
+    "runtime_identity",
     "requirements",
     "assets",
     "private_library",
+    "process_evidence",
     "manifests",
     "artifacts",
     "exit"
@@ -23,7 +25,7 @@
     "command": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["argv", "cwd", "model_provider", "model", "reasoning_effort"],
+      "required": ["argv", "cwd", "stdin", "executable", "model_provider", "model", "reasoning_effort"],
       "properties": {
         "argv": {
           "type": "array",
@@ -35,7 +37,7 @@
             {"const": "--dangerously-bypass-approvals-and-sandbox"},
             {"const": "--skip-git-repo-check"},
             {"const": "-c"},
-            {"const": "model_provider=\"OpenAI\""},
+            {"const": "model_provider=\"openai\""},
             {"const": "-c"},
             {"const": "model_reasoning_effort=\"medium\""},
             {"const": "--cd"},
@@ -48,7 +50,25 @@
           "items": false
         },
         "cwd": {"type": "string", "pattern": "^/", "minLength": 2, "maxLength": 2000},
-        "model_provider": {"const": "OpenAI"},
+        "stdin": {
+          "allOf": [
+            {"$ref": "#/$defs/projectFile"},
+            {"properties": {"path": {"const": "PRODUCTION_PROMPT.md"}}}
+          ]
+        },
+        "executable": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requested_path", "resolved_path", "sha256", "size", "version"],
+          "properties": {
+            "requested_path": {"type": "string", "pattern": "^/", "minLength": 2, "maxLength": 2000},
+            "resolved_path": {"type": "string", "pattern": "^/", "minLength": 2, "maxLength": 2000},
+            "sha256": {"$ref": "#/$defs/sha256"},
+            "size": {"type": "integer", "minimum": 1},
+            "version": {"type": "string", "minLength": 1, "maxLength": 200}
+          }
+        },
+        "model_provider": {"const": "openai"},
         "model": {"const": "gpt-5.6-terra"},
         "reasoning_effort": {"const": "medium"}
       }
@@ -56,13 +76,29 @@
     "installed_skill": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "digest_algorithm", "sha256", "file_count", "total_size"],
+      "required": ["path", "expected_sha256", "digest_algorithm", "sha256", "file_count", "total_size"],
       "properties": {
         "path": {"type": "string", "pattern": "^/", "minLength": 2, "maxLength": 2000},
+        "expected_sha256": {"$ref": "#/$defs/sha256"},
         "digest_algorithm": {"const": "tree-file-bytes-sha256-v1"},
         "sha256": {"$ref": "#/$defs/sha256"},
         "file_count": {"type": "integer", "minimum": 1},
         "total_size": {"type": "integer", "minimum": 1}
+      }
+    },
+    "runtime_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifest", "expected_sha256", "launch_mode"],
+      "properties": {
+        "manifest": {
+          "allOf": [
+            {"$ref": "#/$defs/artifact"},
+            {"properties": {"path": {"type": "string", "pattern": "^/"}}}
+          ]
+        },
+        "expected_sha256": {"$ref": "#/$defs/sha256"},
+        "launch_mode": {"const": "native-codex-direct"}
       }
     },
     "requirements": {"$ref": "#/$defs/fileBundle"},
@@ -83,6 +119,16 @@
         "library_index_sha256": {"$ref": "#/$defs/sha256"}
       }
     },
+    "process_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["events_jsonl", "stderr", "settlement"],
+      "properties": {
+        "events_jsonl": {"$ref": "#/$defs/artifact"},
+        "stderr": {"$ref": "#/$defs/artifact"},
+        "settlement": {"$ref": "#/$defs/settlement"}
+      }
+    },
     "manifests": {
       "type": "object",
       "additionalProperties": false,
@@ -95,10 +141,47 @@
     "artifacts": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["output_pptx", "physical_assembly_report"],
+      "required": [
+        "output_pptx",
+        "physical_assembly_report",
+        "rule_qa_report",
+        "evidence_outputs"
+      ],
       "properties": {
-        "output_pptx": {"$ref": "#/$defs/projectFile"},
-        "physical_assembly_report": {"$ref": "#/$defs/projectFile"}
+        "output_pptx": {
+          "allOf": [
+            {"$ref": "#/$defs/projectFile"},
+            {"properties": {"path": {"const": "output/hospital-finance-annual-2025.pptx"}}}
+          ]
+        },
+        "physical_assembly_report": {
+          "allOf": [
+            {"$ref": "#/$defs/projectFile"},
+            {"properties": {"path": {"const": "evidence/physical-assembly-report.v1.json"}}}
+          ]
+        },
+        "rule_qa_report": {
+          "allOf": [
+            {"$ref": "#/$defs/projectFile"},
+            {"properties": {"path": {"const": "evidence/rule-qa.v1.json"}}}
+          ]
+        },
+        "evidence_outputs": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "prefixItems": [
+            {"$ref": "#/$defs/directionDecision"},
+            {"$ref": "#/$defs/narrativePlan"},
+            {"$ref": "#/$defs/assemblyPlan"},
+            {"$ref": "#/$defs/templateQueryResults"},
+            {"$ref": "#/$defs/physicalAssemblyReport"},
+            {"$ref": "#/$defs/ruleQaReport"},
+            {"$ref": "#/$defs/fingerprintBundle"},
+            {"$ref": "#/$defs/runSummary"}
+          ],
+          "items": false
+        }
       }
     },
     "exit": {
@@ -147,6 +230,86 @@
         "size": {"type": "integer", "minimum": 0}
       }
     },
+    "settlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["process_group", "inventory"],
+      "properties": {
+        "process_group": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "isolation",
+            "leader_pid",
+            "process_group_id",
+            "cleanup_attempted",
+            "signals_sent",
+            "absence_probe_count",
+            "residue_status"
+          ],
+          "properties": {
+            "isolation": {"const": "new-posix-session"},
+            "leader_pid": {"type": "integer", "minimum": 1},
+            "process_group_id": {"type": "integer", "minimum": 1},
+            "cleanup_attempted": {"type": "boolean"},
+            "signals_sent": {
+              "type": "array",
+              "maxItems": 2,
+              "items": {"enum": ["SIGTERM", "SIGKILL"]}
+            },
+            "absence_probe_count": {"type": "integer", "minimum": 1},
+            "residue_status": {"const": "absent"}
+          }
+        },
+        "inventory": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "policy",
+            "stable",
+            "minimum_sample_count",
+            "minimum_window_ms",
+            "sample_interval_ms",
+            "sample_count",
+            "window_ms",
+            "samples"
+          ],
+          "properties": {
+            "policy": {"const": "separated-stable-inventory-v1"},
+            "stable": {"const": true},
+            "minimum_sample_count": {"type": "integer", "minimum": 3},
+            "minimum_window_ms": {"type": "integer", "minimum": 200},
+            "sample_interval_ms": {"type": "integer", "minimum": 1},
+            "sample_count": {"type": "integer", "minimum": 3},
+            "window_ms": {"type": "integer", "minimum": 200},
+            "samples": {
+              "type": "array",
+              "minItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "ordinal",
+                  "offset_ms",
+                  "digest_algorithm",
+                  "inventory_sha256",
+                  "entry_count",
+                  "total_size"
+                ],
+                "properties": {
+                  "ordinal": {"type": "integer", "minimum": 1},
+                  "offset_ms": {"type": "integer", "minimum": 0},
+                  "digest_algorithm": {"const": "canonical-file-records-sha256-v1"},
+                  "inventory_sha256": {"$ref": "#/$defs/sha256"},
+                  "entry_count": {"type": "integer", "minimum": 1},
+                  "total_size": {"type": "integer", "minimum": 1}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "fileBundle": {
       "type": "object",
       "additionalProperties": false,
@@ -162,6 +325,54 @@
           "items": {"$ref": "#/$defs/projectFile"}
         }
       }
+    },
+    "directionDecision": {
+      "allOf": [
+        {"$ref": "#/$defs/projectFile"},
+        {"properties": {"path": {"const": "evidence/direction-decision.v1.json"}}}
+      ]
+    },
+    "narrativePlan": {
+      "allOf": [
+        {"$ref": "#/$defs/projectFile"},
+        {"properties": {"path": {"const": "evidence/narrative-plan.v1.json"}}}
+      ]
+    },
+    "assemblyPlan": {
+      "allOf": [
+        {"$ref": "#/$defs/projectFile"},
+        {"properties": {"path": {"const": "evidence/assembly-plan.v1.json"}}}
+      ]
+    },
+    "templateQueryResults": {
+      "allOf": [
+        {"$ref": "#/$defs/projectFile"},
+        {"properties": {"path": {"const": "evidence/template-query-results.v1.json"}}}
+      ]
+    },
+    "physicalAssemblyReport": {
+      "allOf": [
+        {"$ref": "#/$defs/projectFile"},
+        {"properties": {"path": {"const": "evidence/physical-assembly-report.v1.json"}}}
+      ]
+    },
+    "ruleQaReport": {
+      "allOf": [
+        {"$ref": "#/$defs/projectFile"},
+        {"properties": {"path": {"const": "evidence/rule-qa.v1.json"}}}
+      ]
+    },
+    "fingerprintBundle": {
+      "allOf": [
+        {"$ref": "#/$defs/projectFile"},
+        {"properties": {"path": {"const": "evidence/fingerprint-bundle.v1.json"}}}
+      ]
+    },
+    "runSummary": {
+      "allOf": [
+        {"$ref": "#/$defs/projectFile"},
+        {"properties": {"path": {"const": "evidence/run-summary.md"}}}
+      ]
     }
   }
 }

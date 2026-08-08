@@ -118,7 +118,7 @@ FORBIDDEN_RELATIONSHIP_TARGET_SUFFIXES = (
     ".dotm",
 )
 PHASE49_LIBRARY_INDEX_SHA256 = (
-    "dda45d2ad1e32dab5c3aa6d39b1ab8671d71cc380eca6a0ff7d06ad9b0f96ff6"
+    "ed4078111e8010d3b171e74463199a8720b7e0d5ca1814a72ff1616b285c42ab"
 )
 PHASE49_GOVERNED_INVENTORY_SHA256 = (
     "12ce0f96e70c84c07d3b70ec9f4a4385949ffc05981ef983ed09648c282353c2"
@@ -1614,7 +1614,16 @@ def _validate_binding_authority_metadata(
             )
 
 
-def _read_slide_shape_text(slide_bytes: bytes, shape_id: int) -> str:
+def _read_slide_shape_text_variants(slide_bytes: bytes, shape_id: int) -> tuple[str, ...]:
+    """Return exact OOXML text serializations without treating runs as lines.
+
+    A binding string is independent of how PowerPoint partitions it into
+    styled runs and, for some legacy templates, paragraphs.  The output is
+    still validated against the exact locked replacement SHA-256; these
+    variants merely allow that exact string to be reconstructed without
+    collapsing the template's typography.
+    """
+
     root = ET.fromstring(slide_bytes)
     matches: list[ET.Element] = []
     for candidate in root.iter():
@@ -1633,11 +1642,69 @@ def _read_slide_shape_text(slide_bytes: bytes, shape_id: int) -> str:
             matches.append(candidate)
     if len(matches) != 1:
         raise ValueError("bound text shape not found uniquely")
-    return "\n".join(
-        node.text or ""
+    paragraphs: list[str] = []
+    runs: list[str] = []
+    for paragraph in matches[0].iter():
+        if paragraph.tag.rsplit("}", 1)[-1] != "p":
+            continue
+        paragraph_runs = [
+            node.text or ""
+            for node in paragraph.iter()
+            if node.tag.rsplit("}", 1)[-1] == "t"
+        ]
+        runs.extend(paragraph_runs)
+        paragraphs.append("".join(paragraph_runs))
+    variants = (
+        "\n".join(paragraphs).strip(),
+        "".join(runs).strip(),
+        "\n".join(runs).strip(),
+    )
+    return tuple(dict.fromkeys(variants))
+
+
+def _read_slide_shape_text(slide_bytes: bytes, shape_id: int) -> str:
+    return _read_slide_shape_text_variants(slide_bytes, shape_id)[0]
+
+
+def _read_slide_shape_fit_policy(slide_bytes: bytes, shape_id: int) -> str:
+    """Recompute the effective governed fit-policy marker for one text shape."""
+
+    root = ET.fromstring(slide_bytes)
+    matches: list[ET.Element] = []
+    for candidate in root.iter():
+        if candidate.tag.rsplit("}", 1)[-1] not in {"sp", "graphicFrame", "cxnSp"}:
+            continue
+        marker = next(
+            (
+                node
+                for node in candidate.iter()
+                if node.tag.rsplit("}", 1)[-1] == "cNvPr"
+                and node.attrib.get("id") == str(shape_id)
+            ),
+            None,
+        )
+        if marker is not None:
+            matches.append(candidate)
+    if len(matches) != 1:
+        raise ValueError("bound text shape not found uniquely")
+    body_pr = [
+        node
         for node in matches[0].iter()
-        if node.tag.rsplit("}", 1)[-1] == "t"
-    ).strip()
+        if node.tag.rsplit("}", 1)[-1] == "bodyPr"
+    ]
+    if len(body_pr) != 1:
+        raise ValueError("bound text shape bodyPr not found uniquely")
+    fit_nodes = [
+        child.tag.rsplit("}", 1)[-1]
+        for child in list(body_pr[0])
+        if child.tag.rsplit("}", 1)[-1]
+        in {"spAutoFit", "normAutofit", "noAutofit"}
+    ]
+    if fit_nodes == ["noAutofit"]:
+        return "no-autofit"
+    if fit_nodes == ["normAutofit"]:
+        return "shrink-to-fit"
+    return "preserve"
 
 
 def _equal(
@@ -2263,6 +2330,12 @@ def _validate_cross_fields(
     if output_path is not None:
         topology = inspect_presentation_topology(output_path)
         _merge_contract_findings(issues, topology.issues)
+        if any(
+            issue.code.startswith("ZIP_RESOURCE_")
+            for issue in topology.issues
+        ):
+            observed["zip_resource_preflight"] = "fail"
+            return observed
         if topology.statistics is not None:
             topology_stats = topology.statistics.to_dict()
             observed["strict_presentation_topology"] = {
@@ -2517,9 +2590,20 @@ def _validate_cross_fields(
                         )
                         continue
                     try:
-                        actual_text = _read_slide_shape_text(
-                            archive.read(slide_names[ordinal]),
+                        slide_bytes = archive.read(slide_names[ordinal])
+                        actual_variants = _read_slide_shape_text_variants(
+                            slide_bytes,
                             shape_id,
+                        )
+                        expected_sha = item.get("replacement_sha256")
+                        actual_text = next(
+                            (
+                                value
+                                for value in actual_variants
+                                if hashlib.sha256(value.encode("utf-8")).hexdigest()
+                                == expected_sha
+                            ),
+                            actual_variants[0],
                         )
                     except (KeyError, ValueError, ET.ParseError) as exc:
                         _issue(
@@ -2529,6 +2613,27 @@ def _validate_cross_fields(
                             str(exc),
                         )
                         continue
+                    if item.get("fit_policy") in {"no-autofit", "shrink-to-fit"}:
+                        try:
+                            actual_fit_policy = _read_slide_shape_fit_policy(
+                                slide_bytes,
+                                shape_id,
+                            )
+                        except (ValueError, ET.ParseError) as exc:
+                            _issue(
+                                issues,
+                                "BINDING_FIT_POLICY_MISMATCH",
+                                f"report.binding_evidence.{index}.fit_policy",
+                                str(exc),
+                            )
+                            continue
+                        if actual_fit_policy != item.get("fit_policy"):
+                            _issue(
+                                issues,
+                                "BINDING_FIT_POLICY_MISMATCH",
+                                f"report.binding_evidence.{index}.fit_policy",
+                                f"reported={item.get('fit_policy')} actual={actual_fit_policy}",
+                            )
                     key = (ordinal, page_id, slot_id)
                     actual_text_by_key[key] = actual_text
                     validated_text_records.append(

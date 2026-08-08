@@ -18,6 +18,8 @@ SKILL_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 from window_pptx.independent_validation_security import (  # noqa: E402
+    PPTX_ZIP_RESOURCE_LIMITS,
+    ZipResourceLimits,
     audit_output_media_authority,
     audit_output_text_coverage,
     audit_zip_entries,
@@ -738,6 +740,186 @@ def test_normalized_and_numeric_modes_use_complete_registered_values() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "actual",
+    ["45,063.1", "45063", "49.1%", "0.491000000000000005"],
+)
+def test_numeric_rendering_extracts_registered_tokens_and_accepts_native_rounding(
+    actual: str,
+) -> None:
+    fact = {
+        "id": "revenue-medical",
+        "text": "医疗收入 45,063.1 万元，占比 49.1%",
+        "allowed_renderings": ["45,063.1 万元", "49.1%"],
+        "value": None,
+        "unit": None,
+        "status": "active",
+    }
+
+    assert validate_fact_evidence_value(
+        actual,
+        evidence_mode="source-numeric-rendering",
+        fact_refs=["revenue-medical"],
+        facts_by_id={"revenue-medical": fact},
+    ) == ()
+
+
+@pytest.mark.parametrize(
+    "actual",
+    ["45062", "45063.0", "49.2%", "0.492", "医疗收入45,063.1"],
+)
+def test_numeric_rendering_rejects_wrong_or_non_numeric_governed_values(
+    actual: str,
+) -> None:
+    fact = {
+        "id": "revenue-medical",
+        "text": "医疗收入 45,063.1 万元，占比 49.1%",
+        "allowed_renderings": ["45,063.1 万元", "49.1%"],
+        "value": None,
+        "unit": None,
+        "status": "active",
+    }
+
+    findings = validate_fact_evidence_value(
+        actual,
+        evidence_mode="source-numeric-rendering",
+        fact_refs=["revenue-medical"],
+        facts_by_id={"revenue-medical": fact},
+    )
+
+    assert {finding.code for finding in findings} == {
+        "FACT_NUMERIC_RENDERING_MISMATCH"
+    }
+
+
+@pytest.mark.parametrize("actual", ["100", "80", "20", "25%", "0.25"])
+def test_numeric_rendering_authorizes_each_number_in_one_multi_number_fact(
+    actual: str,
+) -> None:
+    fact = {
+        "id": "expense-row",
+        "text": "本年 100 万元，上年 80 万元，增减额 20 万元，增减率 25%",
+        "allowed_renderings": ["费用变化"],
+        "value": None,
+        "unit": None,
+        "status": "active",
+    }
+
+    assert validate_fact_evidence_value(
+        actual,
+        evidence_mode="source-numeric-rendering",
+        fact_refs=["expense-row"],
+        facts_by_id={"expense-row": fact},
+    ) == ()
+
+
+def test_numeric_rendering_rejects_a_wrong_number_in_multi_number_fact() -> None:
+    fact = {
+        "id": "expense-row",
+        "text": "本年 100 万元，上年 80 万元，增减额 20 万元，增减率 25%",
+        "allowed_renderings": ["费用变化"],
+        "value": None,
+        "unit": None,
+        "status": "active",
+    }
+
+    findings = validate_fact_evidence_value(
+        "81",
+        evidence_mode="source-numeric-rendering",
+        fact_refs=["expense-row"],
+        facts_by_id={"expense-row": fact},
+    )
+
+    assert {finding.code for finding in findings} == {
+        "FACT_NUMERIC_RENDERING_MISMATCH"
+    }
+
+
+def test_numeric_rendering_recomputes_unique_fact_authority() -> None:
+    facts = {
+        "fact-a": {
+            "id": "fact-a",
+            "text": "本年收入 42 万元",
+            "allowed_renderings": [],
+            "status": "active",
+        },
+        "fact-b": {
+            "id": "fact-b",
+            "text": "本年支出 77 万元",
+            "allowed_renderings": [],
+            "status": "active",
+        },
+    }
+
+    wrong_ref = validate_fact_evidence_value(
+        "42",
+        evidence_mode="source-numeric-rendering",
+        fact_refs=["fact-b"],
+        facts_by_id=facts,
+    )
+    facts["fact-b"]["text"] = "本年支出 42 万元"
+    ambiguous = validate_fact_evidence_value(
+        "42",
+        evidence_mode="source-numeric-rendering",
+        fact_refs=["fact-a"],
+        facts_by_id=facts,
+    )
+
+    assert {finding.code for finding in wrong_ref} == {
+        "FACT_NUMERIC_RENDERING_MISMATCH"
+    }
+    assert {finding.code for finding in ambiguous} == {
+        "FACT_NUMERIC_AUTHORITY_AMBIGUOUS"
+    }
+
+
+def test_numeric_modes_do_not_authorize_non_numeric_renderings_or_other_fields() -> None:
+    facts = {
+        "scalar": {
+            "id": "scalar",
+            "text": "2025 年医疗收入 45,063.1 万元",
+            "allowed_renderings": ["本年决算"],
+            "value": 45063.1,
+            "unit": "万元",
+            "status": "active",
+        },
+        "words-only": {
+            "id": "words-only",
+            "text": "四十二万元",
+            "allowed_renderings": ["金额待定"],
+            "value": None,
+            "unit": None,
+            "status": "active",
+        },
+    }
+
+    assert validate_fact_evidence_value(
+        "45063",
+        evidence_mode="source-numeric-scalar",
+        fact_refs=["scalar"],
+        facts_by_id=facts,
+    ) == ()
+    wrong_field = validate_fact_evidence_value(
+        "2025",
+        evidence_mode="source-numeric-scalar",
+        fact_refs=["scalar"],
+        facts_by_id=facts,
+    )
+    words_only = validate_fact_evidence_value(
+        "42",
+        evidence_mode="source-numeric-rendering",
+        fact_refs=["words-only"],
+        facts_by_id=facts,
+    )
+
+    assert {finding.code for finding in wrong_field} == {
+        "FACT_NUMERIC_RENDERING_MISMATCH"
+    }
+    assert {finding.code for finding in words_only} == {
+        "FACT_NUMERIC_RENDERING_MISMATCH"
+    }
+
+
 def test_join_mode_requires_multiple_complete_registered_renderings() -> None:
     facts = {
         "fact-a": {
@@ -840,6 +1022,37 @@ def _zip_bytes(entries: list[tuple[str, bytes]]) -> bytes:
     return output.getvalue()
 
 
+def _deflated_zip_bytes(entries: list[tuple[str, bytes]]) -> bytes:
+    output = io.BytesIO()
+    with zipfile.ZipFile(
+        output,
+        "w",
+        compression=zipfile.ZIP_DEFLATED,
+    ) as archive:
+        for name, payload in entries:
+            archive.writestr(name, payload)
+    return output.getvalue()
+
+
+def _resource_limits(
+    *,
+    max_entries: int = 10,
+    max_entry: int = 100_000,
+    max_total: int = 200_000,
+    max_ratio: float = 1_000.0,
+    max_xml: int = 50_000,
+    max_rels: int = 25_000,
+) -> ZipResourceLimits:
+    return ZipResourceLimits(
+        max_entries=max_entries,
+        max_entry_uncompressed_bytes=max_entry,
+        max_total_uncompressed_bytes=max_total,
+        max_compression_ratio=max_ratio,
+        max_xml_uncompressed_bytes=max_xml,
+        max_relationship_uncompressed_bytes=max_rels,
+    )
+
+
 def _text_shape(shape_id: int, text: str) -> str:
     return (
         "<p:sp><p:nvSpPr>"
@@ -934,6 +1147,75 @@ def test_zip_entry_audit_accepts_only_unique_canonical_file_parts() -> None:
 
     assert audit.status == "pass"
     assert audit.canonical_names == ("ppt/slides/slide1.xml",)
+
+
+def test_default_pptx_resource_limits_cover_all_decompression_dimensions() -> None:
+    PPTX_ZIP_RESOURCE_LIMITS.validate()
+
+    assert PPTX_ZIP_RESOURCE_LIMITS.max_entries == 10_000
+    assert PPTX_ZIP_RESOURCE_LIMITS.max_entry_uncompressed_bytes == 256 * 1024 * 1024
+    assert PPTX_ZIP_RESOURCE_LIMITS.max_total_uncompressed_bytes == 1024 * 1024 * 1024
+    assert PPTX_ZIP_RESOURCE_LIMITS.max_compression_ratio == 200
+    assert PPTX_ZIP_RESOURCE_LIMITS.max_xml_uncompressed_bytes == 32 * 1024 * 1024
+    assert (
+        PPTX_ZIP_RESOURCE_LIMITS.max_relationship_uncompressed_bytes
+        == 8 * 1024 * 1024
+    )
+
+
+@pytest.mark.parametrize(
+    ("package", "limits", "expected_code"),
+    [
+        (
+            _zip_bytes([("a.bin", b"1"), ("b.bin", b"2"), ("c.bin", b"3")]),
+            _resource_limits(max_entries=2),
+            "ZIP_RESOURCE_ENTRY_COUNT_EXCEEDED",
+        ),
+        (
+            _zip_bytes([("large.bin", b"x" * 11)]),
+            _resource_limits(max_entry=10, max_total=20, max_xml=10, max_rels=5),
+            "ZIP_RESOURCE_ENTRY_SIZE_EXCEEDED",
+        ),
+        (
+            _zip_bytes([("a.bin", b"x" * 6), ("b.bin", b"y" * 6)]),
+            _resource_limits(max_entry=10, max_total=10, max_xml=10, max_rels=5),
+            "ZIP_RESOURCE_TOTAL_SIZE_EXCEEDED",
+        ),
+        (
+            _deflated_zip_bytes([("bomb.bin", b"0" * 64_000)]),
+            _resource_limits(max_ratio=2),
+            "ZIP_RESOURCE_COMPRESSION_RATIO_EXCEEDED",
+        ),
+        (
+            _zip_bytes([("ppt/slides/slide1.xml", b"x" * 11)]),
+            _resource_limits(max_entry=20, max_total=20, max_xml=10, max_rels=5),
+            "ZIP_RESOURCE_XML_SIZE_EXCEEDED",
+        ),
+        (
+            _zip_bytes([("ppt/slides/_rels/slide1.xml.rels", b"x" * 6)]),
+            _resource_limits(max_entry=20, max_total=20, max_xml=10, max_rels=5),
+            "ZIP_RESOURCE_RELATIONSHIP_SIZE_EXCEEDED",
+        ),
+    ],
+    ids=(
+        "too-many-entries",
+        "oversized-entry",
+        "oversized-total",
+        "high-compression-ratio",
+        "oversized-xml",
+        "oversized-relationships",
+    ),
+)
+def test_zip_resource_preflight_rejects_adversarial_packages_before_read(
+    package: bytes,
+    limits: ZipResourceLimits,
+    expected_code: str,
+) -> None:
+    with zipfile.ZipFile(io.BytesIO(package), "r") as archive:
+        audit = audit_zip_entries(archive, limits=limits)
+
+    assert audit.status == "fail"
+    assert expected_code in {finding.code for finding in audit.findings}
 
 
 @pytest.mark.parametrize(

@@ -38,6 +38,7 @@ from window_pptx.physical_assembly import (
     TextBindingSpec,
     _SourcePackageContext,
     _build_source_graph,
+    _adapt_slide_text,
     _cover_crop_values,
     _discover_picture_slots,
     _inspect_all_relationships,
@@ -45,6 +46,8 @@ from window_pptx.physical_assembly import (
     _prepare_governed_content_replacements,
     _resolve_output_governed_target,
     _sanitize_layout_master_fields,
+    _semantic_character_count,
+    _slide_structure_signature,
     _validate_fragment_group_bindings,
     _validate_query_selection_evidence,
     _verify_all_relationships,
@@ -66,6 +69,125 @@ OFFICE_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationship
 CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
 PML_NS = "http://schemas.openxmlformats.org/presentationml/2006/main"
 DML_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
+
+
+def test_semantic_character_count_ignores_template_layout_whitespace() -> None:
+    assert _semantic_character_count("深入" + (" " * 23) + "临床科室") == 6
+    assert _semantic_character_count("A\nB\tC") == 3
+
+
+def _fit_policy_slide_xml(*, fit_node: str = "spAutoFit") -> bytes:
+    return (
+        f'<p:sld xmlns:p="{PML_NS}" xmlns:a="{DML_NS}"><p:cSld><p:spTree>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="2" name="target"/></p:nvSpPr>'
+        '<p:spPr><a:xfrm><a:off x="101" y="202"/><a:ext cx="303" cy="404"/>'
+        '</a:xfrm></p:spPr><p:txBody><a:bodyPr wrap="none">'
+        f'<a:{fit_node}/></a:bodyPr><a:p><a:r><a:rPr sz="1800"/>'
+        '<a:t>Old</a:t></a:r></a:p></p:txBody></p:sp>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="3" name="peer"/></p:nvSpPr>'
+        '<p:spPr/><p:txBody><a:bodyPr><a:spAutoFit/></a:bodyPr>'
+        '<a:p><a:r><a:t>Peer</a:t></a:r></a:p></p:txBody></p:sp>'
+        '</p:spTree></p:cSld></p:sld>'
+    ).encode()
+
+
+def test_no_autofit_mutates_only_target_body_policy_and_text() -> None:
+    source = _fit_policy_slide_xml()
+
+    actual = _adapt_slide_text(
+        source,
+        {"shape_2": "New"},
+        allowed_slots=("shape_2", "shape_3"),
+        fit_policies={"shape_2": "no-autofit"},
+    )
+
+    expected = source.replace(b"<a:spAutoFit/>", b"<a:noAutofit/>", 1).replace(
+        b">Old<", b">New<", 1
+    )
+    assert actual == expected
+    assert b'<a:off x="101" y="202"/>' in actual
+    assert b'<a:rPr sz="1800"/>' in actual
+    assert actual.count(b"<a:spAutoFit/>") == 1
+
+
+def test_shrink_to_fit_mutates_only_target_body_policy_and_text() -> None:
+    source = _fit_policy_slide_xml()
+
+    actual = _adapt_slide_text(
+        source,
+        {"shape_2": "New value"},
+        allowed_slots=("shape_2", "shape_3"),
+        fit_policies={"shape_2": "shrink-to-fit"},
+    )
+
+    expected = source.replace(
+        b"<a:spAutoFit/>",
+        b'<a:normAutofit fontScale="40000" lnSpcReduction="20000"/>',
+        1,
+    ).replace(b'<a:rPr sz="1800"/>', b'<a:rPr sz="800"/>', 1).replace(
+        b">Old<", b">New value<", 1
+    )
+    assert actual == expected
+    assert b'<a:off x="101" y="202"/>' in actual
+    assert b'<a:rPr sz="800"/>' in actual
+    assert actual.count(b"<a:spAutoFit/>") == 1
+
+
+def test_text_adaptation_preserves_existing_run_styles() -> None:
+    source = (
+        f'<p:sld xmlns:p="{PML_NS}" xmlns:a="{DML_NS}"><p:cSld><p:spTree>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="2" name="percent"/></p:nvSpPr>'
+        '<p:txBody><a:bodyPr><a:spAutoFit/></a:bodyPr><a:p>'
+        '<a:r><a:rPr sz="4000"/><a:t>44.6</a:t></a:r>'
+        '<a:r><a:rPr sz="2400"/><a:t>%</a:t></a:r>'
+        '</a:p></p:txBody></p:sp>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="3" name="title"/></p:nvSpPr>'
+        '<p:txBody><a:bodyPr><a:spAutoFit/></a:bodyPr><a:p>'
+        '<a:r><a:rPr sz="3200"/><a:t>202x</a:t></a:r>'
+        '<a:r><a:rPr sz="3200"/><a:t>年财务决算：</a:t></a:r>'
+        '<a:r><a:rPr sz="3200" b="1"/><a:t>财政项目及政府债支出</a:t></a:r>'
+        '</a:p></p:txBody></p:sp>'
+        '</p:spTree></p:cSld></p:sld>'
+    ).encode()
+
+    actual = _adapt_slide_text(
+        source,
+        {
+            "shape_2": "49.1%",
+            "shape_3": "2025年财政项目及政府债支出",
+        },
+        allowed_slots=("shape_2", "shape_3"),
+    )
+    root = ET.fromstring(actual)
+    runs_by_shape: dict[int, list[str]] = {}
+    for shape in root.iter(f"{{{PML_NS}}}sp"):
+        marker = shape.find(f".//{{{PML_NS}}}cNvPr")
+        if marker is None:
+            continue
+        runs_by_shape[int(marker.attrib["id"])] = [
+            node.text or "" for node in shape.iter(f"{{{DML_NS}}}t")
+        ]
+
+    assert runs_by_shape[2] == ["49.1", "%"]
+    assert runs_by_shape[3] == ["2025", "年", "财政项目及政府债支出"]
+    assert b'<a:rPr sz="2400"/>' in actual
+    assert b'<a:rPr sz="3200" b="1"/>' in actual
+
+
+def test_structure_signature_treats_autofit_variants_as_one_governed_node() -> None:
+    signatures = {
+        _slide_structure_signature(_fit_policy_slide_xml(fit_node=fit_node))
+        for fit_node in ("spAutoFit", "normAutofit", "noAutofit")
+    }
+
+    assert len(signatures) == 1
+
+
+def test_structure_signature_treats_autofit_run_size_as_governed() -> None:
+    source = _fit_policy_slide_xml()
+    target = source.replace(b'<a:rPr sz="1800"/>', b'<a:rPr sz="990"/>', 1)
+
+    assert _slide_structure_signature(source) == _slide_structure_signature(target)
 
 
 def _content_types(*overrides: tuple[str, str]) -> bytes:
@@ -1540,6 +1662,26 @@ def test_locked_authority_binds_fact_and_asset_with_shape_evidence(tmp_path: Pat
     assert loaded_spec.replacement == source_spec.replacement
     assert loaded_spec.fact_refs == source_spec.fact_refs
     assert loaded_spec.mode == "auto"
+    assert loaded_spec.fit_policy == "preserve"
+
+
+def test_plan_loader_rejects_unknown_text_fit_policy(tmp_path: Path) -> None:
+    plan, *_ = _locked_plan_fixture(tmp_path)
+    payload = plan.to_dict()
+    text_slot = next(iter(plan.target_slides[0].text_binding_specs))
+    payload["target_slides"][0]["bindings"][text_slot]["fit_policy"] = "shrink"
+    plan_path = tmp_path / "invalid-fit-policy-plan.json"
+    plan_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    with pytest.raises(PhysicalAssemblyError, match="fit_policy|schema"):
+        load_assembly_plan(
+            plan_path,
+            {
+                plan.target_slides[0].page_template.page_id:
+                    plan.target_slides[0].page_template
+            },
+            project_root=tmp_path,
+        )
 
 
 @pytest.mark.parametrize(
@@ -2282,6 +2424,7 @@ def test_query_bundle_selection_is_hash_bound_to_candidate_rank(
                 "result": {
                     "schema_version": "page-template-query-result.v1",
                     "library_index_sha256": plan.library_index_sha256,
+                    "required_source_ordinal": 1,
                     "role": slide.page_template.page_role,
                     "capacity_budget": 0,
                     "semantic_categories": [],
@@ -2320,6 +2463,58 @@ def test_query_bundle_selection_is_hash_bound_to_candidate_rank(
     assert evidence.status == "pass"
     assert evidence.query_bundle_sha256 == selected_plan.query_bundle_sha256
     assert evidence.query_count == evidence.selected_count == 1
+    phase49_evidence = _validate_query_selection_evidence(
+        selected_plan,
+        project_root=tmp_path,
+        library_index=library_index,
+        require_phase49_ordinals=True,
+    )
+    assert phase49_evidence.status == "pass"
+
+    ordinal_tamper = json.loads(json.dumps(bundle))
+    ordinal_tamper["queries"][0]["result"]["required_source_ordinal"] = 2
+    bundle_path.write_text(
+        json.dumps(ordinal_tamper, ensure_ascii=False, sort_keys=True),
+        encoding="utf-8",
+    )
+    ordinal_tampered_plan = replace(
+        selected_plan,
+        query_bundle_sha256=hashlib.sha256(bundle_path.read_bytes()).hexdigest(),
+    )
+    with pytest.raises(PhysicalAssemblyError, match="ORDINAL_NO_MATCH"):
+        _validate_query_selection_evidence(
+            ordinal_tampered_plan,
+            project_root=tmp_path,
+            library_index=library_index,
+        )
+
+    missing_phase49_ordinal = json.loads(json.dumps(bundle))
+    del missing_phase49_ordinal["queries"][0]["result"][
+        "required_source_ordinal"
+    ]
+    bundle_path.write_text(
+        json.dumps(missing_phase49_ordinal, ensure_ascii=False, sort_keys=True),
+        encoding="utf-8",
+    )
+    missing_ordinal_plan = replace(
+        selected_plan,
+        query_bundle_sha256=hashlib.sha256(bundle_path.read_bytes()).hexdigest(),
+    )
+    with pytest.raises(
+        PhysicalAssemblyError,
+        match="PHASE49_QUERY_SOURCE_ORDINAL_MISMATCH",
+    ):
+        _validate_query_selection_evidence(
+            missing_ordinal_plan,
+            project_root=tmp_path,
+            library_index=library_index,
+            require_phase49_ordinals=True,
+        )
+
+    bundle_path.write_text(
+        json.dumps(bundle, ensure_ascii=False, sort_keys=True),
+        encoding="utf-8",
+    )
     bundle["queries"][0]["result"]["candidates"][0]["scores"]["total"] = 0.1
     bundle_path.write_text(
         json.dumps(bundle, ensure_ascii=False, sort_keys=True),

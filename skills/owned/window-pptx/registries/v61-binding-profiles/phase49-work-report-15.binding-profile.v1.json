@@ -1,0 +1,2873 @@
+{
+  "schema_version": "1.0",
+  "profile_id": "phase49-work-report-15",
+  "scenario_id": "hospital-finance-annual-work-report-2025",
+  "acceptance_profile": "phase49-work-report-15",
+  "created_at": "2026-08-09T00:00:00+08:00",
+  "library_id": "window-pptx-reference-work-summary-v1",
+  "library_index_sha256": "ed4078111e8010d3b171e74463199a8720b7e0d5ca1814a72ff1616b285c42ab",
+  "dominant_style_cluster_id": "reference-work-summary",
+  "default_unassigned_connective_id": "connective-clear",
+  "governed_policy": "deterministic-authorize-exact",
+  "slides": [
+    {
+      "ordinal": 1,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:001",
+      "narrative_role": "cover",
+      "fact_ids": [
+        "report-title",
+        "department-name",
+        "presenter-name",
+        "presentation-date",
+        "report-year",
+        "fragment-s01-cover-hero"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "report-title",
+            "rendering_sha256": "ef780616837ea941ee1a6475434a87355f006a475f85a9405e914ebb9717deb6"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "department-name",
+            "rendering_sha256": "24c3c91b231e3d2f2d164798549b885b521e010ef76304b2e855606495e3dd04"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "cover",
+        "capacity_budget": 82,
+        "semantic_categories": [
+          "封面模板"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 1
+      },
+      "bindings": {
+        "shape_26": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "report-year",
+              "rendering_sha256": "fe3f1f98fb3eba5464204df09b2244dab8c30962e9fccd798868fe974cacd5a8"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_28": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "department-name",
+              "rendering_sha256": "24c3c91b231e3d2f2d164798549b885b521e010ef76304b2e855606495e3dd04"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_29": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "report-title",
+              "rendering_sha256": "3178611d1f1f25242b330b0f3cf2471cdcaea8fe0fda8b4fff5711afad05ebd9"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_4": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "presenter-name",
+              "rendering_sha256": "9094498f89e5e86880f1727ca770f4ebb71c8fd2390f645e65051a0ee6354bc9"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_19": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "presentation-date",
+              "rendering_sha256": "076bcd286be9d30b1d4af497ae51793bb553f7a300ac1b5bdaa701f746515c89"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": [
+        {
+          "target_kind": "group",
+          "target_id": "fragment_01",
+          "fact_id": "fragment-s01-cover-hero",
+          "rendering_sha256": "0a98bd475f9ac17bd8c31e5266228de1fd09a11bba9d40dd5236783c52d6f3e1"
+        },
+        {
+          "target_kind": "group",
+          "target_id": "fragment_02",
+          "fact_id": "fragment-s01-cover-hero",
+          "rendering_sha256": "fb31425b6320a6ca31a45363659c1c4dd26d9496d47d3572b546dccf2c79ba96"
+        },
+        {
+          "target_kind": "group",
+          "target_id": "fragment_03",
+          "fact_id": "fragment-s01-cover-hero",
+          "rendering_sha256": "82a0fb11bb116b08dc12aebd75893b3b209625587d50ba9c27597e137a825870"
+        }
+      ]
+    },
+    {
+      "ordinal": 2,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:002",
+      "narrative_role": "contents",
+      "fact_ids": [
+        "contents-governance",
+        "contents-finance",
+        "contents-innovation",
+        "contents-roadmap",
+        "fragment-s02-directory"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "fragment-s02-directory",
+            "rendering_sha256": "52daa71ebc31058156b21dc21c01ed18eb4e9a723749259cacd1558afe32dfea"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "contents-governance",
+            "rendering_sha256": "1807ec4d1c45618f036f3a306726a90e3b2016328ed72c98661d4bcffe430179"
+          },
+          {
+            "fact_id": "contents-finance",
+            "rendering_sha256": "a68e3d611bbbf8bf16d3fecda95386497436fb3558f872c611dc662eb176fc7a"
+          },
+          {
+            "fact_id": "contents-innovation",
+            "rendering_sha256": "72153c8051de7c0d4bf4d78cf7fb398fb69f50b8143e161b83d94dcd75a0261c"
+          },
+          {
+            "fact_id": "contents-roadmap",
+            "rendering_sha256": "16999f39a2fc1501de7e8401ecf44fafd079668141c406bb851079b391b0ab50"
+          }
+        ],
+        "separator": "\n"
+      },
+      "query": {
+        "role": "contents",
+        "capacity_budget": 153,
+        "semantic_categories": [
+          "目录模板"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 2
+      },
+      "bindings": {
+        "shape_23": {
+          "kind": "connective",
+          "connective_id": "contents-en"
+        },
+        "shape_8": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "contents-governance",
+              "rendering_sha256": "938db8c9f82c8cb58d3f3ef4fd250036a48d26a712753d2fde5abd03a85cabf4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_20": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "contents-governance",
+              "rendering_sha256": "1807ec4d1c45618f036f3a306726a90e3b2016328ed72c98661d4bcffe430179"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_15": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "contents-finance",
+              "rendering_sha256": "a953f09a1b6b6725b81956e9ad0b1eb49e3ad40004c04307ef8af6246a054116"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_14": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "contents-finance",
+              "rendering_sha256": "a68e3d611bbbf8bf16d3fecda95386497436fb3558f872c611dc662eb176fc7a"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_17": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "contents-innovation",
+              "rendering_sha256": "0b8efa5a3bf104413a725c6ff0459a6be12b1fd33314cbb138745baf39504ae5"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_16": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "contents-innovation",
+              "rendering_sha256": "72153c8051de7c0d4bf4d78cf7fb398fb69f50b8143e161b83d94dcd75a0261c"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_19": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "contents-roadmap",
+              "rendering_sha256": "6cd5b6e51936a442b973660c21553dd22bd72ddc8751132a943475288113b4c0"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_18": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "contents-roadmap",
+              "rendering_sha256": "16999f39a2fc1501de7e8401ecf44fafd079668141c406bb851079b391b0ab50"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_29": {
+          "kind": "connective",
+          "connective_id": "contents-en"
+        }
+      },
+      "fragment_bindings": [
+        {
+          "target_kind": "slot",
+          "target_id": "shape_21",
+          "fact_id": "fragment-s02-directory",
+          "rendering_sha256": "67220858d7f44bbc1242dd89a6bc4520bb072bc8b8b4a33a4281d561ccf1e9da"
+        },
+        {
+          "target_kind": "slot",
+          "target_id": "shape_22",
+          "fact_id": "fragment-s02-directory",
+          "rendering_sha256": "fc72a4479732661f0e5a2f516bbcaba2a3669cd097c9b4e58a65062d505194d4"
+        }
+      ]
+    },
+    {
+      "ordinal": 3,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:003",
+      "narrative_role": "section-governance",
+      "fact_ids": [
+        "governance-section",
+        "governance-section-subtitle",
+        "fragment-s03-governance-hero"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "governance-section",
+            "rendering_sha256": "c7b09136f349c5d7e515cbdda1fc28908017bbb0c23c6aa565c455971aaaef31"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "governance-section-subtitle",
+            "rendering_sha256": "9a72380c6d412efbd0da61cc76e739d282b00d27a4a5fed4ab8fb0020ce9bc6b"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "section",
+        "capacity_budget": 53,
+        "semantic_categories": [
+          "章节模板"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 3
+      },
+      "bindings": {
+        "shape_52": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "governance-section-subtitle",
+              "rendering_sha256": "9a72380c6d412efbd0da61cc76e739d282b00d27a4a5fed4ab8fb0020ce9bc6b"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_2": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "governance-section",
+              "rendering_sha256": "938db8c9f82c8cb58d3f3ef4fd250036a48d26a712753d2fde5abd03a85cabf4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_20": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "governance-section",
+              "rendering_sha256": "c7b09136f349c5d7e515cbdda1fc28908017bbb0c23c6aa565c455971aaaef31"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": [
+        {
+          "target_kind": "group",
+          "target_id": "fragment_01",
+          "fact_id": "fragment-s03-governance-hero",
+          "rendering_sha256": "279fd3659ed5d91fa23c2c74d1c9a71802cbe800876082ef9f25db7e748b08b7"
+        },
+        {
+          "target_kind": "group",
+          "target_id": "fragment_02",
+          "fact_id": "fragment-s03-governance-hero",
+          "rendering_sha256": "10efa1a0927aaacd5032fead5ca231b099484f5b378a754242259c6396e3918f"
+        },
+        {
+          "target_kind": "slot",
+          "target_id": "shape_4",
+          "fact_id": "fragment-s03-governance-hero",
+          "rendering_sha256": "be65bd5518aedced9763ef098bca00376ef4606cd1b3ac47b342d1f603471dc7"
+        }
+      ]
+    },
+    {
+      "ordinal": 4,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:004",
+      "narrative_role": "policy-evidence",
+      "fact_ids": [
+        "governance-headline",
+        "governance-study",
+        "governance-risk-checks",
+        "governance-controls",
+        "governance-commitment",
+        "governance-dual-review",
+        "fragment-s04-performance-hero"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "governance-headline",
+            "rendering_sha256": "70e072a3c101b98f4b0836adae43a297456aa3d0474d39316134cca8055a0362"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "governance-study",
+            "rendering_sha256": "0ff56dbaeb0fc0c86c44d538ce5f5f1c81ce4bced232cc10746fb24148ee4196"
+          },
+          {
+            "fact_id": "governance-risk-checks",
+            "rendering_sha256": "13c9711c9911b823bf48da0f28340b66f59885beead537602a1262ba454e0a0c"
+          },
+          {
+            "fact_id": "governance-controls",
+            "rendering_sha256": "2b7e760205758a08c768ddeff5ee2bfbdfd0074cc05cea61af620e0f9464d158"
+          },
+          {
+            "fact_id": "governance-commitment",
+            "rendering_sha256": "00f240c6cfbc2f2a8547d2acfd367f1751d4bf89f641f0f134a2772556735638"
+          },
+          {
+            "fact_id": "governance-dual-review",
+            "rendering_sha256": "24a89371d9fa3edaf947094b21666d01b6feecb25ad55d26e1e766e72048adc8"
+          }
+        ],
+        "separator": " · "
+      },
+      "query": {
+        "role": "section",
+        "capacity_budget": 53,
+        "semantic_categories": [
+          "章节模板"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 4
+      },
+      "bindings": {
+        "shape_52": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "governance-study",
+              "rendering_sha256": "4ecfe5ef8316cb2b001fd3e45f997848d804068be4827e05eaadd9a6cbdff127"
+            },
+            {
+              "fact_id": "governance-risk-checks",
+              "rendering_sha256": "e6adcf7af4ae7ea4e99c6aba36a91c7c838cc3b6192522bfa88cfc1547a9a579"
+            },
+            {
+              "fact_id": "governance-controls",
+              "rendering_sha256": "40eb249806a8baac38ab3582294a93a59f1f0325753c0c06922a8030ed78e5f7"
+            },
+            {
+              "fact_id": "governance-dual-review",
+              "rendering_sha256": "24a89371d9fa3edaf947094b21666d01b6feecb25ad55d26e1e766e72048adc8"
+            }
+          ],
+          "separator": " · "
+        },
+        "shape_2": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "governance-headline",
+              "rendering_sha256": "b74e259cce401f9d3917dbaa5e892883f037a7f3ba54c84b333dd054d164f13e"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_20": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "governance-commitment",
+              "rendering_sha256": "00f240c6cfbc2f2a8547d2acfd367f1751d4bf89f641f0f134a2772556735638"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": [
+        {
+          "target_kind": "group",
+          "target_id": "fragment_01",
+          "fact_id": "fragment-s04-performance-hero",
+          "rendering_sha256": "4b7fcf09618b245d897bc14b647b9a8cc28dc6ee440f3dca4a94757ac81e68af"
+        },
+        {
+          "target_kind": "group",
+          "target_id": "fragment_02",
+          "fact_id": "fragment-s04-performance-hero",
+          "rendering_sha256": "43c633dee21be6fbff1664bbc49a5ed7c27d7dcde3537ad3f1d0b9e1a1b51640"
+        },
+        {
+          "target_kind": "slot",
+          "target_id": "shape_4",
+          "fact_id": "fragment-s04-performance-hero",
+          "rendering_sha256": "ce725857525efe22af2eee1840170cdc5876ee94c17b3d987cf9e1574a30c0a0"
+        }
+      ]
+    },
+    {
+      "ordinal": 5,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:005",
+      "narrative_role": "revenue-composition",
+      "fact_ids": [
+        "revenue-title",
+        "revenue-medical",
+        "revenue-debt",
+        "revenue-fiscal",
+        "revenue-other",
+        "revenue-education",
+        "published-scope-rule"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "revenue-title",
+            "rendering_sha256": "a24557ddb8df3eed8d341b1f55c1931ea8a80c9daac2ba31b914750ff64e37d9"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "revenue-medical",
+            "rendering_sha256": "2a84d6c80243c60a63e363cb5ee8e79c60f5180baef9bfc832cdbc99ed1d4695"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "data",
+        "capacity_budget": 132,
+        "semantic_categories": [
+          "表格图表"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 5
+      },
+      "bindings": {
+        "shape_7": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-title",
+              "rendering_sha256": "f569078ea5a5c7b570fcceb1e6a8dfe7414285873ed0c44907539a9c851b5d41"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_34": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-debt",
+              "rendering_sha256": "c64a7e17b8b5a8086aa09faead3453a09a1c12746e5ea9ca5b5cb02b105fefed"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_15": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-fiscal",
+              "rendering_sha256": "8f9ab443aad626f2d3face62acc621b2d3a2103b9b031504cbe0d3cf51827dea"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_25": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-other",
+              "rendering_sha256": "4cecd424949031ac363296b425bef4247a3b210479a0d840bca1fc74d5261a2a"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_20": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-education",
+              "rendering_sha256": "d994da3301c7a929e1413bb215fb4e715dc56b09d48f1f1c7e7025f43dbf4f14"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_43": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-medical",
+              "rendering_sha256": "e8f7fda62a2565d1d9790376bc6fd0d3b1b0fe1ea81830dd13c5d7021e674a4b"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_35": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-debt",
+              "rendering_sha256": "dea655b00c250086973dec8965aa49924ebdffd4ebf8427c46f0f0d80e8eb142"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_16": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-fiscal",
+              "rendering_sha256": "0dcd3dfc19749d0a27437eeb1021f09b11f45434d00ee977a7f8e6ba36759e50"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_26": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-other",
+              "rendering_sha256": "fbe7bbb80106c6b7557719a59e27852829aa747ad4ca2fab184562a29663223c"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_21": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-education",
+              "rendering_sha256": "c8b27c2ee23c90034e6bf439e768bc950ddd06c3ef38848f3792ad27842457d6"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_44": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-medical",
+              "rendering_sha256": "87e1afc22d4570aaa71134c681b92f1d22cb750c18df51736e23f2d2d1c79fce"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_36": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-debt",
+              "rendering_sha256": "3bafea32e872606857fa6678f7822efe938d1ed4b947bde89e4113c94914a279"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_17": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-fiscal",
+              "rendering_sha256": "cf33fd14320c87cbfa942adaecb35ad8dbc6077e2e61faa4d02828f019e28d6c"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_27": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-other",
+              "rendering_sha256": "d966191ded27d1bf0a2610d3caf5059f75f0c7fd4b65b35679ea5f2ed52ce8e1"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_22": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-education",
+              "rendering_sha256": "6d1892e13a7932c2e66e6fbe6f6d658b3e684bdb377d3940d01a0dc35c292fb1"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_45": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "revenue-medical",
+              "rendering_sha256": "f45bb3f7f08b75ae11e96cf5a48ac7688496ba4499b0115982b6901c61afc815"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_33": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "published-scope-rule",
+              "rendering_sha256": "769f2ad085caa3fcc62e2644a9006145b0a79acdb82824291579b97d2f60b869"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_42": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "published-scope-rule",
+              "rendering_sha256": "a600d8683757d8390d98393503390c8fb61536bc1c907f8fbea6b09a8ec2a586"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": []
+    },
+    {
+      "ordinal": 6,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:006",
+      "narrative_role": "medical-revenue-comparison",
+      "fact_ids": [
+        "medical-revenue-title",
+        "medical-budget",
+        "medical-actual",
+        "medical-prior",
+        "medical-budget-completion",
+        "medical-yoy",
+        "medical-prior-composition",
+        "medical-current-composition"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "medical-revenue-title",
+            "rendering_sha256": "3a739c5040e11b5a1c3fba14027f9e00a73881e015166e2f54e51722948d16c5"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "medical-actual",
+            "rendering_sha256": "7a0db65f79d15806a36799cf5e9b42e9049fabaea1d36bdb737b0aa6b776a037"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "data",
+        "capacity_budget": 114,
+        "semantic_categories": [
+          "表格图表"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 6
+      },
+      "bindings": {
+        "shape_48": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-revenue-title",
+              "rendering_sha256": "cb1f42cb9071e6a3f4bc415dab33972d748c32059c23f944a7a6abd31b0397e0"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_52": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-prior-composition",
+              "rendering_sha256": "822fd70e2f6f256c068677fae8af7dbf1310ba5e5c7a1efee2dbc85c55218583"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_56": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-current-composition",
+              "rendering_sha256": "29c6802e3f6b45ee2b04618e7ecca5e03dbf2fac14d3842953c32b52e6b7e892"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_14": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-budget",
+              "rendering_sha256": "94b0853f80e4ecbed882a35c8c6a9db1ce54e820cae5a3c8c6bae8b6a8ebd369"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_17": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-prior",
+              "rendering_sha256": "05966a568b721baf47b78371624913b1d93cc20cddd035db8795c1e2b691766b"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_20": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-actual",
+              "rendering_sha256": "13a8fdcbbe4e1e6cedf37c3e4f234655922c73327a64368c80a8b06c47048308"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_15": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-budget",
+              "rendering_sha256": "6740a5374c75eac75c68276626968275481f655435d06341d50f820419581ab2"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_18": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-prior",
+              "rendering_sha256": "6740a5374c75eac75c68276626968275481f655435d06341d50f820419581ab2"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_21": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-actual",
+              "rendering_sha256": "6740a5374c75eac75c68276626968275481f655435d06341d50f820419581ab2"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_11": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-budget-completion",
+              "rendering_sha256": "4c3bc07ce161784dbc7e61b8a18ed5cb3c45ed2833991238c985a8ae87b2b621"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_25": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-yoy",
+              "rendering_sha256": "9ef9692524730ae50001ee64b2858af42a02bacf136ff911a440d5793268304d"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_12": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-budget-completion",
+              "rendering_sha256": "6d9f1ff6f1d8a9c614357c3758ff880d1de1fdf00dbfdc87c41975c191e9b4a4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_26": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "medical-yoy",
+              "rendering_sha256": "e67bc069c0a9e6445b752fda88becacd414287e94ea60d5f6e5372ed6c3cefdc"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": []
+    },
+    {
+      "ordinal": 7,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:007",
+      "narrative_role": "expenditure-table",
+      "fact_ids": [
+        "expenditure-title",
+        "expenditure-total",
+        "expenditure-basic",
+        "expenditure-business",
+        "expense-wages",
+        "expense-assets",
+        "expense-drugs",
+        "expense-operations",
+        "expense-subsidy",
+        "fragment-s07-row-markers"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "expenditure-title",
+            "rendering_sha256": "046159668efe7a48a1d3469dff2761e7884282cce8d3530f9013204442e42bca"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "expenditure-total",
+            "rendering_sha256": "9cddf03c7e5ad5cfab69751e4f815402dfe175386431aa13128b1b2a14be09a4"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "table",
+        "capacity_budget": 135,
+        "semantic_categories": [
+          "表格图表"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 7
+      },
+      "bindings": {
+        "shape_9": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expenditure-title",
+              "rendering_sha256": "046159668efe7a48a1d3469dff2761e7884282cce8d3530f9013204442e42bca"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_102": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expenditure-business",
+              "rendering_sha256": "b3c0b30a8a07103e110f3dfa262ca04a432526e7daf46cdf41657d6389c68a02"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_92": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expenditure-basic",
+              "rendering_sha256": "fb620e74ad713d4c912974d0d18e6d6ae17bbd91b7b0ef45f2698da867901439"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_140": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expenditure-total",
+              "rendering_sha256": "e01298f50be5352e3aa9c80ddab473abbfabf10191228ce72bfb2eff474e8ef3"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_103": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expenditure-business",
+              "rendering_sha256": "9e81cb4fee1c88fb7033d9a01a28aabb049968f3eabae8ebb1067f9a8b4bb053"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_93": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expenditure-basic",
+              "rendering_sha256": "bca491b18d7e4ff6d3cfd928aa18e65e34fceeaff3aff98549aa22bae9918bfe"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_141": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expenditure-total",
+              "rendering_sha256": "6740a5374c75eac75c68276626968275481f655435d06341d50f820419581ab2"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_104": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expenditure-business",
+              "rendering_sha256": "6740a5374c75eac75c68276626968275481f655435d06341d50f820419581ab2"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_94": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expenditure-basic",
+              "rendering_sha256": "6740a5374c75eac75c68276626968275481f655435d06341d50f820419581ab2"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_34": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expense-wages",
+              "rendering_sha256": "78938b19940944a23d3430ef5cebe5ca5d9a7ca49b98835e70a38df9f86199ae"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_138": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expenditure-total",
+              "rendering_sha256": "5cbf0600e70a05b85b0c0de077428e3f6ed0ed5ea5fe1d6dbb3b30e0d9dcfaca"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_53": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expense-assets",
+              "rendering_sha256": "de9cbe3749a459ed040122df9429287131b7a5d3f241d63c17189fe79c4c3523"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_71": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expense-drugs",
+              "rendering_sha256": "539c85591507a4ee3c28ac036984db3f87612a442e2d174bcfa597f82102ca43"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_74": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expense-operations",
+              "rendering_sha256": "cd77c45fe7af6e334b67a6f84d1ee72b4292c8bdaf8a359729acb28062b17f5e"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_77": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "expense-subsidy",
+              "rendering_sha256": "ba5015d504d858e740029acb1c6eebbcda6791a7518e4a705fdd8cbb12aeba75"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": [
+        {
+          "target_kind": "group",
+          "target_id": "fragment_01",
+          "fact_id": "fragment-s07-row-markers",
+          "rendering_sha256": "f0393febe8baaa55e32f7be2a7cc180bf34e52137d99e056c817a9c07b8f239a"
+        }
+      ]
+    },
+    {
+      "ordinal": 8,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:008",
+      "narrative_role": "projects-debt",
+      "fact_ids": [
+        "projects-title",
+        "projects-total",
+        "project-beauty-building",
+        "project-surgery-building",
+        "project-admin-building",
+        "project-infection-building",
+        "project-medical-equipment"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "projects-title",
+            "rendering_sha256": "177842d175953fc375e5121f6a41fa982ca1f585bf9294a01332734071a2277f"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "projects-total",
+            "rendering_sha256": "f6af55aeac6718a1998256f216959f6f2b13d172ac9577ec98c3dc654c173aad"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "case-study",
+        "capacity_budget": 302,
+        "semantic_categories": [
+          "表格图表"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 8
+      },
+      "bindings": {
+        "shape_53": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "projects-title",
+              "rendering_sha256": "aa3fdbc9f18af1c2c7ec9ce74947ebd1a8ef1d5cff75317a19a3a8e150c4a689"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_68": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "projects-total",
+              "rendering_sha256": "3cb09f823507c0c7a6c5196acfbea7ee594c23fe21a555931679593620b8dbf0"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_14": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-beauty-building",
+              "rendering_sha256": "b314523e1e4f78b76cdb04ab5e419b0bb850752a431505a220d72ee1fa5a0e90"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_36": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-surgery-building",
+              "rendering_sha256": "a876068b71dab315870f8577093c4673aadfdffb0b677ec79852018c2368e4df"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_58": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-admin-building",
+              "rendering_sha256": "96180ecac5a6a14c22ce856f863e3d87bf742dd77e34c7fb06a6284962b43151"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_64": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "projects-total",
+              "rendering_sha256": "48b7451579f572223976988f77a3ad671475a7cdcfda4d56480c235301a83af9"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_17": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-beauty-building",
+              "rendering_sha256": "2f19ea300190bb1c0dbde3d23e53644b8d1705bba02600e574007932bfa20bf0"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_61": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-admin-building",
+              "rendering_sha256": "dd23349b45cc1f505104e869e98be10fd01357bae0bb8e68a5e6c7331b355502"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_39": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-surgery-building",
+              "rendering_sha256": "93eb42fed0d070afc4e2070752268c39dd7b135bfe0c8509fad7dcc959395bea"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_18": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-beauty-building",
+              "rendering_sha256": "2bfa99662185fb990dccb18cec3afb1a5bb57b64a51df1a55883342afb291254"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_29": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-infection-building",
+              "rendering_sha256": "7932a07a8cbc0885919d30c43799f0247ef96badbc79ba5427e6306232508c78"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_40": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-surgery-building",
+              "rendering_sha256": "9f29a130438b81170b92a42650f9a94291ecad60bd47af2a3886e75f7f728725"
+            }
+          ],
+          "separator": "",
+          "fit_policy": "shrink-to-fit"
+        },
+        "shape_51": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-medical-equipment",
+              "rendering_sha256": "9e08a62f297ef6828f0285e2c71caa63185cb5c2aa87b306f2d195f61e65f2ed"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_62": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-admin-building",
+              "rendering_sha256": "6d49251ba160fb2354414fa1f71a08e89ed043d038af8ccfe33b7e6adedac0d4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_41": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-surgery-building",
+              "rendering_sha256": "053c111a2b04a31c83b9d7adc303def4c0a17f6c1c5f65cea172711ce0964bd4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_19": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-beauty-building",
+              "rendering_sha256": "053c111a2b04a31c83b9d7adc303def4c0a17f6c1c5f65cea172711ce0964bd4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_30": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-infection-building",
+              "rendering_sha256": "053c111a2b04a31c83b9d7adc303def4c0a17f6c1c5f65cea172711ce0964bd4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_52": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-medical-equipment",
+              "rendering_sha256": "053c111a2b04a31c83b9d7adc303def4c0a17f6c1c5f65cea172711ce0964bd4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_63": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-admin-building",
+              "rendering_sha256": "053c111a2b04a31c83b9d7adc303def4c0a17f6c1c5f65cea172711ce0964bd4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_3": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "projects-total",
+              "rendering_sha256": "d44ecf5722d05d7fcf84ceedea07be745a47299a9a5883b17b951f5cd382c74d"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_7": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "projects-total",
+              "rendering_sha256": "053c111a2b04a31c83b9d7adc303def4c0a17f6c1c5f65cea172711ce0964bd4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_78": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "projects-total",
+              "rendering_sha256": "053c111a2b04a31c83b9d7adc303def4c0a17f6c1c5f65cea172711ce0964bd4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_25": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-infection-building",
+              "rendering_sha256": "8cf91b6e3055c41c7ad5b2f61aa75081ef391b05f783991c321885565a179b19"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_47": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-medical-equipment",
+              "rendering_sha256": "0d448e13851319a84f4b65531ef8e9ed1a51189f2604fcb6c2d55e5c9a0d18a4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_65": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "projects-total",
+              "rendering_sha256": "569fd8020dc613f6acb264d4b121497a77b947c0e434b1307b651f7e5f973423"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_28": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-infection-building",
+              "rendering_sha256": "d2abbb982132f55a4af15e3afbe318bba4f15beee19d9f3b63949131949a9a33"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_50": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "project-medical-equipment",
+              "rendering_sha256": "6741d83590a0b42ccdcdbf29b58f5d7970156c18dbc062ffd852794db5eb7fcb"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": []
+    },
+    {
+      "ordinal": 9,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:009",
+      "narrative_role": "kpi-dashboard",
+      "fact_ids": [
+        "kpi-title",
+        "kpi-achievement",
+        "kpi-outpatient",
+        "kpi-inpatient",
+        "kpi-service-share",
+        "kpi-personnel-share",
+        "kpi-revenue-per-employee",
+        "kpi-cost-per-hundred",
+        "kpi-drug-share",
+        "fragment-s09-currency-unit"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "kpi-title",
+            "rendering_sha256": "603fbb8468a3c70a84f4f2abbbfb13ad5b952f8f5976d388098d4955965c6289"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "kpi-achievement",
+            "rendering_sha256": "70d1b710ee8e46a9d50728cc826ea89a0f31e37382387877399adb49d1d745f0"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "kpi",
+        "capacity_budget": 243,
+        "semantic_categories": [
+          "表格图表"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 9
+      },
+      "bindings": {
+        "shape_169": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-title",
+              "rendering_sha256": "26a24b0237d9c590ce9853838c42d7bd3a4a3afdcdc4cba7f083c2786e076aee"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_6": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-achievement",
+              "rendering_sha256": "e7352bfa7df96594cca39cffb026c7094de686980c8e216ee51c82eab26a0362"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_14": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-achievement",
+              "rendering_sha256": "09dfac88c71a8d318f7f35acd64b654d8076670b0b93bd488c7794bb8141c21f"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_339": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-service-share",
+              "rendering_sha256": "bee1a34f4aa48a13217e7927687c220cf9c0e3b571c0329c9216fa6c40c3f8e4"
+            }
+          ],
+          "separator": "",
+          "fit_policy": "no-autofit"
+        },
+        "shape_352": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-drug-share",
+              "rendering_sha256": "a7c28abf3ba48149ed9b11f2aef800b92c53053d5beb8d92fdfa322f0b8ab4d0"
+            }
+          ],
+          "separator": "",
+          "fit_policy": "no-autofit"
+        },
+        "shape_262": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-outpatient",
+              "rendering_sha256": "f6d379699f6af02d3a7375d3f95d0ee610b6afeebd653e2e266fd3b1b782bd04"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_319": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-inpatient",
+              "rendering_sha256": "03f9855815913664c2ab1c9e48113600dbeb5eb3e0a75a691969009fb3a2c5f1"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_332": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-service-share",
+              "rendering_sha256": "1cafa9e7fc989f6609d5c021f0a948b0101e111a971091b1dbfe48299af472c4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_345": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-drug-share",
+              "rendering_sha256": "1f7ad34a62ccb6fad4a4d79d4fb7c4274855f1aba61454f68edc71740557808e"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_265": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-outpatient",
+              "rendering_sha256": "681a8505b754ec15d7af212245678397b5ffb79d22a9ffb81cda97dc316a264a"
+            }
+          ],
+          "separator": "",
+          "fit_policy": "no-autofit"
+        },
+        "shape_324": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-inpatient",
+              "rendering_sha256": "e3080a33b65b8242acb18cf5b41bf09134971985b00c9dfd3403509dadf6ccc7"
+            }
+          ],
+          "separator": "",
+          "fit_policy": "no-autofit"
+        },
+        "shape_337": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-service-share",
+              "rendering_sha256": "db9cc88dacb3bb23a3bdb618d9f7cfc0f6fbae2fc1bfb1fd26ca2d2b276e3697"
+            }
+          ],
+          "separator": "",
+          "fit_policy": "no-autofit"
+        },
+        "shape_350": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-drug-share",
+              "rendering_sha256": "d6b2eab2630ad4e937d319dd31c1acbfe0f02f0412cf9dbeb2c4920e1c452ebc"
+            }
+          ],
+          "separator": "",
+          "fit_policy": "no-autofit"
+        },
+        "shape_391": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-cost-per-hundred",
+              "rendering_sha256": "2ff58dbe7993248cf46a6c58c6d399ad21b7c243aae89c5f0c1c141c2f957213"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_378": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-revenue-per-employee",
+              "rendering_sha256": "026e90c1f09e31c3b2e8eb75fcfe5f64b45283779987848a34f6ec36824f82cd"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_326": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-inpatient",
+              "rendering_sha256": "84a19d96801411078c9e04a0462ac7c02b33420b4f0bd90d2f76864932e2fda5"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_267": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-outpatient",
+              "rendering_sha256": "c94d4cfe42890670d9ce139ed14e6e065124cd9a2c6575ffe3597e4fee83cf8b"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_379": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-revenue-per-employee",
+              "rendering_sha256": "6740a5374c75eac75c68276626968275481f655435d06341d50f820419581ab2"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_392": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-cost-per-hundred",
+              "rendering_sha256": "7f77f23af7b0dcc87b5ed446cc54be89d98b1c6e9aaa9475d5aa47c7e6414f71"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_268": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-outpatient",
+              "rendering_sha256": "7f77f23af7b0dcc87b5ed446cc54be89d98b1c6e9aaa9475d5aa47c7e6414f71"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_327": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-inpatient",
+              "rendering_sha256": "7f77f23af7b0dcc87b5ed446cc54be89d98b1c6e9aaa9475d5aa47c7e6414f71"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_365": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-personnel-share",
+              "rendering_sha256": "546c88abeed40c6f2c7921553c61d3302ac812459a3b47ba7a5e337728dd53aa"
+            }
+          ],
+          "separator": "",
+          "fit_policy": "no-autofit"
+        },
+        "shape_358": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-personnel-share",
+              "rendering_sha256": "e8eeea3bd7d1afe974e7d564537f7b31a6addc5fb877be6e6acb23eb66a03a6d"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_371": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-revenue-per-employee",
+              "rendering_sha256": "210804849d31c3d914b8a1d95df768f46a31db6da84c37ca3e20e278d2e4c6d4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_384": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-cost-per-hundred",
+              "rendering_sha256": "94981973aa23f9a888fa56590e967dbab2699a1c55245d8cbdde6e440c34dc31"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_363": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-personnel-share",
+              "rendering_sha256": "23d966dbb050b23e00a24f94015dcb8982c7e2b90164273a0761fea64dcaecdc"
+            }
+          ],
+          "separator": "",
+          "fit_policy": "no-autofit"
+        },
+        "shape_376": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-revenue-per-employee",
+              "rendering_sha256": "9efe596ead6c2641f891c2ffa07dbd9035fad54834c8cc0186af363e05ceecc0"
+            }
+          ],
+          "separator": "",
+          "fit_policy": "no-autofit"
+        },
+        "shape_389": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "kpi-cost-per-hundred",
+              "rendering_sha256": "8e546bf73de28c01c9a1d66dea3affb64aacba8723f80fdd2d2d9d256e0ba4db"
+            }
+          ],
+          "separator": "",
+          "fit_policy": "no-autofit"
+        }
+      },
+      "fragment_bindings": [
+        {
+          "target_kind": "slot",
+          "target_id": "shape_503",
+          "fact_id": "fragment-s09-currency-unit",
+          "rendering_sha256": "7f77f23af7b0dcc87b5ed446cc54be89d98b1c6e9aaa9475d5aa47c7e6414f71"
+        }
+      ]
+    },
+    {
+      "ordinal": 10,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:010",
+      "narrative_role": "section-innovation",
+      "fact_ids": [
+        "innovation-section",
+        "innovation-section-subtitle",
+        "fragment-s10-innovation-hero"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "innovation-section",
+            "rendering_sha256": "0a1ac1a05c187155789524953a94dc7f461792a6eade703dae130abc32bb8301"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "innovation-section-subtitle",
+            "rendering_sha256": "e9551a033fc3b5c464891933d43b14639ccb10b42029b114d60bc77f997afdd8"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "section",
+        "capacity_budget": 46,
+        "semantic_categories": [
+          "章节模板"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 10
+      },
+      "bindings": {
+        "shape_52": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "innovation-section-subtitle",
+              "rendering_sha256": "e9551a033fc3b5c464891933d43b14639ccb10b42029b114d60bc77f997afdd8"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_2": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "innovation-section",
+              "rendering_sha256": "0b8efa5a3bf104413a725c6ff0459a6be12b1fd33314cbb138745baf39504ae5"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_20": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "innovation-section",
+              "rendering_sha256": "0a1ac1a05c187155789524953a94dc7f461792a6eade703dae130abc32bb8301"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": [
+        {
+          "target_kind": "group",
+          "target_id": "fragment_01",
+          "fact_id": "fragment-s10-innovation-hero",
+          "rendering_sha256": "9189192981a8a6214d0d6467550af17662f521b482ebfe6b5974cc58f5712a67"
+        },
+        {
+          "target_kind": "slot",
+          "target_id": "shape_3",
+          "fact_id": "fragment-s10-innovation-hero",
+          "rendering_sha256": "19546171bac547cd10ecf2a089dee5e2b550619ec6f5e757e8d91e40a3b4e180"
+        },
+        {
+          "target_kind": "slot",
+          "target_id": "shape_4",
+          "fact_id": "fragment-s10-innovation-hero",
+          "rendering_sha256": "3cc493bc5b3b9b5169448290ee9c80af5e7d0fc03b92d79452024aefdcf3b5c2"
+        }
+      ]
+    },
+    {
+      "ordinal": 11,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:011",
+      "narrative_role": "team",
+      "fact_ids": [
+        "innovation-section",
+        "team-headline",
+        "team-structure",
+        "team-action-groups",
+        "team-action-pipeline",
+        "team-action-sharing"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "team-headline",
+            "rendering_sha256": "386a4d62a280415d8e089358e2cd63a78b92dfe579b92095ecaa53371662e2e9"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "team-structure",
+            "rendering_sha256": "27500f3ee421c641d1e7f142dc7d7317740ffd13df1259d8fa91d114566680e0"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "people",
+        "capacity_budget": 261,
+        "semantic_categories": [
+          "人物介绍"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 11
+      },
+      "bindings": {
+        "shape_129": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-groups",
+              "rendering_sha256": "4924308048b286a2528f4fd3865eb472d18d04f7f7053212210493944f0037e7"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_141": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-pipeline",
+              "rendering_sha256": "1341795dc4f5afd15e187cd14beed160ebb89e6406e15440fa58485df5a6f237"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_144": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-sharing",
+              "rendering_sha256": "ad0e9cde624edf588cfc62f7c7a937215b793ad3d8b812d7c70da51e06e72b20"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_132": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "innovation-section",
+              "rendering_sha256": "0a1ac1a05c187155789524953a94dc7f461792a6eade703dae130abc32bb8301"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_5": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-headline",
+              "rendering_sha256": "386a4d62a280415d8e089358e2cd63a78b92dfe579b92095ecaa53371662e2e9"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_21": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-structure",
+              "rendering_sha256": "d5f51255b43f3ea3919c42b889872220553c92f3dff10058d2fbe006f8227b88"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_22": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-structure",
+              "rendering_sha256": "9d5fe8ab999f5100f9bd994fb5775bd9bf1dc33811c317dbacdbdd9a08dbe67b"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_23": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-structure",
+              "rendering_sha256": "095531eac33815e75a980e4d7ba8af55d59efae041eddc9b6340f98ae2e7e75b"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_48": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-structure",
+              "rendering_sha256": "89c9db985c921a7e89bdaf628e6f9d204e1089279408ae7a28894c60617f881f"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_49": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-groups",
+              "rendering_sha256": "7d91bb32ece4ce41a813f3255ca81bbc861676ad7b4360f9a27e011075987dab"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_24": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-structure",
+              "rendering_sha256": "e3718b43d9c115d77af6cf2b4371e8a8cd368bf50623583ed02aef853501377b"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_11": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-groups",
+              "rendering_sha256": "938db8c9f82c8cb58d3f3ef4fd250036a48d26a712753d2fde5abd03a85cabf4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_12": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-pipeline",
+              "rendering_sha256": "a953f09a1b6b6725b81956e9ad0b1eb49e3ad40004c04307ef8af6246a054116"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_13": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-sharing",
+              "rendering_sha256": "0b8efa5a3bf104413a725c6ff0459a6be12b1fd33314cbb138745baf39504ae5"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_14": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-groups",
+              "rendering_sha256": "15d6f17c4629b9120e0bd1f33e7b845c67cb8add5e254cbfc035da9f3fd8ae35"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_16": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-sharing",
+              "rendering_sha256": "aed437c7470e6d4d8ac1ed59924fa40224229d8a625d5bb37aee37c6ec79a73d"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_15": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-pipeline",
+              "rendering_sha256": "31118943934a68b36eb8bfdf57f55e036171f29e3621e0276ced953ec089f7d2"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_8": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-groups",
+              "rendering_sha256": "4ad8549dc2a60ebefee2aa293701349f75b44fd96fb0d657382ca4b29588ee30"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_10": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-sharing",
+              "rendering_sha256": "9aacac4745f9fec16d75b717a693340814649863f1d4e8d2e83cf31772f7732c"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_9": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "team-action-pipeline",
+              "rendering_sha256": "23b659c25261502b1a1d6db23935868076598924bd46bfefefbe1d54fd61451f"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": []
+    },
+    {
+      "ordinal": 12,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:012",
+      "narrative_role": "efficiency-comparison",
+      "fact_ids": [
+        "efficiency-title",
+        "efficiency-three-actions",
+        "efficiency-coverage",
+        "efficiency-departments",
+        "fragment-s12-principles-hero",
+        "fragment-s12-plus-marks"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "efficiency-title",
+            "rendering_sha256": "c8dd323eb662a1444294347d387072b5dafd5141432c85588965d3bb499739d7"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "efficiency-three-actions",
+            "rendering_sha256": "8060601706051007628aecd2b05627c96782b89b579563318305bb80985aa658"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "content-blocks",
+        "capacity_budget": 168,
+        "semantic_categories": [
+          "多段内容"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 12
+      },
+      "bindings": {
+        "shape_79": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-title",
+              "rendering_sha256": "c8dd323eb662a1444294347d387072b5dafd5141432c85588965d3bb499739d7"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_45": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-three-actions",
+              "rendering_sha256": "68a8d435074be8659db5fba554be58f98d5a6780f65055b67bfd95f8622cb0c6"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_39": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-three-actions",
+              "rendering_sha256": "9aeb896b3abc11c5831354a8fef87565036cc62a6f3f060bb30a5f1e9e7c07a4"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_53": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-three-actions",
+              "rendering_sha256": "8113b2d7e5586ad38b77f4695868cb044eed9f7f3cb62551a1849f3a9d62c600"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_58": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "dadaaf10f103056dfbe47025ed1a814547708acb530e0dd8c401861bfc1a9d31"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_68": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "ddb2d47379a068eb5807fbe45675eabc9e758c76ca8e540ae45e42b775e2c93b"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_33": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "2da8e90f4348f83ae0f9ed3cfa4cb6df09812f805cd7634754f2b1d2b25df27c"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_67": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "114e4a52459af4b967d40a272bd9bc5d839019692207c1ce0c7dcdf667a7c480"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_51": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-coverage",
+              "rendering_sha256": "8f74ab86f80272e6ca081318c51b3ac82eec3a89c2de5cd04b6741f828e04e41"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_88": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-coverage",
+              "rendering_sha256": "8f74ab86f80272e6ca081318c51b3ac82eec3a89c2de5cd04b6741f828e04e41"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_32": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "20e36d297d84a4f2d987d3eab70ed63bc281d03c320cce80faa16b7975846b9a"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_70": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "2239f6619131b48a352cfbaa44173c79f299d56aa6c0bcf24ae94d7e52946857"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_210": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-coverage",
+              "rendering_sha256": "cb7146652ccb0b0e5d80af301bcac61894d242b423e3a632cdda9adb7114c62d"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_31": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "a752b25a5b85f350eafc834136cf7ad0930903243233f28b52e588ae2494fd5d"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_69": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "def5ae27f4c53f62f8715319bf5fc629de5b0285f78b3ff54cb163ce682599ad"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_30": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "42acfe6c39d24eba6ee1f0cf00996ff38f753284eb59e1373433a18d21fb2098"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_71": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "54bb3f905487e4a7d6e547c355a597c94ee4891b280ab6e2e5dcb9ad0f1387e6"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_138": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "ee90b42ea290c856284127a90df3ef7a22f89bd44007fad2bfb522a8ea7afcea"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_72": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-departments",
+              "rendering_sha256": "c091f1b40a8e90a92070773e9987871d4f08f5f6d4ca566f59ad549e581e46a0"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_75": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "efficiency-coverage",
+              "rendering_sha256": "23b5aa97d65416b70d0d7d89cddcd004d38e89e846eca2cf4eb5e895e0de74a8"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": [
+        {
+          "target_kind": "group",
+          "target_id": "fragment_01",
+          "fact_id": "fragment-s12-principles-hero",
+          "rendering_sha256": "6bf5bc95a622b62229c96b633f04cb3f4e82aacbd0471e0cbb40ccead1205de5"
+        },
+        {
+          "target_kind": "group",
+          "target_id": "fragment_02",
+          "fact_id": "fragment-s12-plus-marks",
+          "rendering_sha256": "cfc0c0607a3380f7975346b30c14af8284f5493d9781b0ed847f499f01b4768e"
+        }
+      ]
+    },
+    {
+      "ordinal": 13,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:013",
+      "narrative_role": "section-roadmap",
+      "fact_ids": [
+        "roadmap-section",
+        "roadmap-section-subtitle",
+        "fragment-s13-roadmap-hero"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "roadmap-section",
+            "rendering_sha256": "cc307b62495b4abf2e316a0e0d7d3295850139f11cea89882ffaa13daf2c52b7"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "roadmap-section-subtitle",
+            "rendering_sha256": "ac8907e703142eae47f490a389f1fe64c21c4232f323e66b11db39715663894f"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "section",
+        "capacity_budget": 42,
+        "semantic_categories": [
+          "章节模板"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 13
+      },
+      "bindings": {
+        "shape_52": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-section-subtitle",
+              "rendering_sha256": "ac8907e703142eae47f490a389f1fe64c21c4232f323e66b11db39715663894f"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_2": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-section",
+              "rendering_sha256": "6cd5b6e51936a442b973660c21553dd22bd72ddc8751132a943475288113b4c0"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_20": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-section",
+              "rendering_sha256": "cc307b62495b4abf2e316a0e0d7d3295850139f11cea89882ffaa13daf2c52b7"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": [
+        {
+          "target_kind": "group",
+          "target_id": "fragment_01",
+          "fact_id": "fragment-s13-roadmap-hero",
+          "rendering_sha256": "c4cdccfaabaa80ffac0eb381970e5d7718aa64f3f0e27f401372767ecf41f47e"
+        },
+        {
+          "target_kind": "slot",
+          "target_id": "shape_3",
+          "fact_id": "fragment-s13-roadmap-hero",
+          "rendering_sha256": "73b972d71b0aec48bed3fe7ef7cecc472d07ed7437bd07c485f95622bf7728ea"
+        },
+        {
+          "target_kind": "slot",
+          "target_id": "shape_4",
+          "fact_id": "fragment-s13-roadmap-hero",
+          "rendering_sha256": "62ef900a8f5d5bff640790a1e72dccecab9c7a61c675f3832d6c7beeb8a7d19b"
+        },
+        {
+          "target_kind": "slot",
+          "target_id": "shape_13",
+          "fact_id": "fragment-s13-roadmap-hero",
+          "rendering_sha256": "09c7804e4ff80d4f7e6bd1a34c39507766408288a4880d567084278f1c85bf57"
+        }
+      ]
+    },
+    {
+      "ordinal": 14,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:014",
+      "narrative_role": "roadmap",
+      "fact_ids": [
+        "roadmap-title",
+        "roadmap-one",
+        "roadmap-two",
+        "roadmap-three",
+        "roadmap-four",
+        "roadmap-five",
+        "roadmap-six",
+        "roadmap-seven",
+        "roadmap-routine",
+        "fragment-s14-sequence-markers"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "roadmap-title",
+            "rendering_sha256": "599570e5eafb6f0075ba8eabe756d91b5381ec59502b95586a4dd2fa56eb2a54"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "roadmap-routine",
+            "rendering_sha256": "e899bab42c5473d9d6b04e29e821d651ddad040b468ca11dd267cb55e2897a21"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "process",
+        "capacity_budget": 297,
+        "semantic_categories": [
+          "架构流程"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 14
+      },
+      "bindings": {
+        "shape_3": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-title",
+              "rendering_sha256": "9b94f021a85c0e31f712a5441eac5d5d0ded56972688fc782a7f272d5bceef9f"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_244": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-four",
+              "rendering_sha256": "87777579e1e38a6c0e53c02f376f0f21fc555fb7025888613e00af862bb2a602"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_131": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-three",
+              "rendering_sha256": "e792a04424660420125eeda4bcd3e97b51c4a35e8d0f89d843f780fc61f790ca"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_147": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-five",
+              "rendering_sha256": "c53c29d819fe7953c99bc8aac21d396aaa29425fe65831082b6eb008aac50f45"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_271": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-two",
+              "rendering_sha256": "8f1dfe7e749f000cf3354c73cce1eff11055a121dc5cae84f2327a61321bda48"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_137": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-six",
+              "rendering_sha256": "7c717cb7e620842850f2c063cafb80201a1380ae8e7c22a090669b69e9b35a65"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_144": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-seven",
+              "rendering_sha256": "04a20e0b18858acdf32d90257439884d614450c9fb9330c3b099335f491daf8e"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_15": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-one",
+              "rendering_sha256": "b9091d0c197732f10c13646bd793f50e5490831e5af350150feeb17cc95a9f61"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_11": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-one",
+              "rendering_sha256": "bdbf6d05f7bae9abaddf75a80b434088fdda0b51d813e6d8f57b3782407c3201"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_28": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-seven",
+              "rendering_sha256": "1686f268e494583ff8cf3aaabd8fc14449afcefaf9b90e3880787d4cd5970e61"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_225": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-six",
+              "rendering_sha256": "7fd6b578a61e4c8b0d97faab9009a1222001abcd91f5e0cc1495a32a1e7479cc"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_229": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-two",
+              "rendering_sha256": "8c51a6bcd64b30714248fc7df2c83bcdd8f43939ceda6a0dcf9115cac0feec9e"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_232": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-three",
+              "rendering_sha256": "8458ad845664d328d8fbadca63a8d01e867e41b50a43b65e50b6de260ae6e3fa"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_240": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-five",
+              "rendering_sha256": "c0b3fbff51ccc40b8bf1a81666e7ecced016187cbe2ac6f1d627e0d7a287e04d"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_248": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-four",
+              "rendering_sha256": "2e881df8724fde79f0312f40f7764bf68276dee7b67b77930c4d47af3bfb6634"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_262": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-four",
+              "rendering_sha256": "abf2b0812b180fb310c5c189653e3ad24eadae59b57e3b197e3213af86b5c38f"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_264": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-routine",
+              "rendering_sha256": "6e1f412867ef9face30d0490d7e4f28ab409a45d9266eabab91030ae6bc6a69e"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_263": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "roadmap-routine",
+              "rendering_sha256": "e899bab42c5473d9d6b04e29e821d651ddad040b468ca11dd267cb55e2897a21"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": [
+        {
+          "target_kind": "group",
+          "target_id": "fragment_01",
+          "fact_id": "fragment-s14-sequence-markers",
+          "rendering_sha256": "bf893d7c07918ffa3c267f017c617ecb5f47787a53e455d9a48edfdd3d1a0282"
+        }
+      ]
+    },
+    {
+      "ordinal": 15,
+      "page_id": "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839:015",
+      "narrative_role": "closing",
+      "fact_ids": [
+        "closing-title",
+        "closing-line",
+        "presenter-name",
+        "presentation-date",
+        "department-name",
+        "report-year",
+        "fragment-s15-closing-hero"
+      ],
+      "title_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "closing-title",
+            "rendering_sha256": "9e58f8fb5abc4b69c4cc99918775d572b48a39916f86766630e6c080d741415b"
+          }
+        ],
+        "separator": ""
+      },
+      "headline_binding": {
+        "kind": "fact",
+        "renderings": [
+          {
+            "fact_id": "closing-line",
+            "rendering_sha256": "5de550f888bb3c91ee84740a3cef12fb6e6a41653b23a602fa392469e75c1a1d"
+          }
+        ],
+        "separator": ""
+      },
+      "query": {
+        "role": "closing",
+        "capacity_budget": 80,
+        "semantic_categories": [
+          "结尾模板"
+        ],
+        "asset_requirements": [],
+        "customer_assets_available": false,
+        "style_cluster": "reference-work-summary",
+        "limit": 6,
+        "allow_fallback": false,
+        "required_source_ordinal": 15
+      },
+      "bindings": {
+        "shape_26": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "report-year",
+              "rendering_sha256": "fe3f1f98fb3eba5464204df09b2244dab8c30962e9fccd798868fe974cacd5a8"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_28": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "closing-line",
+              "rendering_sha256": "5de550f888bb3c91ee84740a3cef12fb6e6a41653b23a602fa392469e75c1a1d"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_29": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "department-name",
+              "rendering_sha256": "24c3c91b231e3d2f2d164798549b885b521e010ef76304b2e855606495e3dd04"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_4": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "presenter-name",
+              "rendering_sha256": "9094498f89e5e86880f1727ca770f4ebb71c8fd2390f645e65051a0ee6354bc9"
+            }
+          ],
+          "separator": ""
+        },
+        "shape_19": {
+          "kind": "fact",
+          "renderings": [
+            {
+              "fact_id": "presentation-date",
+              "rendering_sha256": "076bcd286be9d30b1d4af497ae51793bb553f7a300ac1b5bdaa701f746515c89"
+            }
+          ],
+          "separator": ""
+        }
+      },
+      "fragment_bindings": [
+        {
+          "target_kind": "group",
+          "target_id": "fragment_01",
+          "fact_id": "fragment-s15-closing-hero",
+          "rendering_sha256": "e2522ca9a56a9603bda852c916cfd38e5c8e7e38037ef2c787563c8dbb76b2f1"
+        },
+        {
+          "target_kind": "slot",
+          "target_id": "shape_8",
+          "fact_id": "fragment-s15-closing-hero",
+          "rendering_sha256": "a2fdeab4826b76259b9314ac4d4d9251b764e45298ddb2fb0ac8a690a325ae74"
+        },
+        {
+          "target_kind": "group",
+          "target_id": "fragment_02",
+          "fact_id": "closing-title",
+          "rendering_sha256": "9e58f8fb5abc4b69c4cc99918775d572b48a39916f86766630e6c080d741415b"
+        }
+      ]
+    }
+  ]
+}

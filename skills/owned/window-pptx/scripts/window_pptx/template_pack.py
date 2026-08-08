@@ -13,6 +13,7 @@ import shutil
 import tempfile
 import zipfile
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -641,14 +642,87 @@ def _shape_text(segment: str) -> str:
     return "\n".join(html.unescape(match.group(2)) for match in _TEXT_RE.finditer(segment))
 
 
+def _distribute_replacement_across_runs(
+    source_runs: list[str],
+    replacement: str,
+) -> list[str]:
+    """Preserve a shape's existing run styling while replacing visible text.
+
+    PowerPoint often stores ``44.6%`` in two runs so the percent sign can use a
+    smaller font, and uses separate runs to emphasise a title suffix.  Moving
+    the whole replacement into the first ``a:t`` node destroys those design
+    decisions.  Character alignment keeps unchanged text in its source run and
+    assigns inserted or replaced characters to the nearest source style.
+    """
+
+    if len(source_runs) == 1:
+        return [replacement]
+    source = "".join(source_runs)
+    if not source:
+        return [replacement, *([""] * (len(source_runs) - 1))]
+
+    source_run_by_character: list[int] = []
+    for run_index, value in enumerate(source_runs):
+        source_run_by_character.extend([run_index] * len(value))
+
+    target_run_by_character: list[int | None] = [None] * len(replacement)
+    matcher = SequenceMatcher(None, source, replacement, autojunk=False)
+    for tag, source_start, source_end, target_start, target_end in matcher.get_opcodes():
+        if tag == "equal":
+            for offset in range(target_end - target_start):
+                target_run_by_character[target_start + offset] = (
+                    source_run_by_character[source_start + offset]
+                )
+            continue
+        if tag == "delete":
+            continue
+
+        target_length = target_end - target_start
+        if target_length <= 0:
+            continue
+        if source_start < source_end:
+            source_length = source_end - source_start
+            for offset in range(target_length):
+                source_offset = min(
+                    source_length - 1,
+                    (offset * source_length) // target_length,
+                )
+                target_run_by_character[target_start + offset] = (
+                    source_run_by_character[source_start + source_offset]
+                )
+            continue
+
+        if source_start > 0:
+            nearest_run = source_run_by_character[source_start - 1]
+        elif source_start < len(source_run_by_character):
+            nearest_run = source_run_by_character[source_start]
+        else:
+            nearest_run = 0
+        for target_index in range(target_start, target_end):
+            target_run_by_character[target_index] = nearest_run
+
+    values = [""] * len(source_runs)
+    for index, character in enumerate(replacement):
+        run_index = target_run_by_character[index]
+        values[run_index if run_index is not None else 0] += character
+    return values
+
+
 def _replace_shape_text(segment: str, replacement: str) -> str:
     matches = list(_TEXT_RE.finditer(segment))
     if not matches:
         raise TemplatePackError("declared text slot targets a shape without a:t nodes")
-    pieces = replacement.splitlines() if "\n" in replacement else [replacement]
-    if len(pieces) > len(matches):
-        pieces = [*pieces[: len(matches) - 1], "\n".join(pieces[len(matches) - 1 :])]
-    values = [*pieces, *([""] * (len(matches) - len(pieces)))]
+    if "\n" in replacement:
+        pieces = replacement.splitlines()
+        if len(pieces) > len(matches):
+            pieces = [
+                *pieces[: len(matches) - 1],
+                "\n".join(pieces[len(matches) - 1 :]),
+            ]
+        values = [*pieces, *([""] * (len(matches) - len(pieces)))]
+    else:
+        source_runs = [html.unescape(match.group(2)) for match in matches]
+        values = _distribute_replacement_across_runs(source_runs, replacement)
     output: list[str] = []
     cursor = 0
     for match, value in zip(matches, values, strict=True):

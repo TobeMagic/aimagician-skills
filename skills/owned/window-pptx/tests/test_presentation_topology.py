@@ -17,6 +17,10 @@ SKILL_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_ROOT = SKILL_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
+from window_pptx import presentation_topology as topology_module  # noqa: E402
+from window_pptx.independent_validation_security import (  # noqa: E402
+    ZipResourceLimits,
+)
 from window_pptx.presentation_topology import (  # noqa: E402
     OFFICE_RELATIONSHIP_NS,
     OFFICE_DOCUMENT_RELATIONSHIP_TYPE,
@@ -114,6 +118,42 @@ def test_valid_topology_is_ordered_reopened_and_counted(tmp_path: Path) -> None:
     assert [slide.part_name for slide in result.statistics.slides] == list(
         result.ordered_slide_parts
     )
+
+
+def test_resource_preflight_stops_before_xml_or_python_pptx_parse(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output = tmp_path / "oversized-xml.pptx"
+    _make_deck(output)
+    limits = ZipResourceLimits(
+        max_entries=10_000,
+        max_entry_uncompressed_bytes=1_000_000,
+        max_total_uncompressed_bytes=10_000_000,
+        max_compression_ratio=1_000,
+        max_xml_uncompressed_bytes=64,
+        max_relationship_uncompressed_bytes=32,
+    )
+
+    def _unexpected_parse(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("python-pptx must not run after resource rejection")
+
+    monkeypatch.setattr(
+        topology_module,
+        "_python_pptx_statistics",
+        _unexpected_parse,
+    )
+    monkeypatch.setattr(
+        topology_module,
+        "_parse_xml",
+        _unexpected_parse,
+    )
+
+    result = inspect_presentation_topology(output, archive_limits=limits)
+
+    assert result.status == "fail"
+    assert "ZIP_RESOURCE_XML_SIZE_EXCEEDED" in _codes(result)
+    assert result.statistics is None
 
 
 def test_wrong_presentationml_namespace_is_rejected(tmp_path: Path) -> None:
@@ -865,3 +905,58 @@ def test_nonpositive_group_child_extent_does_not_count_as_editable(
     assert "EDITABILITY_EMPTY_SLIDE" in _codes(result)
     assert result.statistics is not None
     assert result.statistics.native_object_count == 0
+
+
+def test_axis_aligned_connectors_count_as_native_without_area(
+    tmp_path: Path,
+) -> None:
+    pptx = pytest.importorskip("pptx")
+    from pptx.enum.shapes import MSO_CONNECTOR
+
+    output = tmp_path / "axis-aligned-connectors.pptx"
+    presentation = pptx.Presentation()
+    first = presentation.slides.add_slide(presentation.slide_layouts[6])
+    first.shapes.add_connector(
+        MSO_CONNECTOR.STRAIGHT,
+        100_000,
+        100_000,
+        900_000,
+        100_000,
+    )
+    first.shapes.add_connector(
+        MSO_CONNECTOR.STRAIGHT,
+        1_000_000,
+        100_000,
+        1_000_000,
+        900_000,
+    )
+    second = presentation.slides.add_slide(presentation.slide_layouts[6])
+    second.shapes.add_connector(
+        MSO_CONNECTOR.STRAIGHT,
+        100_000,
+        100_000,
+        900_000,
+        100_000,
+    )
+    textbox = second.shapes.add_textbox(
+        100_000,
+        300_000,
+        1_000_000,
+        300_000,
+    )
+    textbox.text = "Editable"
+    presentation.save(output)
+
+    result = inspect_presentation_topology(output)
+
+    assert result.status == "pass"
+    assert result.issues == ()
+    assert result.statistics is not None
+    assert result.statistics.shape_count == 4
+    assert result.statistics.native_object_count == 4
+    assert result.statistics.native_editable_slide_count == 2
+    assert [
+        slide.native_object_count for slide in result.statistics.slides
+    ] == [2, 2]
+    assert result.statistics.slides[0].native_coverage == 0
+    assert result.statistics.slides[1].native_coverage > 0

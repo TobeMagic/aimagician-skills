@@ -1,7 +1,12 @@
 import { basename, normalize, sep } from "node:path";
 
 const LOCAL_REFERENCE_REPOS_SEGMENT = `${sep}references${sep}_external_repos`;
-const TRANSIENT_DIRECTORY_NAMES = new Set([".git", "node_modules", "__pycache__"]);
+const TRANSIENT_DIRECTORY_NAMES = new Set([
+  ".git",
+  ".pytest_cache",
+  "node_modules",
+  "__pycache__"
+]);
 const PYTHON_BYTECODE_SUFFIXES = [".pyc", ".pyo"];
 
 export function shouldCopyManagedSource(sourcePath: string): boolean {

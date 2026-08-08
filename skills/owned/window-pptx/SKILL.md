@@ -243,57 +243,37 @@ take precedence over the older v6.0 authoring defaults elsewhere in this
 document.
 
 For this profile Codex is a bounded decision-maker, not a drawing engine. It
-may choose only the fact-safe narrative, one candidate ID from each locked
-query result, and the fact/asset bindings for certified slots. The Skill and
-locked reference package own page geometry, theme, fonts, colors, masters,
-layouts, shapes, charts, tables, and repair policy. Codex must not emit design
-code, coordinates, raw style values, OOXML, self-scores, release decisions, or
-a replacement layout.
+may choose only the fact-safe narrative, certified page IDs, and slide-level
+fact/asset intent. It must not author shape IDs, raw source copy, candidate
+rank/score, chart/workbook coordinates, or an AssemblyPlan. A deterministic
+Skill-owned binding profile expands the compact intent into every physical
+ordinary slot, fragment-character slot, explicit clear, and governed-content
+policy. The Skill and locked reference package own page geometry, theme,
+fonts, colors, masters, layouts, shapes, charts, tables, and repair policy.
+Codex must not emit design code, coordinates, raw style values, OOXML,
+self-scores, release decisions, or a replacement layout.
 
-The Agent must compile and query the private page library, choose a page for
-each slide, bind copy to that page's actual `slot_graph` IDs, and then invoke
-the portable cross-package assembler:
+For the Phase 49 production profile, use one command. It validates the frozen
+clean pack, builds the exact-source query bundle internally, compiles the
+hash-locked binding profile, assembles the PPTX, runs rule QA, and emits the
+exact evidence set:
 
 ```bash
-python <skill-root>/scripts/manage_window_pptx_v61_library.py \
-  compile-reference --private-root <private-root> \
-  --deck <skill-root>/design-packs/institutional-annual-editorial/template.pptx \
-  --output v61/reference-work-summary-library-v4.json
-
-python <skill-root>/scripts/manage_window_pptx_v61_library.py \
-  query-bundle --private-root <private-root> \
-  --library v61/reference-work-summary-library-v4.json \
-  --query-request <project>/evidence/page-template-query-request.v1.json \
-  --output <project>/evidence/page-template-query-bundle.v1.json
-
-python <skill-root>/scripts/render_window_pptx_assembly.py \
+python <skill-root>/scripts/run_window_pptx_v61_profile_job.py \
   --project-root <project> \
-  --private-root <private-root> \
-  --library v61/reference-work-summary-library-v4.json \
-  --assembly-plan evidence/assembly-plan.v1.json \
-  --fact-store fact-store.v1.json \
-  --fact-store-sha256 <locked-sha256> \
-  --asset-manifest asset-manifest.v1.json \
-  --asset-manifest-sha256 <locked-sha256> \
-  --connective-copy connective-copy.v1.json \
-  --connective-copy-sha256 <locked-sha256> \
-  --output output/final.pptx \
-  --report evidence/physical-assembly-report.v1.json \
-  --rule-qa-report evidence/rule-qa.v1.json \
-  --acceptance-profile phase49-work-report-15 \
-  --max-output-size-bytes 33941179
+  --profile-id phase49-work-report-15
 ```
 
-All client-side paths in this command are project-relative and must remain
-inside `--project-root`. A relative `--library` is resolved under the private
-root, never under the client project. The renderer rejects symlinks, path
-escape, digest drift, arbitrary source-copy retention, missing LibreOffice
-render evidence, duplicate or out-of-sequence page IDs, and package-size
-overflow. The assembly plan must hash-lock the public query bundle as well as
-the FactStore, asset manifest, and connective-copy authority. For all fifteen
-slides the renderer recomputes the query against the locked library digest and
-checks query ID, candidate rank, score, fallback reason, page ID, package SHA,
-source-slide SHA, source ordinal, and style cluster before mutation.
+Do not hand-author a query request or physical plan for this profile. The
+lower-level `manage_window_pptx_v61_library.py`,
+`compile_window_pptx_assembly_plan.py`, and
+`render_window_pptx_assembly.py` commands are debugging/integration surfaces,
+not the Agent production path. All client-side authority paths remain inside
+`--project-root`; the relative library resolves only under the configured
+private root. The harness rejects symlinks, path escape, digest drift,
+arbitrary source-copy retention, missing LibreOffice render evidence,
+duplicate/out-of-sequence page IDs, package-size overflow, incomplete evidence,
+and any rendering absent from the locked FactStore/connective authority.
 
 The independent validator does not accept report query counters as proof. It
 schema- and semantics-validates the locked public query bundle, anchors every
@@ -391,16 +371,16 @@ render command:
 3. **Lock the narrative spine** — map each slide to a role (cover, contents,
    section, evidence, chart, comparison, roadmap, closing, etc.), assign an
    information budget, and bind every fact to a source reference.
-4. **Search and select pages** — generate one locked query request and public
-   query bundle with fifteen ordinal-specific results. For Phase 49 select the
-   certified `reference-work-summary` page whose `slide_number` equals the
-   target ordinal; this is strict N-to-N reuse, not a semantic nearest-neighbor
-   substitution. Bind ordinary text by returned `shape_<id>` slots and embedded
-   content by returned governed slot/peer IDs. Never invent a slot, geometry,
-   candidate, score, or fallback. General v6.1 projects may use non-adjacent
-   certified pages only outside this acceptance profile.
-5. **Assemble physically** — emit `assembly-plan.v1.json`, then run the
-   canonical `render_window_pptx_assembly.py` command above. Checkpoint:
+4. **Search and select pages** — provide compact semantic intent. The harness
+   builds one locked public query bundle with fifteen ordinal-specific results
+   and hard-filters source ordinal before selection. For Phase 49 it selects
+   the certified `reference-work-summary` page whose `slide_number` equals the
+   target ordinal. Never emit a slot, geometry, candidate score, or fallback.
+   General v6.1 projects may use non-adjacent certified pages only outside this
+   acceptance profile.
+5. **Assemble physically** — run the one-command profile harness above. Its
+   deterministic compiler emits `assembly-plan.v1.json` and expands every
+   slot; the physical assembler then imports the complete OPC graph. Checkpoint:
    `physical-assembly-report.json` must be `status=pass`, with one lineage
    record per target slide.
 6. **Rule QA and bounded repair** — check overflow, tiny text, out-of-bounds
@@ -418,6 +398,42 @@ render command:
    optional read-only certification after portable PASS and never a generation
    backend requirement.
 
+The Phase 49 visual harness is deterministic outside the author context. It
+renders the exact reference and candidate with one LibreOffice/Poppler
+toolchain, then builds eight labeled same-slide raster pairs covering slides
+1–15. Reviewers receive those anonymous pairs, never either source PPTX,
+private bytes, generator traces, or another reviewer's output:
+
+```bash
+python <skill-root>/scripts/build_window_pptx_v61_blind_packet.py \
+  --reference-pptx <reference.pptx> \
+  --reference-sha256 <locked-reference-sha256> \
+  --candidate-pptx <candidate.pptx> \
+  --candidate-sha256 <physical-report-output-sha256> \
+  --physical-report <physical-assembly-report.v1.json> \
+  --rule-qa-report <rule-qa.v1.json> \
+  --expected-slide-count 15 --dpi 144 --output-dir <new-packet-dir>
+
+python <skill-root>/scripts/run_window_pptx_v61_blind_reviews.py \
+  --packet-root <new-packet-dir> \
+  --output-dir <new-review-dir> \
+  --allow-external-upload
+
+python <skill-root>/scripts/aggregate_window_pptx_v61_blind_reviews.py \
+  --packet-sha256 <packet-sha256> \
+  --rubric-sha256 <rubric-sha256> \
+  --segment <six-segment-files> \
+  --review <three-review-files> \
+  --output <aggregate.json>
+```
+
+Each of `ART`, `NARRATIVE`, and `PRODUCTION` uses two fresh one-attempt Agnes
+visual calls and one fresh ephemeral Codex synthesis context. All three must
+inspect exactly slides 1–15, confirm reference parity, have a recomputed
+nine-dimension median of at least 8.0/10, and contain no Blocker or Important.
+Missing evidence, repeated invocation/context IDs, hash drift, retries, or
+partial page coverage is `NOT_RUN`; a complete low-quality review is `FAIL`.
+
 The author-stage minimum checkpoint set is listed below. Use the project's
 locked output contract for the actual directory and filenames; `.window-pptx`
 is only the default when the client did not specify another evidence root.
@@ -426,7 +442,6 @@ is only the default when the client did not specify another evidence root.
 .window-pptx/audits/brief-pack.json
 .window-pptx/audits/direction-decision.json
 .window-pptx/audits/narrative-plan.json
-.window-pptx/audits/page-template-query-request.json
 .window-pptx/audits/page-template-query-bundle.json
 .window-pptx/audits/assembly-plan.json
 .window-pptx/audits/physical-assembly-report.json

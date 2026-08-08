@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "codex-runtime-identity-manifest.v1.schema.json",
+  "title": "Window-PPTX v6.1 Codex Runtime Identity Manifest",
+  "description": "Externally frozen controller, interpreter, and native Codex executable identity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "manifest_id",
+    "launch_mode",
+    "installed_skill",
+    "controller",
+    "codex"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "manifest_id": {"const": "phase49-gpt56-terra-runtime-identity"},
+    "launch_mode": {"const": "native-codex-direct"},
+    "installed_skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "expected_sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/absolutePath"},
+        "expected_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "controller": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entry", "interpreter"],
+      "properties": {
+        "entry": {"$ref": "#/$defs/file"},
+        "interpreter": {"$ref": "#/$defs/versionedFile"}
+      }
+    },
+    "codex": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["native_executable"],
+      "properties": {
+        "native_executable": {"$ref": "#/$defs/nativeExecutable"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "absolutePath": {
+      "type": "string",
+      "pattern": "^/",
+      "minLength": 2,
+      "maxLength": 2000
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size"],
+      "properties": {
+        "path": {"$ref": "#/$defs/absolutePath"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size": {"type": "integer", "minimum": 1}
+      }
+    },
+    "versionedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size", "version"],
+      "properties": {
+        "path": {"$ref": "#/$defs/absolutePath"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size": {"type": "integer", "minimum": 1},
+        "version": {"type": "string", "minLength": 1, "maxLength": 300}
+      }
+    },
+    "nativeExecutable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size", "version", "binary_format"],
+      "properties": {
+        "path": {"$ref": "#/$defs/absolutePath"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size": {"type": "integer", "minimum": 1},
+        "version": {"type": "string", "minLength": 1, "maxLength": 300},
+        "binary_format": {"enum": ["elf", "pe", "mach-o", "test-script"]}
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "fingerprint-bundle.v1.schema.json",
   "title": "window-pptx fingerprint bundle v1",
-  "description": "Version 1.0 accepts the legacy PowerPoint profile and the additive portable PptxGenJS profile with optional evidence-bound PowerPoint certification.",
+  "description": "Version 1.0 accepts the legacy PowerPoint profile, the additive portable PptxGenJS profile, and the v6.1 deterministic physical-template assembly profile.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "fingerprints", "components"],
@@ -51,6 +51,18 @@
           }
         }
       ]
+    },
+    {
+      "properties": {
+        "schema_version": {"const": "1.0"},
+        "fingerprints": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"$ref": "#/$defs/physicalAssemblyFingerprint"}
+        },
+        "components": {"$ref": "#/$defs/physicalAssemblyComponents"}
+      }
     }
   ],
   "$defs": {
@@ -114,6 +126,38 @@
         "powerpoint_build_sha256": {"$ref": "#/$defs/sha"},
         "asset_manifest_sha256": {"$ref": "#/$defs/sha"},
         "evidence_generation": {"const": "post-huashu"}
+      }
+    },
+    "physicalAssemblyFingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile_id",
+        "profile_sha256",
+        "library_index_sha256",
+        "query_bundle_sha256",
+        "assembly_plan_sha256",
+        "output_sha256",
+        "physical_report_sha256",
+        "rule_qa_sha256",
+        "fact_store_sha256",
+        "asset_manifest_sha256",
+        "connective_copy_sha256",
+        "evidence_generation"
+      ],
+      "properties": {
+        "profile_id": {"type": "string", "minLength": 1},
+        "profile_sha256": {"$ref": "#/$defs/sha"},
+        "library_index_sha256": {"$ref": "#/$defs/sha"},
+        "query_bundle_sha256": {"$ref": "#/$defs/sha"},
+        "assembly_plan_sha256": {"$ref": "#/$defs/sha"},
+        "output_sha256": {"$ref": "#/$defs/sha"},
+        "physical_report_sha256": {"$ref": "#/$defs/sha"},
+        "rule_qa_sha256": {"$ref": "#/$defs/sha"},
+        "fact_store_sha256": {"$ref": "#/$defs/sha"},
+        "asset_manifest_sha256": {"$ref": "#/$defs/sha"},
+        "connective_copy_sha256": {"$ref": "#/$defs/sha"},
+        "evidence_generation": {"const": "v61-physical-template-assembly"}
       }
     },
     "dependencies": {
@@ -311,6 +355,35 @@
         "portable_runtime": {"$ref": "#/$defs/portableRuntime"},
         "powerpoint_build": {"$ref": "#/$defs/certifiedPowerPoint"},
         "asset_manifest": {"$ref": "#/$defs/portableAssetManifest"}
+      }
+    },
+    "physicalAssemblyComponents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_provider",
+        "model",
+        "reasoning_effort",
+        "acceptance_profile",
+        "private_library_resolution_source",
+        "native_editable",
+        "visual_fallback"
+      ],
+      "properties": {
+        "model_provider": {"const": "openai"},
+        "model": {"const": "gpt-5.6-terra"},
+        "reasoning_effort": {"const": "medium"},
+        "acceptance_profile": {"type": "string", "minLength": 1},
+        "private_library_resolution_source": {
+          "enum": [
+            "absolute-library",
+            "explicit-private-root",
+            "environment-private-root",
+            "config-private-root"
+          ]
+        },
+        "native_editable": {"const": true},
+        "visual_fallback": {"const": false}
       }
     }
   }

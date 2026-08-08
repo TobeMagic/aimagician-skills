@@ -5,6 +5,7 @@ import io
 import json
 import sys
 import zipfile
+import xml.etree.ElementTree as ET
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -99,7 +100,14 @@ def test_partial_adaptation_changes_only_declared_slide_part(tmp_path: Path) -> 
     } == {"ppt/slides/slide1.xml"}
     with zipfile.ZipFile(output) as archive:
         slide_xml = archive.read("ppt/slides/slide1.xml").decode("utf-8")
-    assert "汇报人：普通模型" in slide_xml
+    slide_root = ET.fromstring(slide_xml)
+    visible_text = "".join(
+        node.text or ""
+        for node in slide_root.iter(
+            "{http://schemas.openxmlformats.org/drawingml/2006/main}t"
+        )
+    )
+    assert "汇报人：普通模型" in visible_text
     assert "ppt/media/" in "\n".join(output_entries)
 
 

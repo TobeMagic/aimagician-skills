@@ -24,6 +24,8 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 from validate_window_pptx_v61_physical_report import (  # noqa: E402
     PHASE49_GOVERNED_INVENTORY_SHA256,
     _governed_inventory_identity_sha256,
+    _read_slide_shape_text,
+    _read_slide_shape_text_variants,
     main,
     validate_physical_report,
 )
@@ -36,6 +38,25 @@ RELATIONSHIP_TAG = f"{{{PACKAGE_RELATIONSHIP_NS}}}Relationship"
 OFFICE_RELATIONSHIP_NS = (
     "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 )
+
+
+def test_shape_text_reader_joins_runs_within_paragraphs_only() -> None:
+    slide = (
+        '<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+        '<p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="7" name="metric"/>'
+        '</p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>44.6</a:t></a:r>'
+        '<a:r><a:t>%</a:t></a:r></a:p><a:p><a:r><a:t>同比</a:t></a:r>'
+        '<a:r><a:t>增长</a:t></a:r></a:p></p:txBody></p:sp>'
+        '</p:spTree></p:cSld></p:sld>'
+    ).encode()
+
+    assert _read_slide_shape_text(slide, 7) == "44.6%\n同比增长"
+    assert _read_slide_shape_text_variants(slide, 7) == (
+        "44.6%\n同比增长",
+        "44.6%同比增长",
+        "44.6\n%\n同比\n增长",
+    )
 
 
 def _sha(path: Path) -> str:
@@ -269,6 +290,7 @@ def _text_binding_evidence(
     *,
     fact_refs: list[str] | None = None,
     connective_ref: str = "",
+    fit_policy: str = "preserve",
 ) -> dict[str, Any]:
     return {
         "ordinal": 1,
@@ -277,6 +299,7 @@ def _text_binding_evidence(
         "shape_id": 2,
         "binding_kind": "text",
         "mode": "exact" if fact_refs else "connective",
+        "fit_policy": fit_policy,
         "source_sha256": "f" * 64,
         "replacement_sha256": hashlib.sha256(replacement.encode()).hexdigest(),
         "fact_refs": fact_refs or [],
@@ -1093,6 +1116,52 @@ def test_text_binding_authorized_fact_rendering_passes(tmp_path: Path) -> None:
     assert result["issue_count"] == 0
 
 
+def test_no_autofit_evidence_is_recomputed_from_output_xml(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    report, report_path = _valid_report(project)
+    output = project / "output.pptx"
+    _rewrite_deck(output, {"ppt/slides/slide1.xml": _text_slide_xml("42 units")})
+    report["binding_evidence"] = [
+        _text_binding_evidence(
+            "42 units",
+            fact_refs=["fixture-fact"],
+            fit_policy="no-autofit",
+        )
+    ]
+    report["lineage_records"][0]["binding_count"] = 1
+    _refresh_output_bindings(report, output)
+    _write_report(report_path, report)
+
+    result = validate_physical_report(report_path, project)
+    codes = {issue["code"] for issue in result["issues"]}
+
+    assert result["status"] == "fail"
+    assert "BINDING_FIT_POLICY_MISMATCH" in codes
+
+
+def test_shrink_to_fit_evidence_is_recomputed_from_output_xml(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    report, report_path = _valid_report(project)
+    output = project / "output.pptx"
+    _rewrite_deck(output, {"ppt/slides/slide1.xml": _text_slide_xml("42 units")})
+    report["binding_evidence"] = [
+        _text_binding_evidence(
+            "42 units",
+            fact_refs=["fixture-fact"],
+            fit_policy="shrink-to-fit",
+        )
+    ]
+    report["lineage_records"][0]["binding_count"] = 1
+    _refresh_output_bindings(report, output)
+    _write_report(report_path, report)
+
+    result = validate_physical_report(report_path, project)
+    codes = {issue["code"] for issue in result["issues"]}
+
+    assert result["status"] == "fail"
+    assert "BINDING_FIT_POLICY_MISMATCH" in codes
+
+
 def test_connective_binding_hash_must_match_registered_connective_text(
     tmp_path: Path,
 ) -> None:
@@ -1658,3 +1727,84 @@ def test_mutation_schema_enforces_kind_specific_lineage_and_chart_text(
     )
     report["source_residue"]["governed_mutations"] = [contradictory]
     assert _schema_errors(report)
+
+
+def test_mutation_schema_accepts_only_canonical_importer_namespaced_targets(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "project"
+    report, _ = _valid_report(project)
+    namespace = "v61_59b104d31bf3"
+    chart_mutation = {
+        "ordinal": 1,
+        "page_id": f"{'a' * 64}:001",
+        "slot_id": "chart-slot",
+        "kind": "chart-value",
+        "source_part": "ppt/charts/chart1.xml",
+        "slide_part": "ppt/slides/slide1.xml",
+        "shape_id": 2,
+        "slide_relationship_id": "rChart",
+        "chart_part": "ppt/charts/chart1.xml",
+        "chart_relationship_id": "",
+        "target_part": "ppt/charts/chart1.xml",
+        "target_part_sha256": "a" * 64,
+        "locator": "graphicFrame[id=2]/chartSpace[1]/chart[1]/value[1]",
+        "actual_sha256": "b" * 64,
+        "peer_group_id": "",
+    }
+    workbook_mutation = {
+        **chart_mutation,
+        "slot_id": "workbook-slot",
+        "kind": "workbook-cell",
+        "source_part": "ppt/embeddings/Microsoft_Excel_Worksheet.xlsx",
+        "chart_part": "ppt/charts/chart1.xml",
+        "chart_relationship_id": "rWorkbook",
+        "target_part": "ppt/embeddings/Microsoft_Excel_Worksheet.xlsx",
+        "locator": "xl/worksheets/sheet1.xml/A1",
+    }
+
+    for mutation in (chart_mutation, workbook_mutation):
+        report["source_residue"]["governed_mutations"] = [mutation]
+        assert not _schema_errors(report)
+
+    namespaced_chart = copy.deepcopy(chart_mutation)
+    namespaced_chart["chart_part"] = (
+        f"ppt/{namespace}/charts/chart1_slide_005.xml"
+    )
+    namespaced_chart["target_part"] = namespaced_chart["chart_part"]
+    report["source_residue"]["governed_mutations"] = [namespaced_chart]
+    assert not _schema_errors(report)
+
+    namespaced_workbook = copy.deepcopy(workbook_mutation)
+    namespaced_workbook["chart_part"] = (
+        f"ppt/{namespace}/charts/chart1_slide_005.xml"
+    )
+    namespaced_workbook["target_part"] = (
+        f"ppt/{namespace}/embeddings/Microsoft_Excel_Worksheet_slide_005.xlsx"
+    )
+    report["source_residue"]["governed_mutations"] = [namespaced_workbook]
+    assert not _schema_errors(report)
+
+    invalid_targets = (
+        (namespaced_chart, "chart_part", f"ppt/{namespace}/charts/nested/chart1.xml"),
+        (namespaced_chart, "target_part", f"ppt/{namespace}/charts/../chart1.xml"),
+        (namespaced_chart, "chart_part", f"ppt/{namespace}/charts\\chart1.xml"),
+        (namespaced_chart, "target_part", "ppt/v61_59b104d31bf/charts/chart1.xml"),
+        (namespaced_chart, "target_part", "ppt/v61_59B104D31BF3/charts/chart1.xml"),
+        (namespaced_chart, "target_part", "ppt/v61_59b104d31bfg/charts/chart1.xml"),
+        (
+            namespaced_workbook,
+            "target_part",
+            f"ppt/{namespace}/embeddings/nested/workbook.xlsx",
+        ),
+        (
+            namespaced_workbook,
+            "target_part",
+            f"ppt/{namespace}/embeddings/../workbook.xlsx",
+        ),
+    )
+    for valid_mutation, field, invalid_path in invalid_targets:
+        invalid_mutation = copy.deepcopy(valid_mutation)
+        invalid_mutation[field] = invalid_path
+        report["source_residue"]["governed_mutations"] = [invalid_mutation]
+        assert _schema_errors(report), f"{field} unexpectedly accepted {invalid_path}"

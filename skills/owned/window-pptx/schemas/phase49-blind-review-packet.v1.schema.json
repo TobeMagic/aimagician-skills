@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://window-pptx.local/schemas/phase49-blind-review-packet.v1.schema.json",
+  "title": "Phase 49 Reference/Candidate Blind Review Packet v1",
+  "description": "A hash-bound, complete 15-slide visual comparison packet. packet_sha256 is the SHA-256 of canonical JSON for the complete object with packet_sha256 omitted.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "packet_kind",
+    "packet_id",
+    "packet_sha256",
+    "status",
+    "expected_slide_count",
+    "dpi",
+    "inputs",
+    "toolchain",
+    "renders",
+    "pairs",
+    "coverage"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "packet_kind": {"const": "phase49-reference-candidate-blind-review"},
+    "packet_id": {"type": "string", "pattern": "^phase49-blind-[0-9a-f]{16}$"},
+    "packet_sha256": {"$ref": "#/$defs/sha256"},
+    "status": {"const": "pass"},
+    "expected_slide_count": {"const": 15},
+    "dpi": {"type": "integer", "minimum": 72, "maximum": 300},
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference_pptx",
+        "candidate_pptx",
+        "physical_report",
+        "rule_qa_report"
+      ],
+      "properties": {
+        "reference_pptx": {"$ref": "#/$defs/referenceDeck"},
+        "candidate_pptx": {"$ref": "#/$defs/candidateDeck"},
+        "physical_report": {"$ref": "#/$defs/physicalReport"},
+        "rule_qa_report": {"$ref": "#/$defs/ruleQaReport"}
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["libreoffice", "pdftoppm", "pillow"],
+      "properties": {
+        "libreoffice": {"$ref": "#/$defs/executableTool"},
+        "pdftoppm": {"$ref": "#/$defs/executableTool"},
+        "pillow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version"],
+          "properties": {
+            "version": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "renders": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "candidate"],
+      "properties": {
+        "reference": {"$ref": "#/$defs/render"},
+        "candidate": {"$ref": "#/$defs/render"}
+      }
+    },
+    "pairs": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {"$ref": "#/$defs/pair"}
+    },
+    "coverage": {"$ref": "#/$defs/coverage"}
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "fileName": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^/\\\\]+$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$"
+    },
+    "referenceDeck": {
+      "allOf": [
+        {"$ref": "#/$defs/deck"},
+        {
+          "type": "object",
+          "properties": {"kind": {"const": "reference-pptx"}}
+        }
+      ]
+    },
+    "candidateDeck": {
+      "allOf": [
+        {"$ref": "#/$defs/deck"},
+        {
+          "type": "object",
+          "properties": {"kind": {"const": "candidate-pptx"}}
+        }
+      ]
+    },
+    "deck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "file_name",
+        "observed_sha256",
+        "size_bytes",
+        "expected_sha256",
+        "hash_match",
+        "slide_count"
+      ],
+      "properties": {
+        "kind": {"enum": ["reference-pptx", "candidate-pptx"]},
+        "file_name": {"$ref": "#/$defs/fileName"},
+        "observed_sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"type": "integer", "minimum": 1},
+        "expected_sha256": {"$ref": "#/$defs/sha256"},
+        "hash_match": {"const": true},
+        "slide_count": {"const": 15}
+      }
+    },
+    "physicalReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "file_name",
+        "observed_sha256",
+        "size_bytes",
+        "packet_path"
+      ],
+      "properties": {
+        "kind": {"const": "physical-assembly-report"},
+        "file_name": {"$ref": "#/$defs/fileName"},
+        "observed_sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"type": "integer", "minimum": 1},
+        "packet_path": {"const": "inputs/physical-assembly-report.v1.json"}
+      }
+    },
+    "ruleQaReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "file_name",
+        "observed_sha256",
+        "size_bytes",
+        "packet_path"
+      ],
+      "properties": {
+        "kind": {"const": "rule-qa-report"},
+        "file_name": {"$ref": "#/$defs/fileName"},
+        "observed_sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"type": "integer", "minimum": 1},
+        "packet_path": {"const": "inputs/rule-qa.v1.json"}
+      }
+    },
+    "executableTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executable", "version", "sha256", "size_bytes"],
+      "properties": {
+        "executable": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "pdf": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size_bytes"],
+      "properties": {
+        "path": {"$ref": "#/$defs/relativePath"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordinal",
+        "path",
+        "sha256",
+        "size_bytes",
+        "width_px",
+        "height_px"
+      ],
+      "properties": {
+        "ordinal": {"type": "integer", "minimum": 1, "maximum": 15},
+        "path": {
+          "type": "string",
+          "pattern": "^renders/(?:reference|candidate)/pages/slide-[0-9]{3}\\.png$"
+        },
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"type": "integer", "minimum": 1},
+        "width_px": {"type": "integer", "minimum": 1},
+        "height_px": {"type": "integer", "minimum": 1}
+      }
+    },
+    "render": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pdf", "page_count", "pages"],
+      "properties": {
+        "pdf": {"$ref": "#/$defs/pdf"},
+        "page_count": {"const": 15},
+        "pages": {
+          "type": "array",
+          "minItems": 15,
+          "maxItems": 15,
+          "items": {"$ref": "#/$defs/page"}
+        }
+      }
+    },
+    "pairLabel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ordinal", "label"],
+      "properties": {
+        "kind": {"enum": ["reference", "candidate"]},
+        "ordinal": {"type": "integer", "minimum": 1, "maximum": 15},
+        "label": {
+          "type": "string",
+          "pattern": "^(?:REFERENCE|CANDIDATE)  /  SLIDE [0-9]{2}$"
+        }
+      }
+    },
+    "pair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pair_index",
+        "slide_ordinals",
+        "path",
+        "sha256",
+        "size_bytes",
+        "width_px",
+        "height_px",
+        "labels"
+      ],
+      "properties": {
+        "pair_index": {"type": "integer", "minimum": 1, "maximum": 8},
+        "slide_ordinals": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {"type": "integer", "minimum": 1, "maximum": 15}
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^pairs/pair-[0-9]{2}-slides?-[0-9]{2}(?:-[0-9]{2})?\\.png$"
+        },
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"type": "integer", "minimum": 1},
+        "width_px": {"type": "integer", "minimum": 1},
+        "height_px": {"type": "integer", "minimum": 1},
+        "labels": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "items": {"$ref": "#/$defs/pairLabel"}
+        }
+      }
+    },
+    "ordinalList": {
+      "type": "array",
+      "minItems": 15,
+      "maxItems": 15,
+      "uniqueItems": true,
+      "items": {"type": "integer", "minimum": 1, "maximum": 15}
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_slide_ordinals",
+        "reference_slide_ordinals",
+        "candidate_slide_ordinals",
+        "pair_slide_ordinals",
+        "missing_slide_ordinals",
+        "duplicate_slide_ordinals",
+        "status"
+      ],
+      "properties": {
+        "expected_slide_ordinals": {"$ref": "#/$defs/ordinalList"},
+        "reference_slide_ordinals": {"$ref": "#/$defs/ordinalList"},
+        "candidate_slide_ordinals": {"$ref": "#/$defs/ordinalList"},
+        "pair_slide_ordinals": {"$ref": "#/$defs/ordinalList"},
+        "missing_slide_ordinals": {"type": "array", "maxItems": 0},
+        "duplicate_slide_ordinals": {"type": "array", "maxItems": 0},
+        "status": {"const": "pass"}
+      }
+    }
+  }
+}
