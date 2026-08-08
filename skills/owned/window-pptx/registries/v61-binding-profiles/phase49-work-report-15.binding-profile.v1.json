@@ -1158,7 +1158,7 @@
         "renderings": [
           {
             "fact_id": "projects-total",
-            "rendering_sha256": "92aa10a883182c4f6cdfc37da317ea4f0176af28ebeaf2c179b7322fb996f2f0"
+            "rendering_sha256": "38986df70d2c5b517d68cd468ee055592bb39bf446c1ac0d6dbf4ce91cb45a9f"
           }
         ],
         "separator": ""
@@ -1192,7 +1192,7 @@
           "renderings": [
             {
               "fact_id": "projects-total",
-              "rendering_sha256": "380869d4ade7b8d9e40f8864ab9c5e0728e1757e8b1c4be1bfd37385d636e343"
+              "rendering_sha256": "3cb09f823507c0c7a6c5196acfbea7ee594c23fe21a555931679593620b8dbf0"
             }
           ],
           "separator": ""
@@ -1232,7 +1232,7 @@
           "renderings": [
             {
               "fact_id": "projects-total",
-              "rendering_sha256": "a3f9dfabecbc5073e6b7acf8b06f8ed7324241fffc09f5315ff2a1dee23073d1"
+              "rendering_sha256": "48b7451579f572223976988f77a3ad671475a7cdcfda4d56480c235301a83af9"
             }
           ],
           "separator": ""
@@ -1373,7 +1373,7 @@
           "renderings": [
             {
               "fact_id": "projects-total",
-              "rendering_sha256": "d44ecf5722d05d7fcf84ceedea07be745a47299a9a5883b17b951f5cd382c74d"
+              "rendering_sha256": "2230f33ec6ff56a58218a6ca0f6604c558729cc88649d5a337edbd8765dc26ab"
             }
           ],
           "separator": ""

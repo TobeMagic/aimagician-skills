@@ -26,12 +26,38 @@ from window_pptx.v61_blind_reviews import (  # noqa: E402
     REVIEWER_LENSES,
     REVIEW_DIMENSIONS,
     _parse_exact_json,
+    _segment_prompt,
     canonical_json_bytes,
     sha256_file,
 )
 
 
 SHA = "a" * 64
+
+
+def test_segment_prompt_includes_one_exact_full_coverage_json_template() -> None:
+    slides = tuple(range(1, 9))
+    prompt = _segment_prompt(
+        rubric="rubric",
+        reviewer_id="PRODUCTION",
+        segment_id="SLIDES_01_08",
+        slides=slides,
+        pair_names=("pair-1.png", "pair-2.png", "pair-3.png", "pair-4.png"),
+    )
+    expected = json.dumps(
+        {
+            "segment_id": "SLIDES_01_08",
+            "inspected_slides": list(slides),
+            "observations": [
+                {"slide": slide, "evidence": f"visible comparison for slide {slide}"}
+                for slide in slides
+            ],
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+    assert f"do not add, omit, or rename keys: {expected}" in prompt
 
 
 @pytest.mark.parametrize(
