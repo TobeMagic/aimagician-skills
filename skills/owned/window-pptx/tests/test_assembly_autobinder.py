@@ -305,6 +305,15 @@ def _profile() -> dict[str, Any]:
                         "rendering_sha256": _sha("总"),
                     },
                 ],
+                "style_clones": [
+                    {
+                        "source_shape_id": 7,
+                        "target_shape_id": 8,
+                        "scope": "shape-fill",
+                        "source_style_sha256": "1" * 64,
+                        "target_guard_sha256": "2" * 64,
+                    }
+                ],
             }
         ],
     }
@@ -475,6 +484,11 @@ def test_compiler_expands_every_slot_with_fact_connective_and_fragments() -> Non
         "shape_6": {"text": "", "fact_refs": [], "asset_refs": [], "fit_policy": "preserve"},
     }
     assert slide["title"] == "年度总结"
+    assert "style_clones" not in slide
+    assert plan["binding_profile_authority"] == {
+        "profile_id": "synthetic-profile",
+        "profile_sha256": PROFILE_SHA,
+    }
     assert report["ordinary_slot_count"] == 6
     assert report["fact_binding_count"] == 4
     assert report["connective_binding_count"] == 2
@@ -583,6 +597,25 @@ def test_generated_contracts_and_synthetic_query_pass_schemas() -> None:
         bundle_schema,
         resolver=resolver,
     ).validate(case["query"])
+
+
+def test_assembly_plan_schema_rejects_agent_authored_style_operations() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    case = _case()
+    plan, _ = _compile(case)
+    plan["target_slides"][0]["style_clones"] = case["profile"]["slides"][0][
+        "style_clones"
+    ]
+    schema = json.loads(
+        (SKILL_ROOT / "schemas" / "assembly-plan.v1.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    errors = list(jsonschema.Draft202012Validator(schema).iter_errors(plan))
+
+    assert errors
+    assert any("style_clones" in error.message for error in errors)
 
 
 def test_binding_profile_schema_rejects_unknown_fit_policy() -> None:
@@ -734,7 +767,7 @@ def test_profile_library_query_fingerprints_and_applicability_fail_closed(
 @pytest.mark.parametrize(
     ("argument", "expected"),
     [
-        ("profile_sha256", "AUTO_BIND_REPORT_SCHEMA_INVALID"),
+        ("profile_sha256", "AUTO_BIND_PLAN_SCHEMA_INVALID"),
         ("query_bundle_sha256", "AUTO_BIND_PLAN_SCHEMA_INVALID"),
     ],
 )

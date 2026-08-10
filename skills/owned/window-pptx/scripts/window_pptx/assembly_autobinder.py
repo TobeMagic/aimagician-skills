@@ -394,6 +394,43 @@ def _fragment_groups(template: PageTemplate) -> dict[str, tuple[str, ...]]:
     return result
 
 
+def _validate_profile_style_clones(profile: Mapping[str, Any]) -> None:
+    """Reject ambiguous Skill-owned clone graphs before plan compilation."""
+
+    for slide in profile.get("slides", ()):
+        ordinal = int(slide.get("ordinal", 0))
+        clones = slide.get("style_clones", ())
+        if not isinstance(clones, list):
+            raise AutoBindingError(
+                f"AUTO_BIND_STYLE_CLONES_INVALID: {ordinal}"
+            )
+        target_scopes: set[tuple[int, str]] = set()
+        source_ids: set[int] = set()
+        target_ids: set[int] = set()
+        for item in clones:
+            source_id = int(item["source_shape_id"])
+            target_id = int(item["target_shape_id"])
+            scope = str(item["scope"])
+            if source_id == target_id:
+                raise AutoBindingError(
+                    f"AUTO_BIND_STYLE_CLONE_SELF_TARGET: {ordinal}:{source_id}"
+                )
+            key = (target_id, scope)
+            if key in target_scopes:
+                raise AutoBindingError(
+                    f"AUTO_BIND_STYLE_CLONE_TARGET_DUPLICATE: {ordinal}:{target_id}:{scope}"
+                )
+            target_scopes.add(key)
+            source_ids.add(source_id)
+            target_ids.add(target_id)
+        chained = sorted(source_ids & target_ids)
+        if chained:
+            raise AutoBindingError(
+                "AUTO_BIND_STYLE_CLONE_CHAIN_FORBIDDEN: "
+                f"{ordinal}:" + ",".join(str(item) for item in chained)
+            )
+
+
 def _validate_capacity(
     *,
     ordinal: int,
@@ -516,6 +553,7 @@ def compile_assembly_intent(
         "binding-profile.v1.schema.json",
         "AUTO_BIND_PROFILE_SCHEMA_INVALID",
     )
+    _validate_profile_style_clones(profile)
     if profile["profile_id"] != intent["profile_id"]:
         raise AutoBindingError("AUTO_BIND_PROFILE_APPLICABILITY_MISMATCH")
     if profile["scenario_id"] != intent["scenario_id"]:
@@ -787,6 +825,16 @@ def compile_assembly_intent(
         "target_slide_count": len(target_slides),
         "target_slides": target_slides,
         "library_index_sha256": library_index_sha256,
+        **(
+            {
+                "binding_profile_authority": {
+                    "profile_id": profile["profile_id"],
+                    "profile_sha256": profile_sha256,
+                }
+            }
+            if any(slide.get("style_clones") for slide in profile["slides"])
+            else {}
+        ),
         "query_bundle": {
             "path": query_bundle_path,
             "sha256": query_bundle_sha256,

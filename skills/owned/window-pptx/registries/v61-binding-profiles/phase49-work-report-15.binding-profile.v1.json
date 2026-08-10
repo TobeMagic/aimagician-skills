@@ -1799,6 +1799,43 @@
           "fact_id": "fragment-s09-currency-unit",
           "rendering_sha256": "7f77f23af7b0dcc87b5ed446cc54be89d98b1c6e9aaa9475d5aa47c7e6414f71"
         }
+      ],
+      "style_clones": [
+        {
+          "source_shape_id": 330,
+          "target_shape_id": 343,
+          "scope": "shape-fill",
+          "source_style_sha256": "2f6c5149a239efbd708d949d702ecd9b61a2980edb795e9db1b5ba59d25521dd",
+          "target_guard_sha256": "eb869b41d7bdbf3dbafb707982feb7c3a4fad92871b6c8f1ee32a1c2b6a224e2"
+        },
+        {
+          "source_shape_id": 339,
+          "target_shape_id": 352,
+          "scope": "text-color",
+          "source_style_sha256": "b58a64953c929c38011af233d104ad2ef8d90b9a74c28c67730ffc172a130b8a",
+          "target_guard_sha256": "332b625440fab41c564953513a7a9615a19784f59ada5bd13783ce934a483c6d"
+        },
+        {
+          "source_shape_id": 337,
+          "target_shape_id": 350,
+          "scope": "text-color",
+          "source_style_sha256": "1129c2750629b552e9c73e09e689720b0ac0a537fc66140cc342b52e4385c752",
+          "target_guard_sha256": "29a4f817a01078d1a8e2e40093be85794252dc66ba39c2ade38eb9a626e4e26f"
+        },
+        {
+          "source_shape_id": 338,
+          "target_shape_id": 351,
+          "scope": "shape-fill",
+          "source_style_sha256": "31a9b3dc6f7dcffcebda771e043bdcb9e5e9d65bd7b1d537161c8d7896190330",
+          "target_guard_sha256": "1901cd9dd7cb9e32751cac8f2f8512e2765ae2683eb6afaf5cc4409834d6db4c"
+        },
+        {
+          "source_shape_id": 335,
+          "target_shape_id": 348,
+          "scope": "picture-color-effects",
+          "source_style_sha256": "b1d49895b80bb4f608425310c88de9e8d5e7fcc0d469e25af789e48e8718a15c",
+          "target_guard_sha256": "88ef8e861ee0e588953b7c41c534931587d4b61b61c6d3538cbde22e7ce56b90"
+        }
       ]
     },
     {

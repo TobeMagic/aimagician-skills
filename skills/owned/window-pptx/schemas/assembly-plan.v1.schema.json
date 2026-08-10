@@ -65,6 +65,7 @@
       }
     },
     "library_index_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "binding_profile_authority": {"$ref": "#/$defs/bindingProfileAuthority"},
     "query_bundle": {"$ref": "#/$defs/authorityFile"},
     "authority": {
       "type": "object",
@@ -79,6 +80,21 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "bindingProfileAuthority": {
+      "type": "object",
+      "required": ["profile_id", "profile_sha256"],
+      "properties": {
+        "profile_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]{1,120}$"
+        },
+        "profile_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
     "authorityFile": {
       "type": "object",
       "required": ["path", "sha256"],

@@ -130,3 +130,38 @@ def test_phase49_slide9_locks_no_autofit_for_compact_kpi_units() -> None:
         "shape_376",
         "shape_389",
     }
+
+
+def test_phase49_slide9_locks_only_bounded_skill_owned_style_clones() -> None:
+    slide = next(item for item in _profile()["slides"] if item["ordinal"] == 9)
+
+    assert [
+        (
+            item["source_shape_id"],
+            item["target_shape_id"],
+            item["scope"],
+        )
+        for item in slide["style_clones"]
+    ] == [
+        (330, 343, "shape-fill"),
+        (339, 352, "text-color"),
+        (337, 350, "text-color"),
+        (338, 351, "shape-fill"),
+        (335, 348, "picture-color-effects"),
+    ]
+    for item in slide["style_clones"]:
+        assert set(item) == {
+            "source_shape_id",
+            "target_shape_id",
+            "scope",
+            "source_style_sha256",
+            "target_guard_sha256",
+        }
+        for key in ("source_style_sha256", "target_guard_sha256"):
+            digest = item[key]
+            assert isinstance(digest, str) and len(digest) == 64
+            int(digest, 16)
+
+    serialized = json.dumps(_profile(), ensure_ascii=False).lower()
+    for forbidden in ("#008c72", "accent1", "accent2", "<a:", "ooxml"):
+        assert forbidden not in serialized

@@ -20,6 +20,7 @@ import stat
 import sys
 import zipfile
 import xml.etree.ElementTree as ET
+from copy import deepcopy
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Mapping
@@ -132,6 +133,196 @@ GOVERNED_IDENTITY_FIELDS = (
     "locator",
     "peer_group_id",
 )
+STYLE_CLONE_SCOPES = frozenset(
+    {"shape-fill", "text-color", "picture-color-effects"}
+)
+STYLE_FILL_TAGS = frozenset(
+    f"{{{DRAWING_NS}}}{name}"
+    for name in (
+        "noFill",
+        "solidFill",
+        "gradFill",
+        "blipFill",
+        "pattFill",
+        "grpFill",
+    )
+)
+PICTURE_COLOR_EFFECT_TAGS = frozenset(
+    f"{{{DRAWING_NS}}}{name}"
+    for name in (
+        "alphaBiLevel", "alphaCeiling", "alphaFloor", "alphaInv",
+        "alphaMod", "alphaModFix", "alphaRepl", "biLevel", "blur",
+        "clrChange", "clrRepl", "duotone", "fillOverlay", "grayscl",
+        "hsl", "lum", "tint",
+    )
+)
+TEXT_STYLE_CARRIER_TAGS = frozenset(
+    f"{{{DRAWING_NS}}}{name}" for name in ("rPr", "defRPr", "endParaRPr")
+)
+SUPPORTED_STYLE_SHAPE_TAGS = frozenset(
+    f"{{{PRESENTATION_NS}}}{name}" for name in ("sp", "cxnSp", "pic")
+)
+TRUSTED_BINDING_PROFILE_FILES = {
+    "phase49-work-report-15": "phase49-work-report-15.binding-profile.v1.json",
+}
+
+
+def _independent_canonical_style_node(
+    node: ET.Element,
+    *,
+    guard: bool = False,
+) -> Any:
+    local = node.tag.rsplit("}", 1)[-1]
+    if guard and local in {"spAutoFit", "normAutofit", "noAutofit"}:
+        return ["__GOVERNED_FIT_POLICY__"]
+    attributes: list[tuple[str, str]] = []
+    for key, value in sorted(node.attrib.items()):
+        if (
+            guard
+            and local in {"rPr", "defRPr", "endParaRPr"}
+            and key.rsplit("}", 1)[-1] == "sz"
+        ):
+            value = "__GOVERNED_TEXT_SIZE__"
+        attributes.append((key, value))
+    text = (
+        "__GOVERNED_TEXT__"
+        if guard and local == "t"
+        else (node.text or "").strip()
+    )
+    return [
+        node.tag,
+        attributes,
+        text,
+        [
+            _independent_canonical_style_node(child, guard=guard)
+            for child in list(node)
+        ],
+    ]
+
+
+def _independent_style_shape(
+    slide_xml: bytes,
+    shape_id: int,
+) -> ET.Element:
+    root = ET.fromstring(slide_xml)
+    matches: list[ET.Element] = []
+    for shape in root.iter():
+        if shape.tag not in SUPPORTED_STYLE_SHAPE_TAGS:
+            continue
+        markers = list(shape.iter(f"{{{PRESENTATION_NS}}}cNvPr"))
+        if len(markers) == 1 and markers[0].attrib.get("id") == str(shape_id):
+            matches.append(shape)
+    if len(matches) != 1:
+        raise ValueError(f"style clone shape is not unique: {shape_id}")
+    return matches[0]
+
+
+def _independent_style_scope_nodes(
+    shape: ET.Element,
+    scope: str,
+) -> list[ET.Element]:
+    if scope not in STYLE_CLONE_SCOPES:
+        raise ValueError(f"style clone scope is invalid: {scope}")
+    if scope == "shape-fill":
+        properties = shape.find(f"{{{PRESENTATION_NS}}}spPr")
+        nodes = [
+            node
+            for node in (list(properties) if properties is not None else ())
+            if node.tag in STYLE_FILL_TAGS
+        ]
+        if properties is None or len(nodes) != 1:
+            raise ValueError("style clone shape fill is not unique")
+        return nodes
+    if scope == "text-color":
+        carriers = [
+            node for node in shape.iter() if node.tag in TEXT_STYLE_CARRIER_TAGS
+        ]
+        if not carriers:
+            raise ValueError("style clone text color has no carriers")
+        result: list[ET.Element] = []
+        for carrier in carriers:
+            colors = [node for node in list(carrier) if node.tag in STYLE_FILL_TAGS]
+            if len(colors) != 1:
+                raise ValueError("style clone text color is not unique")
+            result.extend(colors)
+        return result
+    blip = shape.find(
+        f"{{{PRESENTATION_NS}}}blipFill/{{{DRAWING_NS}}}blip"
+    )
+    nodes = [
+        node
+        for node in (list(blip) if blip is not None else ())
+        if node.tag in PICTURE_COLOR_EFFECT_TAGS
+    ]
+    if blip is None or not nodes:
+        raise ValueError("style clone picture effect is missing")
+    return nodes
+
+
+def _independent_remove_style_scope(shape: ET.Element, scope: str) -> None:
+    if scope == "shape-fill":
+        parent = shape.find(f"{{{PRESENTATION_NS}}}spPr")
+        if parent is None:
+            raise ValueError("style clone shape fill properties are missing")
+        for node in list(parent):
+            if node.tag in STYLE_FILL_TAGS:
+                parent.remove(node)
+        return
+    if scope == "text-color":
+        for carrier in shape.iter():
+            if carrier.tag in TEXT_STYLE_CARRIER_TAGS:
+                for node in list(carrier):
+                    if node.tag in STYLE_FILL_TAGS:
+                        carrier.remove(node)
+        return
+    blip = shape.find(
+        f"{{{PRESENTATION_NS}}}blipFill/{{{DRAWING_NS}}}blip"
+    )
+    if blip is None:
+        raise ValueError("style clone picture blip is missing")
+    for node in list(blip):
+        if node.tag in PICTURE_COLOR_EFFECT_TAGS:
+            blip.remove(node)
+
+
+def _independent_style_clone_scope_sha256(
+    slide_xml: bytes,
+    shape_id: int,
+    scope: str,
+) -> str:
+    shape = _independent_style_shape(slide_xml, shape_id)
+    payload = [
+        scope,
+        [
+            _independent_canonical_style_node(node)
+            for node in _independent_style_scope_nodes(shape, scope)
+        ],
+    ]
+    return hashlib.sha256(
+        json.dumps(
+            payload,
+            ensure_ascii=True,
+            sort_keys=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _independent_style_clone_target_guard_sha256(
+    slide_xml: bytes,
+    shape_id: int,
+    scope: str,
+) -> str:
+    shape = deepcopy(_independent_style_shape(slide_xml, shape_id))
+    _independent_remove_style_scope(shape, scope)
+    return hashlib.sha256(
+        json.dumps(
+            _independent_canonical_style_node(shape, guard=True),
+            ensure_ascii=True,
+            sort_keys=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
 
 
 def _owner_part_from_rels_path(rels_path: str) -> str | None:
@@ -1022,6 +1213,176 @@ def _validate_schema(
         )
 
 
+def _load_trusted_binding_profile_style_authority(
+    report: Mapping[str, Any],
+    issues: list[dict[str, str]],
+) -> tuple[Mapping[str, Any], ...]:
+    """Resolve expected style clones from a fixed installed Skill registry."""
+
+    acceptance_profile = report.get("acceptance_profile")
+    authority = report.get("binding_profile_authority")
+    if not isinstance(authority, Mapping):
+        if acceptance_profile == "phase49-work-report-15":
+            _issue(
+                issues,
+                "BINDING_PROFILE_AUTHORITY_REQUIRED",
+                "report.binding_profile_authority",
+                str(acceptance_profile),
+            )
+        return ()
+    profile_id = authority.get("profile_id")
+    filename = (
+        TRUSTED_BINDING_PROFILE_FILES.get(profile_id)
+        if isinstance(profile_id, str)
+        else None
+    )
+    if filename is None:
+        _issue(
+            issues,
+            "BINDING_PROFILE_AUTHORITY_UNTRUSTED",
+            "report.binding_profile_authority.profile_id",
+            str(profile_id),
+        )
+        return ()
+    if (
+        acceptance_profile == "phase49-work-report-15"
+        and profile_id != "phase49-work-report-15"
+    ):
+        _issue(
+            issues,
+            "BINDING_PROFILE_AUTHORITY_APPLICABILITY_MISMATCH",
+            "report.binding_profile_authority.profile_id",
+            str(profile_id),
+        )
+        return ()
+    registry_root = SCHEMA_PATH.parent.parent / "registries" / "v61-binding-profiles"
+    literal_path = registry_root / filename
+    if literal_path.is_symlink():
+        _issue(
+            issues,
+            "BINDING_PROFILE_AUTHORITY_SYMLINK_FORBIDDEN",
+            "skill.binding_profile",
+            str(literal_path),
+        )
+        return ()
+    try:
+        resolved_root = registry_root.resolve(strict=True)
+        profile_path = literal_path.resolve(strict=True)
+        raw = profile_path.read_bytes()
+    except OSError as exc:
+        _issue(
+            issues,
+            "BINDING_PROFILE_AUTHORITY_MISSING",
+            "skill.binding_profile",
+            str(exc),
+        )
+        return ()
+    if profile_path.parent != resolved_root or not profile_path.is_file():
+        _issue(
+            issues,
+            "BINDING_PROFILE_AUTHORITY_PATH_ESCAPE",
+            "skill.binding_profile",
+            str(profile_path),
+        )
+        return ()
+    actual_sha256 = hashlib.sha256(raw).hexdigest()
+    _equal(
+        issues,
+        "BINDING_PROFILE_AUTHORITY_SHA256_MISMATCH",
+        "report.binding_profile_authority.profile_sha256",
+        authority.get("profile_sha256"),
+        actual_sha256,
+    )
+    try:
+        profile = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        _issue(
+            issues,
+            "BINDING_PROFILE_AUTHORITY_JSON_INVALID",
+            "skill.binding_profile",
+            str(exc),
+        )
+        return ()
+    if not isinstance(profile, Mapping):
+        _issue(
+            issues,
+            "BINDING_PROFILE_AUTHORITY_JSON_INVALID",
+            "skill.binding_profile",
+            "root must be an object",
+        )
+        return ()
+    try:
+        import jsonschema
+    except ImportError:
+        _issue(
+            issues,
+            "JSONSCHEMA_UNAVAILABLE",
+            "skill.binding_profile",
+            "jsonschema is required",
+        )
+        return ()
+    profile_schema = _read_json(
+        SCHEMA_PATH.with_name("binding-profile.v1.schema.json"),
+        issues,
+        "schema.binding-profile.v1",
+    )
+    if profile_schema is None:
+        return ()
+    profile_errors = sorted(
+        jsonschema.Draft202012Validator(profile_schema).iter_errors(profile),
+        key=lambda error: tuple(str(part) for part in error.absolute_path),
+    )
+    for error in profile_errors:
+        suffix = ".".join(str(part) for part in error.absolute_path)
+        _issue(
+            issues,
+            "BINDING_PROFILE_AUTHORITY_SCHEMA_INVALID",
+            f"skill.binding_profile.{suffix}" if suffix else "skill.binding_profile",
+            error.message,
+        )
+    if profile_errors:
+        return ()
+    for field in ("profile_id", "acceptance_profile"):
+        _equal(
+            issues,
+            "BINDING_PROFILE_AUTHORITY_APPLICABILITY_MISMATCH",
+            f"report.binding_profile_authority.{field}",
+            authority.get(field),
+            profile.get(field),
+        )
+    if profile.get("acceptance_profile") != acceptance_profile:
+        _issue(
+            issues,
+            "BINDING_PROFILE_AUTHORITY_APPLICABILITY_MISMATCH",
+            "report.acceptance_profile",
+            f"report={acceptance_profile!r} profile={profile.get('acceptance_profile')!r}",
+        )
+    expected: list[Mapping[str, Any]] = []
+    slides = profile.get("slides")
+    if isinstance(slides, list):
+        for slide in slides:
+            if not isinstance(slide, Mapping):
+                continue
+            for clone in slide.get("style_clones", ()):
+                if not isinstance(clone, Mapping):
+                    continue
+                expected.append(
+                    {
+                        "ordinal": slide.get("ordinal"),
+                        "page_id": slide.get("page_id"),
+                        **dict(clone),
+                    }
+                )
+    _equal(
+        issues,
+        "BINDING_PROFILE_STYLE_CLONE_COUNT_MISMATCH",
+        "report.binding_profile_authority.style_clone_count",
+        authority.get("style_clone_count"),
+        len(expected),
+    )
+    return tuple(expected)
+
+
 def _root_path(
     raw_root: str | os.PathLike[str],
     issues: list[dict[str, str]],
@@ -1878,6 +2239,7 @@ def _validate_cross_fields(
     output_size: int | None,
     authority_context: Mapping[str, Any],
     query_authority: QueryCoverageAuthority | None,
+    style_clone_authority: tuple[Mapping[str, Any], ...],
     issues: list[dict[str, str]],
 ) -> dict[str, Any]:
     observed: dict[str, Any] = {
@@ -1891,6 +2253,60 @@ def _validate_cross_fields(
             "report.status",
             str(report.get("status")),
         )
+
+    raw_style_evidence = report.get("style_clone_evidence")
+    style_evidence = (
+        raw_style_evidence if isinstance(raw_style_evidence, list) else []
+    )
+    style_key_fields = (
+        "ordinal",
+        "page_id",
+        "source_shape_id",
+        "target_shape_id",
+        "scope",
+    )
+    _report_duplicate_keys(
+        issues,
+        code="STYLE_CLONE_EVIDENCE_KEY_DUPLICATE",
+        location="report.style_clone_evidence",
+        records=style_evidence,
+        fields=style_key_fields,
+    )
+    expected_style_by_key = {
+        tuple(item.get(field) for field in style_key_fields): item
+        for item in style_clone_authority
+    }
+    reported_style_by_key = {
+        tuple(item.get(field) for field in style_key_fields): item
+        for item in style_evidence
+        if isinstance(item, Mapping)
+    }
+    _equal(
+        issues,
+        "STYLE_CLONE_EVIDENCE_KEYS_MISMATCH",
+        "report.style_clone_evidence",
+        sorted(reported_style_by_key, key=repr),
+        sorted(expected_style_by_key, key=repr),
+    )
+    for key, expected in expected_style_by_key.items():
+        reported = reported_style_by_key.get(key)
+        if reported is None:
+            continue
+        location = "report.style_clone_evidence." + ":".join(map(str, key))
+        for field, wanted in (
+            ("expected_style_sha256", expected.get("source_style_sha256")),
+            ("actual_source_style_sha256", expected.get("source_style_sha256")),
+            ("actual_target_style_sha256", expected.get("source_style_sha256")),
+            ("actual_target_guard_sha256", expected.get("target_guard_sha256")),
+            ("status", "pass"),
+        ):
+            _equal(
+                issues,
+                "STYLE_CLONE_REPORTED_EVIDENCE_MISMATCH",
+                f"{location}.{field}",
+                reported.get(field),
+                wanted,
+            )
 
     lineage_raw = report.get("lineage_records")
     lineage = lineage_raw if isinstance(lineage_raw, list) else []
@@ -2493,6 +2909,88 @@ def _validate_cross_fields(
                     if (match := SLIDE_RE.fullmatch(name))
                 }
                 observed["pptx_slide_count"] = len(slide_names)
+                style_slides: dict[int, bytes] = {}
+                for key, expected in expected_style_by_key.items():
+                    ordinal = expected.get("ordinal")
+                    if type(ordinal) is not int or ordinal not in slide_names:
+                        _issue(
+                            issues,
+                            "STYLE_CLONE_OUTPUT_SLIDE_MISSING",
+                            "output.pptx",
+                            str(ordinal),
+                        )
+                        continue
+                    try:
+                        slide_xml = style_slides.setdefault(
+                            ordinal,
+                            archive.read(slide_names[ordinal]),
+                        )
+                        source_style = _independent_style_clone_scope_sha256(
+                            slide_xml,
+                            int(expected["source_shape_id"]),
+                            str(expected["scope"]),
+                        )
+                        target_style = _independent_style_clone_scope_sha256(
+                            slide_xml,
+                            int(expected["target_shape_id"]),
+                            str(expected["scope"]),
+                        )
+                        target_guard = (
+                            _independent_style_clone_target_guard_sha256(
+                                slide_xml,
+                                int(expected["target_shape_id"]),
+                                str(expected["scope"]),
+                            )
+                        )
+                    except (KeyError, TypeError, ValueError, ET.ParseError) as exc:
+                        _issue(
+                            issues,
+                            "STYLE_CLONE_OUTPUT_INVALID",
+                            f"output.pptx!/{slide_names[ordinal]}",
+                            str(exc),
+                        )
+                        continue
+                    actual = {
+                        "actual_source_style_sha256": source_style,
+                        "actual_target_style_sha256": target_style,
+                        "actual_target_guard_sha256": target_guard,
+                    }
+                    location = (
+                        f"output.pptx!/{slide_names[ordinal]}#"
+                        f"{expected.get('source_shape_id')}->"
+                        f"{expected.get('target_shape_id')}:{expected.get('scope')}"
+                    )
+                    _equal(
+                        issues,
+                        "STYLE_CLONE_SOURCE_STYLE_MISMATCH",
+                        location,
+                        source_style,
+                        expected.get("source_style_sha256"),
+                    )
+                    _equal(
+                        issues,
+                        "STYLE_CLONE_TARGET_STYLE_MISMATCH",
+                        location,
+                        target_style,
+                        expected.get("source_style_sha256"),
+                    )
+                    _equal(
+                        issues,
+                        "STYLE_CLONE_TARGET_GUARD_MISMATCH",
+                        location,
+                        target_guard,
+                        expected.get("target_guard_sha256"),
+                    )
+                    reported = reported_style_by_key.get(key)
+                    if reported is not None:
+                        for field, value in actual.items():
+                            _equal(
+                                issues,
+                                "STYLE_CLONE_REPORT_OUTPUT_MISMATCH",
+                                f"{location}.{field}",
+                                reported.get(field),
+                                value,
+                            )
                 try:
                     presentation_root = ET.fromstring(
                         archive.read("ppt/presentation.xml")
@@ -3126,6 +3624,7 @@ def validate_physical_report(
         "connectives": {},
     }
     query_authority: QueryCoverageAuthority | None = None
+    style_clone_authority: tuple[Mapping[str, Any], ...] = ()
     observed: dict[str, Any] = {}
     if root is not None:
         resolved_report = _resolve_report_argument(report_path, root, issues)
@@ -3133,6 +3632,10 @@ def validate_physical_report(
         payload = _read_json(resolved_report, issues, "report")
     if payload is not None:
         _validate_schema(payload, issues)
+        if isinstance(payload, Mapping):
+            style_clone_authority = (
+                _load_trusted_binding_profile_style_authority(payload, issues)
+            )
     if root is not None and isinstance(payload, Mapping):
         output_path = _resolve_bound_absolute_file(
             payload.get("output_path"),
@@ -3254,6 +3757,7 @@ def validate_physical_report(
             output_size,
             authority_context,
             query_authority,
+            style_clone_authority,
             issues,
         )
 

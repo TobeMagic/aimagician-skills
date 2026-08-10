@@ -24,6 +24,8 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 from validate_window_pptx_v61_physical_report import (  # noqa: E402
     PHASE49_GOVERNED_INVENTORY_SHA256,
     _governed_inventory_identity_sha256,
+    _independent_style_clone_scope_sha256,
+    _independent_style_clone_target_guard_sha256,
     _read_slide_shape_text,
     _read_slide_shape_text_variants,
     main,
@@ -57,6 +59,33 @@ def test_shape_text_reader_joins_runs_within_paragraphs_only() -> None:
         "44.6%同比增长",
         "44.6\n%\n同比\n增长",
     )
+
+
+def test_independent_style_clone_hashes_exclude_text_geometry_and_relationships() -> None:
+    slide = (
+        '<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        '<p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="7" name="metric"/>'
+        '</p:nvSpPr><p:spPr><a:xfrm><a:off x="1" y="2"/></a:xfrm>'
+        '<a:solidFill><a:schemeClr val="accent1"/></a:solidFill></p:spPr>'
+        '<p:txBody><a:bodyPr><a:noAutofit/></a:bodyPr><a:p><a:r>'
+        '<a:rPr sz="2400"><a:solidFill><a:schemeClr val="accent1"/>'
+        '</a:solidFill></a:rPr><a:t>44.6%</a:t></a:r></a:p></p:txBody>'
+        '</p:sp></p:spTree></p:cSld></p:sld>'
+    ).encode()
+
+    assert len(_independent_style_clone_scope_sha256(slide, 7, "shape-fill")) == 64
+    guard = _independent_style_clone_target_guard_sha256(slide, 7, "shape-fill")
+    changed_text = slide.replace(b"44.6%", b"49.1%")
+    changed_geometry = slide.replace(b'x="1"', b'x="99"')
+
+    assert _independent_style_clone_target_guard_sha256(
+        changed_text, 7, "shape-fill"
+    ) == guard
+    assert _independent_style_clone_target_guard_sha256(
+        changed_geometry, 7, "shape-fill"
+    ) != guard
 
 
 def _sha(path: Path) -> str:
@@ -601,6 +630,41 @@ def _valid_report(
             "status": "pass",
         },
     }
+    if phase49:
+        profile_path = (
+            SKILL_ROOT
+            / "registries"
+            / "v61-binding-profiles"
+            / "phase49-work-report-15.binding-profile.v1.json"
+        )
+        profile = json.loads(profile_path.read_text(encoding="utf-8"))
+        style_clones = [
+            (slide, clone)
+            for slide in profile["slides"]
+            for clone in slide.get("style_clones", ())
+        ]
+        report["binding_profile_authority"] = {
+            "profile_id": profile["profile_id"],
+            "profile_sha256": _sha(profile_path),
+            "acceptance_profile": profile["acceptance_profile"],
+            "style_clone_count": len(style_clones),
+            "status": "pass",
+        }
+        report["style_clone_evidence"] = [
+            {
+                "ordinal": slide["ordinal"],
+                "page_id": slide["page_id"],
+                "source_shape_id": clone["source_shape_id"],
+                "target_shape_id": clone["target_shape_id"],
+                "scope": clone["scope"],
+                "expected_style_sha256": clone["source_style_sha256"],
+                "actual_source_style_sha256": clone["source_style_sha256"],
+                "actual_target_style_sha256": clone["source_style_sha256"],
+                "actual_target_guard_sha256": clone["target_guard_sha256"],
+                "status": "pass",
+            }
+            for slide, clone in style_clones
+        ]
     report_path = project / "physical-report.json"
     report_path.write_text(json.dumps(report, ensure_ascii=False), encoding="utf-8")
     return report, report_path

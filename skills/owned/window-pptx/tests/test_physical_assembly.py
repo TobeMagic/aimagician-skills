@@ -35,10 +35,12 @@ from window_pptx.physical_assembly import (
     FragmentGroupContract,
     PhysicalAssemblyError,
     SelectionEvidence,
+    StyleCloneSpec,
     TextBindingSpec,
     _SourcePackageContext,
     _build_source_graph,
     _adapt_slide_text,
+    _apply_governed_style_clones,
     _cover_crop_values,
     _discover_picture_slots,
     _inspect_all_relationships,
@@ -47,6 +49,8 @@ from window_pptx.physical_assembly import (
     _resolve_output_governed_target,
     _sanitize_layout_master_fields,
     _semantic_character_count,
+    _style_clone_scope_sha256,
+    _style_clone_target_guard_sha256,
     _slide_structure_signature,
     _validate_fragment_group_bindings,
     _validate_query_selection_evidence,
@@ -188,6 +192,91 @@ def test_structure_signature_treats_autofit_run_size_as_governed() -> None:
     target = source.replace(b'<a:rPr sz="1800"/>', b'<a:rPr sz="990"/>', 1)
 
     assert _slide_structure_signature(source) == _slide_structure_signature(target)
+
+
+def _style_clone_slide_xml() -> bytes:
+    return (
+        f'<p:sld xmlns:p="{PML_NS}" xmlns:a="{DML_NS}" '
+        f'xmlns:r="{OFFICE_REL}"><p:cSld><p:spTree>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="10" name="green panel"/></p:nvSpPr>'
+        '<p:spPr><a:xfrm><a:off x="10" y="20"/><a:ext cx="30" cy="40"/>'
+        '</a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+        '<a:solidFill><a:schemeClr val="accent1"/></a:solidFill></p:spPr>'
+        '<p:txBody><a:bodyPr/><a:p><a:r><a:rPr><a:solidFill>'
+        '<a:schemeClr val="accent1"/></a:solidFill></a:rPr><a:t>Source</a:t>'
+        '</a:r></a:p></p:txBody></p:sp>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="11" name="brown panel"/></p:nvSpPr>'
+        '<p:spPr><a:xfrm><a:off x="110" y="120"/><a:ext cx="130" cy="140"/>'
+        '</a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom>'
+        '<a:solidFill><a:schemeClr val="accent2"/></a:solidFill></p:spPr>'
+        '<p:txBody><a:bodyPr/><a:p><a:r><a:rPr><a:solidFill>'
+        '<a:schemeClr val="accent2"/></a:solidFill></a:rPr><a:t>Target</a:t>'
+        '</a:r></a:p></p:txBody></p:sp>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="12" name="green text"/></p:nvSpPr>'
+        '<p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:rPr sz="2800">'
+        '<a:solidFill><a:schemeClr val="accent1"/></a:solidFill></a:rPr>'
+        '<a:t>39.83%</a:t></a:r></a:p></p:txBody></p:sp>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="13" name="brown text"/></p:nvSpPr>'
+        '<p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:rPr sz="2400">'
+        '<a:solidFill><a:schemeClr val="accent2"/></a:solidFill></a:rPr>'
+        '<a:t>27.28%</a:t></a:r></a:p></p:txBody></p:sp>'
+        '<p:pic><p:nvPicPr><p:cNvPr id="14" name="green check"/>'
+        '<p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId7">'
+        '<a:duotone><a:prstClr val="black"/><a:schemeClr val="accent1"/>'
+        '</a:duotone></a:blip><a:stretch><a:fillRect/></a:stretch></p:blipFill>'
+        '<p:spPr><a:xfrm><a:off x="1" y="2"/><a:ext cx="3" cy="4"/>'
+        '</a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>'
+        '<p:pic><p:nvPicPr><p:cNvPr id="15" name="brown check"/>'
+        '<p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId8">'
+        '<a:duotone><a:prstClr val="black"/><a:schemeClr val="accent2"/>'
+        '</a:duotone></a:blip><a:stretch><a:fillRect/></a:stretch></p:blipFill>'
+        '<p:spPr><a:xfrm><a:off x="11" y="12"/><a:ext cx="13" cy="14"/>'
+        '</a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>'
+        '</p:spTree></p:cSld></p:sld>'
+    ).encode()
+
+
+def test_governed_style_clones_are_paint_only_and_hash_guarded() -> None:
+    source = _style_clone_slide_xml()
+    specs = tuple(
+        StyleCloneSpec(
+            source_shape_id=source_id,
+            target_shape_id=target_id,
+            scope=scope,
+            source_style_sha256=_style_clone_scope_sha256(source, source_id, scope),
+            target_guard_sha256=_style_clone_target_guard_sha256(
+                source, target_id, scope
+            ),
+        )
+        for source_id, target_id, scope in (
+            (10, 11, "shape-fill"),
+            (12, 13, "text-color"),
+            (14, 15, "picture-color-effects"),
+        )
+    )
+
+    actual = _apply_governed_style_clones(source, specs)
+
+    for spec in specs:
+        assert _style_clone_scope_sha256(
+            actual, spec.source_shape_id, spec.scope
+        ) == _style_clone_scope_sha256(actual, spec.target_shape_id, spec.scope)
+        assert _style_clone_target_guard_sha256(
+            actual, spec.target_shape_id, spec.scope
+        ) == spec.target_guard_sha256
+    assert b'>Target<' in actual
+    assert b'x="110" y="120"' in actual
+    assert b'<a:prstGeom prst="roundRect">' in actual
+    assert b'r:embed="rId8"' in actual
+    assert b'<a:rPr sz="2400">' in actual
+
+
+def test_governed_style_clone_rejects_source_anchor_drift() -> None:
+    source = _style_clone_slide_xml()
+    spec = StyleCloneSpec(10, 11, "shape-fill", "0" * 64, "1" * 64)
+
+    with pytest.raises(PhysicalAssemblyError, match="STYLE_CLONE_SOURCE_STYLE_DRIFT"):
+        _apply_governed_style_clones(source, (spec,))
 
 
 def _content_types(*overrides: tuple[str, str]) -> bytes:

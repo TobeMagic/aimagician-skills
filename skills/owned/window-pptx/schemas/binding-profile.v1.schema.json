@@ -89,6 +89,32 @@
         "rendering_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
       }
     },
+    "styleClone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_shape_id",
+        "target_shape_id",
+        "scope",
+        "source_style_sha256",
+        "target_guard_sha256"
+      ],
+      "properties": {
+        "source_shape_id": {"type": "integer", "minimum": 1},
+        "target_shape_id": {"type": "integer", "minimum": 1},
+        "scope": {
+          "enum": ["shape-fill", "text-color", "picture-color-effects"]
+        },
+        "source_style_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "target_guard_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
     "query": {
       "type": "object",
       "additionalProperties": false,
@@ -149,6 +175,12 @@
         "fragment_bindings": {
           "type": "array",
           "items": {"$ref": "#/$defs/fragmentRule"}
+        },
+        "style_clones": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/styleClone"}
         }
       }
     }

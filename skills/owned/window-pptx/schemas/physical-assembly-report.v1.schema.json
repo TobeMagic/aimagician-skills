@@ -32,6 +32,24 @@
     "schema_version": {"const": "1.0"},
     "report_id": {"type": "string", "minLength": 1},
     "plan_id": {"type": "string", "minLength": 1},
+    "binding_profile_authority": {
+      "type": "object",
+      "required": [
+        "profile_id",
+        "profile_sha256",
+        "acceptance_profile",
+        "style_clone_count",
+        "status"
+      ],
+      "properties": {
+        "profile_id": {"type": "string", "pattern": "^[a-z0-9_-]{1,120}$"},
+        "profile_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "acceptance_profile": {"type": "string", "minLength": 1},
+        "style_clone_count": {"type": "integer", "minimum": 0},
+        "status": {"const": "pass"}
+      },
+      "additionalProperties": false
+    },
     "output_path": {"type": "string", "minLength": 1},
     "output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "acceptance_profile": {"enum": ["standard", "phase49-work-report-15"]},
@@ -311,6 +329,39 @@
         ]
       }
     },
+    "style_clone_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "ordinal",
+          "page_id",
+          "source_shape_id",
+          "target_shape_id",
+          "scope",
+          "expected_style_sha256",
+          "actual_source_style_sha256",
+          "actual_target_style_sha256",
+          "actual_target_guard_sha256",
+          "status"
+        ],
+        "properties": {
+          "ordinal": {"type": "integer", "minimum": 1},
+          "page_id": {"type": "string", "pattern": "^[0-9a-f]{64}:[0-9]{3}$"},
+          "source_shape_id": {"type": "integer", "minimum": 1},
+          "target_shape_id": {"type": "integer", "minimum": 1},
+          "scope": {
+            "enum": ["shape-fill", "text-color", "picture-color-effects"]
+          },
+          "expected_style_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "actual_source_style_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "actual_target_style_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "actual_target_guard_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "status": {"enum": ["pass", "fail"]}
+        },
+        "additionalProperties": false
+      }
+    },
     "source_residue": {
       "type": "object",
       "required": [
@@ -528,6 +579,9 @@
             }
           },
           "style_cluster_adherence": {"properties": {"status": {"const": "pass"}}},
+          "style_clone_evidence": {
+            "items": {"properties": {"status": {"const": "pass"}}}
+          },
           "source_residue": {
             "properties": {
               "unauthorized_content_count": {"const": 0},
@@ -574,12 +628,22 @@
         "properties": {"acceptance_profile": {"const": "phase49-work-report-15"}}
       },
       "then": {
+        "required": ["binding_profile_authority", "style_clone_evidence"],
         "properties": {
           "expected_slide_count": {"const": 15},
           "target_slide_count": {"const": 15},
           "distinct_page_id_count": {"const": 15},
           "lineage_records": {"minItems": 15, "maxItems": 15},
           "duplicate_page_records": {"maxItems": 0},
+          "binding_profile_authority": {
+            "properties": {
+              "profile_id": {"const": "phase49-work-report-15"},
+              "acceptance_profile": {"const": "phase49-work-report-15"},
+              "style_clone_count": {"const": 5},
+              "status": {"const": "pass"}
+            }
+          },
+          "style_clone_evidence": {"minItems": 5, "maxItems": 5},
           "selection_authority": {
             "properties": {
               "mode": {"const": "locked"},

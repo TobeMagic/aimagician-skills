@@ -93,6 +93,10 @@ def _profile_and_plan() -> tuple[dict[str, Any], dict[str, Any]]:
             },
         ],
         "library_index_sha256": SHA_VALUES["library"],
+        "binding_profile_authority": {
+            "profile_id": profile["profile_id"],
+            "profile_sha256": SHA_VALUES["profile"],
+        },
         "authority": {
             "fact_store": {"path": "fact-store.v1.json", "sha256": SHA_VALUES["fact"]},
             "asset_manifest": {
@@ -491,3 +495,11 @@ def test_mocked_run_emits_exactly_eight_evidence_files_and_one_pptx(
         (project / runner.FINGERPRINT_RELATIVE).read_text(encoding="utf-8")
     )
     assert fingerprint["fingerprints"][0]["output_sha256"] == result["output_sha256"]
+    compiled_plan = json.loads(
+        (project / runner.PLAN_RELATIVE).read_text(encoding="utf-8")
+    )
+    assert compiled_plan["binding_profile_authority"] == {
+        "profile_id": profile["profile_id"],
+        "profile_sha256": SHA_VALUES["profile"],
+    }
+    assert all("style_clones" not in slide for slide in compiled_plan["target_slides"])

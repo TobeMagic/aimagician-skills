@@ -30,6 +30,7 @@ import subprocess
 import tempfile
 import zipfile
 import xml.etree.ElementTree as ET
+from copy import deepcopy
 from collections import Counter, deque
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
@@ -127,6 +128,73 @@ class AuthorityLock:
                 "path": self.connective_copy_path,
                 "sha256": self.connective_copy_sha256,
             },
+        }
+
+
+@dataclass(frozen=True)
+class BindingProfileAuthorityLock:
+    profile_id: str
+    profile_sha256: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "profile_id": self.profile_id,
+            "profile_sha256": self.profile_sha256,
+        }
+
+
+@dataclass(frozen=True)
+class StyleCloneSpec:
+    source_shape_id: int
+    target_shape_id: int
+    scope: str
+    source_style_sha256: str
+    target_guard_sha256: str
+
+
+@dataclass(frozen=True)
+class BindingProfileAuthorityEvidence:
+    profile_id: str
+    profile_sha256: str
+    acceptance_profile: str
+    style_clone_count: int
+    status: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "profile_id": self.profile_id,
+            "profile_sha256": self.profile_sha256,
+            "acceptance_profile": self.acceptance_profile,
+            "style_clone_count": self.style_clone_count,
+            "status": self.status,
+        }
+
+
+@dataclass(frozen=True)
+class StyleCloneEvidence:
+    ordinal: int
+    page_id: str
+    source_shape_id: int
+    target_shape_id: int
+    scope: str
+    expected_style_sha256: str
+    actual_source_style_sha256: str
+    actual_target_style_sha256: str
+    actual_target_guard_sha256: str
+    status: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "ordinal": self.ordinal,
+            "page_id": self.page_id,
+            "source_shape_id": self.source_shape_id,
+            "target_shape_id": self.target_shape_id,
+            "scope": self.scope,
+            "expected_style_sha256": self.expected_style_sha256,
+            "actual_source_style_sha256": self.actual_source_style_sha256,
+            "actual_target_style_sha256": self.actual_target_style_sha256,
+            "actual_target_guard_sha256": self.actual_target_guard_sha256,
+            "status": self.status,
         }
 
 
@@ -376,6 +444,7 @@ class AssemblyPlan:
     target_slide_count: int
     target_slides: tuple[AssemblyTargetSlide, ...]
     library_index_sha256: str
+    binding_profile_authority: BindingProfileAuthorityLock | None = None
     query_bundle_path: str | None = None
     query_bundle_sha256: str | None = None
     authority: AuthorityLock | None = None
@@ -390,6 +459,15 @@ class AssemblyPlan:
             "target_slide_count": self.target_slide_count,
             "target_slides": [item.to_dict() for item in self.target_slides],
             "library_index_sha256": self.library_index_sha256,
+            **(
+                {
+                    "binding_profile_authority": (
+                        self.binding_profile_authority.to_dict()
+                    )
+                }
+                if self.binding_profile_authority is not None
+                else {}
+            ),
             **(
                 {
                     "query_bundle": {
@@ -665,6 +743,7 @@ class PhysicalAssemblyReport:
     schema_version: str
     report_id: str
     plan_id: str
+    binding_profile_authority: BindingProfileAuthorityEvidence | None
     output_path: str
     output_sha256: str
     acceptance_profile: str
@@ -681,6 +760,7 @@ class PhysicalAssemblyReport:
     authority: AuthorityEvidence
     selection_authority: SelectionAuthorityEvidence
     binding_evidence: tuple[BindingEvidence, ...]
+    style_clone_evidence: tuple[StyleCloneEvidence, ...]
     source_residue: SourceResidueEvidence
     libreoffice: LibreOfficeEvidence
     size_check: SizeCheck
@@ -690,6 +770,15 @@ class PhysicalAssemblyReport:
             "schema_version": self.schema_version,
             "report_id": self.report_id,
             "plan_id": self.plan_id,
+            **(
+                {
+                    "binding_profile_authority": (
+                        self.binding_profile_authority.to_dict()
+                    )
+                }
+                if self.binding_profile_authority is not None
+                else {}
+            ),
             "output_path": self.output_path,
             "output_sha256": self.output_sha256,
             "acceptance_profile": self.acceptance_profile,
@@ -708,6 +797,9 @@ class PhysicalAssemblyReport:
             "authority": self.authority.to_dict(),
             "selection_authority": self.selection_authority.to_dict(),
             "binding_evidence": [item.to_dict() for item in self.binding_evidence],
+            "style_clone_evidence": [
+                item.to_dict() for item in self.style_clone_evidence
+            ],
             "source_residue": self.source_residue.to_dict(),
             "libreoffice": self.libreoffice.to_dict(),
             "size_check": self.size_check.to_dict(),
@@ -796,6 +888,504 @@ for _prefix, _namespace in (
 ):
     ET.register_namespace(_prefix, _namespace)
 ET.register_namespace("", PACKAGE_REL_NS)
+
+STYLE_CLONE_SCOPES = frozenset(
+    {"shape-fill", "text-color", "picture-color-effects"}
+)
+_STYLE_FILL_TAGS = frozenset(
+    f"{{{DML_NS}}}{name}"
+    for name in ("noFill", "solidFill", "gradFill", "blipFill", "pattFill", "grpFill")
+)
+_PICTURE_COLOR_EFFECT_TAGS = frozenset(
+    f"{{{DML_NS}}}{name}"
+    for name in (
+        "alphaBiLevel", "alphaCeiling", "alphaFloor", "alphaInv",
+        "alphaMod", "alphaModFix", "alphaRepl", "biLevel", "blur",
+        "clrChange", "clrRepl", "duotone", "fillOverlay", "grayscl",
+        "hsl", "lum", "tint",
+    )
+)
+_TEXT_STYLE_CARRIER_TAGS = frozenset(
+    f"{{{DML_NS}}}{name}" for name in ("rPr", "defRPr", "endParaRPr")
+)
+_SUPPORTED_STYLE_SHAPE_TAGS = frozenset(
+    f"{{{PML_NS}}}{name}" for name in ("sp", "cxnSp", "pic")
+)
+_PHASE49_PROFILE_BY_ACCEPTANCE = {
+    "phase49-work-report-15": "phase49-work-report-15",
+}
+_TRUSTED_BINDING_PROFILE_FILES = {
+    "phase49-work-report-15": (
+        "phase49-work-report-15.binding-profile.v1.json"
+    ),
+}
+
+
+def _canonical_style_node(node: ET.Element, *, guard: bool = False) -> Any:
+    local = node.tag.rsplit("}", 1)[-1]
+    if guard and local in {"spAutoFit", "normAutofit", "noAutofit"}:
+        return ["__GOVERNED_FIT_POLICY__"]
+    attributes = []
+    for key, value in sorted(node.attrib.items()):
+        if (
+            guard
+            and local in {"rPr", "defRPr", "endParaRPr"}
+            and key.rsplit("}", 1)[-1] == "sz"
+        ):
+            value = "__GOVERNED_TEXT_SIZE__"
+        attributes.append((key, value))
+    text = "__GOVERNED_TEXT__" if guard and local == "t" else (node.text or "").strip()
+    return [
+        node.tag,
+        attributes,
+        text,
+        [_canonical_style_node(child, guard=guard) for child in list(node)],
+    ]
+
+
+def _style_shape_index(root: ET.Element) -> dict[int, ET.Element]:
+    result: dict[int, ET.Element] = {}
+    for shape in root.iter():
+        if shape.tag not in _SUPPORTED_STYLE_SHAPE_TAGS:
+            continue
+        markers = [
+            node
+            for node in shape.iter(f"{{{PML_NS}}}cNvPr")
+        ]
+        if len(markers) != 1:
+            raise PhysicalAssemblyError("STYLE_CLONE_SHAPE_MARKER_INVALID")
+        try:
+            shape_id = int(markers[0].attrib["id"])
+        except (KeyError, ValueError) as exc:
+            raise PhysicalAssemblyError("STYLE_CLONE_SHAPE_MARKER_INVALID") from exc
+        if shape_id in result:
+            raise PhysicalAssemblyError(
+                f"STYLE_CLONE_SHAPE_ID_DUPLICATE: {shape_id}"
+            )
+        result[shape_id] = shape
+    return result
+
+
+def _style_scope_nodes(shape: ET.Element, scope: str) -> list[ET.Element]:
+    if scope not in STYLE_CLONE_SCOPES:
+        raise PhysicalAssemblyError(f"STYLE_CLONE_SCOPE_INVALID: {scope}")
+    if scope == "shape-fill":
+        properties = shape.find(f"{{{PML_NS}}}spPr")
+        nodes = [
+            child
+            for child in (list(properties) if properties is not None else ())
+            if child.tag in _STYLE_FILL_TAGS
+        ]
+        if properties is None or len(nodes) != 1:
+            raise PhysicalAssemblyError("STYLE_CLONE_SHAPE_FILL_INVALID")
+        return nodes
+    if scope == "text-color":
+        carriers = [
+            node for node in shape.iter() if node.tag in _TEXT_STYLE_CARRIER_TAGS
+        ]
+        if not carriers:
+            raise PhysicalAssemblyError("STYLE_CLONE_TEXT_COLOR_INVALID")
+        nodes: list[ET.Element] = []
+        for carrier in carriers:
+            colors = [child for child in list(carrier) if child.tag in _STYLE_FILL_TAGS]
+            if len(colors) != 1:
+                raise PhysicalAssemblyError("STYLE_CLONE_TEXT_COLOR_INVALID")
+            nodes.extend(colors)
+        return nodes
+    blip = shape.find(f"{{{PML_NS}}}blipFill/{{{DML_NS}}}blip")
+    nodes = [
+        child
+        for child in (list(blip) if blip is not None else ())
+        if child.tag in _PICTURE_COLOR_EFFECT_TAGS
+    ]
+    if blip is None or not nodes:
+        raise PhysicalAssemblyError("STYLE_CLONE_PICTURE_EFFECT_INVALID")
+    return nodes
+
+
+def _style_scope_sha(shape: ET.Element, scope: str) -> str:
+    payload = [
+        scope,
+        [_canonical_style_node(node) for node in _style_scope_nodes(shape, scope)],
+    ]
+    return _sha256_bytes(
+        json.dumps(
+            payload,
+            ensure_ascii=True,
+            sort_keys=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    )
+
+
+def _remove_style_scope(shape: ET.Element, scope: str) -> None:
+    if scope == "shape-fill":
+        parent = shape.find(f"{{{PML_NS}}}spPr")
+        if parent is None:
+            raise PhysicalAssemblyError("STYLE_CLONE_SHAPE_FILL_INVALID")
+        for node in list(parent):
+            if node.tag in _STYLE_FILL_TAGS:
+                parent.remove(node)
+        return
+    if scope == "text-color":
+        for carrier in shape.iter():
+            if carrier.tag in _TEXT_STYLE_CARRIER_TAGS:
+                for node in list(carrier):
+                    if node.tag in _STYLE_FILL_TAGS:
+                        carrier.remove(node)
+        return
+    blip = shape.find(f"{{{PML_NS}}}blipFill/{{{DML_NS}}}blip")
+    if blip is None:
+        raise PhysicalAssemblyError("STYLE_CLONE_PICTURE_EFFECT_INVALID")
+    for node in list(blip):
+        if node.tag in _PICTURE_COLOR_EFFECT_TAGS:
+            blip.remove(node)
+
+
+def _style_guard_sha(shape: ET.Element, scope: str) -> str:
+    guarded = deepcopy(shape)
+    _remove_style_scope(guarded, scope)
+    return _sha256_bytes(
+        json.dumps(
+            _canonical_style_node(guarded, guard=True),
+            ensure_ascii=True,
+            sort_keys=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    )
+
+
+def _style_clone_scope_sha256(
+    slide_xml: bytes, shape_id: int, scope: str
+) -> str:
+    try:
+        root = ET.fromstring(slide_xml)
+    except ET.ParseError as exc:
+        raise PhysicalAssemblyError(f"STYLE_CLONE_SLIDE_XML_INVALID: {exc}") from exc
+    shape = _style_shape_index(root).get(shape_id)
+    if shape is None:
+        raise PhysicalAssemblyError(f"STYLE_CLONE_SHAPE_NOT_FOUND: {shape_id}")
+    return _style_scope_sha(shape, scope)
+
+
+def _style_clone_target_guard_sha256(
+    slide_xml: bytes, shape_id: int, scope: str
+) -> str:
+    try:
+        root = ET.fromstring(slide_xml)
+    except ET.ParseError as exc:
+        raise PhysicalAssemblyError(f"STYLE_CLONE_SLIDE_XML_INVALID: {exc}") from exc
+    shape = _style_shape_index(root).get(shape_id)
+    if shape is None:
+        raise PhysicalAssemblyError(f"STYLE_CLONE_SHAPE_NOT_FOUND: {shape_id}")
+    return _style_guard_sha(shape, scope)
+
+
+def _replace_style_scope(
+    target: ET.Element,
+    scope: str,
+    source_nodes: Sequence[ET.Element],
+) -> None:
+    if scope == "shape-fill":
+        parent = target.find(f"{{{PML_NS}}}spPr")
+        if parent is None:
+            raise PhysicalAssemblyError("STYLE_CLONE_SHAPE_FILL_INVALID")
+        existing = [node for node in list(parent) if node.tag in _STYLE_FILL_TAGS]
+        if len(existing) != 1 or len(source_nodes) != 1:
+            raise PhysicalAssemblyError("STYLE_CLONE_SCOPE_TOPOLOGY_MISMATCH")
+        index = list(parent).index(existing[0])
+        parent.remove(existing[0])
+        parent.insert(index, deepcopy(source_nodes[0]))
+        return
+    if scope == "text-color":
+        carriers = [
+            node for node in target.iter() if node.tag in _TEXT_STYLE_CARRIER_TAGS
+        ]
+        if len(carriers) != len(source_nodes):
+            raise PhysicalAssemblyError("STYLE_CLONE_SCOPE_TOPOLOGY_MISMATCH")
+        for carrier, source_node in zip(carriers, source_nodes):
+            existing = [node for node in list(carrier) if node.tag in _STYLE_FILL_TAGS]
+            if len(existing) != 1:
+                raise PhysicalAssemblyError("STYLE_CLONE_SCOPE_TOPOLOGY_MISMATCH")
+            index = list(carrier).index(existing[0])
+            carrier.remove(existing[0])
+            carrier.insert(index, deepcopy(source_node))
+        return
+    blip = target.find(f"{{{PML_NS}}}blipFill/{{{DML_NS}}}blip")
+    if blip is None:
+        raise PhysicalAssemblyError("STYLE_CLONE_PICTURE_EFFECT_INVALID")
+    for node in list(blip):
+        if node.tag in _PICTURE_COLOR_EFFECT_TAGS:
+            blip.remove(node)
+    children = list(blip)
+    insert_at = next(
+        (
+            index
+            for index, child in enumerate(children)
+            if child.tag.rsplit("}", 1)[-1] == "extLst"
+        ),
+        len(children),
+    )
+    for offset, node in enumerate(source_nodes):
+        blip.insert(insert_at + offset, deepcopy(node))
+
+
+def _apply_governed_style_clones(
+    slide_xml: bytes,
+    specs: Sequence[StyleCloneSpec],
+) -> bytes:
+    if not specs:
+        return slide_xml
+    try:
+        root = ET.fromstring(slide_xml)
+    except ET.ParseError as exc:
+        raise PhysicalAssemblyError(f"STYLE_CLONE_SLIDE_XML_INVALID: {exc}") from exc
+    shapes = _style_shape_index(root)
+    sources = {spec.source_shape_id for spec in specs}
+    targets = {spec.target_shape_id for spec in specs}
+    if sources & targets:
+        raise PhysicalAssemblyError("STYLE_CLONE_CHAIN_FORBIDDEN")
+    target_scopes: set[tuple[int, str]] = set()
+    snapshots: list[tuple[StyleCloneSpec, tuple[ET.Element, ...]]] = []
+    for spec in specs:
+        if spec.source_shape_id == spec.target_shape_id:
+            raise PhysicalAssemblyError("STYLE_CLONE_SELF_TARGET")
+        key = (spec.target_shape_id, spec.scope)
+        if key in target_scopes:
+            raise PhysicalAssemblyError("STYLE_CLONE_TARGET_DUPLICATE")
+        target_scopes.add(key)
+        source = shapes.get(spec.source_shape_id)
+        target = shapes.get(spec.target_shape_id)
+        if source is None or target is None:
+            raise PhysicalAssemblyError(
+                "STYLE_CLONE_SHAPE_NOT_FOUND: "
+                f"{spec.source_shape_id}->{spec.target_shape_id}"
+            )
+        if source.tag != target.tag:
+            raise PhysicalAssemblyError("STYLE_CLONE_SHAPE_KIND_MISMATCH")
+        source_nodes = tuple(deepcopy(node) for node in _style_scope_nodes(source, spec.scope))
+        if _style_scope_sha(source, spec.scope) != spec.source_style_sha256:
+            raise PhysicalAssemblyError("STYLE_CLONE_SOURCE_STYLE_DRIFT")
+        if _style_guard_sha(target, spec.scope) != spec.target_guard_sha256:
+            raise PhysicalAssemblyError("STYLE_CLONE_TARGET_GUARD_DRIFT")
+        snapshots.append((spec, source_nodes))
+    for spec, source_nodes in snapshots:
+        _replace_style_scope(shapes[spec.target_shape_id], spec.scope, source_nodes)
+        if _style_guard_sha(
+            shapes[spec.target_shape_id], spec.scope
+        ) != spec.target_guard_sha256:
+            raise PhysicalAssemblyError("STYLE_CLONE_TARGET_GUARD_MUTATED")
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
+def _resolve_binding_profile_style_authority(
+    plan: AssemblyPlan,
+    *,
+    acceptance_profile: str,
+) -> tuple[
+    BindingProfileAuthorityEvidence | None,
+    dict[int, tuple[StyleCloneSpec, ...]],
+]:
+    """Resolve paint operations only from a fixed, installed Skill profile.
+
+    The assembly plan carries a profile ID and byte fingerprint, never shape
+    IDs or OOXML operations.  This resolver deliberately has no path argument:
+    an agent-authored plan therefore cannot redirect the renderer to a client
+    file or an arbitrary local profile.
+    """
+
+    lock = plan.binding_profile_authority
+    required_profile_id = _PHASE49_PROFILE_BY_ACCEPTANCE.get(acceptance_profile)
+    if lock is None:
+        if required_profile_id is not None:
+            raise PhysicalAssemblyError(
+                "BINDING_PROFILE_AUTHORITY_REQUIRED: " + acceptance_profile
+            )
+        return None, {}
+    if required_profile_id is not None and lock.profile_id != required_profile_id:
+        raise PhysicalAssemblyError(
+            "BINDING_PROFILE_AUTHORITY_MISMATCH: " + lock.profile_id
+        )
+    filename = _TRUSTED_BINDING_PROFILE_FILES.get(lock.profile_id)
+    if filename is None:
+        raise PhysicalAssemblyError(
+            "BINDING_PROFILE_AUTHORITY_UNTRUSTED: " + lock.profile_id
+        )
+    registry_root = (
+        Path(__file__).resolve().parents[2]
+        / "registries"
+        / "v61-binding-profiles"
+    )
+    literal_path = registry_root / filename
+    if literal_path.is_symlink():
+        raise PhysicalAssemblyError("BINDING_PROFILE_AUTHORITY_SYMLINK_FORBIDDEN")
+    try:
+        resolved_root = registry_root.resolve(strict=True)
+        profile_path = literal_path.resolve(strict=True)
+    except OSError as exc:
+        raise PhysicalAssemblyError(
+            f"BINDING_PROFILE_AUTHORITY_MISSING: {lock.profile_id}"
+        ) from exc
+    if profile_path.parent != resolved_root or not profile_path.is_file():
+        raise PhysicalAssemblyError("BINDING_PROFILE_AUTHORITY_PATH_ESCAPE")
+    raw = profile_path.read_bytes()
+    actual_sha256 = _sha256_bytes(raw)
+    if actual_sha256 != lock.profile_sha256:
+        raise PhysicalAssemblyError("BINDING_PROFILE_AUTHORITY_FINGERPRINT_MISMATCH")
+    try:
+        profile = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise PhysicalAssemblyError(
+            f"BINDING_PROFILE_AUTHORITY_INVALID: {exc}"
+        ) from exc
+    if not isinstance(profile, Mapping):
+        raise PhysicalAssemblyError("BINDING_PROFILE_AUTHORITY_INVALID")
+    _validate_schema_payload(
+        profile,
+        "binding-profile.v1.schema.json",
+        label="BINDING_PROFILE_AUTHORITY",
+    )
+    if (
+        profile.get("profile_id") != lock.profile_id
+        or profile.get("acceptance_profile") != acceptance_profile
+        or profile.get("scenario_id") != plan.scenario_id
+        or profile.get("library_index_sha256") != plan.library_index_sha256
+        or profile.get("dominant_style_cluster_id")
+        != plan.dominant_style_cluster_id
+    ):
+        raise PhysicalAssemblyError("BINDING_PROFILE_AUTHORITY_APPLICABILITY_MISMATCH")
+
+    profile_slides = profile.get("slides")
+    if not isinstance(profile_slides, list):
+        raise PhysicalAssemblyError("BINDING_PROFILE_AUTHORITY_INVALID")
+    by_ordinal = {
+        int(item["ordinal"]): item
+        for item in profile_slides
+        if isinstance(item, Mapping)
+    }
+    plan_ordinals = {slide.ordinal for slide in plan.target_slides}
+    if set(by_ordinal) != plan_ordinals or len(by_ordinal) != len(profile_slides):
+        raise PhysicalAssemblyError("BINDING_PROFILE_AUTHORITY_SLIDE_SET_MISMATCH")
+
+    specs_by_ordinal: dict[int, tuple[StyleCloneSpec, ...]] = {}
+    total = 0
+    for slide in plan.target_slides:
+        profile_slide = by_ordinal[slide.ordinal]
+        if (
+            profile_slide.get("page_id") != slide.page_template.page_id
+            or profile_slide.get("narrative_role") != slide.narrative_role
+        ):
+            raise PhysicalAssemblyError(
+                "BINDING_PROFILE_AUTHORITY_SLIDE_MISMATCH: "
+                + str(slide.ordinal)
+            )
+        raw_specs = profile_slide.get("style_clones", ())
+        if not isinstance(raw_specs, (list, tuple)):
+            raise PhysicalAssemblyError(
+                "BINDING_PROFILE_AUTHORITY_STYLE_CLONES_INVALID: "
+                + str(slide.ordinal)
+            )
+        specs = tuple(
+            StyleCloneSpec(
+                source_shape_id=int(item["source_shape_id"]),
+                target_shape_id=int(item["target_shape_id"]),
+                scope=str(item["scope"]),
+                source_style_sha256=str(item["source_style_sha256"]),
+                target_guard_sha256=str(item["target_guard_sha256"]),
+            )
+            for item in raw_specs
+        )
+        if specs:
+            sources = {item.source_shape_id for item in specs}
+            targets = {item.target_shape_id for item in specs}
+            target_scopes = {
+                (item.target_shape_id, item.scope) for item in specs
+            }
+            if (
+                sources & targets
+                or len(target_scopes) != len(specs)
+                or any(
+                    item.source_shape_id == item.target_shape_id
+                    for item in specs
+                )
+            ):
+                raise PhysicalAssemblyError(
+                    "BINDING_PROFILE_AUTHORITY_STYLE_CLONES_AMBIGUOUS: "
+                    + str(slide.ordinal)
+                )
+            specs_by_ordinal[slide.ordinal] = specs
+            total += len(specs)
+    if required_profile_id is not None and total != 5:
+        raise PhysicalAssemblyError(
+            f"BINDING_PROFILE_AUTHORITY_STYLE_CLONE_COUNT: {total}"
+        )
+    return (
+        BindingProfileAuthorityEvidence(
+            profile_id=lock.profile_id,
+            profile_sha256=actual_sha256,
+            acceptance_profile=acceptance_profile,
+            style_clone_count=total,
+            status="pass",
+        ),
+        specs_by_ordinal,
+    )
+
+
+def _verify_style_clone_evidence(
+    archive: zipfile.ZipFile,
+    *,
+    plan: AssemblyPlan,
+    specs_by_ordinal: Mapping[int, Sequence[StyleCloneSpec]],
+) -> tuple[StyleCloneEvidence, ...]:
+    """Recompute the source anchor, cloned target paint, and target guard."""
+
+    evidence: list[StyleCloneEvidence] = []
+    slides = {slide.ordinal: slide for slide in plan.target_slides}
+    for ordinal in sorted(specs_by_ordinal):
+        slide = slides.get(ordinal)
+        if slide is None:
+            raise PhysicalAssemblyError(
+                f"STYLE_CLONE_EVIDENCE_SLIDE_NOT_FOUND: {ordinal}"
+            )
+        try:
+            slide_xml = archive.read(f"ppt/slides/slide{ordinal}.xml")
+        except KeyError as exc:
+            raise PhysicalAssemblyError(
+                f"STYLE_CLONE_EVIDENCE_SLIDE_NOT_FOUND: {ordinal}"
+            ) from exc
+        for spec in specs_by_ordinal[ordinal]:
+            source_style = _style_clone_scope_sha256(
+                slide_xml, spec.source_shape_id, spec.scope
+            )
+            target_style = _style_clone_scope_sha256(
+                slide_xml, spec.target_shape_id, spec.scope
+            )
+            target_guard = _style_clone_target_guard_sha256(
+                slide_xml, spec.target_shape_id, spec.scope
+            )
+            status = (
+                "pass"
+                if source_style
+                == target_style
+                == spec.source_style_sha256
+                and target_guard == spec.target_guard_sha256
+                else "fail"
+            )
+            evidence.append(
+                StyleCloneEvidence(
+                    ordinal=ordinal,
+                    page_id=slide.page_template.page_id,
+                    source_shape_id=spec.source_shape_id,
+                    target_shape_id=spec.target_shape_id,
+                    scope=spec.scope,
+                    expected_style_sha256=spec.source_style_sha256,
+                    actual_source_style_sha256=source_style,
+                    actual_target_style_sha256=target_style,
+                    actual_target_guard_sha256=target_guard,
+                    status=status,
+                )
+            )
+    return tuple(evidence)
 # The following relationship types are forbidden and must be rejected before
 # any part is committed to the output.
 FORBIDDEN_REL_TARGET_PATTERNS = (
@@ -2641,6 +3231,32 @@ def _plan_from_payload(
                 query_bundle_payload["path"], base_dir
             )
         query_bundle_sha256 = query_bundle_payload["sha256"]
+    profile_authority_payload = payload.get("binding_profile_authority")
+    binding_profile_authority: BindingProfileAuthorityLock | None = None
+    if profile_authority_payload is not None:
+        if (
+            not isinstance(profile_authority_payload, Mapping)
+            or set(profile_authority_payload) != {"profile_id", "profile_sha256"}
+            or not isinstance(profile_authority_payload.get("profile_id"), str)
+            or re.fullmatch(
+                r"[a-z0-9_-]{1,120}",
+                str(profile_authority_payload.get("profile_id", "")),
+            )
+            is None
+            or not isinstance(profile_authority_payload.get("profile_sha256"), str)
+            or re.fullmatch(
+                r"[0-9a-f]{64}",
+                str(profile_authority_payload.get("profile_sha256", "")),
+            )
+            is None
+        ):
+            raise PhysicalAssemblyError(
+                "assembly binding_profile_authority is invalid"
+            )
+        binding_profile_authority = BindingProfileAuthorityLock(
+            profile_id=str(profile_authority_payload["profile_id"]),
+            profile_sha256=str(profile_authority_payload["profile_sha256"]),
+        )
     return AssemblyPlan(
         schema_version=payload.get("schema_version", "1.0"),
         plan_id=str(payload["plan_id"]),
@@ -2655,6 +3271,7 @@ def _plan_from_payload(
         target_slide_count=int(payload["target_slide_count"]),
         target_slides=tuple(slides),
         library_index_sha256=str(payload["library_index_sha256"]),
+        binding_profile_authority=binding_profile_authority,
         query_bundle_path=query_bundle_path,
         query_bundle_sha256=query_bundle_sha256,
         authority=authority,
@@ -5688,6 +6305,12 @@ def verify_physical_assembly(
             )
         expected_slide_count = 15
         _validate_phase49_sequence(plan)
+    binding_profile_authority, style_clone_specs = (
+        _resolve_binding_profile_style_authority(
+            plan,
+            acceptance_profile=acceptance_profile,
+        )
+    )
 
     path = Path(output_path).expanduser().resolve(strict=False)
     if not path.is_file():
@@ -5738,6 +6361,7 @@ def verify_physical_assembly(
     )
 
     lineage: list[LineageRecord] = []
+    style_clone_evidence: tuple[StyleCloneEvidence, ...] = ()
     matches = 0
     source_archives: dict[str, zipfile.ZipFile] = {}
     try:
@@ -5794,14 +6418,20 @@ def verify_physical_assembly(
                     source_slide = b""
                     source_package_verified = False
                     source_slide_verified = False
-                source_structure = _slide_structure_signature(source_slide)
+                expected_source_slide = source_slide
+                if source_slide and style_clone_specs.get(ordinal):
+                    expected_source_slide = _apply_governed_style_clones(
+                        source_slide,
+                        style_clone_specs[ordinal],
+                    )
+                source_structure = _slide_structure_signature(expected_source_slide)
                 target_structure = _slide_structure_signature(slide_xml)
                 structure_match = bool(
                     source_structure
                     and target_structure
                     and source_structure == target_structure
                 )
-                score = _byte_match_score(source_slide, slide_xml)
+                score = _byte_match_score(expected_source_slide, slide_xml)
                 lineage_ok = (
                     zip_ok
                     and ct_ok
@@ -5842,6 +6472,11 @@ def verify_physical_assembly(
                         byte_match_score=round(score, 6),
                     )
                 )
+            style_clone_evidence = _verify_style_clone_evidence(
+                archive,
+                plan=plan,
+                specs_by_ordinal=style_clone_specs,
+            )
     finally:
         for source_archive in source_archives.values():
             source_archive.close()
@@ -6041,18 +6676,36 @@ def verify_physical_assembly(
             and selection_authority_evidence.distinct_page_id_count == 15
         )
     )
+    profile_checks_pass = (
+        (
+            binding_profile_authority is None
+            and not style_clone_specs
+            and not style_clone_evidence
+        )
+        if acceptance_profile == "standard"
+        else (
+            binding_profile_authority is not None
+            and binding_profile_authority.status == "pass"
+            and binding_profile_authority.style_clone_count
+            == len(style_clone_evidence)
+            == 5
+            and all(item.status == "pass" for item in style_clone_evidence)
+        )
+    )
     overall = (
         "pass"
         if core_pass
         and requested_checks_pass
         and locked_checks_pass
         and selection_checks_pass
+        and profile_checks_pass
         else "fail"
     )
     return PhysicalAssemblyReport(
         schema_version="1.0",
         report_id=f"par_{int(datetime.now(timezone.utc).timestamp() * 1000):x}",
         plan_id=plan.plan_id,
+        binding_profile_authority=binding_profile_authority,
         output_path=str(path),
         output_sha256=_sha256_bytes(path.read_bytes()),
         acceptance_profile=acceptance_profile,
@@ -6069,6 +6722,7 @@ def verify_physical_assembly(
         authority=authority_evidence,
         selection_authority=selection_authority_evidence,
         binding_evidence=binding_evidence,
+        style_clone_evidence=style_clone_evidence,
         source_residue=source_residue,
         libreoffice=libreoffice,
         size_check=size_check,
@@ -6107,6 +6761,10 @@ def assemble_physical_deck(
             )
         expected_slide_count = 15
         _validate_phase49_sequence(plan)
+    _, style_clone_specs = _resolve_binding_profile_style_authority(
+        plan,
+        acceptance_profile=acceptance_profile,
+    )
 
     authority_arguments = (
         fact_store_path,
@@ -6306,8 +6964,16 @@ def assemble_physical_deck(
                     relationship_free=_rels_path_for_part(source_part) not in graph.rels,
                 )
 
+            governed_slide_xml = governed_mutations.get(
+                graph.root_slide_name,
+                graph.slide_xml,
+            )
+            governed_slide_xml = _apply_governed_style_clones(
+                governed_slide_xml,
+                style_clone_specs.get(slide.ordinal, ()),
+            )
             slide_bytes = _adapt_slide_text(
-                governed_mutations.get(graph.root_slide_name, graph.slide_xml),
+                governed_slide_xml,
                 slide.bindings,
                 allowed_slots=slide.page_template.slot_graph.get("text_slot_ids", ()),
                 fit_policies={
@@ -6578,6 +7244,8 @@ __all__ = [
     "AuthorityEvidence",
     "AuthorityLock",
     "BindingEvidence",
+    "BindingProfileAuthorityEvidence",
+    "BindingProfileAuthorityLock",
     "Editability",
     "LineageRecord",
     "LockedAsset",
@@ -6587,6 +7255,8 @@ __all__ = [
     "RelationshipAudit",
     "SlideBinding",
     "StyleClusterAdherence",
+    "StyleCloneEvidence",
+    "StyleCloneSpec",
     "SizeCheck",
     "TextBindingSpec",
     "assemble_physical_deck",
@@ -6594,4 +7264,7 @@ __all__ = [
     "resolve_project_file",
     "verify_physical_assembly",
     "write_assembly_report",
+    "_apply_governed_style_clones",
+    "_style_clone_scope_sha256",
+    "_style_clone_target_guard_sha256",
 ]
