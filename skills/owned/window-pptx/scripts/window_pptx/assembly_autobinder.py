@@ -399,7 +399,10 @@ def _validate_profile_style_clones(profile: Mapping[str, Any]) -> None:
 
     for slide in profile.get("slides", ()):
         ordinal = int(slide.get("ordinal", 0))
-        clones = slide.get("style_clones", ())
+        # ``style_clones`` is optional.  An omitted key means that this page
+        # has no governed paint adaptation, which is the normal case for the
+        # acceptance profile; only a present non-list value is invalid.
+        clones = slide.get("style_clones", [])
         if not isinstance(clones, list):
             raise AutoBindingError(
                 f"AUTO_BIND_STYLE_CLONES_INVALID: {ordinal}"

@@ -19,6 +19,7 @@ sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 from window_pptx.assembly_autobinder import (  # noqa: E402
     AutoBindingError,
     _validate_capacity,
+    _validate_profile_style_clones,
     build_default_intent,
     compile_assembly_intent,
 )
@@ -505,6 +506,12 @@ def test_compiler_expands_every_slot_with_fact_connective_and_fragments() -> Non
             "status": "pass",
         }
     ]
+
+
+def test_optional_style_clones_accepts_pages_without_clone_rules() -> None:
+    """Most pages have no paint adaptation; omission must not fail the job."""
+
+    _validate_profile_style_clones({"slides": [{"ordinal": 1}]})
 
 
 def test_candidate_rank_is_derived_from_query_order() -> None:
