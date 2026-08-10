@@ -1379,24 +1379,12 @@
           "separator": ""
         },
         "shape_7": {
-          "kind": "fact",
-          "renderings": [
-            {
-              "fact_id": "projects-total",
-              "rendering_sha256": "053c111a2b04a31c83b9d7adc303def4c0a17f6c1c5f65cea172711ce0964bd4"
-            }
-          ],
-          "separator": ""
+          "kind": "connective",
+          "connective_id": "connective-clear"
         },
         "shape_78": {
-          "kind": "fact",
-          "renderings": [
-            {
-              "fact_id": "projects-total",
-              "rendering_sha256": "053c111a2b04a31c83b9d7adc303def4c0a17f6c1c5f65cea172711ce0964bd4"
-            }
-          ],
-          "separator": ""
+          "kind": "connective",
+          "connective_id": "connective-clear"
         },
         "shape_25": {
           "kind": "fact",
@@ -1828,13 +1816,6 @@
           "scope": "shape-fill",
           "source_style_sha256": "31a9b3dc6f7dcffcebda771e043bdcb9e5e9d65bd7b1d537161c8d7896190330",
           "target_guard_sha256": "1901cd9dd7cb9e32751cac8f2f8512e2765ae2683eb6afaf5cc4409834d6db4c"
-        },
-        {
-          "source_shape_id": 335,
-          "target_shape_id": 348,
-          "scope": "picture-color-effects",
-          "source_style_sha256": "b1d49895b80bb4f608425310c88de9e8d5e7fcc0d469e25af789e48e8718a15c",
-          "target_guard_sha256": "88ef8e861ee0e588953b7c41c534931587d4b61b61c6d3538cbde22e7ce56b90"
         }
       ]
     },

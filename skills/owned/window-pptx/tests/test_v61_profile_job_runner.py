@@ -443,7 +443,10 @@ def test_mocked_run_emits_exactly_eight_evidence_files_and_one_pptx(
         lambda *_args, **_kwargs: loaded_plan,
     )
 
-    def fake_assemble(_plan: Any, output_path: Path, **_kwargs: Any) -> _MachineResult:
+    assemble_kwargs: dict[str, Any] = {}
+
+    def fake_assemble(_plan: Any, output_path: Path, **kwargs: Any) -> _MachineResult:
+        assemble_kwargs.update(kwargs)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(b"PK\x03\x04synthetic-pptx")
         return physical
@@ -503,3 +506,8 @@ def test_mocked_run_emits_exactly_eight_evidence_files_and_one_pptx(
         "profile_sha256": SHA_VALUES["profile"],
     }
     assert all("style_clones" not in slide for slide in compiled_plan["target_slides"])
+    # The plan itself is portable and project-relative, but the renderer must
+    # never rely on the caller's shell CWD to locate those authorities.
+    assert assemble_kwargs["fact_store_path"] == project / "fact-store.v1.json"
+    assert assemble_kwargs["asset_manifest_path"] == project / "asset-manifest.v1.json"
+    assert assemble_kwargs["connective_copy_path"] == project / "connective-copy.v1.json"

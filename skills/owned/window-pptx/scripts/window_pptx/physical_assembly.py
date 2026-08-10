@@ -1315,7 +1315,7 @@ def _resolve_binding_profile_style_authority(
                 )
             specs_by_ordinal[slide.ordinal] = specs
             total += len(specs)
-    if required_profile_id is not None and total != 5:
+    if required_profile_id is not None and total != 4:
         raise PhysicalAssemblyError(
             f"BINDING_PROFILE_AUTHORITY_STYLE_CLONE_COUNT: {total}"
         )
@@ -6688,7 +6688,7 @@ def verify_physical_assembly(
             and binding_profile_authority.status == "pass"
             and binding_profile_authority.style_clone_count
             == len(style_clone_evidence)
-            == 5
+            == 4
             and all(item.status == "pass" for item in style_clone_evidence)
         )
     )

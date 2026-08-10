@@ -440,11 +440,15 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         plan,
         output_path,
         library_index_sha256=library_sha,
-        fact_store_path="fact-store.v1.json",
+        # Keep the plan's authority records project-relative, while supplying
+        # the renderer resolved paths.  The production entry point may be
+        # invoked from an agent's Skill directory rather than the client
+        # directory, so relative process-CWD paths are not a safe authority.
+        fact_store_path=project / "fact-store.v1.json",
         fact_store_sha256=fact_sha,
-        asset_manifest_path="asset-manifest.v1.json",
+        asset_manifest_path=project / "asset-manifest.v1.json",
         asset_manifest_sha256=asset_sha,
-        connective_copy_path="connective-copy.v1.json",
+        connective_copy_path=project / "connective-copy.v1.json",
         connective_copy_sha256=connective_sha,
         project_root=project,
         require_locked_authority=True,

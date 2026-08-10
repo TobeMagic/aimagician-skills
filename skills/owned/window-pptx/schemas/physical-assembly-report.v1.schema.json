@@ -639,11 +639,11 @@
             "properties": {
               "profile_id": {"const": "phase49-work-report-15"},
               "acceptance_profile": {"const": "phase49-work-report-15"},
-              "style_clone_count": {"const": 5},
+              "style_clone_count": {"const": 4},
               "status": {"const": "pass"}
             }
           },
-          "style_clone_evidence": {"minItems": 5, "maxItems": 5},
+          "style_clone_evidence": {"minItems": 4, "maxItems": 4},
           "selection_authority": {
             "properties": {
               "mode": {"const": "locked"},

@@ -132,6 +132,29 @@ def test_phase49_slide9_locks_no_autofit_for_compact_kpi_units() -> None:
     }
 
 
+def test_phase49_slide8_places_the_total_unit_in_the_caption_not_over_the_art() -> None:
+    slide = next(item for item in _profile()["slides"] if item["ordinal"] == 8)
+
+    assert slide["bindings"]["shape_7"] == {
+        "kind": "connective",
+        "connective_id": "connective-clear",
+    }
+    assert slide["bindings"]["shape_78"] == {
+        "kind": "connective",
+        "connective_id": "connective-clear",
+    }
+    assert slide["bindings"]["shape_65"] == {
+        "kind": "fact",
+        "renderings": [
+            {
+                "fact_id": "projects-total",
+                "rendering_sha256": "daabd20a5b699aed55f7e3b6fd0dd47f4e8d20073c4b8b18584bcfafbe60ca6e",
+            },
+        ],
+        "separator": "",
+    }
+
+
 def test_phase49_slide9_locks_only_bounded_skill_owned_style_clones() -> None:
     slide = next(item for item in _profile()["slides"] if item["ordinal"] == 9)
 
@@ -147,7 +170,6 @@ def test_phase49_slide9_locks_only_bounded_skill_owned_style_clones() -> None:
         (339, 352, "text-color"),
         (337, 350, "text-color"),
         (338, 351, "shape-fill"),
-        (335, 348, "picture-color-effects"),
     ]
     for item in slide["style_clones"]:
         assert set(item) == {
