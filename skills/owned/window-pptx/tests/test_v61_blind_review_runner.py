@@ -58,6 +58,8 @@ def test_segment_prompt_includes_one_exact_full_coverage_json_template() -> None
     )
 
     assert f"do not add, omit, or rename keys: {expected}" in prompt
+    assert "reference does not establish the correct candidate wording" in prompt
+    assert "low-resolution OCR" in prompt
 
 
 @pytest.mark.parametrize(
