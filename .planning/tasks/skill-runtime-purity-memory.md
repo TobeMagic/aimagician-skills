@@ -113,5 +113,11 @@ Important finding. The completed comparison is stored in
   with the existing local `pptxgenjs` tree and all 74 previously failing/error
   cases passed.
 - `git diff --check`: pass.
-- Installation sync and doctor evidence are recorded after the final source
-  commit so installed manifests can be compared to that exact revision.
+- Source revision `ad47a31` was installed with a global reset for both Codex
+  and OpenCode. Each target reports 24 installed owner Skills. The reset command
+  reports `partial` only because ten catalogued external sources are explicitly
+  `source-default-disabled`; no owner Skill was skipped.
+- `skillbird doctor --scope global --targets codex,opencode --agent` reports
+  `healthy` for both targets with `managedCount=24`, `detectedCount=24`, and no
+  issues. Direct sorted-directory comparisons against `skills/owned` return no
+  differences, and neither installed tree contains an `evals/` directory.
