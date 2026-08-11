@@ -776,7 +776,7 @@ For the owned work-summary golden, use the one-command replay:
 ```bash
 python scripts/run_window_pptx_golden_replay.py \
   --template-pack institutional-work-summary-v1 \
-  --bindings evals/v5.1-work-summary-bindings.json \
+  --bindings assets/examples/work-summary-bindings.json \
   --output-dir .window-pptx/audits/golden-replay
 ```
 

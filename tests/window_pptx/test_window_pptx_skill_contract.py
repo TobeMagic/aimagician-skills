@@ -48,7 +48,7 @@ def test_v6_skill_links_executable_contract_files() -> None:
 
 def test_v6_behavior_eval_cases_cover_new_failure_boundaries() -> None:
     payload = json.loads(
-        (SKILL_ROOT / "evals" / "evals.json").read_text(encoding="utf-8")
+        (SKILL_ROOT / "assets" / "calibration" / "scenarios.json").read_text(encoding="utf-8")
     )
     scenarios = {item["id"]: item for item in payload["scenarios"]}
 

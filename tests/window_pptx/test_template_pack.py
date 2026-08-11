@@ -130,7 +130,7 @@ def test_display_title_style_rule_clamps_missing_font_risk(tmp_path: Path) -> No
 
 
 def test_full_work_summary_bindings_adapt_all_fifteen_slides(tmp_path: Path) -> None:
-    binding_path = SKILL_ROOT / "evals" / "v5.1-work-summary-bindings.json"
+    binding_path = SKILL_ROOT / "assets" / "examples" / "work-summary-bindings.json"
     pack_id, bindings = load_template_bindings(binding_path)
     output = tmp_path / "reference-grade-work-summary.pptx"
 
@@ -236,7 +236,7 @@ def test_template_pack_cli_is_portable_and_reports_all_dry_run_outputs(
             "--template-pack",
             "institutional-work-summary-v1",
             "--template-bindings",
-            str(SKILL_ROOT / "evals" / "v5.1-work-summary-bindings.json"),
+            str(SKILL_ROOT / "assets" / "examples" / "work-summary-bindings.json"),
             "--output",
             "output/work-summary.pptx",
             "--dry-run",
@@ -336,7 +336,7 @@ def test_golden_replay_is_semantically_reproducible_with_one_renderer_fingerprin
             ),
         ),
     )
-    bindings = SKILL_ROOT / "evals" / "v5.1-work-summary-bindings.json"
+    bindings = SKILL_ROOT / "assets" / "examples" / "work-summary-bindings.json"
 
     first = run_golden_template_replay(
         "institutional-work-summary-v1",

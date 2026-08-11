@@ -148,8 +148,9 @@ The central owned skill is:
 
 | Skill | Role |
 |---|---|
-| `aimagician-superpower` | Risk-scaled SDD plus codebase exploration, progressive discovery, prototypes, engineering design, vertical delivery, root-cause debugging, technical review, traceable verification, audit, and handoff |
+| `aimagician-superpower` | Risk-scaled SDD plus project memory, codebase exploration, progressive discovery, prototypes, engineering design, vertical delivery, root-cause debugging, technical review, traceable verification, audit, and handoff |
 | `cli-agent-delegator` | OpenCode delegation for broad discovery, deep research, default short-task execution, bounded git/test/write work, reasoning over acquired visual evidence, dynamic free-model routing, and independent plan/spec/quality/verification/closure review |
+| `agent-workstream-orchestrator` | Provider-neutral tracked sessions for independent exploration, reviews, tests, bounded implementation, optional worktrees, integration ownership, and resumable handoff |
 | `vision-analysis` | Consent-gated direct Agnes image understanding for screenshots, diagrams, posters, and other visual evidence, with sanitized provenance for downstream reasoning |
 | `interface-design` | HTML/CSS/JS design, prototypes, UI, dashboards, repository branding, covers, posters, product demo video, creative coding, data visualization, HTML presentations, responsive browser QA, and brand routing |
 | `github-readme-highstar` | README information architecture, quick-start clarity, repository visual collaboration, static hero and supplemental demo integration |
@@ -174,20 +175,19 @@ External sources are curated into owned skills instead of installed by default.
 | Validation-gated Skill evaluation and iterative improvement | `skill-optimizer` |
 | Long-form method extraction and executable knowledge construction | `knowledge-distillation` |
 | Person/topic evidence research and perspective construction | `perspective-distillation` |
-| Claude MCP builder + community MCP builder | `mcp-builder` |
 | frontend-design, design-md brand routing, UI/UX, prototypes, dashboards, data visualization, HTML presentations, accessibility, motion, design-lab, impeccable | `interface-design` |
 | Claude webapp-testing + Playwright skill | `webapp-testing` |
-| docx / pdf / pptx / xlsx | Owned document skills under `skills/owned` |
+| docx / pdf / xlsx plus advanced editable PowerPoint | Owned document skills under `skills/owned` |
 
 Six categories are used everywhere:
 
 | Category | Scope |
 |---|---|
-| `build` | Coding, planning, debugging, tests, reviews, skill authoring, MCP/tools |
+| `build` | Coding, planning, debugging, tests, reviews, skill authoring, integrations |
 | `research` | Papers, literature, open-source architecture, repo evidence, direct visual evidence |
 | `design` | HTML visual design, prototypes, UI/UX, dashboards, data visualization, HTML presentations, brand routing, accessibility, motion, image generation |
 | `documents` | README, Word, PDF, PowerPoint, spreadsheets |
-| `operate` | GitHub, Linear, cloud, worktrees, releases, CLI agent delegation, Composio tool routing |
+| `operate` | GitHub, cloud, tracked agent workstreams, releases, CLI agent delegation, Composio tool routing |
 | `strategy` | Product, business, pricing, customers, growth |
 
 Every owned skill is formatted with `category`, `subcategory`, and `tags` frontmatter:
@@ -201,7 +201,7 @@ skillbird format-skills --write
 
 `interface-design` owns browser-native visual work and rendered visual assets: apps, prototypes, landing pages, dashboards, interactive reports, repository covers, autoplay GIF heroes, posters, product showcases, deterministic demo video, creative coding, data visualization, narrated motion, and HTML slides. A standard single-file slide player provides arrow/Page/Space, wheel and touch navigation, `Escape`/`O` overview cards, `F` full screen, progress, URL hash, persisted position, and print behavior. `github-readme-highstar` owns the surrounding README structure and integration.
 
-Ordinary native editable `.pptx`, slide masters, Office compatibility, and PowerPoint QA remain owned by `pptx` or `window-pptx`. When a user explicitly requires HTML as the presentation source, `interface-design` also owns HTML-first PDF and PPTX derivatives. HTML-first PPTX has two explicit modes: native editable DOM-to-PowerPoint objects, or visually faithful image-backed slides. The agent must select editability versus fidelity before implementation.
+Native editable `.pptx`, slide masters, Office compatibility, and PowerPoint QA remain owned by `window-pptx`. When a user explicitly requires HTML as the presentation source, `interface-design` also owns HTML-first PDF and PPTX derivatives. HTML-first PPTX has two explicit modes: native editable DOM-to-PowerPoint objects, or visually faithful image-backed slides. The agent must select editability versus fidelity before implementation.
 
 The HTML design skill includes layout, component, and 40-direction pattern libraries; content-to-pattern decision rules; three-direction comparison and live tweak scaffolds; device frames; browser Deck, PDF, editable/fidelity PPTX, GIF/MP4/alpha overlays, provider-neutral narration, audio mixing, semantic motion-review packages, and visual-quality workflows; plus a deterministic Playwright/ffmpeg renderer, optional project render adapters, and a read-only router:
 
@@ -216,7 +216,7 @@ node skills/owned/interface-design/scripts/export-html-deck-pptx.mjs --slides sl
 node skills/owned/interface-design/scripts/export-html-stage-pptx.mjs --html deck.html --out deck.pptx --mode fidelity
 ```
 
-The owned catalog currently contains 28 active Skills. Full upstream source mirrors used during consolidation stay ignored under each Skill's `references/_external_repos/`; they are neither packaged nor installed. The distillation, optimization, HTML presentation, and YapCLI validation record is in [`docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md`](docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md).
+The owned catalog currently contains 24 active Skills. Runtime packages contain only capability instructions, references, templates, and helpers; evaluation corpora live under `quality/skill-evals/` and are not installed. Full upstream source mirrors used during consolidation stay ignored under each Skill's `references/_external_repos/`; they are neither packaged nor installed. Project-specific preferences and resumable memory live under `.planning/`, outside general-purpose Skills. The distillation, optimization, HTML presentation, and YapCLI validation record is in [`docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md`](docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md).
 
 See [`docs/design/html-universal-design-capability-merge.md`](docs/design/html-universal-design-capability-merge.md) for the capability analysis and boundary decisions.
 

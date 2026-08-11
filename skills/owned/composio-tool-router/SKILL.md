@@ -18,7 +18,7 @@ compatibility:
 
 Use this skill as a lightweight third-party SaaS tool registry and router. It helps the agent discover and invoke Slack, Linear, GitHub, Notion, Jira, and similar actions through Composio without loading a full MCP server's schema into every turn.
 
-This skill replaces only the MCP-heavy parts that Composio can cover: tool discovery, service-scoped routing, schema-on-demand, auth-aware execution, and proxy calls. Use `mcp-builder` for custom MCP servers, local resource exposure, prompt/resource protocol design, or MCP-specific schema work.
+This skill replaces only the MCP-heavy parts that Composio can cover: tool discovery, service-scoped routing, schema-on-demand, auth-aware execution, and proxy calls. Custom protocol servers, local resource exposure, and protocol-specific schema design are engineering tasks outside this router; follow the target project's architecture and documentation.
 
 ## Capability Routing
 
@@ -123,6 +123,16 @@ Keep MCP or another direct integration when the problem needs:
 - a custom tool contract not available in Composio;
 - streaming, long-lived local servers, or target-specific MCP client behavior;
 - strict self-hosted control over schemas, auth, audit logs, or data residency.
+
+## Failure Handling And Checkpoint
+
+- CLI missing or unauthenticated: report the exact preflight failure and do not invent available actions.
+- Service filter returns no action: broaden the intent query once, then report the empty result and direct-integration alternative.
+- Schema or required field remains unknown: do not execute; inspect only that action's schema and ask for material missing input.
+- Dry-run differs from requested mutation: stop and show the discrepancy.
+- Execution fails: return the redacted error, connection state, safe retry path, and whether any partial mutation may have occurred.
+
+A write can advance only after service, action slug, identity or connection, required fields, dry-run, and user authorization are all explicit. A read completes only when the result is tied to the selected action and not inferred from a generic service description.
 
 ## Output Contract
 

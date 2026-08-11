@@ -13,6 +13,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+EVAL_ROOT = REPO_ROOT / "quality" / "skill-evals" / "window-pptx"
 SCRIPTS_ROOT = SKILL_ROOT / "scripts"
 if str(SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_ROOT))
@@ -415,12 +416,12 @@ def test_frozen_r2_is_rejected_by_reference_grade_profile() -> None:
 def test_sparse_synthetic_baseline_fails_executable_composition_floor() -> None:
     facts = json.loads(
         (
-            SKILL_ROOT / "evals" / "consulting-project-proposal-facts.json"
+            EVAL_ROOT / "consulting-project-proposal-facts.json"
         ).read_text(encoding="utf-8")
     )
     brief = json.loads(
         (
-            SKILL_ROOT / "evals" / "consulting-project-proposal-brief.json"
+            EVAL_ROOT / "consulting-project-proposal-brief.json"
         ).read_text(encoding="utf-8")
     )
     generation = prepare_brief_generation(
@@ -469,12 +470,12 @@ def test_sparse_synthetic_baseline_fails_executable_composition_floor() -> None:
 def test_composition_floor_excludes_structural_full_bleed_heroes() -> None:
     facts = json.loads(
         (
-            SKILL_ROOT / "evals" / "consulting-project-proposal-facts.json"
+            EVAL_ROOT / "consulting-project-proposal-facts.json"
         ).read_text(encoding="utf-8")
     )
     brief = json.loads(
         (
-            SKILL_ROOT / "evals" / "consulting-project-proposal-brief.json"
+            EVAL_ROOT / "consulting-project-proposal-brief.json"
         ).read_text(encoding="utf-8")
     )
     generation = prepare_brief_generation(

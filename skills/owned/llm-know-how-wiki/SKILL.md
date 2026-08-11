@@ -341,6 +341,18 @@ Do not live-inspect Cloud Run or external systems unless the user explicitly ask
 - Keep pages scannable. Split pages that grow too large.
 - Do not create pages for passing mentions. Create pages for central concepts, recurring entities, or durable decisions.
 
+## Project Memory Boundary And Failure Handling
+
+Use the wiki for curated, source-traceable knowledge that must be queried across tasks. Use the engineering workflow's project memory for compact accepted preferences, daily checkpoints, failed attempts worth retaining, and resume pointers. Do not duplicate daily task state into wiki pages or replace canonical project context with a wiki summary.
+
+- Wiki root unresolved: stop writes and report the candidate roots; do not initialize in an arbitrary parent.
+- Source fetch or adapter failure: preserve prior evidence, record the failed source and timestamp, and continue only with clearly labeled available evidence.
+- Lint or sensitive scan failure: keep the digest open and do not claim the wiki is healthy.
+- Suspected secret outside the vault: redact output, inventory metadata only, and route remediation through the controlled secret workflow.
+- Conflicting sources: retain both with provenance and mark the curated claim unresolved until authority is established.
+
+Before answering or closing maintenance, confirm the wiki root, source provenance, current index, lint result, sensitive scan status where applicable, and explicit unknowns.
+
 ## Useful Commands
 
 ```bash

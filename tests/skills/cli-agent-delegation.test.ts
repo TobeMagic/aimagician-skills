@@ -158,7 +158,7 @@ describe("cli-agent-delegator capability contract", () => {
   });
 
   it("captures the trigger regression where the main agent scans skill, docs, and tests itself", async () => {
-    const evals = JSON.parse(await readFile(join(delegatorRoot, "evals", "evals.json"), "utf8")) as {
+    const evals = JSON.parse(await readFile(join(process.cwd(), "quality", "skill-evals", "cli-agent-delegator", "evals.json"), "utf8")) as {
       scenarios: Array<{ id: string; should_trigger: boolean; expected: string[]; forbidden: string[] }>;
     };
     const scenario = evals.scenarios.find((candidate) => candidate.id === "trigger-regression-main-agent-multifile-scan");

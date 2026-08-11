@@ -14,7 +14,7 @@ Use this module before visual work whenever “presentation,” “prototype,”
 | Interactive app, prototype, dashboard, report, visualization, or web presentation | `interface-design` |
 | User explicitly requires HTML as presentation source plus PDF | `interface-design`, HTML-first PDF route |
 | User explicitly requires HTML as presentation source plus PPTX | `interface-design`, then choose editable or fidelity HTML-first PPTX before building |
-| Editable `.pptx`, slide master, PowerPoint template, speaker notes in Office, or corporate deck handoff | `pptx` or `window-pptx` |
+| Editable `.pptx`, slide master, PowerPoint template, speaker notes in Office, or corporate deck handoff | `window-pptx` |
 | Visual experimentation in HTML plus final native `.pptx` | Design here, then rebuild and verify in the PPT owner |
 
 Do not make HTML implementation obey PowerPoint conversion limitations unless the user explicitly chooses HTML-first editable PPTX. Do not describe fidelity image slides as editable. If an explicit HTML-first PPTX request omits editability, ask once and stop before implementation.

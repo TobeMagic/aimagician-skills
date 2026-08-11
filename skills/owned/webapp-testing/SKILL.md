@@ -32,7 +32,7 @@ Use this skill whenever UI behavior must be proven in a browser.
    - Read package scripts and framework config.
    - Reuse an existing dev server if one is already running.
    - Start a dev server when needed and keep the URL in the final report.
-   - If using a helper such as `scripts/with_server.py`, run `with_server.py --help` first and treat it as a black-box wrapper around the dev server lifecycle.
+   - If the repository provides a `with_server.py`-style lifecycle helper, run `with_server.py --help` (or its documented equivalent) first and treat it as a black-box wrapper around the dev server lifecycle.
 2. Create a focused Playwright probe.
    - Put temporary scripts under `/tmp` unless the repo already has a test convention.
    - Prefer small Python or TypeScript Playwright scripts that can be re-run from the shell.

@@ -70,7 +70,7 @@ Name only skills relevant to the role. Typical routing:
 - HTML visual review: add `interface-design`;
 - image, screenshot, chart, or diagram understanding: add `vision-analysis` and record explicit external-upload authorization;
 - PR state: add `github-pr-workflow`;
-- parallel write lanes: add `parallel-worktree-pr-flow`.
+- independent tracked sessions or parallel write lanes: add `agent-workstream-orchestrator`.
 - system prompt or agent instruction design: add `system-prompt-engineering`.
 
 For a completion audit, `REQUIRED_SKILLS` always includes `cli-agent-delegator`, `aimagician-superpower`, and every domain skill used by the implementation. Invoke the owned runner with an explicit `--model`, zero or more ordered `--fallback-model` values, and exactly one `--review-ref` or `--review-worktree`; a review/audit without these bindings is invalid. The output must include model-selection rationale, declared/effective chain, provider, primary model, final model, transitions, attempt chain, fallback reason, session ID, resolved commit, initial and final fingerprint, one `PASS | FAIL | NOT_RUN` row per accepted requirement, finding counts, and evidence for controller spot-checks.

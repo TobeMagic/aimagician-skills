@@ -9,6 +9,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+EVAL_ROOT = REPO_ROOT / "quality" / "skill-evals" / "window-pptx"
 SCRIPTS_ROOT = SKILL_ROOT / "scripts"
 if str(SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_ROOT))
@@ -212,12 +213,12 @@ def test_image_led_bookends_follow_design_pack_surface_system(
 def test_generation_materializes_composition_plan_into_render_plan() -> None:
     facts = json.loads(
         (
-            SKILL_ROOT / "evals" / "consulting-project-proposal-facts.json"
+            EVAL_ROOT / "consulting-project-proposal-facts.json"
         ).read_text(encoding="utf-8")
     )
     brief = json.loads(
         (
-            SKILL_ROOT / "evals" / "consulting-project-proposal-brief.json"
+            EVAL_ROOT / "consulting-project-proposal-brief.json"
         ).read_text(encoding="utf-8")
     )
 

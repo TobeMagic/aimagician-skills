@@ -34,4 +34,4 @@ Prefer read-only inventory first. Confirm target, permission, blast radius, main
 
 ## Git, Worktrees, PR, And Review
 
-Protect dirty user work, use isolated worktrees for interrupting or parallel work, keep commits scoped, and inspect integration results. Route parallel worktrees to `parallel-worktree-pr-flow` and PR/CI/reviewer closure to `github-pr-workflow`.
+Protect dirty user work, choose session or worktree isolation for interrupting or parallel work, keep commits scoped, and inspect integration results. Route tracked workstreams to `agent-workstream-orchestrator` and PR/CI/reviewer closure to `github-pr-workflow`.

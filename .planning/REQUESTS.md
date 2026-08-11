@@ -515,3 +515,48 @@ folder must not contain the reference deck or private template bytes.
   fallback, arbitrary model-written geometry/code, or release by self-score.
 - Performing the v7 rename and destructive private-asset pruning inside Phase
   49; those changes begin only after the stabilized v6.1 baseline is merged.
+
+## USR-20260811-001: Runtime-pure Skills, project memory, and session orchestration
+
+**Status:** Accepted
+**Source:** User direction on 2026-08-11
+
+### Original Request
+
+Archive redundant runtime Skills, remove Skill-local eval directories, use the
+Darwin Skill optimization workflow on core Skills, evolve parallel worktree
+handling into tracked multi-session task orchestration, move Linear behavior
+into project preferences, and add durable project and daily memory to the main
+engineering workflow.
+
+### Accepted Decisions
+
+- Implement from the latest `origin/master` without mutating the user's active
+  Window-PPTX worktree.
+- Archive `pptx`, `modelscope_imagegen`, `mcp-builder`, and
+  `linear-issue-workflow` from the active owner set.
+- Move evaluation fixtures out of installed Skill packages into a repository
+  quality surface; preserve useful regression evidence instead of deleting it.
+- Replace `parallel-worktree-pr-flow` with a provider-neutral workstream
+  orchestrator where sessions, worktrees, branches, PRs, Codex, and OpenCode
+  are selected by task coupling and risk.
+- Keep project preferences and durable memory under `.planning`; runtime Skills
+  define only the generic discovery, read, write, promotion, and safety rules.
+- Use `skill-optimizer` static and behavioral evidence to accept core Skill
+  changes; prose growth without measurable workflow improvement is rejected.
+
+### Derived Requirements
+
+- SKILL-PURE-01
+- SKILL-ARCHIVE-01
+- SKILL-EVAL-01
+- SKILL-ORCH-01
+- SKILL-MEM-01
+- SKILL-OPT-01
+
+### Exclusions
+
+- Window-PPTX or PPTX-Studio implementation changes.
+- Deleting user worktrees, untracked acceptance artifacts, source mirrors, or
+  historical planning evidence.
+- Recording secrets, raw transcripts, or unverified claims in project memory.

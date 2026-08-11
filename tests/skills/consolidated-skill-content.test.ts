@@ -12,6 +12,7 @@ describe("consolidated owned skill content", () => {
     const modulePaths = [
       "references/capabilities/intake-and-boundary.md",
       "references/capabilities/state-and-continuity.md",
+      "references/capabilities/project-memory.md",
       "references/capabilities/spec-driven-development.md",
       "references/capabilities/research-and-discovery.md",
       "references/capabilities/engineering-exploration.md",
@@ -71,7 +72,8 @@ describe("consolidated owned skill content", () => {
       "assets/templates/engineering-design-record.md",
       "assets/templates/engineering-change-brief.md",
       "assets/templates/engineering-review.md",
-      "evals/evals.json",
+      "assets/templates/project-memory.md",
+      "assets/templates/daily-memory.md",
       "references/roles/implementer.md",
       "references/roles/spec-reviewer.md",
       "references/roles/quality-reviewer.md",
@@ -142,17 +144,12 @@ describe("consolidated owned skill content", () => {
     expect(safety).toContain("Never print API keys");
   });
 
-  it("keeps Linear post-delivery, Composio-only, and free of a global branch convention", async () => {
-    const linearRoot = join(ownedSkillsRoot, "linear-issue-workflow");
-    const linear = await readOwnedSkill("linear-issue-workflow");
-    const branchRules = await readFile(join(linearRoot, "references", "branch-and-closure-rules.md"), "utf8");
-
-    expect(linear).toContain("Use Composio CLI for every Linear lookup or mutation");
-    expect(linear).toContain("Keep core delivery first");
-    expect(linear).toContain("Delegate Post-Delivery Closure");
-    expect(linear).toContain("If Composio, auth, or a Linear action is unavailable, report it and continue core code delivery when safe");
-    expect(branchRules).toContain("Do not infer the base from a global convention");
-    await expect(readFile(join(linearRoot, "references", "linear-mcp-chain.md"), "utf8")).rejects.toThrow();
+  it("keeps Linear as a project preference routed through Composio", async () => {
+    const preference = await readFile(join(process.cwd(), ".planning", "preferences", "linear.md"), "utf8");
+    expect(preference).toContain("Composio CLI");
+    expect(preference).toContain("do not use Linear MCP");
+    expect(preference).toContain("must not block code delivery");
+    await expect(readOwnedSkill("linear-issue-workflow")).rejects.toThrow();
   });
 
   it("keeps PR protections repository-specific and tracker work post-delivery", async () => {
@@ -167,7 +164,7 @@ describe("consolidated owned skill content", () => {
     const skill = await readOwnedSkill("skill-creator");
     expect(skill).toContain("baseline");
     expect(skill).toContain("with-skill");
-    expect(skill).toContain("evals/evals.json");
+    expect(skill).toContain("quality/skill-evals/<skill-id>/evals.json");
     expect(skill).toContain("quantitative assertions");
     expect(skill).toContain("Progressive Disclosure");
   });
@@ -180,13 +177,10 @@ describe("consolidated owned skill content", () => {
     expect(skill).toContain("/tmp");
   });
 
-  it("keeps the MCP design and evaluation details in mcp-builder", async () => {
-    const skill = await readOwnedSkill("mcp-builder");
+  it("archives mcp-builder outside the active owner set", async () => {
+    const skill = await readFile(join(process.cwd(), "skills", "archived", "mcp-builder", "SKILL.md"), "utf8");
     expect(skill).toContain("structuredContent");
-    expect(skill).toContain("annotations");
-    expect(skill).toContain("readOnlyHint");
-    expect(skill).toContain("destructiveHint");
-    expect(skill).toContain("MCP Inspector");
+    await expect(readOwnedSkill("mcp-builder")).rejects.toThrow();
   });
 });
 

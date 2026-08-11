@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "parent_objective": "Describe the accepted parent goal",
+  "base_commit": "<git-sha-or-N/A>",
+  "base_branch": "<repository-default-branch>",
+  "shared_surfaces": [],
+  "workstreams": [
+    {
+      "id": "example-readonly-review",
+      "objective": "Review the bounded implementation against the accepted requirement",
+      "status": "planned",
+      "mode": "read-only",
+      "provider": "opencode",
+      "model": "selected-by-controller",
+      "session_id": null,
+      "last_activity_at": null,
+      "source_context": [],
+      "required_skills": [],
+      "dependencies": [],
+      "read_scope": [],
+      "write_scope": [],
+      "forbidden_scope": [],
+      "branch": null,
+      "worktree": null,
+      "expected_output": "Structured findings with file evidence",
+      "validation": [],
+      "evidence": [],
+      "handoff": null,
+      "blockers": []
+    }
+  ]
+}

@@ -103,7 +103,7 @@ Choose exactly one mode and state it in the prompt:
 
 - `strict-read-only`: inspect sources and return findings; no writes or mutating commands.
 - `read-and-run`: run explicitly allowed non-destructive checks. Test caches or artifacts may appear; capture before/after git state and report pollution without deleting it unless authorized.
-- `bounded-write`: edit only named paths inside an isolated worktree created by the main Agent or `parallel-worktree-pr-flow`. The prompt must list allowed files, tests, git policy, and forbidden operations.
+- `bounded-write`: edit only named paths inside isolation selected by the main Agent or `agent-workstream-orchestrator`. The prompt must list allowed files, tests, git policy, and forbidden operations.
 
 For `bounded-write`, do not permit edits in a dirty user worktree. Local commit is allowed only when the prompt explicitly grants it and an independent review has passed. Push, merge, reset, cleanup of user files, system package installation, production mutation, and secret access each require separate explicit authorization.
 
@@ -174,6 +174,16 @@ Do not repeat the whole delegated scan. Validate the claims that could change th
 - distinguish worker fact, worker inference, and controller-confirmed evidence.
 
 If validation contradicts the worker, the main Agent resolves it from primary evidence and records the discrepancy.
+
+## Failure Handling Checkpoint
+
+- Explicit quota or model failure: preserve the prompt contract and continue through the declared fallback chain.
+- Healthy progress events: keep waiting; elapsed time alone is not failure.
+- Repeated no-progress events, malformed output, or scope drift: stop that attempt, classify the failure, and retry once with a corrected bounded prompt or different model.
+- Material uncertainty: return `NEEDS_CONTEXT`; the controller decides or discusses before any write.
+- Contradictory completion claim: return `DONE_WITH_CONCERNS` and require controller reproduction. Never promote it to `DONE` from worker confidence alone.
+
+Before accepting the handoff, confirm the effective model, session, permissions, changed files, decisive evidence, and controller spot-check are all present.
 
 ## Output Contract
 

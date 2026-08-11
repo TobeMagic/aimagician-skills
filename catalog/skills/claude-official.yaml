@@ -2,7 +2,7 @@ sources:
   - id: anthropics-skills-selected
     type: github
     enabled: false
-    description: Selected Anthropic official skills (docx, frontend-design, mcp-builder, pdf, pptx, skill-creator, webapp-testing, xlsx)
+    description: Disabled reference source for selected document, interface, authoring, and testing capabilities
     github:
       repo: anthropics/skills
       ref: main
@@ -10,9 +10,7 @@ sources:
     assets:
       - path: docx
       - path: frontend-design
-      - path: mcp-builder
       - path: pdf
-      - path: pptx
       - path: skill-creator
       - path: webapp-testing
       - path: xlsx

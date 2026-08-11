@@ -253,7 +253,7 @@ def _fingerprint(spec: Any) -> dict[str, Any]:
         "corpus_sha256": spec.corpus_sha256,
         "protocol_sha256": spec.protocol_sha256,
         "prompt_sha256": canonical_sha256(
-            json.loads((SKILL_ROOT / "evals" / "evals.json").read_text(encoding="utf-8"))
+            json.loads((SKILL_ROOT / "assets" / "calibration" / "scenarios.json").read_text(encoding="utf-8"))
         ),
         "thresholds_sha256": canonical_sha256(spec.protocol.thresholds),
         "dependencies_sha256": canonical_sha256(dependency_basis),
@@ -539,7 +539,7 @@ def _portable_fingerprint(
         "corpus_sha256": spec.corpus_sha256,
         "protocol_sha256": spec.protocol_sha256,
         "prompt_sha256": canonical_sha256(
-            json.loads((SKILL_ROOT / "evals" / "evals.json").read_text(encoding="utf-8"))
+            json.loads((SKILL_ROOT / "assets" / "calibration" / "scenarios.json").read_text(encoding="utf-8"))
         ),
         "thresholds_sha256": canonical_sha256(spec.protocol.thresholds),
         "dependencies_sha256": fingerprint_sha256(components["dependencies"]),

@@ -7,7 +7,7 @@ description: Use when inspecting, debugging, inventorying, or safely operating
 metadata:
   related_skills:
     - llm-know-how-wiki
-    - linear-issue-workflow
+    - composio-tool-router
     - github-pr-workflow
 compatibility:
   tools:

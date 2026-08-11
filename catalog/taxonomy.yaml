@@ -76,11 +76,6 @@ skills:
     subgroup: skills
     tags: [skills, authoring]
     recommendedScopes: [global]
-  mcp-builder:
-    group: build
-    subgroup: integrations
-    tags: [mcp, server, tools]
-    recommendedScopes: [project]
   brainstorming:
     group: build
     subgroup: planning
@@ -219,11 +214,6 @@ skills:
     subgroup: image-generation
     tags: [image, cloudflare]
     recommendedScopes: [global]
-  modelscope_imagegen:
-    group: design
-    subgroup: image-generation
-    tags: [image, modelscope]
-    recommendedScopes: [global]
   multilingual-diversity-loop:
     group: design
     subgroup: ideation
@@ -246,11 +236,6 @@ skills:
     subgroup: pdf
     tags: [pdf, document]
     recommendedScopes: [global]
-  pptx:
-    group: documents
-    subgroup: slides
-    tags: [pptx, slides]
-    recommendedScopes: [global]
   window-pptx:
     group: documents
     subgroup: slides
@@ -267,16 +252,12 @@ skills:
     subgroup: github
     tags: [pull-request, review, merge, delivery]
     recommendedScopes: [global]
-  linear-issue-workflow:
+  agent-workstream-orchestrator:
     group: operate
-    subgroup: linear
-    tags: [linear, issue-tracking, composio, post-delivery]
+    subgroup: agent-orchestration
+    tags: [multi-agent, workstreams, sessions, codex, opencode, worktree, integration]
     recommendedScopes: [global]
-  parallel-worktree-pr-flow:
-    group: operate
-    subgroup: git
-    tags: [worktree, pr, integration]
-    recommendedScopes: [project]
+    description: Route independent work across tracked Codex or OpenCode sessions, optional worktrees, integration ownership, and parent-level acceptance.
   using-git-worktrees:
     group: operate
     subgroup: git

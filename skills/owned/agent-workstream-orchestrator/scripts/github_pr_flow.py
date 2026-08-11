@@ -110,7 +110,7 @@ def github_request(token: str, method: str, url: str, payload: dict[str, Any] | 
         "Accept": "application/vnd.github+json",
         "Authorization": f"Bearer {token}",
         "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "parallel-worktree-pr-flow",
+        "User-Agent": "agent-workstream-orchestrator",
     }
     if payload is not None:
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")

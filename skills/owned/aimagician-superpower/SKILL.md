@@ -16,6 +16,7 @@ metadata:
   capability_modules:
     - references/capabilities/intake-and-boundary.md
     - references/capabilities/state-and-continuity.md
+    - references/capabilities/project-memory.md
     - references/capabilities/spec-driven-development.md
     - references/capabilities/research-and-discovery.md
     - references/capabilities/engineering-exploration.md
@@ -35,7 +36,7 @@ metadata:
   preferred_companions:
     - cli-agent-delegator
     - vision-analysis
-    - parallel-worktree-pr-flow
+    - agent-workstream-orchestrator
     - llm-know-how-wiki
     - interface-design
     - webapp-testing
@@ -70,11 +71,12 @@ Run the full recovery gate for High work, phase/milestone work, resume/compactio
 
 1. Read this `SKILL.md` again before substantive action when context is missing or execution is resumed.
 2. Read the latest explicit user request, current git status, and the most recent relevant phase/task/handoff record first. Recent records are navigation aids: they identify the active target, latest checkpoint, and likely source paths.
-3. For planning-managed work, resolve authority by reading `.planning/STATE.md`, `.planning/PROJECT.md`, `.planning/CONTEXT.md`, the active roadmap/specification, and the requirement records routed by the recent record. `PROJECT.md` defines product intent and boundaries; `CONTEXT.md` is the canonical project-wide architecture, invariants, adopted decisions, verification baseline, and source index.
-4. Read project docs and the project knowledge base only when routed by `PROJECT.md`, `CONTEXT.md`, the active work, or a material uncertainty. Do not bulk-load all historical phases or wiki pages.
-5. Reconcile sources by authority, not recency alone. A newer explicit user decision wins; a recent summary cannot silently override an accepted specification, canonical decision, or runtime evidence.
-6. Discuss any unresolved material uncertainty before mutation. Material means it can change observable behavior, architecture, interfaces, stored data, security, scope, acceptance, or an irreversible action. A local, reversible implementation assumption may proceed only when it is recorded and cannot alter those surfaces.
-7. Resume from the last verified requirement-backed checkpoint. Do not restart solved discovery or skip a gate that remains relevant.
+3. When `.planning/memory/` exists, read `memory.md`, today's note, and only the older note explicitly routed by them or the active task. Memory accelerates recovery but never outranks accepted requirements, canonical project context, code, or runtime evidence.
+4. For planning-managed work, resolve authority by reading `.planning/STATE.md`, `.planning/PROJECT.md`, `.planning/CONTEXT.md`, the active roadmap/specification, and the requirement records routed by the recent record. `PROJECT.md` defines product intent and boundaries; `CONTEXT.md` is the canonical project-wide architecture, invariants, adopted decisions, verification baseline, and source index.
+5. Read project docs and the project knowledge base only when routed by `PROJECT.md`, `CONTEXT.md`, the active work, or a material uncertainty. Do not bulk-load all historical phases, memory notes, or wiki pages.
+6. Reconcile sources by authority, not recency alone. A newer explicit user decision wins; a recent summary or memory entry cannot silently override an accepted specification, canonical decision, or runtime evidence.
+7. Discuss any unresolved material uncertainty before mutation. Material means it can change observable behavior, architecture, interfaces, stored data, security, scope, acceptance, or an irreversible action. A local, reversible implementation assumption may proceed only when it is recorded and cannot alter those surfaces.
+8. Resume from the last verified requirement-backed checkpoint. Do not restart solved discovery or skip a gate that remains relevant.
 
 If adopted `.planning/PROJECT.md` or `.planning/CONTEXT.md` is absent or invalid, alignment blocks phase/milestone/High/resumed execution until repaired. Isolated Quick work may proceed without adopting planning, provided it does not touch shared architecture and its compact contract records the assumption. Never invent missing context. Never present a partial implementation as complete.
 
@@ -106,6 +108,7 @@ Load the smallest set of modules needed for the current stage.
 |---|---|
 | Goal alignment, boundary, risk classification, first discussion | `references/capabilities/intake-and-boundary.md` |
 | State, milestone, resume, pause, progress, checkpoint | `references/capabilities/state-and-continuity.md` |
+| Durable project decisions, bounded daily notes, promotion, forgetting, and resume context | `references/capabilities/project-memory.md` |
 | Formal specification, ambiguity scoring, locked requirements | `references/capabilities/spec-driven-development.md` |
 | Local discovery, architecture mapping, dependency and web research | `references/capabilities/research-and-discovery.md` |
 | Repository map, entry points, dependencies, data/control flow, blast radius | `references/capabilities/engineering-exploration.md` |
@@ -258,13 +261,24 @@ node scripts/engineering-route.mjs --kind prototype --risk medium
 
 - Broad exploration, deep research, bounded CLI work, tests, git checks, and independent reviewer roles: `cli-agent-delegator`.
 - Authorized image, screenshot, diagram, and other visual evidence acquisition: `vision-analysis`; pass its text evidence to the reasoning agent.
-- Parallel write lanes and worktree integration: `parallel-worktree-pr-flow`.
+- Independent tracked sessions, provider routing, parallel write lanes, and optional worktree integration: `agent-workstream-orchestrator`.
 - Wiki, durable engineering context, secret inventory, and sensitive scans: `llm-know-how-wiki`.
 - UI contracts, visual decisions, accessibility, and screenshots: `interface-design` and `webapp-testing`.
 - Pull requests, CI, reviewer findings, and merge readiness: `github-pr-workflow`.
 - Skill authoring and behavior evals: `skill-creator`.
 
 The main workflow owns routing, state, requirements, and completion. Companion skills own their specialized execution details.
+
+## Failure Handling And Completion Checkpoint
+
+- Missing or conflicting material context: stop mutation and discuss the decision; do not convert uncertainty into an implementation assumption.
+- Tool, agent, CI, tracker, or reviewer unavailable: distinguish an actual acceptance or merge protection from optional ceremony, use the safest fallback, and keep core delivery moving when correctness is still provable.
+- Test passes but requirement mapping, user-visible behavior, or integration wiring is absent: keep the task open and repair the gap.
+- Delegated result conflicts with primary evidence: controller evidence wins after reproduction; record the discrepancy.
+- Scope drift or unrelated dirty files: isolate the task, preserve user changes, and return to the locked objective.
+- Online-only evidence unavailable: close only the locally provable stage; never claim deployable completion without the accepted online gate.
+
+Before any completion claim, answer with evidence: Is every accepted requirement covered? Is the observable result verified at the correct risk tier? Are Blocker and Important findings zero or explicitly accepted by the user? Is the delivered commit or artifact identified? Can another agent resume from durable state without reconstructing hidden assumptions? Any `no` keeps the checklist open.
 
 ## Output Contract
 

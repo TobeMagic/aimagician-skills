@@ -77,7 +77,7 @@ Treat skill authoring like test-driven development for process documentation:
    - Use quantitative assertions where possible, such as "mentions all required artifacts", "asks no more than one blocking question", or "does not include installer hooks".
 5. Record eval metadata.
    - Store durable checks in tests when possible.
-   - For manual evals, use `evals/evals.json` or a phase validation note with prompt, expected behavior, observed behavior, and pass/fail result.
+   - In an owner repository, store manual evals at `quality/skill-evals/<skill-id>/evals.json`; otherwise use an external harness or phase validation note with prompt, expected behavior, observed behavior, and pass/fail result. Installed runtime packages must not depend on eval files.
 6. Iterate only on observed failures.
    - Tighten descriptions, add guardrails, or move heavy material into references.
 
@@ -91,7 +91,7 @@ Keep `SKILL.md` focused on the decision and workflow the agent must follow now. 
 - `research`: evidence gathering, literature, repo analysis, architecture comparison.
 - `design`: UI, brand, accessibility, metadata, motion, images, polish.
 - `documents`: README, PDF, Word, slides, spreadsheets.
-- `operate`: GitHub, Linear, cloud, releases, worktrees, project operations.
+- `operate`: GitHub, cloud, releases, agent workstreams, and project operations.
 - `strategy`: business, product, pricing, customers, marketing, growth.
 
 ## Guardrails
@@ -100,8 +100,19 @@ Keep `SKILL.md` focused on the decision and workflow the agent must follow now. 
 - Do not make broad trigger descriptions that hijack unrelated tasks.
 - Do not keep external install/update instructions in owned skills unless the skill's purpose is operating that tool.
 - Do not put large copied reference material into `SKILL.md`; link to a reference file when needed.
+- Keep eval corpora, generated reports, author biographies, source branding, and repository-specific policy outside the installable Skill package.
 - Do not claim a merged skill preserves a source workflow until baseline vs with-skill evidence or content regression tests prove it.
 - Do not use evals that only check wording; test the behavior or decision the skill is supposed to change.
+
+## Failure Handling And Checkpoint
+
+- Trigger overlaps a sibling Skill: narrow the description or merge the capability before adding a new public identity.
+- Referenced file is missing: fail the package check; do not leave a dead progressive-disclosure route.
+- Treatment improves prose but not behavior: reject it and revise against the failed pressure scenario.
+- Runtime package contains evals, source branding, project policy, or generated reports: move them to the owner repository's quality, docs, or planning surface.
+- Capability preservation is uncertain: keep the merge open and run controlled baseline/treatment scenarios.
+
+Before declaring a Skill ready, verify trigger and non-trigger cases, all referenced paths, taxonomy, runtime purity, one behavioral improvement, and one negative scenario.
 
 ## Output Contract
 

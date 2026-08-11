@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ownedRoot = join(process.cwd(), "skills", "owned");
+const evalRoot = join(process.cwd(), "quality", "skill-evals");
 
 async function runtimeFiles(root: string): Promise<string[]> {
   const found: string[] = [];
@@ -31,8 +32,7 @@ describe("distillation and Skill optimization capabilities", () => {
         "assets/templates/source-overview.md",
         "assets/templates/generated-skill.md",
         "assets/templates/test-prompts.json",
-        "scripts/validate-distillation.mjs",
-        "evals/evals.json"
+        "scripts/validate-distillation.mjs"
       ],
       scenarios: [
         "book-to-skills",
@@ -51,8 +51,7 @@ describe("distillation and Skill optimization capabilities", () => {
         "scripts/quality_check.py",
         "scripts/merge_research.py",
         "scripts/srt_to_transcript.py",
-        "scripts/download_subtitles.sh",
-        "evals/evals.json"
+        "scripts/download_subtitles.sh"
       ],
       scenarios: [
         "named-public-person",
@@ -71,8 +70,7 @@ describe("distillation and Skill optimization capabilities", () => {
         "scripts/audit-skill.mjs",
         "assets/templates/optimization-report.md",
         "assets/templates/experiment-record.json",
-        "assets/templates/judge-contract.md",
-        "evals/evals.json"
+        "assets/templates/judge-contract.md"
       ],
       scenarios: [
         "behavioral-skill-optimization",
@@ -108,7 +106,7 @@ describe("distillation and Skill optimization capabilities", () => {
       expect(skill.toLowerCase()).not.toContain("npx skills add");
 
       if (item.scenarios.length > 0) {
-        const evals = JSON.parse(await readFile(join(root, "evals", "evals.json"), "utf8")) as {
+        const evals = JSON.parse(await readFile(join(evalRoot, item.id, "evals.json"), "utf8")) as {
           scenarios: Array<{ id: string }>;
         };
         expect(evals.scenarios.map((scenario) => scenario.id)).toEqual(expect.arrayContaining(item.scenarios));

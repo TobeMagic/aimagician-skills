@@ -12,7 +12,12 @@ Archived IDs:
 - cloudflare-image-gen (owned, 2026-06-18; replaced by active modelscope_imagegen workflow)
 - design-md-brand-router (owned, 2026-06-25; merged into interface-design)
 - multilingual-diversity-loop (owned, 2026-06-25; archived from active default set)
+- pptx (owned, 2026-08-11; redundant with the active presentation capability)
+- modelscope_imagegen (owned, 2026-08-11; removed from the active runtime set)
+- mcp-builder (owned, 2026-08-11; project-specific protocol development belongs in engineering context)
+- linear-issue-workflow (owned, 2026-08-11; replaced by project preference plus composio-tool-router)
 
 Notes:
 - These entries will not be installed by bootstrap; catalog entries were removed/disabled.
+- Behavioral evals are stored outside runtime packages under `quality/skill-evals/<skill-id>`.
 - To restore, move contents back from archive into skills/owned or re-add catalog entries.

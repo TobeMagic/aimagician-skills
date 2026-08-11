@@ -108,7 +108,7 @@ describe("v4 Skillbird acceptance", () => {
     expect(installedIds(previewJson)).toEqual(expect.arrayContaining([
       "docx",
       "pdf",
-      "pptx",
+      "window-pptx",
       "xlsx"
     ]));
     await expectMissing(join(projectDir, ".claude", "skills", "docx", "SKILL.md"));
@@ -134,7 +134,7 @@ describe("v4 Skillbird acceptance", () => {
     expect(installedIds(appliedJson)).toEqual(expect.arrayContaining([
       "docx",
       "pdf",
-      "pptx",
+      "window-pptx",
       "xlsx"
     ]));
     await expectPath(join(projectDir, ".claude", "skills", "docx", "SKILL.md"));
@@ -162,10 +162,8 @@ describe("v4 Skillbird acceptance", () => {
 
     expect(preview.exitCode).toBe(0);
     const previewJson = JSON.parse(preview.stdout) as InstallJson;
-    expect(installedIds(previewJson)).toEqual(expect.arrayContaining([
-      "interface-design",
-      "modelscope_imagegen"
-    ]));
+    expect(installedIds(previewJson)).toContain("interface-design");
+    expect(installedIds(previewJson)).not.toContain("modelscope_imagegen");
     expect(installedIds(previewJson)).not.toContain("cloudflare-image-gen");
     expect(installedIds(previewJson)).not.toContain("design-md-brand-router");
     expect(installedIds(previewJson)).not.toContain("multilingual-diversity-loop");
@@ -197,9 +195,10 @@ describe("v4 Skillbird acceptance", () => {
       "composio-tool-router",
       "gcloud-ops-workflow",
       "github-pr-workflow",
-      "linear-issue-workflow",
-      "parallel-worktree-pr-flow"
+      "agent-workstream-orchestrator"
     ]));
+    expect(installedIds(previewJson)).not.toContain("linear-issue-workflow");
+    expect(installedIds(previewJson)).not.toContain("parallel-worktree-pr-flow");
     expect(installedIds(previewJson)).not.toContain("agentic-repo-explorer");
   });
 

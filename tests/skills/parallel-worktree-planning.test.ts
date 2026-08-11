@@ -19,9 +19,9 @@ const bootstrapScript = join(
   process.cwd(),
   "skills",
   "owned",
-  "parallel-worktree-pr-flow",
+  "agent-workstream-orchestrator",
   "scripts",
-  "bootstrap_parallel_worktrees.py"
+  "bootstrap_worktrees.py"
 );
 
 afterEach(async () => {
@@ -32,7 +32,7 @@ afterEach(async () => {
   );
 });
 
-describe("parallel worktree planning integration", () => {
+describe("agent workstream optional worktree integration", () => {
   it.skipIf(process.platform === "win32")(
     "automatically attaches new worktrees to local-private planning",
     async () => {
@@ -70,6 +70,7 @@ describe("parallel worktree planning integration", () => {
         streams: [{
           id: "lane-one",
           label: "Lane One",
+          mode: "worktree",
           group: "test",
           branch: "test/lane-one",
           worktree: target,

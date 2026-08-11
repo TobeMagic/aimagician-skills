@@ -3,7 +3,6 @@ name: github-pr-workflow
 description: Use when creating, inspecting, reviewing, updating, merging, or closing a GitHub pull request. Resolve repository-specific branch and merge protections first; use Linear through Composio only as optional post-delivery tracking.
 metadata:
   related_skills:
-    - linear-issue-workflow
     - composio-tool-router
     - cli-agent-delegator
 compatibility:
@@ -55,7 +54,7 @@ CI, reviewer bots, full regression suites, wiki records, screenshots, and deploy
 
 - Push only when authorized by the repository workflow or user.
 - Create a PR against the resolved project base with a compact summary, verification commands/results, known risk, and relevant visual evidence.
-- Link a Linear issue after the PR is created only if the task needs tracking. Route all Linear actions through `linear-issue-workflow` and Composio CLI.
+- Link a Linear issue after the PR is created only if the task needs tracking. Read the project's Linear preference when present, then route the action through `composio-tool-router` and Composio CLI; never require Linear for merge readiness unless the repository policy does.
 
 ### 3. Inspect Merge Readiness
 
@@ -68,6 +67,16 @@ CI, reviewer bots, full regression suites, wiki records, screenshots, and deploy
 - Merge only when the repository's required protections pass or an authorized maintainer waives them.
 - Record the merge commit and any required postmerge evidence.
 - After core merge work, delegate optional Linear status/comment/closure and wiki/report administration through the appropriate skill. These actions must not reopen code delivery unless they reveal a real acceptance gap.
+
+## Failure Handling And Checkpoint
+
+- Unknown base branch or merge policy: inspect repository evidence once, then ask rather than guessing.
+- `gh` unavailable or unauthenticated: report the exact limitation; keep verified local delivery ready and do not fabricate PR state.
+- Required check fails: diagnose the failing protection; advisory or missing optional automation does not block.
+- Branch changed after review: invalidate stale diff evidence and rerun the affected check.
+- Merge conflict or protected update: stop before destructive history changes and follow repository policy.
+
+Before merge, confirm the reviewed head SHA, resolved base, actual required protections, decisive local evidence, and unresolved finding count. After merge, capture the merge SHA; optional tracker or wiki work is a separate closure step.
 
 ## Output Contract
 

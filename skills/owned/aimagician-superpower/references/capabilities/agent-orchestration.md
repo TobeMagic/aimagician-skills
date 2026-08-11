@@ -65,4 +65,4 @@ The controller validates decision-changing claims without repeating the whole sc
 
 ## Parallel Safety
 
-Parallelize only independent tasks with disjoint write scopes and defined integration order. Use `parallel-worktree-pr-flow` for write-capable lanes. Keep shared-file edits sequential. One coordinator integrates and verifies the combined result. Child agents are forbidden by default; when allowed, they inherit the exact source of truth, skills, scope, permissions, command policy, evidence, and stop rules.
+Parallelize only independent tasks with disjoint write scopes and defined integration order. Use `agent-workstream-orchestrator` for tracked sessions and write-capable lanes. Keep shared-file edits sequential. One coordinator integrates and verifies the combined result. Child agents are forbidden by default; when allowed, they inherit the exact source of truth, skills, scope, permissions, command policy, evidence, and stop rules.

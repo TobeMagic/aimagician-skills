@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ownedRoot = join(process.cwd(), "skills", "owned");
+const evalRoot = join(process.cwd(), "quality", "skill-evals");
 const engineeringRoot = join(ownedRoot, "aimagician-superpower");
 const designRoot = join(ownedRoot, "interface-design");
 const engineeringRouter = join(engineeringRoot, "scripts", "engineering-route.mjs");
@@ -86,7 +87,7 @@ describe("expert engineering capability architecture", () => {
     expect(modules).toContain("Progressive Discovery Map");
     expect(modules).toContain("highest observable practical seam");
 
-    const evals = JSON.parse(await readFile(join(engineeringRoot, "evals", "evals.json"), "utf8")) as EvalFile;
+    const evals = JSON.parse(await readFile(join(evalRoot, "aimagician-superpower", "evals.json"), "utf8")) as EvalFile;
     expect(evals.scenarios.map((scenario) => scenario.id)).toEqual(expect.arrayContaining([
       "engineering-codebase-analysis",
       "engineering-feature-development",
@@ -210,7 +211,7 @@ describe("HTML universal design capability architecture", () => {
     expect(native.required_quality_checks.map((check: Pattern) => check.id)).not.toContain("browser-opens");
 
     const hybrid = runDesign(["--task", "html-presentation", "--deliverable", "hybrid", "--platform", "cross-platform"]);
-    expect(hybrid).toMatchObject({ owners: ["interface-design", "pptx"], final_owner: "pptx", handoff: true, mode: "prototype" });
+    expect(hybrid).toMatchObject({ owners: ["interface-design", "window-pptx"], final_owner: "window-pptx", handoff: true, mode: "prototype" });
     expect(hybrid.boundary).toContain("ppt-handoff.md");
   });
 
@@ -292,15 +293,14 @@ describe("HTML universal design capability architecture", () => {
     const coreFiles = [
       "SKILL.md",
       ...modules.map((module) => `references/capabilities/${module}`),
-      "scripts/design-router.mjs",
-      "evals/evals.json"
+      "scripts/design-router.mjs"
     ];
     const content = (await Promise.all(coreFiles.map((path) => readFile(join(designRoot, path), "utf8")))).join("\n");
     for (const forbidden of ["mattpocock", "Hallmark", "Huashu", "Nutlope", "alchaincyf", "github.com/"]) {
       expect(content).not.toContain(forbidden);
     }
 
-    const evals = JSON.parse(await readFile(join(designRoot, "evals", "evals.json"), "utf8")) as EvalFile;
+    const evals = JSON.parse(await readFile(join(evalRoot, "interface-design", "evals.json"), "utf8")) as EvalFile;
     expect(evals.scenarios.map((scenario) => scenario.id)).toEqual(expect.arrayContaining([
       "premium-product-landing",
       "operational-dashboard",
@@ -480,7 +480,7 @@ describe("README visual capability collaboration", () => {
     expect(integration).toContain("Launcher ready-state image");
     expect(integration).toContain("deterministic source");
     expect(integration).toContain("tracked GIF");
-    const evals = JSON.parse(await readFile(join(readmeRoot, "evals", "evals.json"), "utf8")) as EvalFile;
+    const evals = JSON.parse(await readFile(join(evalRoot, "github-readme-highstar", "evals.json"), "utf8")) as EvalFile;
     expect(evals.scenarios.map((scenario) => scenario.id)).toEqual(expect.arrayContaining([
       "repository-cover",
       "repository-demo-video",
@@ -494,7 +494,7 @@ describe("owned skill trigger contracts", () => {
     const interfaceFrontmatter = frontmatter(await readFile(join(designRoot, "SKILL.md"), "utf8"));
     const engineeringFrontmatter = frontmatter(await readFile(join(engineeringRoot, "SKILL.md"), "utf8"));
     const readmeFrontmatter = frontmatter(await readFile(join(ownedRoot, "github-readme-highstar", "SKILL.md"), "utf8"));
-    const pptxFrontmatter = frontmatter(await readFile(join(ownedRoot, "pptx", "SKILL.md"), "utf8"));
+    const pptxFrontmatter = frontmatter(await readFile(join(ownedRoot, "window-pptx", "SKILL.md"), "utf8"));
 
     expect(interfaceFrontmatter).toContain("README covers");
     expect(interfaceFrontmatter).toMatch(/narrated demo\s+videos/);
@@ -506,7 +506,7 @@ describe("owned skill trigger contracts", () => {
     expect(engineeringFrontmatter).toContain("implementing changes");
     expect(engineeringFrontmatter).toContain("debugging");
     expect(engineeringFrontmatter).toContain("refactoring");
-    expect(pptxFrontmatter).toContain(".pptx");
+    expect(pptxFrontmatter).toContain("PPTX");
     expect(pptxFrontmatter).toContain("deck");
   });
 

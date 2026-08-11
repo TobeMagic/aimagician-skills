@@ -13,12 +13,12 @@ from typing import Any
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="List, validate, or create parallel git worktrees from a registry JSON."
+        description="List, validate, or create optional git worktrees from a workstream registry."
     )
     parser.add_argument(
         "--registry-file",
         required=True,
-        help="Path to the parallel workstream registry JSON.",
+        help="Path to the workstream registry JSON.",
     )
     parser.add_argument(
         "--repo-root",
@@ -99,7 +99,7 @@ def find_repo_root(start: Path) -> Path:
 
 
 def normalize_streams(registry: dict[str, Any]) -> list[dict[str, Any]]:
-    raw = registry.get("streams", [])
+    raw = registry.get("workstreams", registry.get("streams", []))
     return [item for item in raw if isinstance(item, dict) and str(item.get("id", "")).strip()]
 
 
@@ -110,7 +110,7 @@ def select_streams(registry: dict[str, Any], args: argparse.Namespace) -> list[d
 
     if args.execute and not include_statuses:
         defaults = registry.get("default_bootstrap_statuses", [])
-        include_statuses = {str(item).strip() for item in defaults if str(item).strip()}
+        include_statuses = {str(item).strip() for item in defaults if str(item).strip()} or {"planned", "ready"}
 
     if args.group:
         streams = [item for item in streams if item.get("group") == args.group]
@@ -121,6 +121,8 @@ def select_streams(registry: dict[str, Any], args: argparse.Namespace) -> list[d
         streams = [item for item in streams if str(item.get("status", "")).strip() in include_statuses]
     if exclude_statuses:
         streams = [item for item in streams if str(item.get("status", "")).strip() not in exclude_statuses]
+    if args.execute:
+        streams = [item for item in streams if item.get("mode") in {"worktree", "integration"}]
     if args.limit > 0:
         streams = streams[: args.limit]
     return streams
@@ -150,37 +152,29 @@ def validate_registry(registry: dict[str, Any], registry_path: Path, repo_root: 
     seen_manifests: dict[str, str] = {}
     write_scope_owners: dict[str, str] = {}
 
-    manifest_template = registry.get("provider_manifest_template", "")
-    if manifest_template:
-        manifest_template_path = resolve_candidate_path(repo_root, registry_path, str(manifest_template))
-        if not manifest_template_path.exists():
-            issues.append(f"missing provider manifest template: {manifest_template_path}")
-
     for item in streams:
         stream_id = str(item.get("id", "")).strip()
         branch = str(item.get("branch", "")).strip()
         worktree = str(item.get("worktree", "")).strip()
         manifest = str(item.get("manifest_path", "")).strip()
-        group = str(item.get("group", "")).strip()
+        mode = str(item.get("mode", "")).strip()
         status = str(item.get("status", "")).strip()
         write_scope = [str(path).strip() for path in item.get("write_scope", []) if str(path).strip()]
-
-        if not group:
-            issues.append(f"{stream_id}: missing group")
-        if not status:
-            issues.append(f"{stream_id}: missing status")
-        if not branch:
-            issues.append(f"{stream_id}: missing branch")
-        if not worktree:
-            issues.append(f"{stream_id}: missing worktree")
-        if not manifest:
-            issues.append(f"{stream_id}: missing manifest_path")
-        if not write_scope:
-            issues.append(f"{stream_id}: empty write_scope")
 
         if stream_id in seen_ids:
             issues.append(f"duplicate stream id: {stream_id}")
         seen_ids[stream_id] = stream_id
+
+        if not status:
+            issues.append(f"{stream_id}: missing status")
+        if mode not in {"worktree", "integration"}:
+            continue
+        if not branch:
+            issues.append(f"{stream_id}: missing branch")
+        if not worktree:
+            issues.append(f"{stream_id}: missing worktree")
+        if not write_scope:
+            issues.append(f"{stream_id}: empty write_scope")
 
         if branch:
             owner = seen_branches.get(branch)
@@ -363,7 +357,7 @@ def main() -> None:
     registry_path = Path(args.registry_file).resolve()
     registry = load_registry(registry_path)
     repo_root = Path(args.repo_root).resolve() if args.repo_root else find_repo_root(registry_path.parent)
-    base_branch = args.base_branch or str(registry.get("base_branch", "master"))
+    base_branch = args.base_branch or str(registry.get("base_branch", "HEAD"))
 
     if args.validate:
         issues = validate_registry(registry, registry_path, repo_root)

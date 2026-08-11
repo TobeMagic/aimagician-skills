@@ -7,7 +7,7 @@ describe("managed source copy filter", () => {
     expect(shouldCopyManagedSource(join("skills", "owned", "window-pptx", "SKILL.md"))).toBe(true);
   });
 
-  it.each([".git", ".pytest_cache", "node_modules", "__pycache__"])(
+  it.each([".git", ".pytest_cache", "evals", "node_modules", "__pycache__"])(
     "excludes transient %s directories at any depth",
     (directory) => {
       expect(shouldCopyManagedSource(join(directory, "artifact.bin"))).toBe(false);

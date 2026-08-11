@@ -37,7 +37,7 @@ All conditions must hold:
 
 1. the controller has resolved requirements and design decisions;
 2. the task is short and independently verifiable;
-3. the controller created a clean isolated worktree or routed through `parallel-worktree-pr-flow`;
+3. the controller selected a clean bounded scope or routed through `agent-workstream-orchestrator` for durable isolation;
 4. `WRITE_SCOPE` is the exact write scope and lists every allowed path;
 5. tests and expected behavior are explicit;
 6. no public contract, migration, security boundary, production state, or user-owned dirty work is silently exposed;

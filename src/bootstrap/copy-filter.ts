@@ -4,6 +4,7 @@ const LOCAL_REFERENCE_REPOS_SEGMENT = `${sep}references${sep}_external_repos`;
 const TRANSIENT_DIRECTORY_NAMES = new Set([
   ".git",
   ".pytest_cache",
+  "evals",
   "node_modules",
   "__pycache__"
 ]);

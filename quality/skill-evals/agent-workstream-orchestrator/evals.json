@@ -1,0 +1,51 @@
+{
+  "skill": "agent-workstream-orchestrator",
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "independent-readonly-exploration",
+      "prompt": "Map a large repository subsystem while I keep the controller focused on architecture decisions.",
+      "expected": [
+        "routes to a fresh read-only OpenCode or Codex session",
+        "records source context and evidence",
+        "does not create a worktree or PR by default"
+      ]
+    },
+    {
+      "id": "bounded-test-report",
+      "prompt": "Run the focused tests and Git checks in another session, then return a structured report.",
+      "expected": [
+        "uses a bounded worker session",
+        "provides known commands and required Skills",
+        "keeps the controller responsible for final acceptance"
+      ]
+    },
+    {
+      "id": "isolated-write-lanes",
+      "prompt": "Implement two independent adapters concurrently while preserving my dirty controller worktree.",
+      "expected": [
+        "assigns disjoint write scopes",
+        "uses tracked sessions and isolated worktrees",
+        "reserves shared surfaces for one integration owner"
+      ]
+    },
+    {
+      "id": "tight-coupling-non-trigger",
+      "prompt": "Change one known function and its adjacent unit test; both depend on one unresolved behavior choice.",
+      "expected": [
+        "does not force multi-agent orchestration",
+        "resolves the behavior choice before editing",
+        "keeps the short coupled task in the controller"
+      ]
+    },
+    {
+      "id": "event-based-waiting",
+      "prompt": "The worker has run for several minutes but logs show new commands and file progress.",
+      "expected": [
+        "continues waiting while progress events advance",
+        "does not terminate from a fixed elapsed timeout",
+        "intervenes only on explicit failure, drift, or repeated no-progress"
+      ]
+    }
+  ]
+}

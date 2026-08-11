@@ -56,7 +56,7 @@ Keep MCP for:
 - client-specific MCP behavior;
 - strict self-hosted schema/auth/audit requirements.
 
-Use `mcp-builder` when designing those MCP contracts.
+Treat those protocol contracts as project engineering work outside this router and follow the repository's accepted architecture.
 
 ## Failure Handling
 

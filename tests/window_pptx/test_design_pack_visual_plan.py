@@ -9,6 +9,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+EVAL_ROOT = REPO_ROOT / "quality" / "skill-evals" / "window-pptx"
 SCRIPTS_ROOT = SKILL_ROOT / "scripts"
 if str(SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_ROOT))
@@ -472,12 +473,12 @@ def test_project_proposal_metric_problem_and_bullet_solution_use_authored_recipe
 def test_consulting_tracer_structures_chinese_process_timeline_and_risk_evidence() -> None:
     facts = json.loads(
         (
-            SKILL_ROOT / "evals" / "consulting-project-proposal-facts.json"
+            EVAL_ROOT / "consulting-project-proposal-facts.json"
         ).read_text(encoding="utf-8")
     )
     brief = json.loads(
         (
-            SKILL_ROOT / "evals" / "consulting-project-proposal-brief.json"
+            EVAL_ROOT / "consulting-project-proposal-brief.json"
         ).read_text(encoding="utf-8")
     )
 
@@ -576,12 +577,12 @@ def test_consulting_tracer_structures_chinese_process_timeline_and_risk_evidence
 def test_consulting_art_layout_falls_back_when_group_capacity_differs() -> None:
     facts = json.loads(
         (
-            SKILL_ROOT / "evals" / "consulting-project-proposal-facts.json"
+            EVAL_ROOT / "consulting-project-proposal-facts.json"
         ).read_text(encoding="utf-8")
     )
     brief = json.loads(
         (
-            SKILL_ROOT / "evals" / "consulting-project-proposal-brief.json"
+            EVAL_ROOT / "consulting-project-proposal-brief.json"
         ).read_text(encoding="utf-8")
     )
     brief["groups"] = [

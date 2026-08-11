@@ -18,7 +18,7 @@ from window_pptx.template_pack import adapt_template_pack, load_template_binding
 SCRIPT_ROOT = Path(__file__).resolve().parent
 SKILL_ROOT = SCRIPT_ROOT.parent
 NODE_BUILDER = SCRIPT_ROOT / "build_window_pptx_v6_reference_anchors.mjs"
-BASE_BINDINGS = SKILL_ROOT / "evals" / "v5.1-work-summary-bindings.json"
+BASE_BINDINGS = SKILL_ROOT / "assets" / "examples" / "work-summary-bindings.json"
 WORK_PAGES = (
     ("cover", "cover", "sparse"),
     ("agenda", "agenda", "medium"),

@@ -10,12 +10,12 @@ from typing import Any
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Inspect branch/worktree/manifest state for a parallel workstream registry."
+        description="Inspect branch, worktree, and handoff state for a workstream registry."
     )
     parser.add_argument(
         "--registry-file",
         required=True,
-        help="Path to the parallel workstream registry JSON.",
+        help="Path to the workstream registry JSON.",
     )
     parser.add_argument(
         "--repo-root",
@@ -80,14 +80,14 @@ def worktree_lookup(repo_root: Path) -> dict[str, dict[str, str]]:
     current: dict[str, str] = {}
     for line in (result.stdout or "").splitlines():
         if not line:
-            if current.get("path"):
-                mapping[current["path"]] = current
+            if current.get("worktree"):
+                mapping[current["worktree"]] = current
             current = {}
             continue
         key, _, value = line.partition(" ")
         current[key] = value.strip()
-    if current.get("path"):
-        mapping[current["path"]] = current
+    if current.get("worktree"):
+        mapping[current["worktree"]] = current
     return mapping
 
 
@@ -134,7 +134,7 @@ def collect_status(registry_path: Path, repo_root_override: str = "") -> dict[st
     registry = load_registry(registry_path)
     repo_root = Path(repo_root_override).resolve() if repo_root_override else find_repo_root(registry_path.parent)
     worktrees = worktree_lookup(repo_root)
-    streams = registry.get("streams", [])
+    streams = registry.get("workstreams", registry.get("streams", []))
     results: list[dict[str, Any]] = []
 
     for item in streams:
@@ -142,8 +142,10 @@ def collect_status(registry_path: Path, repo_root_override: str = "") -> dict[st
         if not stream_id:
             continue
         branch = str(item.get("branch", "")).strip()
-        worktree_path = resolve_worktree(repo_root, str(item.get("worktree", "")).strip())
-        manifest_path = (repo_root / str(item.get("manifest_path", "")).strip()).resolve()
+        worktree_raw = str(item.get("worktree", "") or "").strip()
+        worktree_path = resolve_worktree(repo_root, worktree_raw) if worktree_raw else None
+        handoff_raw = str(item.get("handoff", "") or "").strip()
+        handoff_path = (repo_root / handoff_raw).resolve() if handoff_raw else None
 
         local_exists = branch_exists(repo_root, branch) if branch else False
         remote_exists = remote_branch_exists(repo_root, branch) if branch else False
@@ -154,18 +156,21 @@ def collect_status(registry_path: Path, repo_root_override: str = "") -> dict[st
         results.append(
             {
                 "id": stream_id,
-                "group": item.get("group", ""),
+                "mode": item.get("mode", ""),
+                "provider": item.get("provider", ""),
+                "session_id": item.get("session_id"),
+                "last_activity_at": item.get("last_activity_at"),
                 "status": item.get("status", ""),
                 "branch": branch,
                 "local_branch_exists": local_exists,
                 "remote_branch_exists": remote_exists,
                 "ahead_of_remote": ahead,
                 "behind_remote": behind,
-                "worktree_path": str(worktree_path),
-                "worktree_registered": str(worktree_path) in worktrees,
-                "worktree_status": worktree_status(worktree_path),
-                "manifest_path": str(manifest_path),
-                "manifest_exists": manifest_path.exists(),
+                "worktree_path": str(worktree_path) if worktree_path else None,
+                "worktree_registered": bool(worktree_path and str(worktree_path) in worktrees),
+                "worktree_status": worktree_status(worktree_path) if worktree_path else "not-applicable",
+                "handoff_path": str(handoff_path) if handoff_path else None,
+                "handoff_exists": bool(handoff_path and handoff_path.exists()),
             }
         )
 
@@ -182,7 +187,9 @@ def print_text_report(payload: dict[str, Any]) -> None:
             f"branch_local={'yes' if item['local_branch_exists'] else 'no'}",
             f"branch_remote={'yes' if item['remote_branch_exists'] else 'no'}",
             f"worktree={item['worktree_status']}",
-            f"manifest={'yes' if item['manifest_exists'] else 'no'}",
+            f"provider={item['provider'] or '-'}",
+            f"session={item['session_id'] or '-'}",
+            f"handoff={'yes' if item['handoff_exists'] else 'no'}",
         ]
         if item["ahead_of_remote"] is not None and item["behind_remote"] is not None:
             summary.append(f"ahead={item['ahead_of_remote']}")
