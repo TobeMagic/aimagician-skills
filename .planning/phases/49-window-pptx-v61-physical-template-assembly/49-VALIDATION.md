@@ -62,7 +62,7 @@ read-only certification and was not a delivery dependency.
 
 | Command | Result | Notes |
 |---|---|---|
-| `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider tests/test_page_template_library.py tests/test_physical_assembly.py tests/test_v61_physical_assembly.py tests/test_v61_blind_review_runner.py tests/test_v61_blind_acceptance.py` | PASS | `115 passed, 4 skipped`; 3 JSON-schema deprecation warnings. |
+| `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider skills/owned/window-pptx/tests/test_page_template_library.py skills/owned/window-pptx/tests/test_physical_assembly.py skills/owned/window-pptx/tests/test_v61_physical_assembly.py skills/owned/window-pptx/tests/test_v61_blind_review_runner.py skills/owned/window-pptx/tests/test_v61_blind_acceptance.py` | PASS | `115 passed, 4 skipped`; 3 JSON-schema deprecation warnings. |
 | `PYTHONDONTWRITEBYTECODE=1 python skills/owned/window-pptx/scripts/validate_window_pptx_v61_physical_report.py --project-root …run10 --report …run10/evidence/physical-assembly-report.v1.json` | PASS | 15 slides, 15 distinct page IDs, 100% native editability, zero unresolved/unsafe parts. |
 | `PYTHONDONTWRITEBYTECODE=1 python skills/owned/window-pptx/scripts/validate_window_pptx_v61_clean_pack.py run --root …run10 --fingerprint …run10/physical-assembly-run-fingerprint.v1.json --private-root …/window-pptx/.private` | PASS | Clean-project and frozen-fingerprint checks pass. |
 | `python skills/owned/aimagician-superpower/scripts/workflow.mjs validate --project . --phase 49 --gate align` | PASS | Frozen planning alignment. |

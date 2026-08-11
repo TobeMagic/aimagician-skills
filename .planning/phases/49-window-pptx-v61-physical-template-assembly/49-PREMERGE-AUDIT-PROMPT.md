@@ -117,11 +117,11 @@ git status --short
 git rev-parse HEAD
 git branch --contains HEAD
 PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider \
-  tests/test_page_template_library.py \
-  tests/test_physical_assembly.py \
-  tests/test_v61_physical_assembly.py \
-  tests/test_v61_blind_review_runner.py \
-  tests/test_v61_blind_acceptance.py
+  skills/owned/window-pptx/tests/test_page_template_library.py \
+  skills/owned/window-pptx/tests/test_physical_assembly.py \
+  skills/owned/window-pptx/tests/test_v61_physical_assembly.py \
+  skills/owned/window-pptx/tests/test_v61_blind_review_runner.py \
+  skills/owned/window-pptx/tests/test_v61_blind_acceptance.py
 PYTHONDONTWRITEBYTECODE=1 python \
   skills/owned/window-pptx/scripts/validate_window_pptx_v61_physical_report.py \
   --project-root /mnt/d/growth_up_youth/pptx-v61-acceptance-20260811-run10 \
