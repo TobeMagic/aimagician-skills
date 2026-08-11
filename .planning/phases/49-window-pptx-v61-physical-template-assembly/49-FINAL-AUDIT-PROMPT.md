@@ -4,8 +4,8 @@ TASK_TYPE: audit
 MODALITY: text
 OBJECTIVE: Independently determine whether commit 09974c8 completes USR-V61-01 and Phase 49, using the frozen final implementation plus externally captured clean-room, physical-lineage, rule-QA, and blind-review evidence.
 DELIVERABLE: A completion-audit report with one PASS | FAIL | NOT_RUN row for each V61 requirement, finding counts, exact evidence, and final recommendation APPROVED or REVISE.
-REVIEW_POINT: Commit 09974c8 on integration/window-pptx-v61-final-20260808, before merge or push.
-REVIEW_BINDING: --review-ref 09974c8
+REVIEW_POINT: This exact final-audit contract commit on integration/window-pptx-v61-final-20260808, before merge or push.
+REVIEW_BINDING: supplied by the controller as --review-ref for this exact commit.
 
 SOURCE_OF_TRUTH:
 - .planning/REQUESTS.md: USR-V61-01.
@@ -58,7 +58,7 @@ FORBIDDEN_SCOPE:
 
 PERMISSION_MODE: read-and-run
 WRITE_SCOPE: NONE
-ALLOWED_COMMANDS: git status/log/show/diff/ls-files/rev-parse; rg; sed; find/stat/sha256sum; JSON read; node skills/owned/aimagician-superpower/scripts/workflow.mjs validate/status/trace; PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider for the named tests only; PYTHONDONTWRITEBYTECODE=1 python scripts/validate_window_pptx_v61_physical_report.py with the named report/project only.
+ALLOWED_COMMANDS: git status/log/show/diff/ls-files/rev-parse/branch --contains only; printf of a fixed literal only; rg; sed; find/stat/sha256sum; read-only JSON inspection including `node -e` that only calls fs.readFileSync/JSON.parse/console.log and reads only named non-private evidence; node skills/owned/aimagician-superpower/scripts/workflow.mjs validate/status/trace; PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider for the named tests only; PYTHONDONTWRITEBYTECODE=1 python scripts/validate_window_pptx_v61_physical_report.py --project-root <run10-root> --report <run10-report> only. No other shell, node, or Python forms are authorized.
 TESTS_AND_EVIDENCE:
 - Verify exact review-point provenance and frozen worktree integrity before/after.
 - Run/inspect Phase 49 workflow align, spec, trace, and premerge gates as permitted; report any gate unavailable or failing.
