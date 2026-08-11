@@ -63,9 +63,17 @@ nitpicks are retained in the blind report and do not block the locked bar.
 
 ## UAT Decision
 
-**Status:** PASS for functional clean-room and visual UAT.
+**Status:** PASS
 
 **Residual risk:** The release delivery sequence is deliberately still open:
 fresh scoped premerge approval, merge/push, pushed-SHA source/install parity,
 and a fresh completion audit are tracked as V61-REL-01, not treated as UAT
 failures.
+
+## Delivery Closure
+
+The scoped premerge audit approved `b022859` with zero Blocker/Important.
+`master` was pushed at `f6dc1f2`, then Codex/OpenCode installs were synchronized
+and both exactly matched the pushed source tree. Fresh completion audit
+`ses_010f71171ffeWoSR4Im1IZINM1` returned DONE/APPROVED with zero
+Blocker/Important. **Delivery status: PASS.**

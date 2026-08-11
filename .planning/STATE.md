@@ -5,15 +5,15 @@ milestone_name: Window-PPTX Physical Template Assembly
 current_phase: 49
 current_phase_name: Physical Template Assembly and Work-Report Acceptance
 status: in_progress
-stopped_at: v6.1 checkpoint merged into isolated stabilization worktree; page-index and recursive OPC blockers are being repaired
-last_updated: "2026-08-08T22:10:00+08:00"
-last_activity: 2026-08-08
+stopped_at: v6.1 Phase 49 evidence is accepted on pushed master f6dc1f2; workflow completion gate and terminal handoff are pending
+last_updated: "2026-08-11T12:20:00+08:00"
+last_activity: 2026-08-11
 progress:
   total_phases: 51
-  completed_phases: 45
+  completed_phases: 46
   total_plans: 50
-  completed_plans: 48
-  percent: 88
+  completed_plans: 49
+  percent: 90
 ---
 
 # Project State
@@ -26,12 +26,12 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v6.1 Phase 49 stabilizes certified physical-page assembly
-before the approved `pptx-studio` v7 migration. The current checkpoint is not
-release-ready: non-first-page metadata, direct-use eligibility, style
-clustering, nested OPC traversal, recursive verification, and package
-deduplication are active blockers. v6.0 remains completed historical evidence;
-the previous Phase 41 GO remains invalid. Phase 42 restored ground truth;
+**Current focus:** v6.1 Phase 49 is complete on pushed master `f6dc1f2`.
+Its certified physical-page assembly passed clean-room generation, recursive
+OPC/editability QA, three independent blind reviews, fresh premerge approval,
+source/Codex/OpenCode install parity, and a fresh pushed-master completion
+audit. v6.0 remains completed historical evidence; the previous Phase 41 GO
+remains invalid. Phase 42 restored ground truth;
 Phases 43–48 implemented real private
 catalog acquisition, template mining, selection-to-materialization, three
 reference-grade anchors, fifteen-scenario/ordinary-model coverage, and fresh
@@ -69,8 +69,8 @@ fully independent AI blind-review contexts for v6 acceptance.
 Milestone: v6.1 Window-PPTX Physical Template Assembly
 Current Phase: 49
 Current Phase Name: Physical Template Assembly and Work-Report Acceptance
-Status: In Progress — release blocked pending stabilization and acceptance
-Last Activity: 2026-08-08
+Status: In Progress — all acceptance evidence PASS; workflow completion gate pending on pushed master `f6dc1f2`
+Last Activity: 2026-08-11
 
 ### Preserved Control-Plane History
 

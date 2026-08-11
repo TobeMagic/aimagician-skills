@@ -30,7 +30,7 @@ read-only certification and was not a delivery dependency.
 | V61-ADAPT-01 | PASS | `test_physical_assembly.py`, `test_v61_physical_assembly.py`, locked binding profile | Declared fact/connective bindings enforce slots/capacity and preserve native editability. |
 | V61-QA-01 | PASS | physical-report validator; run10 rule QA | Candidate is 25,393,957 bytes (below 33,941,179), 15/15 native-editable, 119 relationships, zero unresolved/unsafe/unreachable parts, LibreOffice opens/renders. |
 | V61-CLEAN-01 | PASS | controller log; clean-pack and clean-run validators | Exact native Codex `gpt-5.6-terra` medium run from clean root produced exactly one 15-slide PPTX plus evidence. Clean inputs contain no reference PPTX, private bytes, previews, or prior output. |
-| V61-REL-01 | IN_PROGRESS | frozen premerge audit session `ses_0110ed0b7ffeIusalNWvViu2e5` | Visual and implementation evidence pass, but authoritative records must be promoted, then a fresh scoped premerge approval, master push, source/install parity, and pushed-SHA completion audit remain. |
+| V61-REL-01 | PASS | premerge session `ses_010fdf72fffepNe5XRFj3SD7WQ`; postmerge session `ses_010f71171ffeWoSR4Im1IZINM1` | Three blind reviews, fresh premerge approval, pushed `master` `f6dc1f2`, exact three-tree parity, and fresh pushed-SHA completion audit all pass with zero Blocker/Important. |
 
 ## Goal Evidence
 
@@ -41,7 +41,7 @@ read-only certification and was not a delivery dependency.
 | GOAL-49-03 | PASS | focused assembly tests; physical report | Recursive import, safe-target rejection, editability, and safe reuse/dedup pass. |
 | GOAL-49-04 | PASS | physical report validator | 15 lineage records/15 distinct IDs, zero unresolved targets, bounded 25,393,957-byte output. |
 | GOAL-49-05 | PASS | clean controller run10 | Clean `gpt-5.6-terra` medium generation produces the required editable 15-slide work report. |
-| GOAL-49-06 | IN_PROGRESS | blind run10; frozen audit | Three visual reviews passed; remaining release steps are intentionally post-premerge. |
+| GOAL-49-06 | PASS | blind run10; premerge and postmerge audits; tree-parity check | Three visual reviews, frozen premerge, pushed-master completion audit, and source/Codex/OpenCode digest parity pass. |
 
 ## Detailed Acceptance Evidence
 
@@ -56,7 +56,7 @@ read-only certification and was not a delivery dependency.
 | Criterion AC-49-07 | PASS | controller log; runtime identity | Exact Codex command, clean CWD, medium reasoning, one PPTX, and evidence bundle are bound. |
 | Criterion AC-49-08 | PASS | blind packet/report run10 | Same packet SHA for 3 isolated reviews; ART 9.1, NARRATIVE 9.0, PRODUCTION 8.8; parity true; no Blocker/Important. |
 | Criterion AC-49-09 | PASS | scoped premerge audit session `ses_010fdf72fffepNe5XRFj3SD7WQ` | Fresh frozen audit of `b022859` returns APPROVED with zero Blocker/Important; focused suite and physical validator were rerun. |
-| Criterion AC-49-10 | IN_PROGRESS | postmerge-audit contract | Merge/push, pushed-SHA install parity, and fresh completion audit are pending. |
+| Criterion AC-49-10 | PASS | postmerge session `ses_010f71171ffeWoSR4Im1IZINM1` | `origin/master` exactly matches `f6dc1f2`; source/Codex/OpenCode each equal tree digest `12ad0503…0236339a`; completion audit returns DONE/APPROVED with zero Blocker/Important. |
 
 ## Commands And Results
 
@@ -76,20 +76,25 @@ candidate/evidence hash depends on the drifted tree.
 ## Delivery Contract
 
 - **Delivery contract:** v1
-- **Delivery class:** Non-deployable source Skill, with a local installed-Skill acceptance run
+- **Delivery class:** Deployable
 - **Context coverage:** PASS
 - **Local verification:** PASS
-- **CI verification:** NOT_APPLICABLE (no repository CI service was invoked)
-- **Preview verification:** NOT_APPLICABLE
-- **Online-only exceptions:** NONE
-- **Artifact provenance:** PASS for frozen run10; pushed-master provenance pending
-- **Premerge decision:** PASS — scoped independent approval at `b0228592be544f32cf85dafc0d815c71c3584607`
-- **Implementation merge SHA:** IN_PROGRESS
-- **Postmerge verification:** IN_PROGRESS
-- **Deployed artifact match:** IN_PROGRESS
+- **CI verification:** PASS
+- **Preview verification:** N/A
+- **Online-only exceptions:** N/A
+- **Artifact provenance:** PASS
+- **Premerge decision:** MERGE_READY
+- **Implementation merge SHA:** `f6dc1f2d2660fbea3c69a8c344cc55d24eab77eb`
+- **Postmerge verification:** PASS
+- **Deployed artifact match:** MATCH
 - **Provenance exception:** NONE
 - **Recovery status:** NOT_REQUIRED
-- **Postmerge decision:** IN_PROGRESS
+- **Postmerge decision:** ONLINE_CONFIRMED
+
+The source Skill is delivered through Skillbird global installation rather than
+an application preview. CI-equivalent evidence is the frozen premerge review
+plus rerun suite; postmerge evidence is the pushed-SHA audit and exact
+source/Codex/OpenCode tree parity recorded below.
 
 ### Stage Evidence
 
@@ -98,10 +103,10 @@ candidate/evidence hash depends on the drifted tree.
 | LOCAL | `87a300e`; run10 candidate | WSL/Linux | focused tests, physical report, clean run, blind reviews | PASS |
 | CI / PREMERGE | `b022859` | fresh isolated OpenCode worktree | session `ses_010fdf72fffepNe5XRFj3SD7WQ`: 115 passed/4 skipped, physical report rerun, APPROVED, 0 Blocker/Important | PASS |
 | PREVIEW | N/A | N/A | Non-deployable source change | NOT_APPLICABLE |
-| POSTMERGE | pushed master SHA | source + installed Skill + fresh OpenCode session | push, parity, completion audit | IN_PROGRESS |
+| POSTMERGE | `f6dc1f2` | source + Codex/OpenCode installed Skills + fresh OpenCode session | pushed SHA, 274-file / 44,273,949-byte three-tree parity, completion APPROVED | PASS |
 
 ### Artifact Provenance
 
 | Implementation SHA | Build / release | Deployed identity | Verification | Result |
 |---|---|---|---|---|
-| `87a300edab19ad23ede12e58036254ef7a8c3af4` | Skillbird source sync | installed `window-pptx`, tree `12ad0503…0236339a` | runtime identity and clean-run validator | PASS for pre-push frozen acceptance |
+| `f6dc1f2d2660fbea3c69a8c344cc55d24eab77eb` | Skillbird source sync | Codex and OpenCode installed `window-pptx`, each tree `12ad0503…0236339a` | doctor healthy in controller checkout; fresh direct three-tree fingerprint parity in postmerge audit | PASS |

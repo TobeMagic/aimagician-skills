@@ -2,6 +2,20 @@
 
 **Updated:** 2026-08-11
 
+**Status:** Complete
+**Provider:** OpenCode
+**Primary model:** `sub2api_openai/gpt-5.6-terra`
+**Model:** `sub2api_openai/gpt-5.6-terra`
+**Attempt chain:** `sub2api_openai/gpt-5.6-terra` medium → DONE
+**Fallback reason:** NONE
+**Session:** `ses_010f71171ffeWoSR4Im1IZINM1`
+**Run status:** DONE
+**Review point:** `f6dc1f2d2660fbea3c69a8c344cc55d24eab77eb`
+**Controller spot-check:** Re-ran focused suite and physical validator; verified
+`origin/master` and source/Codex/OpenCode 274-file tree parity.
+**Blocker:** 0
+**Important:** 0
+
 ## First Independent Evidence Audit (not the premerge approval)
 
 - **Provider/model:** OpenCode, `sub2api_openai/gpt-5.6-terra` medium; fallback
@@ -59,16 +73,48 @@ The audit passed V61-LIB-01 through V61-CLEAN-01, GOAL-49-01 through
 GOAL-49-05, AC-49-01 through AC-49-09. It correctly leaves V61-REL-01,
 GOAL-49-06, and AC-49-10 for the pushed-master delivery sequence.
 
-## Pending Completion Audit
+## Pushed-Master Completion Audit
 
-1. **Completion audit:** fresh OpenCode context frozen to pushed `master`; must
-   verify source/install parity and return DONE with zero Blocker/Important.
+- **Provider/model:** OpenCode, `sub2api_openai/gpt-5.6-terra` medium; fallback
+  `sub2api_openai/gpt-5.6-sol` declared but unused.
+- **Session:** `ses_010f71171ffeWoSR4Im1IZINM1`.
+- **Review point/master:** `f6dc1f2d2660fbea3c69a8c344cc55d24eab77eb`.
+- **Result:** `DONE` / **APPROVED**, 0 Blocker, 0 Important.
+- **Scope:** PASS — fresh frozen worktree, read-and-run only, no writes/network/
+  private root/PPTX/PNG reads/uploads/generation/child agents.
+- **Reruns:** focused suite `115 passed, 4 skipped`; physical validator PASS;
+  align/spec PASS.
+- **Parity:** source, Codex installed Skill, and OpenCode installed Skill all
+  have `12ad0503dbef130f1bfecbef53b8702c4c50abb11d5d4d8212dab4740236339a`,
+  274 files, and 44,273,949 bytes.
+
+The frozen audit notes that its temporary checkout omits ignored `dist/`, so it
+could not independently execute the Skillbird doctor entrypoint there. This is
+a non-blocking record-keeping nitpick: controller-side doctor was healthy, and
+the stricter direct three-tree parity check passed in the independent audit.
+
+## Completion Coverage Matrix
+
+| Requirement or goal | Evidence | Independent audit | Decision |
+|---|---|---|---|
+| V61-LIB-01 | PASS | PASS | PASS |
+| V61-SEL-01 | PASS | PASS | PASS |
+| V61-ASM-01 | PASS | PASS | PASS |
+| V61-ADAPT-01 | PASS | PASS | PASS |
+| V61-QA-01 | PASS | PASS | PASS |
+| V61-CLEAN-01 | PASS | PASS | PASS |
+| V61-REL-01 | PASS | PASS | PASS |
+| GOAL-49-01 | PASS | PASS | PASS |
+| GOAL-49-02 | PASS | PASS | PASS |
+| GOAL-49-03 | PASS | PASS | PASS |
+| GOAL-49-04 | PASS | PASS | PASS |
+| GOAL-49-05 | PASS | PASS | PASS |
+| GOAL-49-06 | PASS | PASS | PASS |
 
 ## Closure Decision
 
-**Status:** IN_PROGRESS — premerge approved; pushed-master completion evidence
-is outstanding.
+**Status:** APPROVED / COMPLETE.
 
-Evidence is sufficient for implementation, UAT, and premerge. V61-REL-01 must
-not pass before pushed-master identity, installed-Skill parity, and completion
-audit are recorded.
+All Phase 49 requirements and goals have passing, hash-bound evidence. The five
+blind-review visual polish notes remain documented Nitpicks only; Phase 50/v7
+work remains explicitly deferred.

@@ -1,7 +1,7 @@
 # Phase 49: Physical Template Assembly and Work-Report Acceptance - Summary
 
-**Completed:** NOT_COMPLETE
-**Status:** In Progress — release-closure sequence remaining
+**Completed:** 2026-08-11
+**Status:** Complete
 
 ## Outcome to Date
 
@@ -15,9 +15,7 @@ three isolated visual-review passes.
 ## Requirement Coverage
 
 - **PASS:** V61-LIB-01, V61-SEL-01, V61-ASM-01, V61-ADAPT-01, V61-QA-01,
-  V61-CLEAN-01.
-- **IN_PROGRESS:** V61-REL-01 — premerge approval, push, parity, and
-  pushed-SHA completion audit are deliberately outstanding.
+  V61-CLEAN-01, V61-REL-01.
 
 ## Frozen Acceptance Facts
 
@@ -40,11 +38,25 @@ three isolated visual-review passes.
 - This summary, validation, UAT, and audit now contain durable evidence rather
   than stale pre-implementation placeholders.
 
+## Delivery Closure
+
+- Pushed `master`: `f6dc1f2d2660fbea3c69a8c344cc55d24eab77eb`.
+- Source, Codex, and OpenCode installs: exact tree SHA-256
+  `12ad0503dbef130f1bfecbef53b8702c4c50abb11d5d4d8212dab4740236339a`
+  (274 files, 44,273,949 bytes each).
+- Fresh pushed-master completion audit: session
+  `ses_010f71171ffeWoSR4Im1IZINM1`, `DONE` / `APPROVED`, zero Blocker and
+  Important.
+
+## Project Context Promotion
+
+| Action | Context ID | Project context entry | Source phase | Result |
+|---|---|---|---|---|
+| NO_CHANGE | CTX-PPTX-001 / CTX-PPTX-002 | Existing physical-template and clean-room control-plane context remains authoritative | Phase 49 | PASS |
+
 ## Residual Risk and Next Action
 
-The scoped fresh premerge audit at `b022859` is APPROVED (zero Blocker and
-Important). The only remaining release risk is pushed-master provenance:
-push the exact approved implementation, re-sync `window-pptx`, prove
-source/install parity, and run the fresh pushed-master completion audit. No
-`pptx-studio` rename or private-library pruning begins before that sequence
-passes.
+Phase 49 is complete. Five visual notes are retained as non-blocking Nitpicks.
+The next separately planned work is Phase 50/v7 `pptx-studio`: private-library
+triage, Agnes deck/page/region cataloging, component retrieval, and eventual
+rename/removal. It was not started here.

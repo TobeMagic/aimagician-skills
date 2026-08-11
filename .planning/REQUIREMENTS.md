@@ -565,20 +565,20 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | v6.1 Phase | Status |
 |-------------|------------|--------|
-| V61-LIB-01 | Phase 49 | In Progress |
-| V61-SEL-01 | Phase 49 | In Progress |
-| V61-ASM-01 | Phase 49 | In Progress |
-| V61-ADAPT-01 | Phase 49 | In Progress |
-| V61-QA-01 | Phase 49 | In Progress |
-| V61-CLEAN-01 | Phase 49 | Planned |
-| V61-REL-01 | Phase 49 | Planned |
+| V61-LIB-01 | Phase 49 | Complete |
+| V61-SEL-01 | Phase 49 | Complete |
+| V61-ASM-01 | Phase 49 | Complete |
+| V61-ADAPT-01 | Phase 49 | Complete |
+| V61-QA-01 | Phase 49 | Complete |
+| V61-CLEAN-01 | Phase 49 | Complete |
+| V61-REL-01 | Phase 49 | Complete |
 
 **v6.1 Coverage:**
 - v6.1 requirements: 7 total
 - Mapped to Phase 49: 7
-- Complete: 0
-- In Progress: 5
-- Planned: 2
+- Complete: 7
+- In Progress: 0
+- Planned: 0
 - Unmapped: 0
 
 ---

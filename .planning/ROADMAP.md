@@ -823,8 +823,12 @@ does not preserve `window-pptx` as a long-term public identity.
 **Requirements:** [V61-LIB-01, V61-SEL-01, V61-ASM-01, V61-ADAPT-01, V61-QA-01, V61-CLEAN-01, V61-REL-01]
 **Status:** In Progress
 
+**Closure note:** all evidence is PASS (pushed master `f6dc1f2`, fresh
+completion audit APPROVED); the workflow completion gate is the final control
+plane action.
+
 ## v6.1 Progress
 
 | Phase | Status | Completed |
 |-------|--------|-----------|
-| 49. Physical Template Assembly and Work-Report Acceptance | In Progress | — |
+| 49. Physical Template Assembly and Work-Report Acceptance | In Progress — completion gate pending | 2026-08-11 evidence complete |
