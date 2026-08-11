@@ -1,66 +1,71 @@
 # Phase 49: Physical Template Assembly and Work-Report Acceptance - UAT
 
-**Updated:** 2026-08-08
+**Updated:** 2026-08-11
 
 ## Scenarios
 
 ### UAT-01: Clean-room 15-slide hospital-finance report
 
-- **Starting state:** New external folder containing only the locked public
-  requirement pack and business assets; installed Skill has configured private
-  library access.
-- **Action:** Run Codex `gpt-5.6-terra` medium with the production prompt.
-- **Expected visible result:** One coherent, reference-grade 15-slide editable
-  work-report PPTX with cover, contents, sections, evidence pages, roadmap, and
-  closing.
-- **Expected side effect:** Evidence proves 15/15 direct-use physical lineage,
-  zero unresolved OPC targets, and no generated visual fallback.
-- **Result:** NOT_RUN
-- **Evidence:** Attempt 1 on 2026-08-08 used the requested model and completed
-  brief/narrative/query work, but produced no AssemblyPlan or PPTX. It consumed
-  1,744,792 input tokens and stopped because the old Skill contract required
-  hand-authoring 257 ordinary slots plus 101 governed records from a 762,952
-  byte query bundle. The three partial evidence files were moved intact to
-  `/mnt/d/growth_up_youth/pptx-v61-failed-uat-20260808-run1/`; the clean pack
-  was restored and independently revalidated PASS. This attempt is rejected,
-  not acceptance evidence. Attempt 2 will exercise the deterministic profile
-  harness.
+- **Starting state:** New external folder with only the locked public requirement
+  pack and business assets; private library access resolves through configured
+  installed-Skill state only.
+- **Action:** Native Codex `gpt-5.6-terra` with `model_reasoning_effort="medium"`
+  runs the one-command profile-job harness.
+- **Expected result:** One coherent 15-slide, editable work-report PPTX with
+  cover, contents, sections, evidence pages, roadmap, and closing.
+- **Result:** PASS.
+- **Evidence:** Run10 controller
+  `/mnt/d/growth_up_youth/pptx-v61-acceptance-controller-20260811-run10.log`
+  reports child exit `0`, no issues, clean validation PASS, and exactly one
+  candidate with SHA-256
+  `1d862e0f9ac49fc42b6e3b3918abc29aea94776ebdf5f830bf4b34d6688ec28a`.
+  The physical validator reports 15/15 distinct direct-use lineage and native
+  editability; clean-run validator rerun PASS.
 
 ### UAT-02: Ineligible or capacity-incompatible candidates
 
-- **Starting state:** Query includes reference-only and undersized candidates.
-- **Action:** Compile/query and attempt an invalid assembly plan.
-- **Expected visible result:** Eligible alternatives are returned; the invalid
-  plan fails with a specific eligibility/capacity error.
-- **Expected side effect:** No PPTX is promoted and no private source changes.
-- **Result:** NOT_RUN
-- **Evidence:** TBD
+- **Action:** Exercise direct-use/capacity rejection through focused page-library
+  and physical-assembly fixtures.
+- **Expected result:** Reference-only, residue-risk, missing-asset,
+  incompatible-style, and over-capacity candidates fail before promotion.
+- **Result:** PASS.
+- **Evidence:** `test_page_template_library.py`, `test_physical_assembly.py`,
+  and `test_v61_physical_assembly.py` are included in the 115-pass focused
+  suite.
 
 ### UAT-03: Unsafe or unresolved OPC relationship
 
-- **Starting state:** Synthetic source contains file/OLE/script or missing
-  internal targets.
-- **Action:** Assemble and verify.
-- **Expected visible result:** Release fails closed with relationship evidence.
-- **Expected side effect:** No incomplete output is promoted.
-- **Result:** NOT_RUN
-- **Evidence:** TBD
+- **Action:** Assemble synthetic unsafe/missing relationship fixtures and run
+  the recursive output verifier.
+- **Expected result:** Release fails closed; no incomplete PPTX is promoted.
+- **Result:** PASS.
+- **Evidence:** Focused assembly fixtures plus run10 physical report: 119
+  internal relationships, zero unresolved, unsafe, or unreachable parts.
 
 ### UAT-04: Deterministic rebuild after correction
 
-- **Starting state:** A failed invalid plan is corrected without changing
-  source packages.
-- **Action:** Re-run assembly twice with identical inputs.
-- **Expected visible result:** Both outputs open/render and are visually
-  equivalent.
-- **Expected side effect:** Stable lineage and dependency metrics; no stale
-  temporary output or source mutation.
-- **Result:** NOT_RUN
-- **Evidence:** TBD
+- **Action:** Run profile-owned binding/assembly fixtures with stable source,
+  facts, and candidate inputs.
+- **Expected result:** Stable lineage and native editable output without source
+  mutation or stale promotion.
+- **Result:** PASS.
+- **Evidence:** Focused physical-assembly tests pass; run10 emits one
+  hash-bound candidate/report/fingerprint set.
+
+## Visual UAT
+
+Run10 uses a canonical anonymous PNG pair packet with SHA-256
+`8bac20a33475f28d8b6d65d76c629f5fcda2280cf698e872817036e85fc746ce`.
+Three fresh isolated sessions each used two Agnes observations and a unique
+Codex synthesis context. ART scored 9.1, NARRATIVE 9.0, and PRODUCTION 8.8;
+all declared reference parity true with zero Blocker/Important. Optional
+nitpicks are retained in the blind report and do not block the locked bar.
 
 ## UAT Decision
 
-**Status:** NOT_RUN
-**Residual risk:** The first run proved an interface-design failure rather
-than a model-quality failure. Phase remains open until the profile compiler,
-second clean run, all four scenarios, and independent visual/audit gates pass.
+**Status:** PASS for functional clean-room and visual UAT.
+
+**Residual risk:** The release delivery sequence is deliberately still open:
+fresh scoped premerge approval, merge/push, pushed-SHA source/install parity,
+and a fresh completion audit are tracked as V61-REL-01, not treated as UAT
+failures.

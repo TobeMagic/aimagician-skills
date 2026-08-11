@@ -1,100 +1,58 @@
 # Phase 49: Physical Template Assembly and Work-Report Acceptance - Audit
 
-**Updated:** 2026-08-08
+**Updated:** 2026-08-11
 
-## Auditor Run
+## First Independent Evidence Audit (not the premerge approval)
 
-- **Result schema:** v2
-- **Provider:** OpenCode
-- **Model selection rationale:** NOT_RUN
-- **Declared model chain:** NOT_RUN
-- **Effective model chain:** NOT_RUN
-- **Primary model:** NOT_RUN
-- **Model:** NOT_RUN
-- **Attempt chain:** NOT_RUN
-- **Model transitions:** NOT_RUN
-- **Fallback reason:** NOT_RUN
-- **Session:** NOT_RUN
-- **Run status:** NOT_RUN
-- **Review point:** NOT_RUN
-- **Controller spot-check:** NOT_RUN
+- **Provider/model:** OpenCode, `sub2api_openai/gpt-5.6-terra` medium; fallback
+  `sub2api_openai/gpt-5.6-sol` declared but unused.
+- **Session:** `ses_0110ed0b7ffeIusalNWvViu2e5`.
+- **Review point:** `87a300edab19ad23ede12e58036254ef7a8c3af4`.
+- **Worktree:** fresh frozen `/tmp/aimagician-opencode-review-YCem9D`.
+- **Scope:** PASS — read/test only; no writes, private asset/PPTX/PNG reads,
+  network, or child delegation. Its `grep` was a built-in read operation, not
+  a shell mutation.
+- **Result:** `REVISE`, 2 Blocker, 0 Important, 5 Nitpick.
 
-## Requirement Coverage
+The auditor independently confirmed V61-LIB-01 through V61-CLEAN-01,
+GOAL-49-01 through GOAL-49-05, AC-49-01 through AC-49-08, physical lineage,
+clean-room provenance, and blind-review independence. Its only Blockers were
+correctly procedural: the committed records still said `NOT_RUN`, then merge,
+pushed-SHA parity, and a fresh completion audit had not occurred. This file
+resolves the first blocker by recording the hash-bound evidence; it does not
+misrepresent the audit as a premerge or completion approval.
 
-| Source request | Requirement | Planned | Evidence | Audit | Decision |
-|---|---|---|---|---|---|
-| USR-V61-01 | V61-LIB-01 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| USR-V61-01 | V61-SEL-01 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| USR-V61-01 | V61-ASM-01 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| USR-V61-01 | V61-ADAPT-01 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| USR-V61-01 | V61-QA-01 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| USR-V61-01 | V61-CLEAN-01 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| USR-V61-01 | V61-REL-01 | Yes | NOT_RUN | NOT_RUN | Blocker |
+### Evidence the auditor verified
 
-## Goal Coverage
+| Evidence | Result |
+|---|---|
+| Focused suite | PASS: `115 passed, 4 skipped` |
+| Physical report validator | PASS: 15 slides/15 distinct page IDs/100% native-editable/zero unresolved or unsafe |
+| Clean controller run10 | PASS: native `gpt-5.6-terra` medium, one hash-bound output from clean root |
+| Blind review packet/report | PASS: same packet SHA, ART 9.1, NARRATIVE 9.0, PRODUCTION 8.8, parity true, zero Blocker/Important |
+| Frozen installed runtime | PASS: tree `12ad0503…0236339a`; transient post-run cache drift was remediated and excluded from evidence |
 
-| Goal criterion | Planned | Evidence | Audit | Decision |
-|---|---|---|---|---|
-| GOAL-49-01 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| GOAL-49-02 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| GOAL-49-03 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| GOAL-49-04 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| GOAL-49-05 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| GOAL-49-06 | Yes | NOT_RUN | NOT_RUN | Blocker |
+### Findings and disposition
 
-## Detailed Acceptance Coverage
+| Severity | Finding | Disposition |
+|---|---|---|
+| Blocker | Authoritative Phase 49 records declared `NOT_RUN`. | Fixed by this evidence promotion; fresh scoped premerge audit will verify it. |
+| Blocker | Master push, pushed-SHA install parity, and completion audit absent. | Open by design until premerge approval and push complete. |
+| Important | None. | N/A |
+| Nitpick | Slide 5 gradient richness; slide 7 header opacity; slide 2 duplicate numeric prefix; slide 10 dense title layer; slide 8 total position. | Recorded optional polish; no release remediation under the locked blind-review rule. |
 
-| Acceptance | Planned | Evidence | Audit | Decision |
-|---|---|---|---|---|
-| AC-49-01 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| AC-49-02 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| AC-49-03 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| AC-49-04 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| AC-49-05 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| AC-49-06 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| AC-49-07 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| AC-49-08 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| AC-49-09 | Yes | NOT_RUN | NOT_RUN | Blocker |
-| AC-49-10 | Yes | NOT_RUN | NOT_RUN | Blocker |
+## Pending Audits
 
-## Review Findings
-
-- Intermediate implementation audit at commit `c1c0e14` returned `REVISE`
-  with 0 Blocker, 2 Important, and 1 Nitpick. The two Important findings were
-  that the clean-run fingerprint could trust a weak report/manifest and that
-  PPTX/XLSX archives lacked pre-decompression resource budgets. Both have
-  since been implemented test-first in the live worktree; this is not the
-  required fresh final audit.
-- First clean-UAT root-cause audit found rejected-interface blockers: manual
-  physical binding volume, schema-invalid Agent-authored evidence, missing
-  exact-source-ordinal filtering, and an overstated private secrecy claim
-  under same-user danger mode. The deterministic profile harness and query
-  hard filter address the executable failures; documentation now states the
-  actual project-folder isolation boundary.
-- Specification compliance: IN_PROGRESS
-- Quality review: NOT_RUN
-- Integration audit: NOT_RUN
-- Fresh OpenCode phase auditor: NOT_RUN
-
-| Severity | Finding | Evidence | Disposition |
-|---|---|---|---|
-| Important | Clean-run validator trusted weak producer evidence | OpenCode audit of `c1c0e14` | fixed; fresh audit pending |
-| Important | PPTX/XLSX had no ZIP resource budgets | OpenCode audit of `c1c0e14` | fixed; fresh audit pending |
-| Blocker | Agent was required to hand-author 358 physical records | rejected clean UAT attempt 1 | deterministic binder implemented; rerun pending |
-| Blocker | Final fresh audit has not run | Phase 49 is still executing | open |
-
-## Gaps
-
-- Engineering stabilization, clean-room UAT, visual review, delivery, and
-  installed digest evidence remain open.
-
-## Finding Counts
-
-- **Blocker:** NOT_RUN
-- **Important:** NOT_RUN
-- **Nitpick:** NOT_RUN
+1. **Scoped premerge implementation audit:** fresh OpenCode context after the
+   evidence promotion; must approve the implementation evidence with zero
+   Blocker/Important before merge.
+2. **Completion audit:** fresh OpenCode context frozen to pushed `master`; must
+   verify source/install parity and return DONE with zero Blocker/Important.
 
 ## Closure Decision
 
-**Status:** Blocked
-**Reason:** Passing evidence is incomplete.
+**Status:** IN_PROGRESS.
+
+Evidence is sufficient for implementation and UAT, but V61-REL-01 must not
+pass before both pending independent audits and the pushed-master identity are
+recorded.
