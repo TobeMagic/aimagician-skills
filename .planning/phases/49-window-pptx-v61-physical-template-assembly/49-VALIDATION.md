@@ -55,7 +55,7 @@ read-only certification and was not a delivery dependency.
 | Criterion AC-49-06 | PASS | clean-pack validator; controller log | Clean pre-run manifest passes. |
 | Criterion AC-49-07 | PASS | controller log; runtime identity | Exact Codex command, clean CWD, medium reasoning, one PPTX, and evidence bundle are bound. |
 | Criterion AC-49-08 | PASS | blind packet/report run10 | Same packet SHA for 3 isolated reviews; ART 9.1, NARRATIVE 9.0, PRODUCTION 8.8; parity true; no Blocker/Important. |
-| Criterion AC-49-09 | IN_PROGRESS | premerge-audit contract | Fresh scoped premerge approval occurs after this evidence promotion. |
+| Criterion AC-49-09 | PASS | scoped premerge audit session `ses_010fdf72fffepNe5XRFj3SD7WQ` | Fresh frozen audit of `b022859` returns APPROVED with zero Blocker/Important; focused suite and physical validator were rerun. |
 | Criterion AC-49-10 | IN_PROGRESS | postmerge-audit contract | Merge/push, pushed-SHA install parity, and fresh completion audit are pending. |
 
 ## Commands And Results
@@ -83,7 +83,7 @@ candidate/evidence hash depends on the drifted tree.
 - **Preview verification:** NOT_APPLICABLE
 - **Online-only exceptions:** NONE
 - **Artifact provenance:** PASS for frozen run10; pushed-master provenance pending
-- **Premerge decision:** IN_PROGRESS
+- **Premerge decision:** PASS — scoped independent approval at `b0228592be544f32cf85dafc0d815c71c3584607`
 - **Implementation merge SHA:** IN_PROGRESS
 - **Postmerge verification:** IN_PROGRESS
 - **Deployed artifact match:** IN_PROGRESS
@@ -96,7 +96,7 @@ candidate/evidence hash depends on the drifted tree.
 | Stage | Revision / artifact | Environment | Evidence | Result |
 |---|---|---|---|---|
 | LOCAL | `87a300e`; run10 candidate | WSL/Linux | focused tests, physical report, clean run, blind reviews | PASS |
-| CI / PREMERGE | `87a300e` | isolated OpenCode worktree | first independent audit found only administrative closure blockers; fresh scoped premerge audit pending | IN_PROGRESS |
+| CI / PREMERGE | `b022859` | fresh isolated OpenCode worktree | session `ses_010fdf72fffepNe5XRFj3SD7WQ`: 115 passed/4 skipped, physical report rerun, APPROVED, 0 Blocker/Important | PASS |
 | PREVIEW | N/A | N/A | Non-deployable source change | NOT_APPLICABLE |
 | POSTMERGE | pushed master SHA | source + installed Skill + fresh OpenCode session | push, parity, completion audit | IN_PROGRESS |
 

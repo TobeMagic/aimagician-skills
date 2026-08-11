@@ -42,8 +42,9 @@ three isolated visual-review passes.
 
 ## Residual Risk and Next Action
 
-The only accepted release risk is administrative/provenance closure. Run a
-fresh scoped premerge audit against this promoted evidence; if approved, merge
-and push the exact audited commit, re-sync `window-pptx`, prove source/install
-parity, and run the fresh pushed-master completion audit. No `pptx-studio`
-rename or private-library pruning begins before that sequence passes.
+The scoped fresh premerge audit at `b022859` is APPROVED (zero Blocker and
+Important). The only remaining release risk is pushed-master provenance:
+push the exact approved implementation, re-sync `window-pptx`, prove
+source/install parity, and run the fresh pushed-master completion audit. No
+`pptx-studio` rename or private-library pruning begins before that sequence
+passes.

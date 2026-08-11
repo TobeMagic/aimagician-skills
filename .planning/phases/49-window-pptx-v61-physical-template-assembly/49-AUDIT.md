@@ -41,18 +41,34 @@ misrepresent the audit as a premerge or completion approval.
 | Important | None. | N/A |
 | Nitpick | Slide 5 gradient richness; slide 7 header opacity; slide 2 duplicate numeric prefix; slide 10 dense title layer; slide 8 total position. | Recorded optional polish; no release remediation under the locked blind-review rule. |
 
-## Pending Audits
+## Scoped Premerge Implementation Audit
 
-1. **Scoped premerge implementation audit:** fresh OpenCode context after the
-   evidence promotion; must approve the implementation evidence with zero
-   Blocker/Important before merge.
-2. **Completion audit:** fresh OpenCode context frozen to pushed `master`; must
+- **Provider/model:** OpenCode, `sub2api_openai/gpt-5.6-terra` medium; declared
+  fallback `sub2api_openai/gpt-5.6-sol` unused.
+- **Session:** `ses_010fdf72fffepNe5XRFj3SD7WQ`.
+- **Review point:** `b0228592be544f32cf85dafc0d815c71c3584607`.
+- **Result:** `DONE` / **APPROVED**, 0 Blocker, 0 Important, five retained
+  visual nitpicks.
+- **Scope:** PASS — fresh clean worktree, read-and-run only, no writes/private
+  root/PPTX/PNG reads/uploads/network/child agents.
+- **Independent reruns:** `115 passed, 4 skipped` (3 non-blocking deprecation
+  warnings) and physical report PASS: candidate hash match, 15 slides/15
+  distinct IDs/100% native editable/zero unresolved or unsafe parts.
+
+The audit passed V61-LIB-01 through V61-CLEAN-01, GOAL-49-01 through
+GOAL-49-05, AC-49-01 through AC-49-09. It correctly leaves V61-REL-01,
+GOAL-49-06, and AC-49-10 for the pushed-master delivery sequence.
+
+## Pending Completion Audit
+
+1. **Completion audit:** fresh OpenCode context frozen to pushed `master`; must
    verify source/install parity and return DONE with zero Blocker/Important.
 
 ## Closure Decision
 
-**Status:** IN_PROGRESS.
+**Status:** IN_PROGRESS — premerge approved; pushed-master completion evidence
+is outstanding.
 
-Evidence is sufficient for implementation and UAT, but V61-REL-01 must not
-pass before both pending independent audits and the pushed-master identity are
-recorded.
+Evidence is sufficient for implementation, UAT, and premerge. V61-REL-01 must
+not pass before pushed-master identity, installed-Skill parity, and completion
+audit are recorded.
