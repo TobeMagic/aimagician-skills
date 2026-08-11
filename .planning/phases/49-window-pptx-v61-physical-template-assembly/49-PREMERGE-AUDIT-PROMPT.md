@@ -1,10 +1,47 @@
 # Phase 49 V61 Scoped Premerge Implementation Audit
 
-**Task ID:** V61-P49-PREMERGE-AUDIT-02  
-**Role:** independent implementation auditor  
-**Task type/modality:** audit / text  
-**Review binding:** supplied by the controller as `--review-ref`; review that
-exact commit only.
+```text
+TASK_ID: V61-P49-PREMERGE-AUDIT-02
+ROLE: auditor
+TASK_TYPE: audit
+MODALITY: text
+DELIVERABLE: A hash-bound scoped premerge audit with requirement/goal/criterion
+matrix, finding counts, scope statement, and exactly APPROVED or REVISE.
+REVIEW_POINT: The exact committed Phase-49 evidence-promotion state supplied by
+the controller. This is a premerge implementation review, not completion.
+REVIEW_BINDING: supplied by the controller as --review-ref; review that exact
+commit only.
+
+ORIGINAL_REQUESTS:
+- USR-V61-01.
+
+ACCEPTED_DECISIONS:
+- Codex gpt-5.6-terra at medium performs the clean 15-slide acceptance run.
+- 15/15 accepted pages physically reuse certified direct-use pages; native
+  blank-deck fallback is not acceptance evidence.
+- Three fresh independent AI blind reviews require median >= 8, parity true,
+  and no Blocker/Important.
+- COM is optional read-only certification and cannot block portable delivery.
+- Do not begin Phase 50/v7, rename, archive, delete, or prune private assets.
+
+KNOWN_CONTEXT:
+- Frozen run10 candidate SHA-256 is 1d862e0f9ac49fc42b6e3b3918abc29aea94776ebdf5f830bf4b34d6688ec28a.
+- Run10 physical, clean, and blind evidence are already captured externally
+  and summarized in 49-VALIDATION.md; no private or visual bytes are required.
+- First overall evidence audit ses_0110ed0b7ffeIusalNWvViu2e5 found 0 Important
+  and confirmed all functional gates, but correctly returned REVISE because
+  phase records were stale and postmerge work had not happened.
+
+REQUIRED_SKILLS:
+- cli-agent-delegator: independent read-and-run audit contract.
+- aimagician-superpower: Phase-49 requirements/evidence reconciliation.
+- skill-creator: installed-Skill workflow and documentation scope.
+- vision-analysis: validate documented Agnes provenance only; no image access.
+
+Before substantive work, load every skill named in REQUIRED_SKILLS and report
+the loaded skill IDs. If a required skill or source cannot be loaded, return
+NEEDS_CONTEXT; do not substitute an improvised workflow.
+```
 
 ## Objective
 
@@ -58,6 +95,20 @@ Forbidden: writes, formatting, commits, branch changes, network, secrets,
 private-root access, PPTX/PNG/preview/image byte reads, external uploads,
 child agents, broad/full test suites, and commands outside this list. A scope
 violation invalidates the audit.
+
+**GIT_POLICY:** inspect-only; no commit, merge, push, reset, checkout, clean,
+stash, or branch change.  
+**MODEL_POLICY:** primary `sub2api_openai/gpt-5.6-terra` at medium reasoning:
+the user locked it for this production-quality acceptance and it supports the
+large evidence/repository reconciliation. Ordered fallback
+`sub2api_openai/gpt-5.6-sol`; Agnes runtime fallback may be appended only by
+the runner and is not a visual-review route here.  
+**CHILD_AGENT_POLICY:** forbidden.  
+**SESSION_EXPORT:** NONE.  
+**STATUS_PROTOCOL:** DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED.  
+**FINDING_SEVERITY:** Blocker | Important | Nitpick.  
+**STOP_AND_ESCALATE_WHEN:** a required source/skill is missing, a command would
+exceed scope, the review binding drifts, or evidence conflicts materially.
 
 ## Exact Commands
 
