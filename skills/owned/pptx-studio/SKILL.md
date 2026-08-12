@@ -92,6 +92,16 @@ shape; it returns the corresponding candidate lists in the same order. This
 is a retrieval convenience only: you still choose explicit returned candidate
 IDs and still run the bounded per-candidate revalidation below.
 
+Use this exact outer shape; the key is **`queries`** (not `requests`), and
+every `limit` is from 1 through 6:
+
+```json
+{"queries":[
+  {"request_id":"cover","request":{"mode":"page","role":"cover","tags":[],"style":null,"capacity":0,"limit":6,"suitability":"institutional-finance"}},
+  {"request_id":"contents","request":{"mode":"page","role":"contents","tags":[],"style":null,"capacity":0,"limit":6,"suitability":"institutional-finance"}}
+]}
+```
+
 Set `suitability` to `institutional-finance` for a hospital, government,
 finance or institutional report; this excludes pages whose certified visual
 observation identifies anime/characters, metaverse/robot imagery, mobile-app
@@ -169,6 +179,18 @@ only the anchor signature plus one independently compatible fallback signature
 under the rule above. This permits a
 coherent full-work template to retain its own chapter/data cadence; it does
 not authorize cross-deck random mixing.
+
+For a normal `page_assembly` with an anchor family of eight or more pages,
+first call `inspect-deck` once on the chosen anchor `deck_id`. This is an
+authorized **family-anatomy lookup**, not an uncontrolled fallback and not a
+substitute for candidate validation. From its sanitized inventory choose the
+unique pages that best express the locked narrative, excluding every page that
+reports `requires_structured_data=true` when complete data is unavailable.
+Then submit those chosen IDs through one bounded `query-batch` revalidation
+(one request per selected slide, with `candidate_ids`) before composing. If
+the family cannot supply all required roles/capacity safely, select a different
+anchor family; only then may the one registered compatible fallback signature
+be considered.
 
 For an `exact_deck` candidate, call `inspect-deck` with the returned `deck_id`
 and write its value-free inventory to `work/deck-inventory.json`:
