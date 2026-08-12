@@ -33,6 +33,9 @@ The repository also contains a planning-managed Window-PPTX production engine. I
 | CTX-DEC-004 | `opencode/*` uses one shared user-asserted quota pool, Agnes is user-asserted unlimited, and other configured models use model-specific pools. | USR-20260803-001 | Active | NONE |
 | CTX-DEC-005 | The specialized presentation Skill will be renamed to `pptx-studio`; after the v7 migration is verified, `window-pptx` is deleted completely rather than retained as a compatibility shell. | Latest explicit user decision, 2026-08-08 | Accepted for next milestone | NONE |
 | CTX-DEC-006 | The approved active Gaojie library target is 97 highly reusable PPTX assets (about 117–160 pages); other assets are archived or deleted only through a SHA-bound prune manifest after v6.1 stabilization. | User-approved asset-pruning discussion, 2026-08-08 | Accepted for next milestone | NONE |
+| CTX-DEC-007 | `pptx-studio` is the target public Skill identity. There is no compatibility shim; `window-pptx` remains only until the migration phase has passing source/install tests. | USR-V7-01 | Active | CTX-DEC-005 |
+| CTX-DEC-008 | Private Gaojie bytes remain local and ignored. Phase 50 keeps only user-approved category directories active and archives all other source categories recoverably with a hash manifest; it never deletes them. | USR-V7-01 | Active | CTX-DEC-006 |
+| CTX-DEC-009 | Retrieval is three-layered: deck record for complete reuse, page record for coherent assembly, and region record for controlled component adaptation. Visual observations are derived from authorized rendered PNGs, hash-bound, and never committed as private payloads. | USR-V7-01 | Active | NONE |
 
 ## Verification And Delivery Baseline
 

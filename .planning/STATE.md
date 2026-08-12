@@ -1,19 +1,19 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.1
-milestone_name: Window-PPTX Physical Template Assembly
-current_phase: 49
-current_phase_name: Physical Template Assembly and Work-Report Acceptance
+milestone: v7
+milestone_name: PPTX Studio Curated Composition
+current_phase: 50
+current_phase_name: Asset Curation and Visual Catalog
 status: in_progress
-stopped_at: v6.1 Phase 49 evidence is accepted on pushed master f6dc1f2; workflow completion gate and terminal handoff are pending
-last_updated: "2026-08-11T12:20:00+08:00"
-last_activity: 2026-08-11
+stopped_at: v7 Phase 50 closure evidence is complete; commit and Phase 51 activation remain
+last_updated: "2026-08-12T17:50:00+08:00"
+last_activity: 2026-08-12
 progress:
-  total_phases: 51
-  completed_phases: 46
-  total_plans: 50
-  completed_plans: 49
-  percent: 90
+  total_phases: 54
+  completed_phases: 48
+  total_plans: 51
+  completed_plans: 51
+  percent: 93
 ---
 
 # Project State
@@ -26,7 +26,8 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v6.1 Phase 49 is complete on pushed master `f6dc1f2`.
+**Current focus:** v7 Phase 50 begins from the complete v6.1 physical-page
+baseline on pushed master `a1d2d18`.
 Its certified physical-page assembly passed clean-room generation, recursive
 OPC/editability QA, three independent blind reviews, fresh premerge approval,
 source/Codex/OpenCode install parity, and a fresh pushed-master completion
@@ -66,11 +67,12 @@ fully independent AI blind-review contexts for v6 acceptance.
 
 ## Current Position
 
-Milestone: v6.1 Window-PPTX Physical Template Assembly
-Current Phase: 49
-Current Phase Name: Physical Template Assembly and Work-Report Acceptance
-Status: In Progress — all acceptance evidence PASS; workflow completion gate pending on pushed master `f6dc1f2`
-Last Activity: 2026-08-11
+Milestone: v7 PPTX Studio Curated Composition
+Current Phase: 50
+Current Phase Name: Asset Curation and Visual Catalog
+Status: In Progress — Phase 50 closure evidence passed focused tests, workflow
+completion and an independent blind audit; commit and Phase 51 activation are next.
+Last Activity: 2026-08-12
 
 ### Preserved Control-Plane History
 

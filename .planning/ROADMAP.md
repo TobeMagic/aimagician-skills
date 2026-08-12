@@ -821,14 +821,119 @@ does not preserve `window-pptx` as a long-term public identity.
 
 **Depends on:** v6.0 Phase 48
 **Requirements:** [V61-LIB-01, V61-SEL-01, V61-ASM-01, V61-ADAPT-01, V61-QA-01, V61-CLEAN-01, V61-REL-01]
-**Status:** In Progress
+**Status:** Complete — 2026-08-11
 
-**Closure note:** all evidence is PASS (pushed master `f6dc1f2`, fresh
-completion audit APPROVED); the workflow completion gate is the final control
-plane action.
+**Closure note:** all evidence is PASS (pushed master `a1d2d18`, fresh
+completion audit APPROVED); the v6.1 phase is closed before v7 begins.
 
 ## v6.1 Progress
 
 | Phase | Status | Completed |
 |-------|--------|-----------|
-| 49. Physical Template Assembly and Work-Report Acceptance | In Progress — completion gate pending | 2026-08-11 evidence complete |
+| 49. Physical Template Assembly and Work-Report Acceptance | Complete | 2026-08-11 |
+
+## Milestone v7 — PPTX Studio Curated Composition
+
+v7 replaces the narrow `window-pptx` identity after its physical assembly
+baseline with a deliberately curated private visual library and a governed
+agent workflow. The end state supports an evidence-backed choice between
+whole-deck reuse, coherent page assembly, and bounded component reuse while
+maintaining one art direction and editable PPTX output.
+
+### Phase 50: Asset Curation and Visual Catalog
+
+**Goal:** Convert the user-approved Gaojie category subset into an explicit, recoverably curated local source set and produce deterministic deck, page, and region records enriched with authorized Agnes visual observations so later retrieval does not depend on anonymous files or a model visually browsing all assets.
+
+**Success Criteria**:
+
+- **GOAL-50-01:** A deterministic active-source manifest covers exactly the
+  approved categories and every inactive category is recorded and moved only
+  into a hash-verified local archive with a reversible manifest.
+- **GOAL-50-02:** Every retained package/page has portable render evidence,
+  provenance, style/structure extraction, and a deterministic catalog ID;
+  no private source path or byte is written into tracked output.
+- **GOAL-50-03:** Authorized Agnes observations are captured from rendered
+  pages only and validated against the page image hash; each retained page has
+  coarse role/style/scene/asset observations and an uncertainty status.
+- **GOAL-50-04:** A deterministic region extractor identifies reusable
+  candidate regions with normalized geometry, text/asset capacity, visual
+  hierarchy and guardrails; it rejects unsafe, image-only, or ambiguous
+  regions rather than claiming editability.
+- **GOAL-50-05:** A local retrieval probe returns a bounded, explainable
+  candidate set from role, semantic tags, style cluster, capacity, and reuse
+  mode without traversing the clean client requirement directory.
+
+**Depends on:** v6.1 Phase 49
+**Requirements:** [V7-CURATE-01, V7-CATALOG-01, V7-VISION-01, V7-REGION-01, V7-QUERY-01]
+**Status:** In Progress
+
+### Phase 51: Composition Retrieval and Governed Adaptation
+
+**Goal:** Make the curated catalog choose an exact deck, a coherent set of
+pages, or safe editable components, then compile fact-bound adaptation plans
+without granting the authoring model visual implementation authority.
+
+**Success Criteria**:
+
+- **GOAL-51-01:** Retrieval returns mode-specific bounded candidates with
+  source, capacity, compatibility, residue, and confidence evidence.
+- **GOAL-51-02:** One deck-level art direction locks theme/style compatibility
+  while controlled variation is selected intentionally rather than randomly.
+- **GOAL-51-03:** A deterministic compiler converts model candidate/fact/asset
+  choices into governed page and component adaptation plans, failing closed on
+  unsupported composition or source mutation.
+
+**Depends on:** Phase 50
+**Requirements:** [V7-COMPOSE-01, V7-ADAPT-01]
+**Status:** Planned
+
+### Phase 52: PPTX Studio Migration and Agent Workflow
+
+**Goal:** Ship the concise `pptx-studio` owned Skill and harness: requirement
+discussion, brief lock, art direction, bounded retrieval/assembly, iterative
+QA/repair, and client-safe delivery.
+
+**Success Criteria**:
+
+- **GOAL-52-01:** `pptx-studio` is the only shipped Skill identity; obsolete
+  `window-pptx` code/docs are removed only after migration tests pass.
+- **GOAL-52-02:** A capable agent follows a clear discuss-to-delivery workflow
+  with progressive candidate lists, deterministic defaults, and no raw
+  geometry/code/release surface.
+- **GOAL-52-03:** Rule QA and repair cover editability, overflow, clipping,
+  overlap, margins, image distortion, typography, repeated composition, and
+  cross-slide style coherence with evidence-bound stop conditions.
+
+**Depends on:** Phase 51
+**Requirements:** [V7-SKILL-01, V7-QA-01, V7-MIGRATE-01]
+**Status:** Planned
+
+### Phase 53: Clean-Room Work-Report Acceptance and Release
+
+**Goal:** Prove the migrated Skill with a fresh capable-model agent in a clean
+15-page work-report requirement folder, then close only after structural,
+visual, and independent audit gates.
+
+**Success Criteria**:
+
+- **GOAL-53-01:** The clean folder contains only client requirements/assets;
+  private-library lookup is explicit and external to it.
+- **GOAL-53-02:** The generated editable 15-page deck has an intentional
+  directory/section/body/closing anatomy and uses traceable curated reuse in
+  every slide without an ungoverned visual fallback.
+- **GOAL-53-03:** Portable/rule checks, three independent anonymous visual
+  reviews, source/install parity, and a frozen-point OpenCode audit pass with
+  no unresolved Blocker or Important finding.
+
+**Depends on:** Phase 52
+**Requirements:** [V7-ACCEPT-01, V7-RELEASE-01]
+**Status:** Planned
+
+## v7 Progress
+
+| Phase | Status | Completed |
+|-------|--------|-----------|
+| 50. Asset Curation and Visual Catalog | In Progress | — |
+| 51. Composition Retrieval and Governed Adaptation | Planned | — |
+| 52. PPTX Studio Migration and Agent Workflow | Planned | — |
+| 53. Clean-Room Work-Report Acceptance and Release | Planned | — |

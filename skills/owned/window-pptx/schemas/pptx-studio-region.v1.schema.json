@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/pptx-studio-region.v1.schema.json",
+  "title": "PPTX Studio Region v1",
+  "type": "object",
+  "required": ["region_id", "page_id", "region_kind", "hierarchy", "editable_shape_ids", "bbox", "capacity", "prohibited_adaptations"],
+  "properties": {
+    "region_id": {"type": "string", "pattern": "^region_[0-9a-f]{20}$"},
+    "page_id": {"type": "string", "pattern": "^page_[0-9a-f]{24}_[0-9]{3}$"},
+    "region_kind": {"enum": ["title", "content-block"]},
+    "hierarchy": {"enum": ["primary", "supporting"]},
+    "editable_shape_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "bbox": {"type": "object"},
+    "capacity": {"type": "object"},
+    "prohibited_adaptations": {"type": "array"}
+  },
+  "additionalProperties": false
+}

@@ -584,3 +584,35 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 *Requirements defined: 2026-03-13*
 *Last updated: 2026-08-08 after opening v6.1 physical assembly stabilization*
+
+## v7 Requirements (PPTX Studio Curated Composition)
+
+| Requirement | Current | Target | Acceptance |
+|---|---|---|---|
+| **V7-CURATE-01** | 377 anonymous private packages remain in one active tree; selection requires manual browsing and unused categories add noise | Materialize an approved active-source manifest and a recoverable hash-verified archive manifest for inactive categories | Active records match exactly the 22 user-approved category directory names; every moved item has source/archive SHA-256 and no active item is moved |
+| **V7-CATALOG-01** | The existing asset index is package-centric and inconsistent with the approved active subset | Create a deterministic local deck/page catalog with source provenance, portable render evidence, structural/style features, roles and stable IDs | Repeated compilation is byte-identical; every active page is represented once with page image hash and no private payload appears in tracked files |
+| **V7-VISION-01** | Existing visual fingerprints do not explain visual language or suitable usage to an agent | Obtain authorized Agnes observations over rendered active pages only, bind them to image hashes, and store structured observations/uncertainty locally | Hash mismatch, missing observation or malformed response fails validation; a sample is locally spot-checked |
+| **V7-REGION-01** | Reuse is whole-slide only and exposes no component choice/capacity contract | Extract safe reusable component-region candidates with normalized geometry, editable/asset evidence, hierarchy, semantic tags and prohibited adaptations | Image-only or ambiguous candidates are excluded; fixture tests prove stable IDs, overlap resolution, capacity and no path escape |
+| **V7-QUERY-01** | Page candidate query lacks deck/region mode and design-description retrieval | Query active deck/page/region records through bounded deterministic filters and explainable ranking without scanning a client folder | Same request serializes identically; source scope/style/capacity/mode gates are explicit and invalid input fails closed |
+| **V7-COMPOSE-01** | No contract chooses complete-deck, page or component reuse coherently | Define mode selection and deck-level art-direction compatibility with controlled fallback | Tests prove exact-deck preference, component fallback, compatibility lock, and safe no-match behavior |
+| **V7-ADAPT-01** | Authoring agent has inconsistent template adaptation authority | Compile model decisions and fact/asset IDs into deterministic adaptation plans constrained by catalog declarations | Raw geometry/style/code, unbound text, unsupported adaptation or source mutation fails before assembly |
+| **V7-SKILL-01** | `window-pptx` is oversized and conflates historic modes with production workflow | Ship concise `pptx-studio` guidance with requirement discussion, progressive retrieval, governed assembly and repair workflow | Skill trigger/evals route presentation work to the concise workflow and do not over-trigger unrelated documents |
+| **V7-QA-01** | Existing QA is split across historical routes and not organized around component assembly | Provide one evidence-bound quality/repair harness for portable/editable assembly output | Deliberate overflow, overlap, image distortion, typography and inconsistency fixtures fail or repair within declared safe budget |
+| **V7-MIGRATE-01** | Public paths and private-root configuration are named `window-pptx` | Flag-day migrate package/config/install ownership to `pptx-studio` after acceptance tests; remove old tree with no shim | No tracked `window-pptx` production entry point remains; source/install digest parity and migration tests pass |
+| **V7-ACCEPT-01** | Only a fixed-reference work report has been accepted | Run a fresh clean requirement-folder work-report through the migrated flexible-reuse workflow | Exactly 15 editable slides with directory/sections/body/closing; per-slide provenance and physical/component lineage are complete |
+| **V7-RELEASE-01** | v7 has no closure evidence | Close only with portable/rule checks, independent visual reviews, source/install parity and independent audit | All v7 GOAL criteria PASS and no audit Blocker/Important remains |
+
+| Requirement | v7 Phase | Status |
+|-------------|----------|--------|
+| V7-CURATE-01 | Phase 50 | Complete |
+| V7-CATALOG-01 | Phase 50 | Complete |
+| V7-VISION-01 | Phase 50 | Complete |
+| V7-REGION-01 | Phase 50 | Complete |
+| V7-QUERY-01 | Phase 50 | Complete |
+| V7-COMPOSE-01 | Phase 51 | Planned |
+| V7-ADAPT-01 | Phase 51 | Planned |
+| V7-SKILL-01 | Phase 52 | Planned |
+| V7-QA-01 | Phase 52 | Planned |
+| V7-MIGRATE-01 | Phase 52 | Planned |
+| V7-ACCEPT-01 | Phase 53 | Planned |
+| V7-RELEASE-01 | Phase 53 | Planned |

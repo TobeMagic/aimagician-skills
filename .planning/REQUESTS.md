@@ -515,3 +515,51 @@ folder must not contain the reference deck or private template bytes.
   fallback, arbitrary model-written geometry/code, or release by self-score.
 - Performing the v7 rename and destructive private-asset pruning inside Phase
   49; those changes begin only after the stabilized v6.1 baseline is merged.
+
+## USR-V7-01 — PPTX Studio curated component reuse (2026-08-11)
+
+**Status:** Accepted
+
+The user approved a new isolated worktree after the v6.1 master merge and
+requires the eventual replacement of `window-pptx` with `pptx-studio`, with no
+compatibility shim. The product must help a capable agent turn a locked, real
+client requirement pack and client assets into an editable high-quality PPTX:
+discuss missing boundaries first; choose one visual direction and deck anatomy;
+retrieve appropriate complete pages or page regions; adapt factual copy and
+client assets; run governed checks and an independent harness.
+
+The private Gaojie library is local-only and user-authorized. The active set
+is exactly: `003-封面模板`, `036-目录模板`, `037-章节模板`, `038-标题模板`,
+`039-结尾模板`, `041-二段内容`, `042-三段内容`, `043-四段内容`,
+`044-五段内容`, `045-六段内容`, `046-多段内容`, `047-人物介绍`,
+`048-荣誉奖项`, `049-时间轴图`, `050-架构流程`, `051-商业模型`,
+`052-样机展示`, `053-金句模板`, `054-合作伙伴`, `057-优秀作品`,
+`059-一段内容`, and `082-地图排版`. The remaining category directories are
+recoverably archived rather than deleted. Every retained deck/page needs
+coarse design evidence and every reusable region needs fine-grained semantic,
+capacity, geometry, style, and provenance evidence so an agent never has to
+browse hundreds of anonymous files. The user explicitly asked that Agnes
+visually inspect retained rendered pages; analysis may use rendered images only
+and must never commit or distribute private bytes.
+
+The eventual engine must combine three modes: exact complete-deck reuse when
+the brief matches, coherent page-level assembly for a deck, and component-level
+reuse with controlled color/text/asset adjustment. A model may make bounded
+narrative, candidate and fact/asset-binding choices only; it may not draw free
+geometry, write arbitrary OOXML/code/style values, or self-release. The first
+acceptance remains a 15-page work report, but its output should use the
+curated library flexibly rather than mechanically copying one reference deck.
+
+### Derived Requirements
+
+- V7-CURATE-01 through V7-QUERY-01 (Phase 50)
+- V7-COMPOSE-01, V7-ADAPT-01 (Phase 51)
+- V7-SKILL-01, V7-QA-01, V7-MIGRATE-01 (Phase 52)
+- V7-ACCEPT-01, V7-RELEASE-01 (Phase 53)
+
+### Exclusions
+
+- Deleting user-owned private source files, publishing private assets, or
+  using private assets as contents of the clean client requirement folder.
+- Declaring a generic renderer, a free-form visual model response, or one
+  successful fixed-reference replay to be the flexible-composition result.

@@ -1,0 +1,131 @@
+from __future__ import annotations
+
+import sys
+import json
+from pathlib import Path
+
+import pytest
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx" / "scripts"
+sys.path.insert(0, str(SCRIPT_ROOT))
+
+from pptx_studio.query import QueryError, query_catalog, serialize_query_result  # noqa: E402
+from manage_pptx_studio_library import run  # noqa: E402
+
+
+def _catalog() -> tuple[dict[str, object], dict[str, object]]:
+    page = {
+        "page_id": "page_aaaaaaaaaaaaaaaaaaaaaaaa_001",
+        "deck_id": "deck_aaaaaaaaaaaaaaaaaaaaaaaa",
+        "category": "003-封面模板",
+        "render": {"image_sha256": "b" * 64},
+        "component_eligible": True,
+        "shapes": [{"max_chars": 90}],
+    }
+    catalog = {
+        "active_categories": ["003-封面模板"],
+        "decks": [{"deck_id": page["deck_id"], "category": page["category"]}],
+        "pages": [page],
+        "regions": [{
+            "region_id": "region_aaaaaaaaaaaaaaaaaaaa",
+            "page_id": page["page_id"],
+            "region_kind": "title",
+            "capacity": {"max_text_chars": 30},
+        }],
+    }
+    observations = {
+        page["page_id"]: {
+            "page_id": page["page_id"],
+            "image_sha256": "b" * 64,
+            "observation": {
+                "semantic_tags": ["annual-report", "finance"],
+                "suggested_roles": ["cover"],
+                "visual_style": ["dark", "editorial"],
+                "uncertainty": "none",
+            },
+        }
+    }
+    return catalog, observations
+
+
+def test_query_is_bounded_explainable_and_stable() -> None:
+    catalog, observations = _catalog()
+    request = {"mode": "region", "role": "cover", "tags": ["finance"], "style": "dark", "capacity": 20, "limit": 6}
+
+    first = query_catalog(catalog, observations=observations, request=request)
+    second = query_catalog(catalog, observations=observations, request=request)
+
+    assert serialize_query_result(first) == serialize_query_result(second)
+    assert first["status"] == "PASS"
+    candidate = first["candidates"][0]
+    assert candidate["candidate_id"] == "region_aaaaaaaaaaaaaaaaaaaa"
+    assert candidate["gates"] == ["active_source", "observation_hash", "capacity"]
+    assert candidate["scores"]["total"] == 1.0
+    assert candidate["scores"]["canonical_role"] == 1.0
+    assert "canonical_category_role" in candidate["reasons"]
+
+
+@pytest.mark.parametrize(
+    "query_request,error",
+    [
+        ({"mode": "freeform", "role": "cover"}, "MODE_INVALID"),
+        ({"mode": "page", "role": "cover", "client_root": "/client"}, "REQUEST_FIELD_INVALID"),
+        ({"mode": "page", "role": "cover", "limit": 7}, "LIMIT_INVALID"),
+    ],
+)
+def test_query_fails_closed_for_invalid_input(query_request: dict[str, object], error: str) -> None:
+    catalog, observations = _catalog()
+    with pytest.raises(QueryError, match=error):
+        query_catalog(catalog, observations=observations, request=query_request)
+
+
+def test_query_excludes_missing_or_mismatched_observation() -> None:
+    catalog, observations = _catalog()
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["image_sha256"] = "c" * 64
+
+    result = query_catalog(catalog, observations=observations, request={"mode": "page", "role": "cover"})
+
+    assert result["status"] == "NO_MATCH"
+    assert result["candidates"] == []
+
+
+def test_canonical_category_role_outranks_incorrect_visual_role() -> None:
+    catalog, observations = _catalog()
+    other = {
+        "page_id": "page_cccccccccccccccccccccccc_001",
+        "deck_id": "deck_cccccccccccccccccccccccc",
+        "category": "038-标题模板",
+        "render": {"image_sha256": "d" * 64},
+        "component_eligible": True,
+        "shapes": [{"max_chars": 90}],
+    }
+    catalog["active_categories"].append("038-标题模板")  # type: ignore[union-attr]
+    catalog["pages"].append(other)  # type: ignore[union-attr]
+    observations[other["page_id"]] = {
+        "page_id": other["page_id"], "image_sha256": "d" * 64,
+        "observation": {"semantic_tags": ["finance"], "suggested_roles": ["cover"], "visual_style": ["dark"], "uncertainty": "none"},
+    }
+
+    result = query_catalog(catalog, observations=observations, request={"mode": "page", "role": "cover"})
+
+    assert result["candidates"][0]["page_id"] == "page_aaaaaaaaaaaaaaaaaaaaaaaa_001"
+
+
+def test_cli_query_uses_catalog_and_complete_observations_only(tmp_path: Path) -> None:
+    catalog, observations = _catalog()
+    manifest = tmp_path / "manifest.json"
+    source, archive = tmp_path / "source", tmp_path / "archive"
+    source.mkdir()
+    archive.mkdir()
+    manifest.write_text(json.dumps({"schema_version": "1.0", "status": "APPLIED"}), encoding="utf-8")
+    catalog_path, observations_path, request_path, output_path = (tmp_path / name for name in ("catalog.json", "observations.json", "request.json", "result.json"))
+    catalog_path.write_text(json.dumps(catalog), encoding="utf-8")
+    observations_path.write_text(json.dumps({"status": "COMPLETE", "observations": list(observations.values())}), encoding="utf-8")
+    request_path.write_text(json.dumps({"mode": "page", "role": "cover"}), encoding="utf-8")
+
+    result = run(["query", "--source-root", str(source), "--archive-root", str(archive), "--manifest", str(manifest), "--catalog", str(catalog_path), "--observation-index", str(observations_path), "--query-input", str(request_path), "--query-output", str(output_path)])
+
+    assert result["status"] == "PASS"
+    assert json.loads(output_path.read_text(encoding="utf-8"))["candidates"][0]["page_id"] == "page_aaaaaaaaaaaaaaaaaaaaaaaa_001"
