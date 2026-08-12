@@ -261,6 +261,10 @@ def test_cover_query_rejects_weak_complete_theme_family() -> None:
             "shapes": [{"max_chars": 90}],
         }
         catalog["pages"].append(page)  # type: ignore[union-attr]
+        catalog["regions"].extend([  # type: ignore[union-attr]
+            {"region_id": f"region_d{ordinal}a", "page_id": page_id, "region_kind": "title", "capacity": {"max_text_chars": 30}},
+            {"region_id": f"region_d{ordinal}b", "page_id": page_id, "region_kind": "content-item", "capacity": {"max_text_chars": 30}},
+        ])
         observations[page_id] = {
             "page_id": page_id,
             "image_sha256": image_sha,
@@ -273,6 +277,38 @@ def test_cover_query_rejects_weak_complete_theme_family() -> None:
     assert result["status"] == "PASS"
     assert all(item["deck_id"] != weak_deck for item in result["candidates"])
     assert result["candidates"][0]["theme_family_visual_quality"]["mean"] == 0.91
+
+
+def test_cover_query_prefers_certified_complete_family_over_orphan() -> None:
+    catalog, observations = _catalog()
+    catalog["pages"][0]["render"]["visual_quality"] = 0.98  # type: ignore[index]
+    full_deck = "deck_dddddddddddddddddddddddd"
+    for ordinal in range(1, 9):
+        page_id = f"page_dddddddddddddddddddddddd_{ordinal:03d}"
+        image_sha = f"{ordinal + 10:064x}"
+        page = {
+            "page_id": page_id,
+            "deck_id": full_deck,
+            "category": "003-封面模板",
+            "render": {"image_sha256": image_sha, "visual_quality": 0.85},
+            "component_eligible": True,
+            "shapes": [{"max_chars": 90}],
+        }
+        catalog["pages"].append(page)  # type: ignore[union-attr]
+        catalog["regions"].extend([  # type: ignore[union-attr]
+            {"region_id": f"region_full_{ordinal}a", "page_id": page_id, "region_kind": "title", "capacity": {"max_text_chars": 30}},
+            {"region_id": f"region_full_{ordinal}b", "page_id": page_id, "region_kind": "content-item", "capacity": {"max_text_chars": 30}},
+        ])
+        observations[page_id] = {
+            "page_id": page_id,
+            "image_sha256": image_sha,
+            "observation": observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"],
+        }
+    catalog["decks"].append({"deck_id": full_deck, "category": "003-封面模板"})  # type: ignore[union-attr]
+
+    result = query_catalog(catalog, observations=observations, request={"mode": "page", "role": "cover"})
+
+    assert result["candidates"][0]["deck_id"] == full_deck
 
 
 def test_query_rejects_candidate_filter_for_region_mode() -> None:

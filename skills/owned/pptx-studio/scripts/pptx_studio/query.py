@@ -398,6 +398,7 @@ def query_catalog(
     # For anchor discovery, put the complete eligible family first so the
     # agent can choose a reusable design direction rather than a loud orphan.
     candidates.sort(key=lambda item: (
+        -int(item["theme_family_page_count"] >= 8) if query["mode"] == "page" and query["role"] == "cover" else 0,
         -float(item["theme_family_visual_quality"]["mean"]) if query["mode"] == "page" and query["role"] == "cover" else 0,
         -int(item["theme_family_page_count"]) if query["mode"] == "page" and query["role"] == "cover" else 0,
         -item["scores"]["total"],
