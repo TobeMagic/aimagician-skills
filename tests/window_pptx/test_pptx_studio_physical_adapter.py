@@ -17,6 +17,7 @@ SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 
 from pptx_studio.adaptation import compile_adaptation  # noqa: E402
+from pptx_studio.brief_binding import compile_outline_bindings  # noqa: E402
 from pptx_studio.physical_adapter import (  # noqa: E402
     PhysicalAdapterError,
     _unbound_template_clear_reason,
@@ -290,6 +291,57 @@ def test_native_capacity_preflight_uses_source_slots_without_private_text_or_pat
     serialized = json.dumps(preflight, ensure_ascii=False)
     assert "模板标题" not in serialized
     assert str(source_root) not in serialized
+
+
+def test_fragment_title_group_is_bound_as_one_semantic_title(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A stylized multi-box title remains editable without raw geometry."""
+
+    source_root, catalog, composition, _request, _replacement = _source_pack(tmp_path)
+
+    def fake_fragments(slots, *, package_sha256, slide_number):
+        return [{
+            "region_id": f"fragment_title_{package_sha256[:24]}_{slide_number:03d}_1",
+            "native_capacity": 2,
+            "slots": tuple(slots[:2]),
+        }]
+
+    monkeypatch.setattr(physical_adapter, "_fragment_title_regions", fake_fragments)
+    preflight = preflight_native_slots(
+        composition, catalog=catalog, private_source_root=source_root,
+    )
+    fragment = next(item for item in preflight["slides"][0]["regions"] if item.get("fragment_group"))
+    assert fragment == {
+        "region_id": f"fragment_title_{composition['slides'][0]['source']['package_sha256'][:24]}_001_1",
+        "native_capacity": 2,
+        "semantic_roles": ["title"],
+        "fragment_group": True,
+        "fragment_count": 2,
+    }
+    request = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "slide-01",
+        "facts": [{"value": "财务", "semantic_role": "title"}],
+    }]}, preflight=preflight)
+    assert request["bindings"][0]["operation"] == "replace_fragment_text"
+    adaptation = compile_adaptation(
+        composition, catalog=catalog, request=request, preflight=preflight,
+    )
+    output = tmp_path / "fragment-title.pptx"
+    report, lineage = assemble_from_plans(
+        composition, adaptation, request, catalog=catalog,
+        private_source_root=source_root, workspace=tmp_path / "fragment-stage",
+        output_path=output,
+    )
+    assert report.status == "pass"
+    text = "\n".join(
+        shape.text for shape in Presentation(output).slides[0].shapes
+        if hasattr(shape, "text")
+    )
+    assert "财" in text and "务" in text
+    binding = lineage["slides"][0]["fragment_title_bindings"][0]
+    assert binding["region_id"] == fragment["region_id"]
+    assert len(binding["shape_ids"]) == 2
 
 
 def test_cli_assembly_writes_only_output_and_nonliteral_lineage(tmp_path: Path) -> None:

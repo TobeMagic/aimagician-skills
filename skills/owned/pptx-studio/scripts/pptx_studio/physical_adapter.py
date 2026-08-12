@@ -100,6 +100,53 @@ def _client_binding_role(slot: SlotRecord) -> str:
         return "label"
     return "body"
 
+
+def _fragment_title_regions(
+    slots: Sequence[SlotRecord], *, package_sha256: str, slide_number: int,
+) -> list[dict[str, Any]]:
+    """Publish certified one-character title lockups as a semantic surface.
+
+    Editorial Chinese covers commonly build a title from deliberately placed
+    single-character text boxes.  Treating those boxes as independent labels
+    loses the art direction; treating them as arbitrary geometry would give an
+    agent unsafe authoring authority.  This helper instead recognizes only
+    source-certified ``title_fragment`` boxes, groups nearby horizontal title
+    bands, and exposes one opaque semantic region per band.  The group ID is
+    deterministic from the selected source, never from a client value.
+    """
+
+    fragments = [slot for slot in slots if slot.semantic_role == "title_fragment"]
+    if len(fragments) < 2:
+        return []
+    heights = sorted(max(1, int(slot.bbox.get("h", 1))) for slot in fragments)
+    median_height = heights[len(heights) // 2]
+    # Separate distinct display lines while retaining intentionally staggered
+    # characters within one large-title band.  The minimum prevents tiny
+    # labels from accidentally forming a title group.
+    vertical_gap = max(160, median_height // 2)
+    bands: list[list[SlotRecord]] = []
+    for slot in sorted(fragments, key=lambda item: (int(item.bbox.get("y", 0)), int(item.bbox.get("x", 0)), item.slot_id)):
+        if not bands:
+            bands.append([slot])
+            continue
+        previous_y = max(int(item.bbox.get("y", 0)) for item in bands[-1])
+        if int(slot.bbox.get("y", 0)) - previous_y > vertical_gap:
+            bands.append([slot])
+        else:
+            bands[-1].append(slot)
+
+    regions: list[dict[str, Any]] = []
+    for ordinal, band in enumerate(bands, start=1):
+        if len(band) < 2:
+            continue
+        ordered = tuple(sorted(band, key=lambda item: (int(item.bbox.get("x", 0)), int(item.bbox.get("y", 0)), item.reading_order, item.slot_id)))
+        regions.append({
+            "region_id": f"fragment_title_{package_sha256[:24]}_{slide_number:03d}_{ordinal}",
+            "native_capacity": len(ordered),
+            "slots": ordered,
+        })
+    return regions
+
 def _unbound_template_clear_reason(value: str, *, occurrence_count: int = 1) -> str | None:
     """Classify only safe, non-client source copy for compiler-owned clearing."""
 
@@ -372,6 +419,24 @@ def preflight_native_slots(
         source_regions = source.get("region_ids")
         if not isinstance(source_regions, list):
             raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
+        selected_shape_ids: set[str] = set()
+        for region_id in source_regions:
+            region = region_by_id.get(str(region_id))
+            if region is None or region.get("page_id") != page_id:
+                raise PhysicalAdapterError("CATALOG_REGION_MISSING")
+            raw_shape_ids = region.get("editable_shape_ids")
+            if not isinstance(raw_shape_ids, list) or not raw_shape_ids:
+                raise PhysicalAdapterError("TEXT_REGION_EMPTY")
+            selected_shape_ids.update(f"shape_{raw_shape_id}" for raw_shape_id in raw_shape_ids)
+        fragment_regions = [
+            fragment for fragment in _fragment_title_regions(
+                slots, package_sha256=package_sha, slide_number=slide_number,
+            )
+            if all(slot.slot_id in selected_shape_ids for slot in fragment["slots"])
+        ]
+        fragment_shape_ids = {
+            slot.slot_id for fragment in fragment_regions for slot in fragment["slots"]
+        }
         regions: list[dict[str, Any]] = []
         for region_id in source_regions:
             region = region_by_id.get(str(region_id))
@@ -389,17 +454,33 @@ def preflight_native_slots(
                         "TEXT_SLOT_UNRESOLVED"
                         f":slide_id={slide_id}:region_id={region['region_id']}:shape_id={slot_id}"
                     )
+                # Fragmented title letters are exposed only through their
+                # composite semantic region below.  Publishing them as normal
+                # one-character labels would let an agent destroy the lockup.
+                if slot_id in fragment_shape_ids:
+                    continue
                 shape_slots.append({
                     "shape_id": slot_id,
                     "native_capacity": slot.max_chars,
                     "semantic_role": slot.semantic_role,
                     "binding_role": _client_binding_role(slot),
                 })
+            if not shape_slots:
+                continue
             native_capacity = min(item["native_capacity"] for item in shape_slots)
             regions.append({
                 "region_id": str(region["region_id"]),
                 "native_capacity": native_capacity,
                 "shape_slots": shape_slots,
+            })
+            region_count += 1
+        for fragment in fragment_regions:
+            regions.append({
+                "region_id": fragment["region_id"],
+                "native_capacity": fragment["native_capacity"],
+                "semantic_roles": ["title"],
+                "fragment_group": True,
+                "fragment_count": fragment["native_capacity"],
             })
             region_count += 1
         slides.append({
@@ -416,8 +497,11 @@ def preflight_native_slots(
                 role: sum(
                     1
                     for region in regions
-                    for slot in region["shape_slots"]
-                    if slot["binding_role"] == role
+                    for slot_role in (
+                        [slot["binding_role"] for slot in region.get("shape_slots", [])]
+                        or list(region.get("semantic_roles", []))
+                    )
+                    if slot_role == role
                 )
                 for role in ("title", "label", "metric", "body")
             },
@@ -519,7 +603,25 @@ def compile_physical_adapter(
     if adaptation_plan.get("adaptation_request_sha256") != adaptation_request_sha256(adaptation_request):
         raise PhysicalAdapterError("ADAPTATION_REQUEST_DRIFT")
     # Recompilation proves the values have not been decoupled from the ID-only plan.
-    expected_adaptation = compile_adaptation(composition_plan, catalog=catalog, request=adaptation_request)
+    # Recompute the private source-authoritative preflight only for virtual
+    # fragment-title regions, which intentionally do not exist in the public
+    # catalog as raw shapes. Legacy native-region requests remain byte-stable.
+    requires_fragment_preflight = any(
+        isinstance(binding, Mapping)
+        and binding.get("operation") == "replace_fragment_text"
+        for binding in adaptation_request.get("bindings", ())
+    )
+    expected_preflight = (
+        preflight_native_slots(
+            composition_plan, catalog=catalog,
+            private_source_root=private_source_root,
+        )
+        if requires_fragment_preflight else None
+    )
+    expected_adaptation = compile_adaptation(
+        composition_plan, catalog=catalog, request=adaptation_request,
+        preflight=expected_preflight,
+    )
     if serialize_adaptation_plan(expected_adaptation) != serialize_adaptation_plan(adaptation_plan):
         raise PhysicalAdapterError("ADAPTATION_REQUEST_DRIFT")
 
@@ -565,6 +667,12 @@ def compile_physical_adapter(
         if not slots:
             raise PhysicalAdapterError("SOURCE_PAGE_HAS_NO_EDITABLE_TEXT")
         slots_by_id = {slot.slot_id: slot for slot in slots}
+        fragment_regions = {
+            str(fragment["region_id"]): fragment
+            for fragment in _fragment_title_regions(
+                slots, package_sha256=package_sha, slide_number=int(slide_number),
+            )
+        }
         legacy_page_id = f"{package_sha}:{int(slide_number):03d}"
         try:
             with zipfile.ZipFile(source_path, "r") as archive:
@@ -687,6 +795,46 @@ def compile_physical_adapter(
                     bindings[slot_id] = value
                     specs[slot_id] = TextBindingSpec(value, (physical_fact_id,), "auto", "shrink-to-fit")
                     slide_lineage["text_bindings"].append({"region_id": region["region_id"], "shape_id": slot_id, "fact_id": fact_ref, "replacement_sha256": _sha256_bytes(value.encode("utf-8"))})
+            elif operation_kind == "replace_fragment_text":
+                fragment = fragment_regions.get(str(operation.get("region_id")))
+                fact_ref = operation.get("fact_id")
+                if fragment is None or not isinstance(fact_ref, str) or fact_ref not in request_facts:
+                    raise PhysicalAdapterError("FRAGMENT_TEXT_OPERATION_DRIFT")
+                value = request_facts[fact_ref]
+                characters = list(value)
+                fragment_slots = tuple(fragment["slots"])
+                if len(characters) > len(fragment_slots):
+                    raise PhysicalAdapterError(
+                        "FRAGMENT_TITLE_CAPACITY_EXCEEDED"
+                        f":slide_id={slide_id}:region_id={fragment['region_id']}"
+                        f":fact_id={fact_ref}:requested_chars={len(characters)}"
+                        f":native_capacity={len(fragment_slots)}"
+                    )
+                physical_fact_id, record = _source_fact(value)
+                fact_records.setdefault(physical_fact_id, record)
+                shape_ids: list[str] = []
+                for index, slot in enumerate(fragment_slots):
+                    replacement = characters[index] if index < len(characters) else ""
+                    if replacement:
+                        fragment_fact_id, fragment_record = _source_fact(replacement)
+                        fact_records.setdefault(fragment_fact_id, fragment_record)
+                        fragment_fact_refs = (fragment_fact_id,)
+                    else:
+                        fragment_fact_refs = ()
+                    bindings[slot.slot_id] = replacement
+                    specs[slot.slot_id] = TextBindingSpec(
+                        replacement,
+                        fragment_fact_refs,
+                        "auto" if replacement else "clear",
+                        "shrink-to-fit" if replacement else "preserve",
+                    )
+                    shape_ids.append(slot.slot_id)
+                slide_lineage.setdefault("fragment_title_bindings", []).append({
+                    "region_id": fragment["region_id"],
+                    "shape_ids": shape_ids,
+                    "fact_id": fact_ref,
+                    "replacement_sha256": _sha256_bytes(value.encode("utf-8")),
+                })
             elif operation_kind == "replace_asset":
                 raw_shape_id = operation.get("shape_id")
                 asset_id = operation.get("asset_id")
@@ -765,6 +913,11 @@ def compile_physical_adapter(
             for binding in slide_lineage["text_bindings"]
             if isinstance(binding, Mapping) and isinstance(binding.get("fact_id"), str)
         }
+        distinct_client_fact_ids.update(
+            str(binding["fact_id"])
+            for binding in slide_lineage.get("fragment_title_bindings", [])
+            if isinstance(binding, Mapping) and isinstance(binding.get("fact_id"), str)
+        )
         distinct_client_fact_ids.update(structured_fact_ids)
         declared_role = str(selected.get("role", "content"))
         # A fully certified exact-deck reproduction retains its original

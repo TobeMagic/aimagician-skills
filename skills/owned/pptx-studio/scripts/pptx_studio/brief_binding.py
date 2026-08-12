@@ -39,19 +39,27 @@ def _preflight_regions(preflight: Mapping[str, Any]) -> dict[str, list[dict[str,
             raise BriefBindingError("PREFLIGHT_SCHEMA_INVALID")
         regions: list[dict[str, Any]] = []
         for region in slide["regions"]:
-            if not isinstance(region, Mapping) or not isinstance(region.get("region_id"), str) or type(region.get("native_capacity")) is not int or not isinstance(region.get("shape_slots"), list):
+            if not isinstance(region, Mapping) or not isinstance(region.get("region_id"), str) or type(region.get("native_capacity")) is not int:
                 raise BriefBindingError("PREFLIGHT_REGION_INVALID")
-            slot_roles = {
-                str(slot.get("binding_role", slot.get("semantic_role", "body")))
-                for slot in region["shape_slots"]
-                if isinstance(slot, Mapping)
-            }
+            raw_slots = region.get("shape_slots")
+            raw_roles = region.get("semantic_roles")
+            if isinstance(raw_slots, list):
+                slot_roles = {
+                    str(slot.get("binding_role", slot.get("semantic_role", "body")))
+                    for slot in raw_slots
+                    if isinstance(slot, Mapping)
+                }
+            elif isinstance(raw_roles, list):
+                slot_roles = {str(role) for role in raw_roles if isinstance(role, str)}
+            else:
+                raise BriefBindingError("PREFLIGHT_REGION_INVALID")
             if not slot_roles:
                 raise BriefBindingError("PREFLIGHT_REGION_INVALID")
             regions.append({
                 "region_id": region["region_id"],
                 "capacity": region["native_capacity"],
                 "semantic_roles": slot_roles,
+                "fragment_group": region.get("fragment_group") is True,
             })
         result[slide["slide_id"]] = regions
     return result
@@ -146,7 +154,14 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
                 )
             chosen = min(fitting, key=lambda region: (region["capacity"], region["region_id"]))
             available.remove(chosen)
-            allocated[ordinal] = {"value": value, "region_id": chosen["region_id"]}
+            allocated[ordinal] = {
+                "value": value,
+                "region_id": chosen["region_id"],
+                "operation": (
+                    "replace_fragment_text" if chosen["fragment_group"]
+                    else "replace_text"
+                ),
+            }
 
         for item in prepared:
             ordinal = int(item["ordinal"])
@@ -155,7 +170,7 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
             facts.append({"fact_id": fact_id, "value": binding["value"]})
             bindings.append({
                 "slide_id": slide_id,
-                "operation": "replace_text",
+                "operation": binding["operation"],
                 "region_id": binding["region_id"],
                 "shape_id": None,
                 "fact_id": fact_id,

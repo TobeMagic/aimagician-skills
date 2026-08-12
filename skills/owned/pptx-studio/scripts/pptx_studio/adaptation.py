@@ -68,12 +68,12 @@ def _registry(request: Mapping[str, Any]) -> tuple[
     return facts, assets, bindings, structured_data
 
 
-def _physical_region_capacities(preflight: Mapping[str, Any]) -> dict[tuple[str, str], int]:
+def _physical_region_capacities(preflight: Mapping[str, Any]) -> dict[tuple[str, str], dict[str, Any]]:
     """Return the native capacities observed for this exact composition plan."""
 
     if preflight.get("status") != "PASS" or not isinstance(preflight.get("slides"), list):
         raise AdaptationError("PREFLIGHT_INVALID")
-    capacities: dict[tuple[str, str], int] = {}
+    capacities: dict[tuple[str, str], dict[str, Any]] = {}
     for slide in preflight["slides"]:
         if not isinstance(slide, Mapping) or not isinstance(slide.get("slide_id"), str) or not isinstance(slide.get("regions"), list):
             raise AdaptationError("PREFLIGHT_INVALID")
@@ -83,7 +83,10 @@ def _physical_region_capacities(preflight: Mapping[str, Any]) -> dict[tuple[str,
             key = (slide["slide_id"], region["region_id"])
             if key in capacities:
                 raise AdaptationError("PREFLIGHT_INVALID")
-            capacities[key] = region["native_capacity"]
+            capacities[key] = {
+                "capacity": region["native_capacity"],
+                "fragment_group": region.get("fragment_group") is True,
+            }
     return capacities
 
 
@@ -109,7 +112,7 @@ def compile_adaptation(
         if not isinstance(binding, Mapping) or set(binding) != _BINDING_FIELDS or any(key in binding for key in _FORBIDDEN):
             raise AdaptationError("BINDING_SCHEMA_INVALID")
         slide_id, operation = binding.get("slide_id"), binding.get("operation")
-        if not isinstance(slide_id, str) or slide_id not in selected or operation not in {"replace_text", "replace_asset"}:
+        if not isinstance(slide_id, str) or slide_id not in selected or operation not in {"replace_text", "replace_fragment_text", "replace_asset"}:
             raise AdaptationError("BINDING_TARGET_INVALID")
         source = selected[slide_id].get("source")
         if not isinstance(source, Mapping) or not isinstance(source.get("page_id"), str):
@@ -117,19 +120,29 @@ def compile_adaptation(
         page = pages.get(source["page_id"])
         if page is None or page.get("package_sha256") != source.get("package_sha256"):
             raise AdaptationError("SOURCE_DRIFT")
-        if operation == "replace_text":
+        if operation in {"replace_text", "replace_fragment_text"}:
             region_id, fact_id = binding.get("region_id"), binding.get("fact_id")
             if not isinstance(region_id, str) or not isinstance(fact_id, str) or fact_id not in facts:
                 raise AdaptationError("TEXT_BINDING_INVALID")
             region = regions.get(region_id)
-            if region is None or region.get("page_id") != page.get("page_id") or region_id not in source.get("region_ids", []):
+            physical_region = (
+                physical_capacities.get((slide_id, region_id))
+                if physical_capacities is not None else None
+            )
+            is_fragment = operation == "replace_fragment_text"
+            if is_fragment:
+                if physical_region is None or not physical_region["fragment_group"]:
+                    raise AdaptationError("FRAGMENT_REGION_NOT_SELECTED")
+            elif region is None or region.get("page_id") != page.get("page_id") or region_id not in source.get("region_ids", []):
                 raise AdaptationError("REGION_NOT_SELECTED")
             if physical_capacities is None:
+                if is_fragment:
+                    raise AdaptationError("PREFLIGHT_REQUIRED_FOR_FRAGMENT_REGION")
                 capacity = region.get("capacity", {}).get("max_text_chars", 0) if isinstance(region.get("capacity"), Mapping) else 0
             else:
-                capacity = physical_capacities.get((slide_id, region_id))
-                if capacity is None:
+                if physical_region is None:
                     raise AdaptationError("PREFLIGHT_REGION_NOT_SELECTED")
+                capacity = physical_region["capacity"]
             if type(capacity) is not int or len(facts[fact_id]) > capacity:
                 raise AdaptationError(
                     "TEXT_CAPACITY_EXCEEDED"

@@ -273,6 +273,23 @@ secondary prose, shorten it into a fitting approved label, or select a page
 with a certified body region. A binding failure is a required replan, never a
 reason to relabel prose as `title`, `metric`, or `any`.
 
+### Certified fragment-title lockups
+
+Some high-end Chinese editorial pages express a headline as deliberately
+placed one-character text boxes. When preflight reports a region with
+`"fragment_group":true`, it is a certified **title-only** lockup. Give it one
+compact `title` fact of no more than `native_capacity` characters; the binder
+emits `replace_fragment_text` and preserves the template's original character
+positions, styles and editability. Do not manually split characters, use its
+opaque region ID, add spaces to pad it, or call it a `label`/`any` fact.
+
+A cover can have two fragment title bands. Use them as a short visual title
+and short visual qualifier (for example `年度总结` and `财务运营`), then place
+the full formal project name, presenter and date in ordinary certified
+body/label surfaces. If the required visual title cannot be expressed within
+the published fragment capacities, choose a different cover; never shrink the
+lettering, create new text boxes, or erase the composition.
+
 For a selected governed data page, the same preflight exposes a value-free
 `governed_content_contract.data_contract`. This is the sole authority for the
 separate `structured-data.v1.json`: copy its `contract_id`, supply every
