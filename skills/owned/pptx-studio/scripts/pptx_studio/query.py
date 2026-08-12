@@ -245,6 +245,16 @@ def query_catalog(
         page_id: sum(1 for item in regions if str(item.get("page_id")) == page_id)
         for page_id in pages
     }
+    family_page_count = {
+        deck_id: sum(
+            1
+            for page in pages.values()
+            if str(page.get("deck_id")) == deck_id
+            and page.get("category") in active
+            and materialization_eligible(page)
+        )
+        for deck_id in decks
+    }
     raw: list[tuple[str, Mapping[str, Any], Mapping[str, Any] | None]] = []
     if query["mode"] == "page":
         raw = [(page_id, page, None) for page_id, page in pages.items()]
@@ -321,6 +331,10 @@ def query_catalog(
         candidates.append({
             "candidate_id": candidate_id,
             "page_id": page["page_id"],
+            "deck_id": page.get("deck_id"),
+            "theme_family_page_count": family_page_count.get(
+                str(page.get("deck_id")), 0,
+            ),
             "mode": query["mode"],
             "bindable_region_count": bindable_region_count.get(page_id, 0),
             "style_signature": candidate_style_signature,

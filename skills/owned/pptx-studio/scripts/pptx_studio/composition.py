@@ -127,7 +127,7 @@ def _validate_request(request: Mapping[str, Any]) -> tuple[str, Mapping[str, Any
         raise CompositionError("ART_DIRECTION_ANCHOR_INVALID")
     if not isinstance(signatures, list) or not signatures or any(not isinstance(item, str) or not item.startswith("style_") for item in signatures):
         raise CompositionError("STYLE_SIGNATURES_INVALID")
-    if len(set(signatures)) != len(signatures):
+    if len(set(signatures)) != len(signatures) or len(signatures) > 2:
         raise CompositionError("STYLE_SIGNATURES_DUPLICATE")
     slides = request.get("slides")
     if not isinstance(slides, list) or not slides:
@@ -237,9 +237,14 @@ def compile_composition(
             raise CompositionError("SOURCE_PROVENANCE_INVALID")
         detail = _observation(page, observations)
         signature = style_signature(page, observations)
-        if signature not in allowed_signatures:
-            raise CompositionError("STYLE_SIGNATURE_NOT_ALLOWED")
         same_certified_theme_family = str(page.get("deck_id")) == anchor_deck_id
+        # One complete certified PPTX is an indivisible visual family.  Its
+        # cover, timeline and data pages may receive different vision labels
+        # and therefore different derived signatures, but its PowerPoint
+        # master/grid/palette are the authoritative common direction.  The
+        # request lists only the anchor plus at most one cross-deck fallback.
+        if signature not in allowed_signatures and not same_certified_theme_family:
+            raise CompositionError("STYLE_SIGNATURE_NOT_ALLOWED")
         if not same_certified_theme_family and not _style_profiles_compatible(anchor_profile, style_profile(page, observations)):
             raise CompositionError("STYLE_FALLBACK_INCOMPATIBLE")
         if not _role_matches(page, detail, str(item["role"])):

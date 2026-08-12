@@ -165,12 +165,20 @@ def test_exact_certified_deck_is_a_theme_family_despite_page_level_vision_labels
     observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_002"]["observation"]["visual_style"] = ["festive", "red"]  # type: ignore[index]
     signatures = {str(page["page_id"]): style_signature(page, observations) for page in catalog["pages"]}  # type: ignore[index]
     request = _request(signatures)
-    request["art_direction"]["allowed_style_signatures"] = [  # type: ignore[index]
-        signatures["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"],
-        signatures["page_aaaaaaaaaaaaaaaaaaaaaaaa_002"],
-    ]
     plan = compile_composition(catalog, observations=observations, request=request)
     assert plan["slides"][1]["evidence"]["style_match"] == "same_certified_theme_family"
+
+
+def test_composition_rejects_more_than_one_cross_deck_style_fallback() -> None:
+    catalog, observations, signatures = _fixture()
+    request = _request(signatures, strategy="page_assembly")
+    request["art_direction"]["allowed_style_signatures"] = [  # type: ignore[index]
+        signatures["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"],
+        signatures["page_cccccccccccccccccccccccc_001"],
+        "style_" + "f" * 24,
+    ]
+    with pytest.raises(CompositionError, match="STYLE_SIGNATURES_DUPLICATE"):
+        compile_composition(catalog, observations=observations, request=request)
 
 
 def test_page_assembly_rejects_repeated_physical_source_before_materialization() -> None:

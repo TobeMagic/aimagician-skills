@@ -67,6 +67,8 @@ def test_query_is_bounded_explainable_and_stable() -> None:
     assert first["status"] == "PASS"
     candidate = first["candidates"][0]
     assert candidate["candidate_id"] == "region_aaaaaaaaaaaaaaaaaaaa"
+    assert candidate["deck_id"] == "deck_aaaaaaaaaaaaaaaaaaaaaaaa"
+    assert candidate["theme_family_page_count"] == 1
     assert candidate["gates"] == ["active_source", "materialization", "observation_hash", "capacity"]
     assert candidate["scores"]["total"] == 1.0
     assert candidate["scores"]["canonical_role"] == 1.0

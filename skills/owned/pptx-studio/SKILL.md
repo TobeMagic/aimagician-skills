@@ -121,11 +121,16 @@ when a page type recurs (for example section dividers or data cards), select a
 different returned candidate for each occurrence. Treat
 `PAGE_SOURCE_DUPLICATE` as a composition correction, not an assembly retry.
 
-Every returned candidate also has `page_id` and a certified
-`style_signature`. Choose the cover candidate's `page_id` as
+Every returned candidate also has `page_id`, `deck_id`,
+`theme_family_page_count` and a certified `style_signature`. Prefer a cover
+from a complete certified work with enough eligible sibling pages for the
+deck, rather than selecting the visually loudest single-page cover. Choose
+the cover candidate's `page_id` as
 `art_direction.anchor_page_id`; copy its exact `style_signature` into
-`allowed_style_signatures`. Add another signature only when the query result
-proves a necessary compatible fallback: it must preserve the anchor's
+`allowed_style_signatures`. A complete anchor deck's sibling pages are allowed
+even when their page-level signatures differ. Add at most **one** more
+signature, and only when the query result proves a necessary compatible
+cross-deck fallback: it must preserve the anchor's
 colour-family. For a cool professional institutional system, balanced and
 dark-blue pages may be deliberately combined for chapter/data/process rhythm;
 red/ceremonial, green, warm, light-neutral or unrelated editorial fallbacks
@@ -140,8 +145,8 @@ natural-language direction. The exact
 When the anchor comes from a certified multi-page work, its other pages are a
 controlled theme family: their shared PowerPoint master/palette/grid outranks
 per-page vision wording such as “infographic” versus “corporate”. You may add
-only signatures returned for pages in that same selected certified deck, or
-an independently compatible signature under the rule above. This permits a
+only the anchor signature plus one independently compatible fallback signature
+under the rule above. This permits a
 coherent full-work template to retain its own chapter/data cadence; it does
 not authorize cross-deck random mixing.
 
