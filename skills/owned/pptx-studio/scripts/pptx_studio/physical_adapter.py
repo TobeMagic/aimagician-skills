@@ -649,8 +649,11 @@ def compile_physical_adapter(
         # the normal role floor. The lineage makes this reduced editable
         # surface explicit for later visual/release review.
         if composition_plan.get("strategy") == "exact_deck":
+            selected_region_ids = source.get("region_ids")
+            if not isinstance(selected_region_ids, list) or not selected_region_ids:
+                raise PhysicalAdapterError("COMPOSITION_SOURCE_REGIONS_INVALID")
             required_client_fact_count = max(1, min(
-                minimum_distinct_client_facts(declared_role), len(source_regions),
+                minimum_distinct_client_facts(declared_role), len(selected_region_ids),
             ))
         else:
             required_client_fact_count = minimum_distinct_client_facts(declared_role)

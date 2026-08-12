@@ -125,6 +125,26 @@ def test_adapter_materializes_native_editable_pptx_with_lineage(tmp_path: Path) 
     assert lineage["slides"][0]["asset_bindings"][0]["asset_id"] == "cover-image"
 
 
+def test_adapter_exact_deck_completeness_uses_selected_native_regions(tmp_path: Path) -> None:
+    source_root, catalog, composition, request, replacement = _source_pack(tmp_path)
+    composition["strategy"] = "exact_deck"
+    adaptation = compile_adaptation(composition, catalog=catalog, request=request)
+
+    report, lineage = assemble_from_plans(
+        composition, adaptation, request, catalog=catalog,
+        private_source_root=source_root, workspace=tmp_path / "stage",
+        output_path=tmp_path / "exact.pptx", asset_paths={"cover-image": replacement},
+    )
+
+    assert report.status == "pass"
+    assert lineage["slides"][0]["binding_completeness"] == {
+        "declared_role": "cover",
+        "distinct_client_fact_count": 2,
+        "required_distinct_client_fact_count": 2,
+        "status": "PASS",
+    }
+
+
 def test_adapter_rejects_unmapped_private_package(tmp_path: Path) -> None:
     source_root, catalog, composition, request, replacement = _source_pack(tmp_path)
     catalog["pages"][0]["package_sha256"] = "a" * 64  # type: ignore[index]
