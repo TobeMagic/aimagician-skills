@@ -1,6 +1,6 @@
 # Phase 53: Clean-Room Work-Report Acceptance and Release — Validation
 
-**Updated:** 2026-08-12
+**Updated:** 2026-08-13
 
 ## Environment
 
@@ -12,7 +12,7 @@
 
 | Requirement | Status | Evidence | Observed result |
 |---|---|---|---|
-| V7-ACCEPT-01 | NOT_RUN | Awaiting real clean-room Codex execution. | No delivery artifact yet. |
+| V7-ACCEPT-01 | FAIL (author run) | `/tmp/pptx-studio-phase53-sparse-cover.cSTLGP` on `gpt-5.6-terra` medium generated 15 editable physical pages. | Structural QA passed, but rendered visual inspection found source-bound TCM/product imagery and content semantics unrelated to the hospital-finance brief. This is failure evidence, not acceptance. |
 | V7-RELEASE-01 | NOT_RUN | Awaiting exact-output QA, blind reviews and frozen audit. | No release decision yet. |
 
 ## Goal Evidence
@@ -20,7 +20,7 @@
 | Goal criterion | Status | Evidence | Observed result |
 |---|---|---|---|
 | GOAL-53-01 | PASS | `find /tmp/pptx-studio-phase53-client.KV9xoK -type f` lists only three client documents. | Private library/reference deck are external to the client pack. |
-| GOAL-53-02 | NOT_RUN | Awaiting Codex delivery. | No output artifact yet. |
+| GOAL-53-02 | FAIL (author run) | `deliverables/2025-医院财务运营工作汇报.pptx`, its `lineage.json`, and a 15-page LibreOffice render in the sparse-cover clean pack. | 15 physical pages and 104 fact bindings passed mechanical checks; client semantic/visual suitability did not. |
 | GOAL-53-03 | NOT_RUN | Awaiting delivery QA/reviews/audit. | No release evidence yet. |
 
 ## Commands
@@ -46,6 +46,14 @@
   native-capacity preflight result.
 - The next clean run supersedes `/tmp/pptx-studio-phase53-client-preflight.lsOLo9`: it is a valid failed-author evidence pack, not a release artifact. Its failure is fixed at the public interface instead of by instructing the model to inspect hidden implementation.
 - `/tmp/pptx-studio-phase53-client-compose.LNv0tS` is also failed-author evidence only: it reached governed adaptation but had no valid PPTX or release claim after a duplicate physical-page rejection. The next clean run must have a unique selected page per slide and preserve nonempty customer content.
+- `/tmp/pptx-studio-phase53-sparse-cover.cSTLGP` is a later failed-author
+  evidence pack. It produced a valid editable PPTX (output SHA
+  `5681ed10696fb1c9780fe8bf7a40e22dd33e5b872dfb155f12fee6e98c0b48c6`),
+  but local render inspection rejected it because its selected family was a
+  green TCM/product work, not a hospital-finance visual system. Mechanical
+  source-residue QA did not classify subject-bound raster/illustration
+  content. Commits `81226bc` and `6ac2d6f` correct the retrieval and
+  composition bypass respectively; the next run must use a new clean pack.
 
 ## Delivery Contract
 
