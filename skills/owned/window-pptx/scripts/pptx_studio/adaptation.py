@@ -25,6 +25,14 @@ def serialize_adaptation_plan(plan: Mapping[str, Any]) -> str:
     return json.dumps(plan, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def adaptation_request_sha256(request: Mapping[str, Any]) -> str:
+    """Bind the ID-only plan to the immutable value registry without exposing it."""
+
+    return __import__("hashlib").sha256(
+        json.dumps(request, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
 def _registry(request: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, str], list[Mapping[str, Any]]]:
     if set(request) != _REQUEST_FIELDS or request.get("schema_version") != "1.0":
         raise AdaptationError("REQUEST_SCHEMA_INVALID")
@@ -107,5 +115,6 @@ def compile_adaptation(
         "schema_version": "1.0",
         "status": "PASS",
         "composition_plan_sha256": composition_plan_sha256(composition_plan),
+        "adaptation_request_sha256": adaptation_request_sha256(request),
         "operations": operations,
     }

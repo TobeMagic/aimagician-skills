@@ -16,6 +16,7 @@ from pptx_studio.rendering import complete_render_index
 from pptx_studio.query import query_catalog
 from pptx_studio.composition import compile_composition
 from pptx_studio.adaptation import compile_adaptation
+from pptx_studio.physical_adapter import assemble_from_plans
 from pptx_studio.visual_batches import ingest_batch_report, plan_visual_batches, prompt_for_batch, run_agnes_batch, run_agnes_range
 
 
@@ -73,7 +74,7 @@ def render_index_from_asset_index(path: Path) -> dict[str, dict[str, Any]]:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "query", "compose", "adapt", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
+    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "query", "compose", "adapt", "assemble", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--archive-root", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
@@ -90,6 +91,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--composition-plan", type=Path)
     parser.add_argument("--adaptation-input", type=Path)
     parser.add_argument("--adaptation-output", type=Path)
+    parser.add_argument("--private-source-root", type=Path)
+    parser.add_argument("--assembly-workspace", type=Path)
+    parser.add_argument("--pptx-output", type=Path)
+    parser.add_argument("--lineage-output", type=Path)
+    parser.add_argument("--asset-paths", type=Path, help="private JSON object: asset ID -> local client image path")
     parser.add_argument("--private-root", type=Path)
     parser.add_argument("--completion-evidence-root", type=Path)
     parser.add_argument("--observation-index", type=Path)
@@ -170,6 +176,24 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         result = compile_adaptation(_read_json(args.composition_plan), catalog=_read_json(args.catalog), request=_read_json(args.adaptation_input))
         _write_json(args.adaptation_output, result)
         return {"status": result["status"], "adaptation_output": str(args.adaptation_output), "summary": {"operation_count": len(result["operations"])}}
+    if args.command == "assemble":
+        if any(value is None for value in (args.catalog, args.composition_plan, args.adaptation_input, args.adaptation_output, args.private_source_root, args.assembly_workspace, args.pptx_output, args.lineage_output)):
+            raise ValueError("ASSEMBLY_ARGUMENT_REQUIRED")
+        raw_asset_paths = _read_json(args.asset_paths) if args.asset_paths is not None else {}
+        if not all(isinstance(key, str) and isinstance(value, str) for key, value in raw_asset_paths.items()):
+            raise ValueError("ASSET_PATHS_INVALID")
+        report, lineage = assemble_from_plans(
+            _read_json(args.composition_plan),
+            _read_json(args.adaptation_output),
+            _read_json(args.adaptation_input),
+            catalog=_read_json(args.catalog),
+            private_source_root=args.private_source_root,
+            workspace=args.assembly_workspace,
+            output_path=args.pptx_output,
+            asset_paths=raw_asset_paths,
+        )
+        _write_json(args.lineage_output, lineage)
+        return {"status": "PASS" if report.status == "pass" else "FAIL", "pptx_output": str(args.pptx_output), "lineage_output": str(args.lineage_output), "summary": {"slide_count": report.target_slide_count, "physical_status": report.status}}
     if args.command == "vision-plan":
         if any(value is None for value in (args.catalog, args.asset_index, args.render_index, args.private_root, args.completion_evidence_root, args.batch_plan)):
             raise ValueError("VISION_PLAN_ARGUMENT_REQUIRED")

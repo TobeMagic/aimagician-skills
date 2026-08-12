@@ -906,7 +906,7 @@ QA/repair, and client-safe delivery.
 
 **Depends on:** Phase 51
 **Requirements:** [V7-SKILL-01, V7-QA-01, V7-MIGRATE-01]
-**Status:** Planned
+**Status:** In Progress
 
 ### Phase 53: Clean-Room Work-Report Acceptance and Release
 
@@ -935,5 +935,5 @@ visual, and independent audit gates.
 |-------|--------|-----------|
 | 50. Asset Curation and Visual Catalog | In Progress | — |
 | 51. Composition Retrieval and Governed Adaptation | In Progress | — |
-| 52. PPTX Studio Migration and Agent Workflow | Planned | — |
+| 52. PPTX Studio Migration and Agent Workflow | In Progress | — |
 | 53. Clean-Room Work-Report Acceptance and Release | Planned | — |
