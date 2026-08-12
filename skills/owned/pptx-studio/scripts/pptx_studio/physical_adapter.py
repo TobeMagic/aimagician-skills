@@ -610,10 +610,33 @@ def assemble_from_plans(
         max_output_size_bytes=33_941_179,
     )
     lineage = dict(compiled.lineage)
-    lineage["output_sha256"] = _sha256_file(Path(output_path))
+    # A failed physical verifier deliberately removes its candidate rather
+    # than publishing it.  Preserve a compact, non-sensitive diagnostic so
+    # an agent can repair the governed plan; never attempt to hash a file
+    # that the verifier intentionally did not release.
     lineage["physical_report_status"] = report.status
+    lineage["physical_checks"] = {
+        "opc_integrity": report.opc_integrity.status,
+        "editability": report.editability.status,
+        "style_cluster": report.style_cluster_adherence.status,
+        "authority": report.authority.status,
+        "selection_authority": report.selection_authority.status,
+        "source_residue": report.source_residue.status,
+        "libreoffice": report.libreoffice.status,
+        "size": report.size_check.status,
+    }
+    if report.status != "pass":
+        lineage["status"] = "FAIL"
+        lineage["qa"] = {
+            "status": "not_run",
+            "reason": "PHYSICAL_ASSEMBLY_FAILED",
+        }
+        return report, lineage
+    lineage["output_sha256"] = _sha256_file(Path(output_path))
     qa = run_studio_qa(
         output_path, plan=compiled.plan, physical_report=report, lineage=lineage,
     )
     lineage["qa"] = qa.to_dict()
+    if qa.status != "pass":
+        lineage["status"] = "FAIL"
     return report, lineage

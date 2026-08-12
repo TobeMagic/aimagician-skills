@@ -208,7 +208,16 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
             asset_paths=raw_asset_paths,
         )
         _write_json(args.lineage_output, lineage)
-        return {"status": "PASS" if report.status == "pass" else "FAIL", "pptx_output": str(args.pptx_output), "lineage_output": str(args.lineage_output), "summary": {"slide_count": report.target_slide_count, "physical_status": report.status}}
+        return {
+            "status": "PASS" if report.status == "pass" and lineage.get("qa", {}).get("status") == "pass" else "FAIL",
+            "pptx_output": str(args.pptx_output),
+            "lineage_output": str(args.lineage_output),
+            "summary": {
+                "slide_count": report.target_slide_count,
+                "physical_status": report.status,
+                "qa_status": lineage.get("qa", {}).get("status", "not_run"),
+            },
+        }
     if args.command == "vision-plan":
         if any(value is None for value in (args.catalog, args.asset_index, args.render_index, args.private_root, args.completion_evidence_root, args.batch_plan)):
             raise ValueError("VISION_PLAN_ARGUMENT_REQUIRED")

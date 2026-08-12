@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -24,6 +25,7 @@ from pptx_studio.physical_adapter import (  # noqa: E402
     resolve_catalog_sources,
 )
 from pptx_studio.qa import run_studio_qa  # noqa: E402
+import pptx_studio.physical_adapter as physical_adapter  # noqa: E402
 from manage_pptx_studio_library import run  # noqa: E402
 
 
@@ -121,6 +123,29 @@ def test_adapter_rejects_unmapped_private_package(tmp_path: Path) -> None:
     catalog["pages"][0]["package_sha256"] = "a" * 64  # type: ignore[index]
     with pytest.raises(PhysicalAdapterError, match="PRIVATE_PACKAGE_MISSING"):
         resolve_catalog_sources(catalog, private_source_root=source_root)
+
+
+def test_adapter_returns_actionable_lineage_when_physical_verifier_rejects_release(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_root, catalog, composition, request, replacement = _source_pack(tmp_path)
+    adaptation = compile_adaptation(composition, catalog=catalog, request=request)
+    real_assemble = physical_adapter.assemble_physical_deck
+
+    def reject_after_real_assembly(*args: object, **kwargs: object):
+        report = real_assemble(*args, **kwargs)
+        return replace(report, status="fail")
+
+    monkeypatch.setattr(physical_adapter, "assemble_physical_deck", reject_after_real_assembly)
+    report, lineage = assemble_from_plans(
+        composition, adaptation, request, catalog=catalog,
+        private_source_root=source_root, workspace=tmp_path / "stage",
+        output_path=tmp_path / "output.pptx", asset_paths={"cover-image": replacement},
+    )
+    assert report.status == "fail"
+    assert lineage["status"] == "FAIL"
+    assert lineage["qa"] == {"status": "not_run", "reason": "PHYSICAL_ASSEMBLY_FAILED"}
+    assert lineage["physical_checks"]["opc_integrity"] == "pass"
 
 
 def test_adapter_rejects_value_plan_drift(tmp_path: Path) -> None:
