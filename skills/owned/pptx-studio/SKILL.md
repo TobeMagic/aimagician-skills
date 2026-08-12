@@ -264,6 +264,16 @@ client content. Use it to preserve the visual grammar of cards and dashboards
 corresponding metrics), rather than merely satisfying the role's minimum fact
 floor. It contains no template copy, shape IDs or geometry.
 
+For a selected governed data page, the same preflight exposes a value-free
+`governed_content_contract.data_contract`. This is the sole authority for the
+separate `structured-data.v1.json`: copy its `contract_id`, supply every
+published field at exactly its published count, and keep every display value
+within the matching `max_chars` item. The values are customer facts, not a
+template transcription. Never guess a contract, reuse a contract from a
+different selected slide, or construct a partial chart/table payload. A
+missing or invalid field deliberately stops `adapt`; reselect a native-text
+page if the client cannot provide the complete dataset.
+
 Before selecting a candidate, inspect `requires_structured_data` in the query
 result. A native chart/table/workbook page is not decorative: select it only
 when the brief supplies its complete published `data_contract` (all fields,
@@ -294,7 +304,9 @@ result is the authority for every selected `region_id`: bind text only when it
 fits that region's `native_capacity` (and every listed `shape_slots` capacity).
 Split the narrative across distinct selected regions/pages when it does not;
 do not reuse a fact ID or put the same title into multiple slots. An adaptation request
-has only `schema_version`, `facts`, `assets` and `bindings`; each binding must
+has only `schema_version`, `facts`, `assets`, `bindings` and `structured_data`;
+`structured_data` is `[]` unless a selected preflight contract requires it.
+Each binding must
 include all of `slide_id`, `operation`, `region_id`, `shape_id`, `fact_id` and
 `asset_id`, using `null` for fields inapplicable to that operation. Compile it
 with `adapt` before `assemble`. Catalog capacity is a retrieval hint only and
