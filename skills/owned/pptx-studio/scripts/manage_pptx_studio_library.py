@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from pptx_studio.catalog import compile_catalog, serialize_catalog
-from pptx_studio.curation import apply_curation, plan_curation, recover_curation, verify_curation
+from pptx_studio.curation import ACTIVE_GAOJIE_CATEGORIES, apply_curation, plan_curation, recover_curation, verify_curation
 from pptx_studio.rendering import complete_render_index
 from pptx_studio.query import query_catalog
 from pptx_studio.composition import compile_composition
