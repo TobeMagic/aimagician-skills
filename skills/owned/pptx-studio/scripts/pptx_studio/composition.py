@@ -8,7 +8,7 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from .query import _CATEGORY_ROLES
+from .query import _CATEGORY_ROLES, style_profile_from_observation, style_signature_from_observation
 
 
 class CompositionError(ValueError):
@@ -55,37 +55,13 @@ def style_profile(page: Mapping[str, Any], observations: Mapping[str, Mapping[st
     """Reduce free-form visual prose to a small deterministic compatibility taxonomy."""
 
     detail = _observation(page, observations)
-    labels = " ".join(str(item).casefold() for item in detail["visual_style"])
-    if any(token in labels for token in ("academic", "research", "scholarly")):
-        archetype = "academic"
-    elif any(token in labels for token in ("festive", "celebration", "ceremonial")):
-        archetype = "festive"
-    elif any(token in labels for token in ("tech", "technology", "digital", "futur")):
-        archetype = "technology"
-    elif any(token in labels for token in ("editorial", "magazine", "luxury")):
-        archetype = "editorial"
-    elif any(token in labels for token in ("minimal", "clean layout", "clean corporate")):
-        archetype = "minimal"
-    elif any(token in labels for token in ("infographic", "data visual")):
-        archetype = "infographic"
-    elif any(token in labels for token in ("corporate", "professional", "formal", "business")):
-        archetype = "corporate"
-    else:
-        archetype = "general"
-    if any(token in labels for token in ("dark", "black", "night")):
-        tone = "dark"
-    elif any(token in labels for token in ("light", "white", "bright")):
-        tone = "light"
-    else:
-        tone = "balanced"
-    return {"archetype": archetype, "tone": tone}
+    return style_profile_from_observation(detail)
 
 
 def style_signature(page: Mapping[str, Any], observations: Mapping[str, Mapping[str, Any]]) -> str:
     """Return a catalog-derived visual-style cluster identifier, never agent text."""
 
-    digest = hashlib.sha256(_canonical_json(style_profile(page, observations)).encode("utf-8")).hexdigest()[:24]
-    return f"style_{digest}"
+    return style_signature_from_observation(_observation(page, observations))
 
 
 def _page_capacity(page: Mapping[str, Any]) -> int:

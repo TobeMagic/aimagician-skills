@@ -75,6 +75,24 @@ Use `page_assembly` for a normal mixed-role business deck. Preserve query
 results in client-local `work/` evidence; never copy a catalog, preview or
 source package there.
 
+Every returned candidate also has `page_id` and a certified
+`style_signature`. Choose the cover candidate's `page_id` as
+`art_direction.anchor_page_id`; copy its exact `style_signature` into
+`allowed_style_signatures`. Add another signature only when the query result
+proves a necessary compatible fallback. Do not substitute a deck ID, style
+label or natural-language direction. The exact `art_direction` contract is:
+
+```json
+{"anchor_page_id":"page_<24-lowercase-hex>_001","allowed_style_signatures":["style_<24-lowercase-hex>"]}
+```
+
+For example, the full composition request begins as follows (replace all
+placeholder values only with query-result values):
+
+```json
+{"schema_version":"1.0","strategy":"page_assembly","art_direction":{"anchor_page_id":"page_0123456789abcdef01234567_001","allowed_style_signatures":["style_0123456789abcdef01234567"]},"slides":[{"slide_id":"s01","role":"cover","candidate_ids":["page_0123456789abcdef01234567_001"],"selected_candidate_id":"page_0123456789abcdef01234567_001","minimum_capacity":12}]}
+```
+
 ## 3. Plan and bind without visual implementation authority
 
 Compile a composition plan, then run the native-capacity preflight, and only

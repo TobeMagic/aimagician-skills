@@ -12,6 +12,7 @@ SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 
 from pptx_studio.query import QueryError, query_catalog, serialize_query_result  # noqa: E402
+from pptx_studio.composition import style_signature  # noqa: E402
 from manage_pptx_studio_library import run  # noqa: E402
 
 
@@ -65,6 +66,7 @@ def test_query_is_bounded_explainable_and_stable() -> None:
     assert candidate["scores"]["total"] == 1.0
     assert candidate["scores"]["canonical_role"] == 1.0
     assert "canonical_category_role" in candidate["reasons"]
+    assert candidate["style_signature"] == style_signature(catalog["pages"][0], observations)  # type: ignore[index]
 
 
 @pytest.mark.parametrize(
@@ -128,4 +130,6 @@ def test_cli_query_uses_catalog_and_complete_observations_only(tmp_path: Path) -
     result = run(["query", "--source-root", str(source), "--archive-root", str(archive), "--manifest", str(manifest), "--catalog", str(catalog_path), "--observation-index", str(observations_path), "--query-input", str(request_path), "--query-output", str(output_path)])
 
     assert result["status"] == "PASS"
-    assert json.loads(output_path.read_text(encoding="utf-8"))["candidates"][0]["page_id"] == "page_aaaaaaaaaaaaaaaaaaaaaaaa_001"
+    candidate = json.loads(output_path.read_text(encoding="utf-8"))["candidates"][0]
+    assert candidate["page_id"] == "page_aaaaaaaaaaaaaaaaaaaaaaaa_001"
+    assert candidate["style_signature"].startswith("style_")

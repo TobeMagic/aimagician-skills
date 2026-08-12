@@ -33,6 +33,7 @@
 | `node dist/cli/index.js format-skills --check` | PASS | 28 owned Skill records are valid. |
 | `git diff --check` | PASS | No whitespace errors. |
 | `pytest -q tests/window_pptx/test_pptx_studio_physical_adapter.py tests/window_pptx/test_pptx_studio_adaptation.py tests/window_pptx/test_pptx_studio_composition.py` | PASS | 21 passed after native slot preflight addition. |
+| `pytest -q tests/window_pptx/test_pptx_studio_query.py tests/window_pptx/test_pptx_studio_composition.py tests/window_pptx/test_pptx_studio_adaptation.py tests/window_pptx/test_pptx_studio_physical_adapter.py` | PASS | 28 passed after publishing certified query style signatures and composition contract. |
 
 ## Gaps And Residual Risk
 
@@ -43,6 +44,7 @@
   but exposed catalog/native text-capacity drift. None produced a release
   artifact and none counts toward acceptance. The next run must consume the
   native-capacity preflight result.
+- The next clean run supersedes `/tmp/pptx-studio-phase53-client-preflight.lsOLo9`: it is a valid failed-author evidence pack, not a release artifact. Its failure is fixed at the public interface instead of by instructing the model to inspect hidden implementation.
 
 ## Delivery Contract
 

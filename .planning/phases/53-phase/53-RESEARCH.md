@@ -20,6 +20,7 @@ physically lineage-bound work report.
 | `/tmp/pptx-studio-doctor-phase53.json` | Codex managed Skill installation is healthy; private library does not inflate the installed directory. | Installation precondition. |
 | Failed clean-room transcripts | Explicit `model_provider="OpenAI"` is unavailable in this environment, while the selected `gpt-5.6-terra` model runs when that invalid override is omitted. A second/third run also proved catalog text capacity can exceed an actual source-slot capacity. | The harness must omit that provider override and must preflight selected native slots before adaptation. |
 | `physical_adapter.preflight_native_slots` | Selected catalog pages are resolved by hash and their actual native slot capacities are emitted without source text or private paths. | Removes trial-and-error binding decisions from the agent. |
+| `/tmp/pptx-studio-phase53-client-preflight.lsOLo9/work/FAILURE.md` | The first preflight-era Codex run completed all retrieval requests but correctly stopped on `ART_DIRECTION_INVALID`: query results did not expose the machine-required style signature and public Skill prose omitted the object contract. | The public query result now returns a deterministic certified `style_signature`; the Skill gives the exact `art_direction` object and request example. |
 
 ## External Evidence
 
@@ -40,7 +41,8 @@ physically lineage-bound work report.
 
 Freeze source/install parity, then execute one fresh Codex production run. The
 agent must perform native-capacity preflight after composition and before it
-records client facts/bindings. Accept
+records client facts/bindings. Query output must provide the exact style
+signature needed to form the composition contract. Accept
 only the exact output fingerprint after physical lineage, opening/editability,
 rule QA, independent render reviews and a frozen audit all pass.
 

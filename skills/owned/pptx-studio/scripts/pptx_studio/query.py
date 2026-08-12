@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from typing import Any, Mapping
 
 
@@ -39,6 +40,44 @@ _CATEGORY_ROLES: dict[str, frozenset[str]] = {
     "059-一段内容": frozenset({"one-item"}),
     "082-地图排版": frozenset({"map"}),
 }
+
+
+def style_profile_from_observation(observation: Mapping[str, Any]) -> dict[str, str]:
+    """Reduce certified visual evidence to the public style-cluster taxonomy."""
+
+    styles = observation.get("visual_style")
+    if not isinstance(styles, list) or not styles or any(not isinstance(item, str) or not item for item in styles):
+        raise QueryError("OBSERVATION_STYLE_INVALID")
+    labels = " ".join(item.casefold() for item in styles)
+    if any(token in labels for token in ("academic", "research", "scholarly")):
+        archetype = "academic"
+    elif any(token in labels for token in ("festive", "celebration", "ceremonial")):
+        archetype = "festive"
+    elif any(token in labels for token in ("tech", "technology", "digital", "futur")):
+        archetype = "technology"
+    elif any(token in labels for token in ("editorial", "magazine", "luxury")):
+        archetype = "editorial"
+    elif any(token in labels for token in ("minimal", "clean layout", "clean corporate")):
+        archetype = "minimal"
+    elif any(token in labels for token in ("infographic", "data visual")):
+        archetype = "infographic"
+    elif any(token in labels for token in ("corporate", "professional", "formal", "business")):
+        archetype = "corporate"
+    else:
+        archetype = "general"
+    if any(token in labels for token in ("dark", "black", "night")):
+        tone = "dark"
+    elif any(token in labels for token in ("light", "white", "bright")):
+        tone = "light"
+    else:
+        tone = "balanced"
+    return {"archetype": archetype, "tone": tone}
+
+
+def style_signature_from_observation(observation: Mapping[str, Any]) -> str:
+    profile = style_profile_from_observation(observation)
+    raw = json.dumps(profile, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return f"style_{hashlib.sha256(raw.encode('utf-8')).hexdigest()[:24]}"
 
 
 def _normal_tags(value: Any) -> list[str]:
@@ -151,6 +190,7 @@ def query_catalog(
             "candidate_id": candidate_id,
             "page_id": page["page_id"],
             "mode": query["mode"],
+            "style_signature": style_signature_from_observation(observation),
             "gates": ["active_source", "observation_hash", "capacity"],
             "scores": {"canonical_role": category_role_score, "visual_role": visual_role_score, "tags": round(tag_score, 6), "style": style_score, "capacity": round(capacity_score, 6), "total": total},
             "reasons": reasons,
