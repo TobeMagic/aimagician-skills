@@ -107,7 +107,7 @@ def _select_other_deck(request: dict[str, object], signatures: dict[str, str]) -
     "mutate,error",
     [
         (lambda request, signatures: request["art_direction"].update({"allowed_style_signatures": ["style_" + "f" * 24]}), "ANCHOR_SIGNATURE_NOT_ALLOWED"),
-        (_select_other_deck, "EXACT_DECK_SEQUENCE_INVALID"),
+        (_select_other_deck, "STYLE_FALLBACK_INCOMPATIBLE"),
         (lambda request, signatures: request["slides"][0].update({"selected_candidate_id": "missing", "candidate_ids": ["missing"]}), "PAGE_CANDIDATE_UNKNOWN"),
     ],
 )
@@ -125,6 +125,17 @@ def test_component_requires_safe_region_and_explicit_signature() -> None:
     request["slides"] = [{"slide_id": "s01", "role": "cover", "candidate_ids": ["region_a_title"], "selected_candidate_id": "region_a_title", "minimum_capacity": 20}]
     plan = compile_composition(catalog, observations=observations, request=request)
     assert plan["slides"][0]["source"]["region_ids"] == ["region_a_title"]
+
+
+def test_page_assembly_rejects_warm_fallback_from_cool_anchor() -> None:
+    catalog, observations, signatures = _fixture()
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"]["visual_style"] = ["corporate", "blue"]  # type: ignore[index]
+    observations["page_cccccccccccccccccccccccc_001"]["observation"]["visual_style"] = ["corporate", "red"]  # type: ignore[index]
+    signatures = {str(page["page_id"]): style_signature(page, observations) for page in catalog["pages"]}  # type: ignore[index]
+    request = _request(signatures, strategy="page_assembly")
+    _select_other_deck(request, signatures)
+    with pytest.raises(CompositionError, match="STYLE_FALLBACK_INCOMPATIBLE"):
+        compile_composition(catalog, observations=observations, request=request)
 
 
 def test_page_assembly_rejects_repeated_physical_source_before_materialization() -> None:

@@ -64,6 +64,29 @@ def style_signature(page: Mapping[str, Any], observations: Mapping[str, Mapping[
     return style_signature_from_observation(_observation(page, observations))
 
 
+def _style_profiles_compatible(
+    anchor: Mapping[str, str], candidate: Mapping[str, str],
+) -> bool:
+    """Allow controlled family variants without collapsing visual direction.
+
+    The previous two-axis taxonomy treated a blue finance deck and a red
+    ceremonial deck as equivalent ``corporate/balanced`` pages. Colour and
+    luminance are visible design commitments, so a page may fall back only
+    inside the anchor's colour family and tone. Corporate/minimal/technology
+    are permitted as one professional family to retain enough specialist
+    process/chart pages; other archetypes are intentionally isolated.
+    """
+
+    if anchor["color_family"] != candidate["color_family"]:
+        return False
+    if anchor["tone"] != candidate["tone"]:
+        return False
+    professional = {"corporate", "minimal", "technology"}
+    if anchor["archetype"] in professional:
+        return candidate["archetype"] in professional
+    return anchor["archetype"] == candidate["archetype"]
+
+
 def _page_capacity(page: Mapping[str, Any]) -> int:
     shapes = page.get("shapes")
     if not isinstance(shapes, list):
@@ -147,9 +170,18 @@ def compile_composition(
     if anchor is None or anchor.get("category") not in active:
         raise CompositionError("ANCHOR_PAGE_INVALID")
     anchor_signature = style_signature(anchor, observations)
+    anchor_profile = style_profile(anchor, observations)
     allowed_signatures = list(art["allowed_style_signatures"])
     if anchor_signature not in allowed_signatures:
         raise CompositionError("ANCHOR_SIGNATURE_NOT_ALLOWED")
+    signature_profiles = {
+        style_signature(page, observations): style_profile(page, observations)
+        for page in pages.values()
+    }
+    for signature in allowed_signatures:
+        profile = signature_profiles.get(signature)
+        if profile is None or not _style_profiles_compatible(anchor_profile, profile):
+            raise CompositionError("STYLE_FALLBACK_INCOMPATIBLE")
 
     output_slides: list[dict[str, Any]] = []
     exact_deck_id: str | None = None
@@ -183,6 +215,8 @@ def compile_composition(
         signature = style_signature(page, observations)
         if signature not in allowed_signatures:
             raise CompositionError("STYLE_SIGNATURE_NOT_ALLOWED")
+        if not _style_profiles_compatible(anchor_profile, style_profile(page, observations)):
+            raise CompositionError("STYLE_FALLBACK_INCOMPATIBLE")
         if not _role_matches(page, detail, str(item["role"])):
             raise CompositionError("ROLE_INCOMPATIBLE")
         if type(capacity) is not int or capacity < item["minimum_capacity"]:

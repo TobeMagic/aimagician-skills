@@ -99,8 +99,11 @@ Every returned candidate also has `page_id` and a certified
 `style_signature`. Choose the cover candidate's `page_id` as
 `art_direction.anchor_page_id`; copy its exact `style_signature` into
 `allowed_style_signatures`. Add another signature only when the query result
-proves a necessary compatible fallback. Do not substitute a deck ID, style
-label or natural-language direction. The exact `art_direction` contract is:
+proves a necessary compatible fallback: it must preserve the anchor's
+colour-family and luminance tone. A red/ceremonial, green, dark, or unrelated
+editorial fallback is not compatible with a cool balanced finance deck. Do
+not substitute a deck ID, style label or natural-language direction. The exact
+`art_direction` contract is:
 
 ```json
 {"anchor_page_id":"page_<24-lowercase-hex>_001","allowed_style_signatures":["style_<24-lowercase-hex>"]}

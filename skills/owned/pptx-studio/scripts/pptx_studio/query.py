@@ -71,7 +71,14 @@ def style_profile_from_observation(observation: Mapping[str, Any]) -> dict[str, 
         tone = "light"
     else:
         tone = "balanced"
-    return {"archetype": archetype, "tone": tone}
+    cool = any(token in labels for token in ("blue", "cyan", "teal"))
+    warm = any(token in labels for token in ("red", "orange", "yellow", "gold"))
+    green = "green" in labels
+    color_family = (
+        "mixed" if cool and warm else "cool" if cool else "warm"
+        if warm else "green" if green else "neutral"
+    )
+    return {"archetype": archetype, "tone": tone, "color_family": color_family}
 
 
 def style_signature_from_observation(observation: Mapping[str, Any]) -> str:
