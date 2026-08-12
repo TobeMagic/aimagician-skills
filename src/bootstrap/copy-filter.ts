@@ -3,6 +3,7 @@ import { basename, normalize, sep } from "node:path";
 const LOCAL_REFERENCE_REPOS_SEGMENT = `${sep}references${sep}_external_repos`;
 const TRANSIENT_DIRECTORY_NAMES = new Set([
   ".git",
+  ".private",
   ".pytest_cache",
   "node_modules",
   "__pycache__"
