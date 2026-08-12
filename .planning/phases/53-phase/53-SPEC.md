@@ -38,6 +38,11 @@ Prove the migrated Skill with a fresh capable-model agent in a clean
   retrieval and select the complete family without misclassifying each page
   through a generic component-category role. Its actual native text surface
   remains explicit and governs binding/visual release.
+- A page with native chart, table, or embedded-workbook values is eligible for
+  a client deck only when the locked client pack supplies the corresponding
+  complete structured dataset. A text-only outline must select a compatible
+  zero-data-surface page instead; clearing a chart or retaining sample values
+  is not an acceptable delivery shortcut.
 
 ### V7-RELEASE-01: Independent release proof
 
@@ -97,6 +102,7 @@ the already governed local private library outside the client folder.
 | 1 | Can a model bypass catalog assembly if output looks attractive? | No; every page must have physical catalog lineage. |
 | 2 | Can one multimodal reviewer approve release? | No; three fresh anonymous contexts are required. |
 | 3 | Does moving private assets into the new ignored root contaminate the client pack? | No; the clean folder has no private subtree and inventory proves it. |
+| 4 | May a chart-heavy reference page be used when the brief only supplies headline metrics? | No. Query/preflight expose a value-free structured-data requirement and selection must choose a compatible no-data-surface page until a complete dataset is locked. |
 
 ## Blocking Questions
 

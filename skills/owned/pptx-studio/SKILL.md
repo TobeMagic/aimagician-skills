@@ -217,6 +217,14 @@ client content. Use it to preserve the visual grammar of cards and dashboards
 corresponding metrics), rather than merely satisfying the role's minimum fact
 floor. It contains no template copy, shape IDs or geometry.
 
+Before selecting a candidate, inspect `requires_structured_data` in the query
+result. In the current text-and-image adaptation route it must be `false`.
+A native chart/table/workbook page is not decorative: it needs a separately
+locked, complete dataset for every category and value. Do not select it merely
+because the brief has a few headline metrics, do not clear its data, and never
+retain the template's sample figures. Select a compatible native-text page and
+represent only the facts the client supplied.
+
 For `assemble`, pass both different files explicitly: `--adaptation-input`
 points to the generated request and `--adaptation-plan` points to the compiled
 plan. This deliberate separation prevents a request from being mistaken for

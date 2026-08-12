@@ -234,6 +234,22 @@ def materialization_eligible(page: Mapping[str, Any]) -> bool:
     )
 
 
+def governed_content_slot_count(page: Mapping[str, Any]) -> int:
+    """Return certified non-shape data capacity without source content.
+
+    A native chart/table/workbook is editable, but its values are not ordinary
+    text slots. The count exposes only whether a client needs a locked
+    structured dataset before selecting the page; it never leaks source copy,
+    locators, shape IDs, or OPC part names into an agent prompt.
+    """
+
+    record = page.get("materialization")
+    if not isinstance(record, Mapping):
+        return 0
+    value = record.get("governed_content_slot_count", 0)
+    return value if type(value) is int and value >= 0 else 0
+
+
 def _observation_for(page: Mapping[str, Any], observations: Mapping[str, Mapping[str, Any]]) -> Mapping[str, Any] | None:
     observation = observations.get(str(page.get("page_id")))
     if not isinstance(observation, Mapping):
@@ -388,6 +404,8 @@ def query_catalog(
             },
             "mode": query["mode"],
             "bindable_region_count": bindable_region_count.get(page_id, 0),
+            "governed_content_slot_count": governed_content_slot_count(page),
+            "requires_structured_data": governed_content_slot_count(page) > 0,
             "style_signature": candidate_style_signature,
             "gates": ["active_source", "materialization", "observation_hash", "capacity"],
             "scores": {"canonical_role": category_role_score, "visual_role": visual_role_score, "tags": round(tag_score, 6), "style": style_score, "capacity": round(capacity_score, 6), "total": total},
@@ -460,6 +478,8 @@ def inspect_certified_deck(
             "style_signature": style_signature_from_observation(detail),
             "bindable_region_count": len(page_regions),
             "native_text_slot_count": grammar["title"] + grammar["content"],
+            "governed_content_slot_count": governed_content_slot_count(page),
+            "requires_structured_data": governed_content_slot_count(page) > 0,
             "content_grammar": grammar,
             "visual_observation": {
                 "composition": detail.get("composition", ""),

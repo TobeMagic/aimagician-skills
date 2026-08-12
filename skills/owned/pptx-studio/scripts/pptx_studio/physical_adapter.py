@@ -327,6 +327,19 @@ def preflight_native_slots(
         slots = _discover_slots(graph.slide_xml.decode("utf-8", errors="replace"))
         if not slots:
             raise PhysicalAdapterError("SOURCE_PAGE_HAS_NO_EDITABLE_TEXT")
+        try:
+            with zipfile.ZipFile(source_paths[package_sha], "r") as archive:
+                governed_inventory = _compile_governed_content_inventory(
+                    archive, slide_number,
+                )
+        except (OSError, zipfile.BadZipFile) as exc:
+            raise PhysicalAdapterError("SOURCE_PACKAGE_UNREADABLE") from exc
+        if not governed_inventory.get("complete"):
+            raise PhysicalAdapterError("SOURCE_CONTENT_INVENTORY_INCOMPLETE")
+        if governed_inventory.get("content_slot_count", 0):
+            raise PhysicalAdapterError(
+                f"STRUCTURED_DATA_REQUIRED:slide_id={slide_id}"
+            )
         slots_by_id = {slot.slot_id: slot for slot in slots}
         source_regions = source.get("region_ids")
         if not isinstance(source_regions, list):
@@ -379,6 +392,10 @@ def preflight_native_slots(
                     if slot["binding_role"] == role
                 )
                 for role in ("title", "label", "metric", "body")
+            },
+            "governed_content_contract": {
+                "requires_structured_data": False,
+                "governed_content_slot_count": 0,
             },
         })
     return {
@@ -521,6 +538,12 @@ def compile_physical_adapter(
             raise PhysicalAdapterError("SOURCE_PACKAGE_UNREADABLE") from exc
         if not governed_content_inventory.get("complete"):
             raise PhysicalAdapterError("SOURCE_CONTENT_INVENTORY_INCOMPLETE")
+        # The v1 adaptation route owns text/image bindings only. Composition
+        # rejects these pages earlier, but retain the same fail-closed boundary
+        # at materialization so a hand-edited plan cannot preserve certified
+        # template sample values as purported customer evidence.
+        if governed_content_inventory.get("content_slot_count", 0):
+            raise PhysicalAdapterError("STRUCTURED_DATA_REQUIRED")
         template = PageTemplate(
             schema_version="1.0",
             page_id=legacy_page_id,

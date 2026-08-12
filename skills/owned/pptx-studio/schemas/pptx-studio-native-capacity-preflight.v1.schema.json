@@ -15,7 +15,7 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["slide_id", "ordinal", "catalog_page_id", "source", "regions"],
+        "required": ["slide_id", "ordinal", "catalog_page_id", "source", "regions", "content_contract", "governed_content_contract"],
         "properties": {
           "slide_id": {"type": "string", "minLength": 1},
           "ordinal": {"type": "integer", "minimum": 1},
@@ -55,6 +55,16 @@
               },
               "additionalProperties": false
             }
+          },
+          "content_contract": {"type": "object"},
+          "governed_content_contract": {
+            "type": "object",
+            "required": ["requires_structured_data", "governed_content_slot_count"],
+            "properties": {
+              "requires_structured_data": {"const": false},
+              "governed_content_slot_count": {"const": 0}
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false

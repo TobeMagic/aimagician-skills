@@ -75,6 +75,26 @@ def test_query_is_bounded_explainable_and_stable() -> None:
     assert "canonical_category_role" in candidate["reasons"]
     assert candidate["style_signature"] == style_signature(catalog["pages"][0], observations)  # type: ignore[index]
     assert candidate["bindable_region_count"] == 2
+    assert candidate["governed_content_slot_count"] == 0
+    assert candidate["requires_structured_data"] is False
+
+
+def test_query_marks_native_chart_data_surface_without_exposing_source_content() -> None:
+    catalog, observations = _catalog()
+    catalog["pages"][0]["materialization"] = {  # type: ignore[index]
+        "status": "eligible",
+        "governed_content_slot_count": 12,
+        "blocker_codes": [],
+    }
+
+    result = query_catalog(
+        catalog, observations=observations, request={"mode": "page", "role": "cover"},
+    )
+
+    candidate = result["candidates"][0]
+    assert candidate["governed_content_slot_count"] == 12
+    assert candidate["requires_structured_data"] is True
+    assert "chart" not in json.dumps(candidate, ensure_ascii=False).casefold()
 
 
 @pytest.mark.parametrize(

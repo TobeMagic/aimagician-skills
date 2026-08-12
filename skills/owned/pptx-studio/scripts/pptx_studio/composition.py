@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from .query import (
+    governed_content_slot_count,
     materialization_eligible,
     role_matches_page,
     style_profile_from_observation,
@@ -237,6 +238,13 @@ def compile_composition(
             required_regions = 1 if strategy == "exact_deck" else minimum_distinct_client_facts(item["role"])
             if len(source_region_ids) < required_regions:
                 raise CompositionError("BINDABLE_REGION_COUNT_INSUFFICIENT")
+            # Composition-request v1 carries only narrative and page-selection
+            # authority. It cannot describe a chart/table dataset, so a page
+            # whose editable data lives outside text boxes must not be selected
+            # by this route. A structured-data contract may opt in later; it
+            # must never be inferred from headline metrics or free-form prose.
+            if governed_content_slot_count(page) > 0:
+                raise CompositionError("STRUCTURED_DATA_REQUIRED")
         if page.get("category") not in active:
             raise CompositionError("SOURCE_SCOPE_INVALID")
         if not materialization_eligible(page):

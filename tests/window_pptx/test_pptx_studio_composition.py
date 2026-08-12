@@ -174,22 +174,25 @@ def test_exact_certified_deck_is_a_theme_family_despite_page_level_vision_labels
     assert plan["slides"][1]["evidence"]["style_match"] == "same_certified_theme_family"
 
 
-def test_exact_deck_allows_a_certified_chart_page_with_only_one_native_slot() -> None:
+def test_composition_rejects_native_chart_without_structured_data_contract() -> None:
     catalog, observations, signatures = _fixture()
-    # The page is an intentional member of the complete source work but its
-    # chart is a protected graphic and only its heading is native text. A
-    # normal page assembly must not relabel it as a dashboard; exact-deck
-    # reproduction may retain it and leaves the actual slot check to preflight.
+    # A complete source deck may contain a strong chart page with only one
+    # native heading, but composition-request v1 carries no chart/table data.
+    # Neither exact-deck nor page assembly may preserve its sample values.
     catalog["regions"] = [  # type: ignore[index]
         item for item in catalog["regions"]  # type: ignore[index]
         if item["page_id"] != "page_aaaaaaaaaaaaaaaaaaaaaaaa_002"
         or item["region_id"] == "region_a_closing_title"
     ]
     request = _request(signatures)
+    catalog["pages"][1]["materialization"] = {  # type: ignore[index]
+        "status": "eligible", "governed_content_slot_count": 1,
+    }
     request["slides"][1].update({  # type: ignore[index]
         "role": "dashboard", "minimum_capacity": 20,
     })
-    assert compile_composition(catalog, observations=observations, request=request)["status"] == "PASS"
+    with pytest.raises(CompositionError, match="STRUCTURED_DATA_REQUIRED"):
+        compile_composition(catalog, observations=observations, request=request)
     request["strategy"] = "page_assembly"
     with pytest.raises(CompositionError, match="BINDABLE_REGION_COUNT_INSUFFICIENT"):
         compile_composition(catalog, observations=observations, request=request)
