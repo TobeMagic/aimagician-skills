@@ -115,7 +115,13 @@ def _fragment_title_regions(
     deterministic from the selected source, never from a client value.
     """
 
-    fragments = [slot for slot in slots if slot.semantic_role == "title_fragment"]
+    # Decorative plus signs, slashes and similar glyphs are often classified
+    # as title fragments by the conservative OOXML scanner.  They are part of
+    # a locked composition, not writable characters in a client title.
+    fragments = [
+        slot for slot in slots
+        if slot.semantic_role == "title_fragment" and slot.text.strip().isalnum()
+    ]
     if len(fragments) < 2:
         return []
     heights = sorted(max(1, int(slot.bbox.get("h", 1))) for slot in fragments)
@@ -136,15 +142,45 @@ def _fragment_title_regions(
             bands[-1].append(slot)
 
     regions: list[dict[str, Any]] = []
-    for ordinal, band in enumerate(bands, start=1):
-        if len(band) < 2:
-            continue
-        ordered = tuple(sorted(band, key=lambda item: (int(item.bbox.get("x", 0)), int(item.bbox.get("y", 0)), item.reading_order, item.slot_id)))
-        regions.append({
-            "region_id": f"fragment_title_{package_sha256[:24]}_{slide_number:03d}_{ordinal}",
-            "native_capacity": len(ordered),
-            "slots": ordered,
-        })
+    # A display band can contain several independent editorial lockups.  For
+    # example, three two-character ideas may share the top row of a page.
+    # Joining the entire row turns three components into a fictitious six
+    # character title surface and lets a planner corrupt all three concepts
+    # with one heading.  Split on a genuine horizontal whitespace gap while
+    # preserving intentionally overlapping/staggered characters in one word.
+    horizontal_gap_floor = max(160, median_height // 4)
+    ordinal = 0
+    for band in bands:
+        ordered_band = sorted(
+            band,
+            key=lambda item: (
+                int(item.bbox.get("x", 0)), int(item.bbox.get("y", 0)),
+                item.reading_order, item.slot_id,
+            ),
+        )
+        clusters: list[list[SlotRecord]] = []
+        previous_right: int | None = None
+        for slot in ordered_band:
+            left = int(slot.bbox.get("x", 0))
+            right = left + max(1, int(slot.bbox.get("w", 1)))
+            if (
+                not clusters
+                or previous_right is None
+                or left - previous_right > horizontal_gap_floor
+            ):
+                clusters.append([slot])
+            else:
+                clusters[-1].append(slot)
+            previous_right = max(right, previous_right or right)
+        for cluster in clusters:
+            if len(cluster) < 2:
+                continue
+            ordinal += 1
+            regions.append({
+                "region_id": f"fragment_title_{package_sha256[:24]}_{slide_number:03d}_{ordinal}",
+                "native_capacity": len(cluster),
+                "slots": tuple(cluster),
+            })
     return regions
 
 def _unbound_template_clear_reason(value: str, *, occurrence_count: int = 1) -> str | None:

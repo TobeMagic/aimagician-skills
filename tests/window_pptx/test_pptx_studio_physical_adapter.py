@@ -20,13 +20,15 @@ from pptx_studio.adaptation import compile_adaptation  # noqa: E402
 from pptx_studio.brief_binding import compile_outline_bindings  # noqa: E402
 from pptx_studio.physical_adapter import (  # noqa: E402
     PhysicalAdapterError,
+    _fragment_title_regions,
     _unbound_template_clear_reason,
     assemble_from_plans,
     compile_physical_adapter,
     preflight_native_slots,
     resolve_catalog_sources,
 )
-from pptx_studio.qa import run_studio_qa  # noqa: E402
+from pptx_studio.qa import _visual_checks, run_studio_qa  # noqa: E402
+from window_pptx.page_template_library import SlotRecord  # noqa: E402
 import pptx_studio.physical_adapter as physical_adapter  # noqa: E402
 from manage_pptx_studio_library import run  # noqa: E402
 
@@ -342,6 +344,59 @@ def test_fragment_title_group_is_bound_as_one_semantic_title(
     binding = lineage["slides"][0]["fragment_title_bindings"][0]
     assert binding["region_id"] == fragment["region_id"]
     assert len(binding["shape_ids"]) == 2
+
+
+def test_fragment_title_regions_keep_adjacent_editorial_lockups_separate() -> None:
+    """Three neighbouring two-character concepts are not one six-char title."""
+
+    def fragment(shape_id: int, x: int, character: str) -> SlotRecord:
+        return SlotRecord(
+            slot_id=f"shape_{shape_id}", shape_id=shape_id, kind="text",
+            max_chars=1, text=character, semantic_role="title_fragment",
+            region="top", reading_order=shape_id,
+            bbox={"x": x, "y": 100, "w": 80, "h": 140},
+            source_char_count=1, source_line_count=1, source_run_count=1,
+            group_id=None, group_order=None, font_size_pt=48.0,
+            allowed_binding_modes=("replace",),
+        )
+
+    regions = _fragment_title_regions(
+        (
+            fragment(1, 30, "引"), fragment(2, 85, "导"),
+            fragment(3, 340, "做"), fragment(4, 395, "好"),
+            fragment(5, 645, "保"), fragment(6, 700, "证"),
+        ),
+        package_sha256="a" * 64, slide_number=12,
+    )
+    assert [item["native_capacity"] for item in regions] == [2, 2, 2]
+    assert [tuple(slot.slot_id for slot in item["slots"]) for item in regions] == [
+        ("shape_1", "shape_2"), ("shape_3", "shape_4"),
+        ("shape_5", "shape_6"),
+    ]
+
+
+def test_qa_allows_only_same_lineage_fragment_lockup_overlap(tmp_path: Path) -> None:
+    """Certified character lockups are exempt, unrelated overlaps are not."""
+
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    first = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(2), Inches(1))
+    first.text = "财"
+    second = slide.shapes.add_textbox(Inches(1.1), Inches(1.1), Inches(2), Inches(1))
+    second.text = "务"
+    output = tmp_path / "lockup.pptx"
+    presentation.save(output)
+    lineage = {"slides": [{
+        "ordinal": 1,
+        "fragment_title_bindings": [{
+            "shape_ids": [f"shape_{first.shape_id}", f"shape_{second.shape_id}"],
+        }],
+    }]}
+    blockers, _warnings = _visual_checks(output, lineage=lineage)
+    assert not any(item["rule"] == "text-overlap" for item in blockers)
+
+    blockers, _warnings = _visual_checks(output, lineage={"slides": []})
+    assert any(item["rule"] == "text-overlap" for item in blockers)
 
 
 def test_cli_assembly_writes_only_output_and_nonliteral_lineage(tmp_path: Path) -> None:

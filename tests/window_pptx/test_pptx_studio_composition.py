@@ -95,18 +95,18 @@ def test_exact_deck_composition_is_stable_and_schema_valid() -> None:
     validate(first, schema)
 
 
-def test_family_assembly_allows_recomposition_inside_anchor_work_only() -> None:
+def test_family_assembly_rejects_role_mismatch_inside_anchor_work() -> None:
     catalog, observations, signatures = _fixture()
     request = _request(signatures, strategy="family_assembly")
-    # The closing source is deliberately used for a different narrative role.
-    # A complete certified work owns that page's visual grammar; the family
-    # route validates its real native surface rather than a lossy classifier.
+    # Sharing a master is not permission to reinterpret a closing page as a
+    # process page.  Literal cross-role reuse is available only in the exact
+    # deck reproduction route, whose source order is itself enforced.
     request["slides"][1]["role"] = "process"  # type: ignore[index]
 
-    plan = compile_composition(catalog, observations=observations, request=request)
-
-    assert plan["art_direction"]["family_deck_id"] == "deck_aaaaaaaaaaaaaaaaaaaaaaaa"
-    assert plan["slides"][1]["evidence"]["confidence"] == 0.95
+    # The source first fails the equally hard editable-capacity floor; a
+    # dense real page with enough slots reaches the role mismatch gate.
+    with pytest.raises(CompositionError, match="BINDABLE_REGION_COUNT_INSUFFICIENT"):
+        compile_composition(catalog, observations=observations, request=request)
 
 
 def test_family_assembly_rejects_source_outside_anchor_work() -> None:

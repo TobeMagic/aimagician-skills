@@ -69,6 +69,39 @@ def _finding(finding: RuleFinding) -> dict[str, Any]:
     return finding.to_dict()
 
 
+def _intentional_fragment_overlap_ids(
+    lineage: Mapping[str, Any], *, ordinal: int,
+) -> set[frozenset[str]]:
+    """Return only lineage-proven title-lockup overlap pairs for one slide.
+
+    A certified editorial title may deliberately overlap its one-character
+    boxes.  That is not a post-assembly collision if (and only if) the exact
+    shapes were produced by one ``replace_fragment_text`` operation.  This is
+    deliberately narrower than a geometry whitelist: ordinary text boxes,
+    separate fragment components, and unbound source text still fail closed.
+    """
+
+    slides = lineage.get("slides")
+    if not isinstance(slides, list):
+        return set()
+    for slide in slides:
+        if not isinstance(slide, Mapping) or slide.get("ordinal") != ordinal:
+            continue
+        allowed: set[frozenset[str]] = set()
+        for binding in slide.get("fragment_title_bindings", []):
+            if not isinstance(binding, Mapping):
+                continue
+            shape_ids = binding.get("shape_ids")
+            if not isinstance(shape_ids, list):
+                continue
+            normalized = [item for item in shape_ids if isinstance(item, str)]
+            for index, first in enumerate(normalized):
+                for second in normalized[index + 1:]:
+                    allowed.add(frozenset((first, second)))
+        return allowed
+    return set()
+
+
 def _visual_checks(output: Path, *, lineage: Mapping[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     blockers: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
@@ -81,6 +114,9 @@ def _visual_checks(output: Path, *, lineage: Mapping[str, Any]) -> tuple[list[di
     except Exception as exc:
         return [{"rule": "open", "severity": "blocker", "slide": None, "message": str(exc)}], warnings
     for number, slide in enumerate(deck.slides, 1):
+        intentional_fragment_pairs = _intentional_fragment_overlap_ids(
+            lineage, ordinal=number,
+        )
         populated = [shape for shape in slide.shapes if bool(getattr(shape, "has_text_frame", False)) and shape.text.strip()]
         character_count = sum(len(shape.text.strip()) for shape in populated)
         if character_count > 700:
@@ -90,6 +126,9 @@ def _visual_checks(output: Path, *, lineage: Mapping[str, Any]) -> tuple[list[di
         for index, first in enumerate(populated):
             for second in populated[index + 1:]:
                 if _area_overlap(first, second) > 0.55:
+                    pair = frozenset((f"shape_{first.shape_id}", f"shape_{second.shape_id}"))
+                    if pair in intentional_fragment_pairs:
+                        continue
                     blockers.append({"rule": "text-overlap", "severity": "blocker", "slide": number, "message": f"populated text shapes {first.shape_id} and {second.shape_id} materially overlap"})
     lineage_slides = lineage.get("slides")
     if not isinstance(lineage_slides, list):

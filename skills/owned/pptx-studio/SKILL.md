@@ -49,12 +49,13 @@ For each slide retrieve a role- and capacity-safe candidate:
   specialist categories.
 
 Use `exact_deck` only when a complete certified work genuinely matches the
-brief. In that route, first query a cover, then inspect the returned `deck_id`
-as one ordered page family and map the client narrative to those inspected
-page IDs. Do not try to force every page through the generic role taxonomy:
-full works often contain a chart or editorial page whose visual label is more
-specific than `dashboard` or `five-item`. Otherwise use `page_assembly`; use
-`component_assembly` only for a bounded safe region.
+brief **and the client narrative matches its ordered page grammar**. In that
+route, first query a cover, then inspect the returned `deck_id` as one ordered
+page family and map the client narrative to those inspected page IDs. A shared
+master is not sufficient evidence: otherwise use `page_assembly`; use
+`component_assembly` only for a bounded safe region. `family_assembly` may
+retain one inspected work's visual family, but every selected page must still
+match its declared role and native content capacity.
 
 ### Retrieval command contract
 
@@ -198,14 +199,13 @@ reports `requires_structured_data=true` unless the brief contains the complete
 dataset required by that page's published `data_contract`.
 Then use `strategy:"family_assembly"`: all 15 selected source pages must be
 unique and belong to that exact inspected anchor deck; composition rechecks
-source scope, observation hash, native regions, capacity, data-surface and
-family identity. Do **not** force those pages through generic role
-`candidate_ids` revalidation: an editorial annual-report page may truthfully
-be labelled `financial-overview` rather than `five-item`. The physical binding
-and QA gates still require nonempty client facts for every eligible page. If
-the family cannot supply all required pages/capacity safely, select a different
-anchor family; only then may the one registered compatible fallback signature
-be considered through normal `page_assembly`.
+source scope, observation hash, semantic role, native regions, capacity,
+data-surface and family identity. A page described as clinical departments is
+not an allowable process page merely because it shares the anchor's style.
+The physical binding and QA gates still require nonempty client facts for every
+eligible page. If the family cannot supply all required pages/capacity safely,
+select a different anchor family; only then may the one registered compatible
+fallback signature be considered through normal `page_assembly`.
 
 For an `exact_deck` candidate, call `inspect-deck` with the returned `deck_id`
 and write its value-free inventory to `work/deck-inventory.json`:

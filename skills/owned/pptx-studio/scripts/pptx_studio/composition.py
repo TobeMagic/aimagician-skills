@@ -217,6 +217,7 @@ def compile_composition(
     for item in requested_slides:
         selected_id = str(item["selected_candidate_id"])
         region: Mapping[str, Any] | None = None
+        required_regions = 1
         if strategy == "component_assembly":
             region = regions.get(selected_id)
             if region is None:
@@ -241,14 +242,14 @@ def compile_composition(
             # preflight and binding-completeness gate retain authority over its
             # actual editable surface. Page/component assembly keeps the
             # stricter role floor before any source import.
-            # ``family_assembly`` is the controlled adaptation route for a
-            # complete certified work. Unlike exact-deck reproduction, its
-            # source order may be recomposed for the client narrative; unlike
-            # generic page assembly, it must not reject a genuine editorial
-            # page because a visual classifier did not reduce it to one of the
-            # small generic role labels. It remains constrained to the anchor
-            # deck, physical native slots and the downstream binding gate.
-            required_regions = 1 if strategy in {"exact_deck", "family_assembly"} else minimum_distinct_client_facts(item["role"])
+            # ``exact_deck`` is the sole literal-reproduction route. A
+            # ``family_assembly`` changes the client narrative and is
+            # therefore a real composition, not permission to reinterpret a
+            # clinical-department network as a process diagram simply because
+            # both pages share one master.  It needs the same role floor as a
+            # normal page assembly; the later native preflight remains the
+            # final capacity authority.
+            required_regions = 1 if strategy == "exact_deck" else minimum_distinct_client_facts(item["role"])
             if len(source_region_ids) < required_regions:
                 raise CompositionError("BINDABLE_REGION_COUNT_INSUFFICIENT")
             # A native chart/table/workbook page is eligible only when a
@@ -285,7 +286,7 @@ def compile_composition(
             raise CompositionError("STYLE_SIGNATURE_NOT_ALLOWED")
         if not same_certified_theme_family and not _style_profiles_compatible(anchor_profile, style_profile(page, observations)):
             raise CompositionError("STYLE_FALLBACK_INCOMPATIBLE")
-        if strategy not in {"exact_deck", "family_assembly"} and not _role_matches(page, detail, str(item["role"])):
+        if strategy != "exact_deck" and not _role_matches(page, detail, str(item["role"])):
             raise CompositionError("ROLE_INCOMPATIBLE")
         if type(capacity) is not int or capacity < item["minimum_capacity"]:
             raise CompositionError("CAPACITY_INSUFFICIENT")
