@@ -60,6 +60,39 @@ _TEMPLATE_BRAND_RE = re.compile(
     re.IGNORECASE,
 )
 
+_CLIENT_TITLE_RE = re.compile(r"(?:年度|年终|工作汇报|工作总结|财务决算|工作思路|收入情况|支出情况|经济指标|项目及)")
+_NUMERIC_VALUE_RE = re.compile(r"[0-9０-９][0-9０-９,，.．%％]*\s*(?:万|亿|元|人|次|项|个|家|年|月|日|%|％)?")
+
+
+def _client_binding_role(slot: SlotRecord) -> str:
+    """Classify a native text slot for content planning without exposing text.
+
+    The historical importer role is intentionally conservative for OOXML
+    assembly.  A client-facing outline needs a more useful distinction: a
+    template's ``添加标题`` label, a percentage or money value, and a real
+    report title should not all be presented as generic body slots.
+    """
+
+    compact = "".join(slot.text.split())
+    if not compact or _TEMPLATE_BRAND_RE.search(compact) or compact.casefold() == "logo":
+        return "ignore"
+    if _NUMERIC_VALUE_RE.fullmatch(compact) or (
+        _NUMERIC_VALUE_RE.search(compact) and any(unit in compact for unit in ("万", "亿", "元", "%", "％", "人", "次", "项", "个"))
+    ):
+        return "metric"
+    if slot.bbox.get("y", 1000) < 240 and (
+        _CLIENT_TITLE_RE.search(compact)
+        or "标题" in compact
+        or "title" in compact.casefold()
+        or slot.semantic_role in {"title", "subtitle"}
+    ):
+        return "title"
+    if "标题" in compact or compact.startswith(("添加", "输入", "请替换")):
+        return "label"
+    if len(compact) <= 18:
+        return "label"
+    return "body"
+
 def _unbound_template_clear_reason(value: str, *, occurrence_count: int = 1) -> str | None:
     """Classify only safe, non-client source copy for compiler-owned clearing."""
 
@@ -319,6 +352,7 @@ def preflight_native_slots(
                     "shape_id": slot_id,
                     "native_capacity": slot.max_chars,
                     "semantic_role": slot.semantic_role,
+                    "binding_role": _client_binding_role(slot),
                 })
             native_capacity = min(item["native_capacity"] for item in shape_slots)
             regions.append({
@@ -337,6 +371,15 @@ def preflight_native_slots(
                 "source_slide_sha256": graph.slide_sha,
             },
             "regions": regions,
+            "content_contract": {
+                role: sum(
+                    1
+                    for region in regions
+                    for slot in region["shape_slots"]
+                    if slot["binding_role"] == role
+                )
+                for role in ("title", "label", "metric", "body")
+            },
         })
     return {
         "schema_version": "1.0",

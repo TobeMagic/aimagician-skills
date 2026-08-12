@@ -263,6 +263,8 @@ def test_native_capacity_preflight_uses_source_slots_without_private_text_or_pat
     assert region["region_id"] == "region-title"
     assert region["native_capacity"] > 0
     assert region["shape_slots"][0]["shape_id"].startswith("shape_")
+    assert region["shape_slots"][0]["binding_role"] == "title"
+    assert preflight["slides"][0]["content_contract"]["title"] >= 1
     serialized = json.dumps(preflight, ensure_ascii=False)
     assert "模板标题" not in serialized
     assert str(source_root) not in serialized

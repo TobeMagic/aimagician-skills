@@ -186,6 +186,13 @@ It fails on an overflow or an unavailable slot; it never truncates, duplicates
 or silently falls back to a template's sample copy. Then run `adapt` on that
 generated adaptation request.
 
+The preflight also reports a value-free `content_contract` per selected page:
+the number of certified title, label, metric and body slots that can accept
+client content. Use it to preserve the visual grammar of cards and dashboards
+(for example, a five-card financial page normally needs its five labels and
+corresponding metrics), rather than merely satisfying the role's minimum fact
+floor. It contains no template copy, shape IDs or geometry.
+
 For `assemble`, pass both different files explicitly: `--adaptation-input`
 points to the generated request and `--adaptation-plan` points to the compiled
 plan. This deliberate separation prevents a request from being mistaken for

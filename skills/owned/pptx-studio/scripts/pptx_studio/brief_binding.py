@@ -38,7 +38,7 @@ def _preflight_regions(preflight: Mapping[str, Any]) -> dict[str, list[dict[str,
             if not isinstance(region, Mapping) or not isinstance(region.get("region_id"), str) or type(region.get("native_capacity")) is not int or not isinstance(region.get("shape_slots"), list):
                 raise BriefBindingError("PREFLIGHT_REGION_INVALID")
             slot_roles = {
-                str(slot.get("semantic_role", "body"))
+                str(slot.get("binding_role", slot.get("semantic_role", "body")))
                 for slot in region["shape_slots"]
                 if isinstance(slot, Mapping)
             }
