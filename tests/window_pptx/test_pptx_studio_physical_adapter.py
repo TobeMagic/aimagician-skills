@@ -20,6 +20,7 @@ from pptx_studio.physical_adapter import (  # noqa: E402
     PhysicalAdapterError,
     assemble_from_plans,
     compile_physical_adapter,
+    preflight_native_slots,
     resolve_catalog_sources,
 )
 from pptx_studio.qa import run_studio_qa  # noqa: E402
@@ -160,6 +161,22 @@ def test_adapter_reports_actionable_native_slot_capacity_mismatch(tmp_path: Path
         )
 
 
+def test_native_capacity_preflight_uses_source_slots_without_private_text_or_paths(tmp_path: Path) -> None:
+    source_root, catalog, composition, _request, _replacement = _source_pack(tmp_path)
+    preflight = preflight_native_slots(
+        composition, catalog=catalog, private_source_root=source_root,
+    )
+    assert preflight["status"] == "PASS"
+    assert preflight["composition_plan_sha256"]
+    region = preflight["slides"][0]["regions"][0]
+    assert region["region_id"] == "region-title"
+    assert region["native_capacity"] > 0
+    assert region["shape_slots"][0]["shape_id"].startswith("shape_")
+    serialized = json.dumps(preflight, ensure_ascii=False)
+    assert "模板标题" not in serialized
+    assert str(source_root) not in serialized
+
+
 def test_cli_assembly_writes_only_output_and_nonliteral_lineage(tmp_path: Path) -> None:
     source_root, catalog, composition, request, replacement = _source_pack(tmp_path)
     adaptation = compile_adaptation(composition, catalog=catalog, request=request)
@@ -183,6 +200,23 @@ def test_cli_assembly_writes_only_output_and_nonliteral_lineage(tmp_path: Path) 
     lineage = files["lineage"].read_text(encoding="utf-8")
     assert "2025年度工作汇报" not in lineage
     assert (tmp_path / "cli-output.pptx").is_file()
+
+
+def test_cli_native_capacity_preflight_is_value_free(tmp_path: Path) -> None:
+    source_root, catalog, composition, _request, _replacement = _source_pack(tmp_path)
+    catalog_path, composition_path, output_path = (tmp_path / "catalog.json", tmp_path / "composition.json", tmp_path / "preflight.json")
+    catalog_path.write_text(json.dumps(catalog, ensure_ascii=False), encoding="utf-8")
+    composition_path.write_text(json.dumps(composition, ensure_ascii=False), encoding="utf-8")
+    (tmp_path / "unused.json").write_text('{"status":"APPLIED"}', encoding="utf-8")
+    result = run([
+        "preflight", "--source-root", str(tmp_path), "--archive-root", str(tmp_path), "--manifest", str(tmp_path / "unused.json"),
+        "--catalog", str(catalog_path), "--composition-plan", str(composition_path),
+        "--private-source-root", str(source_root), "--preflight-output", str(output_path),
+    ])
+    assert result["status"] == "PASS"
+    serialized = output_path.read_text(encoding="utf-8")
+    assert "模板标题" not in serialized
+    assert str(source_root) not in serialized
 
 
 def test_plan_qa_fails_closed_on_post_assembly_placeholder(tmp_path: Path) -> None:

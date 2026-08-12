@@ -77,7 +77,8 @@ source package there.
 
 ## 3. Plan and bind without visual implementation authority
 
-Compile a composition plan and then an adaptation plan. The model may return
+Compile a composition plan, then run the native-capacity preflight, and only
+then write the adaptation plan. The model may return
 only candidate IDs, selected IDs, roles, fact IDs, asset IDs and selection
 reasons. It may not output raw text as a visual decision, paths, coordinates,
 fonts, colours, CSS/HTML, code, OOXML or post-assembly repairs.
@@ -88,11 +89,17 @@ shorten it from the source or split the narrative; never reshape the slide.
 `composition-request.json` has only `schema_version`, `strategy`,
 `art_direction` and `slides`; every slide has only `slide_id`, `role`,
 `candidate_ids`, `selected_candidate_id` and `minimum_capacity`. Compile it
-with `compose` before writing `adaptation-request.json`. An adaptation request
+with `compose`, then invoke `preflight` with the composition plan, catalog,
+private source root and `work/native-capacity-preflight.json`. This value-free
+result is the authority for every selected `region_id`: bind text only when it
+fits that region's `native_capacity` (and every listed `shape_slots` capacity).
+Split the narrative across distinct selected regions/pages when it does not;
+do not reuse a fact ID or put the same title into multiple slots. An adaptation request
 has only `schema_version`, `facts`, `assets` and `bindings`; each binding must
 include all of `slide_id`, `operation`, `region_id`, `shape_id`, `fact_id` and
 `asset_id`, using `null` for fields inapplicable to that operation. Compile it
-with `adapt` before `assemble`.
+with `adapt` before `assemble`. Catalog capacity is a retrieval hint only and
+must never be used in place of the native-capacity preflight.
 
 ## 4. Assemble, inspect and deliver
 

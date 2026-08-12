@@ -208,6 +208,106 @@ def _page_lookup(catalog: Mapping[str, Any]) -> tuple[dict[str, Mapping[str, Any
     return page_by_id, region_by_id
 
 
+def preflight_native_slots(
+    composition_plan: Mapping[str, Any],
+    *,
+    catalog: Mapping[str, Any],
+    private_source_root: Path | str,
+) -> dict[str, Any]:
+    """Return value-free, source-authoritative capacity for selected regions.
+
+    Catalog capacity is suitable for retrieval, but the OOXML shape that will
+    actually be adapted is the final authority.  This deliberately runs after
+    composition and before a client value is placed in an adaptation request.
+    It exposes only stable plan identifiers, package hashes and numeric slot
+    capacities: neither private paths nor source/client text can escape.
+    """
+
+    if composition_plan.get("schema_version") != "1.0" or composition_plan.get("status") != "PASS":
+        raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
+    page_by_id, region_by_id = _page_lookup(catalog)
+    source_paths = resolve_catalog_sources(catalog, private_source_root=private_source_root)
+    context = AssemblyImportContext()
+    slides: list[dict[str, Any]] = []
+    seen_slide_ids: set[str] = set()
+    region_count = 0
+    for ordinal, selected in enumerate(composition_plan.get("slides", []), start=1):
+        if not isinstance(selected, Mapping):
+            raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
+        slide_id, source = selected.get("slide_id"), selected.get("source")
+        if not isinstance(slide_id, str) or not slide_id or slide_id in seen_slide_ids or not isinstance(source, Mapping):
+            raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
+        seen_slide_ids.add(slide_id)
+        page_id = source.get("page_id")
+        page = page_by_id.get(str(page_id))
+        package_sha = str(source.get("package_sha256", ""))
+        slide_number = source.get("slide_number")
+        if (
+            page is None
+            or package_sha != page.get("package_sha256")
+            or slide_number != page.get("slide_number")
+            or package_sha not in source_paths
+            or type(slide_number) is not int
+        ):
+            raise PhysicalAdapterError("CATALOG_SOURCE_DRIFT")
+        _, graph = context.graph_for(source_paths[package_sha], package_sha, slide_number)
+        slots = _discover_slots(graph.slide_xml.decode("utf-8", errors="replace"))
+        if not slots:
+            raise PhysicalAdapterError("SOURCE_PAGE_HAS_NO_EDITABLE_TEXT")
+        slots_by_id = {slot.slot_id: slot for slot in slots}
+        source_regions = source.get("region_ids")
+        if not isinstance(source_regions, list):
+            raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
+        regions: list[dict[str, Any]] = []
+        for region_id in source_regions:
+            region = region_by_id.get(str(region_id))
+            if region is None or region.get("page_id") != page_id:
+                raise PhysicalAdapterError("CATALOG_REGION_MISSING")
+            raw_shape_ids = region.get("editable_shape_ids")
+            if not isinstance(raw_shape_ids, list) or not raw_shape_ids:
+                raise PhysicalAdapterError("TEXT_REGION_EMPTY")
+            shape_slots: list[dict[str, Any]] = []
+            for raw_shape_id in raw_shape_ids:
+                slot_id = f"shape_{raw_shape_id}"
+                slot = slots_by_id.get(slot_id)
+                if slot is None:
+                    raise PhysicalAdapterError(
+                        "TEXT_SLOT_UNRESOLVED"
+                        f":slide_id={slide_id}:region_id={region['region_id']}:shape_id={slot_id}"
+                    )
+                shape_slots.append({
+                    "shape_id": slot_id,
+                    "native_capacity": slot.max_chars,
+                    "semantic_role": slot.semantic_role,
+                })
+            native_capacity = min(item["native_capacity"] for item in shape_slots)
+            regions.append({
+                "region_id": str(region["region_id"]),
+                "native_capacity": native_capacity,
+                "shape_slots": shape_slots,
+            })
+            region_count += 1
+        slides.append({
+            "slide_id": slide_id,
+            "ordinal": ordinal,
+            "catalog_page_id": str(page_id),
+            "source": {
+                "package_sha256": package_sha,
+                "slide_number": slide_number,
+                "source_slide_sha256": graph.slide_sha,
+            },
+            "regions": regions,
+        })
+    return {
+        "schema_version": "1.0",
+        "status": "PASS",
+        "composition_plan_sha256": composition_plan_sha256(composition_plan),
+        "slide_count": len(slides),
+        "region_count": region_count,
+        "slides": slides,
+    }
+
+
 def _asset_manifest(
     request: Mapping[str, Any], asset_paths: Mapping[str, Path | str], workspace: Path,
 ) -> tuple[Path, str]:

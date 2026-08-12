@@ -4,8 +4,8 @@
 
 ## Environment
 
-- Commit or worktree: `feat/pptx-studio-v7` at `df2c698` plus the scoped
-  uncommitted test-restoration fix recorded below.
+- Commit or worktree: `feat/pptx-studio-v7` at `c27a24b` plus the scoped
+  native-capacity-preflight repair recorded below.
 - Platform or target: local Linux production harness; global Codex Skill install.
 
 ## Requirement Evidence
@@ -32,11 +32,17 @@
 | `npm run build` | PASS | Current CLI build succeeds. |
 | `node dist/cli/index.js format-skills --check` | PASS | 28 owned Skill records are valid. |
 | `git diff --check` | PASS | No whitespace errors. |
+| `pytest -q tests/window_pptx/test_pptx_studio_physical_adapter.py tests/window_pptx/test_pptx_studio_adaptation.py tests/window_pptx/test_pptx_studio_composition.py` | PASS | 21 passed after native slot preflight addition. |
 
 ## Gaps And Residual Risk
 
 - Real model behavior and visual quality are intentionally unproven until the
   fresh production run and independent reviewers complete.
+- Earlier clean-room attempts are preserved as failed engineering evidence:
+  one used an unavailable provider override; two reached governed assembly
+  but exposed catalog/native text-capacity drift. None produced a release
+  artifact and none counts toward acceptance. The next run must consume the
+  native-capacity preflight result.
 
 ## Delivery Contract
 

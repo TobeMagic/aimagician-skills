@@ -16,7 +16,7 @@ from pptx_studio.rendering import complete_render_index
 from pptx_studio.query import query_catalog
 from pptx_studio.composition import compile_composition
 from pptx_studio.adaptation import compile_adaptation
-from pptx_studio.physical_adapter import assemble_from_plans
+from pptx_studio.physical_adapter import assemble_from_plans, preflight_native_slots
 from pptx_studio.visual_batches import ingest_batch_report, plan_visual_batches, prompt_for_batch, run_agnes_batch, run_agnes_range
 
 
@@ -74,7 +74,7 @@ def render_index_from_asset_index(path: Path) -> dict[str, dict[str, Any]]:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "query", "compose", "adapt", "assemble", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
+    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "query", "compose", "preflight", "adapt", "assemble", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--archive-root", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
@@ -89,6 +89,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--composition-input", type=Path)
     parser.add_argument("--composition-output", type=Path)
     parser.add_argument("--composition-plan", type=Path)
+    parser.add_argument("--preflight-output", type=Path)
     parser.add_argument("--adaptation-input", type=Path)
     parser.add_argument("--adaptation-output", type=Path)
     parser.add_argument("--private-source-root", type=Path)
@@ -176,6 +177,20 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         result = compile_adaptation(_read_json(args.composition_plan), catalog=_read_json(args.catalog), request=_read_json(args.adaptation_input))
         _write_json(args.adaptation_output, result)
         return {"status": result["status"], "adaptation_output": str(args.adaptation_output), "summary": {"operation_count": len(result["operations"])}}
+    if args.command == "preflight":
+        if any(value is None for value in (args.catalog, args.composition_plan, args.private_source_root, args.preflight_output)):
+            raise ValueError("PREFLIGHT_ARGUMENT_REQUIRED")
+        result = preflight_native_slots(
+            _read_json(args.composition_plan),
+            catalog=_read_json(args.catalog),
+            private_source_root=args.private_source_root,
+        )
+        _write_json(args.preflight_output, result)
+        return {
+            "status": result["status"],
+            "preflight_output": str(args.preflight_output),
+            "summary": {"slide_count": result["slide_count"], "region_count": result["region_count"]},
+        }
     if args.command == "assemble":
         if any(value is None for value in (args.catalog, args.composition_plan, args.adaptation_input, args.adaptation_output, args.private_source_root, args.assembly_workspace, args.pptx_output, args.lineage_output)):
             raise ValueError("ASSEMBLY_ARGUMENT_REQUIRED")

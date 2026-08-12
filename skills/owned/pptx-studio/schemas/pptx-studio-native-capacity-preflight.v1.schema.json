@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/pptx-studio-native-capacity-preflight.v1.schema.json",
+  "title": "PPTX Studio Native Capacity Preflight v1",
+  "type": "object",
+  "required": ["schema_version", "status", "composition_plan_sha256", "slide_count", "region_count", "slides"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "status": {"const": "PASS"},
+    "composition_plan_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "slide_count": {"type": "integer", "minimum": 1},
+    "region_count": {"type": "integer", "minimum": 1},
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["slide_id", "ordinal", "catalog_page_id", "source", "regions"],
+        "properties": {
+          "slide_id": {"type": "string", "minLength": 1},
+          "ordinal": {"type": "integer", "minimum": 1},
+          "catalog_page_id": {"type": "string", "minLength": 1},
+          "source": {
+            "type": "object",
+            "required": ["package_sha256", "slide_number", "source_slide_sha256"],
+            "properties": {
+              "package_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "slide_number": {"type": "integer", "minimum": 1},
+              "source_slide_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            },
+            "additionalProperties": false
+          },
+          "regions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["region_id", "native_capacity", "shape_slots"],
+              "properties": {
+                "region_id": {"type": "string", "minLength": 1},
+                "native_capacity": {"type": "integer", "minimum": 0},
+                "shape_slots": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": ["shape_id", "native_capacity", "semantic_role"],
+                    "properties": {
+                      "shape_id": {"type": "string", "minLength": 1},
+                      "native_capacity": {"type": "integer", "minimum": 0},
+                      "semantic_role": {"type": "string"}
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
