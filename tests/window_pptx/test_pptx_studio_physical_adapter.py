@@ -146,6 +146,7 @@ def test_adapter_returns_actionable_lineage_when_physical_verifier_rejects_relea
     assert lineage["status"] == "FAIL"
     assert lineage["qa"] == {"status": "not_run", "reason": "PHYSICAL_ASSEMBLY_FAILED"}
     assert lineage["physical_checks"]["opc_integrity"] == "pass"
+    assert lineage["source_residue_summary"]["slot_mismatches"] == 0
 
 
 def test_adapter_rejects_value_plan_drift(tmp_path: Path) -> None:

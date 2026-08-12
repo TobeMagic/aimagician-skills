@@ -625,6 +625,15 @@ def assemble_from_plans(
         "libreoffice": report.libreoffice.status,
         "size": report.size_check.status,
     }
+    lineage["source_residue_summary"] = {
+        "expected_slots": report.source_residue.governed_content_slot_count,
+        "bound_slots": report.source_residue.governed_content_binding_count,
+        "verified_slots": report.source_residue.verified_governed_content_count,
+        "slot_mismatches": report.source_residue.governed_content_mismatch_count,
+        "unauthorized_content": report.source_residue.unauthorized_content_count,
+        "peer_group_mismatches": report.source_residue.peer_group_mismatch_count,
+        "asset_slot_mismatches": report.source_residue.asset_slot_mismatch_count,
+    }
     if report.status != "pass":
         lineage["status"] = "FAIL"
         lineage["qa"] = {
