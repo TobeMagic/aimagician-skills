@@ -163,6 +163,39 @@ def test_query_can_revalidate_a_bounded_preselected_candidate() -> None:
     assert result["candidates"][0]["page_id"] == "page_aaaaaaaaaaaaaaaaaaaaaaaa_001"
 
 
+def test_query_treats_returned_style_signature_as_an_exact_anchor_filter() -> None:
+    catalog, observations = _catalog()
+    signature = style_signature(catalog["pages"][0], observations)  # type: ignore[index]
+    other = {
+        "page_id": "page_cccccccccccccccccccccccc_001",
+        "deck_id": "deck_cccccccccccccccccccccccc",
+        "category": "003-封面模板",
+        "render": {"image_sha256": "d" * 64},
+        "component_eligible": True,
+        "shapes": [{"max_chars": 90}],
+    }
+    catalog["pages"].append(other)  # type: ignore[union-attr]
+    observations[other["page_id"]] = {
+        "page_id": other["page_id"], "image_sha256": "d" * 64,
+        "observation": {
+            "semantic_tags": ["annual-report"],
+            "suggested_roles": ["cover"],
+            "visual_style": ["dark", "corporate"],
+            "uncertainty": "none",
+        },
+    }
+
+    result = query_catalog(
+        catalog,
+        observations=observations,
+        request={"mode": "page", "role": "cover", "style": signature},
+    )
+
+    assert [item["page_id"] for item in result["candidates"]] == [
+        "page_aaaaaaaaaaaaaaaaaaaaaaaa_001",
+    ]
+
+
 def test_query_excludes_catalog_page_blocked_by_physical_materialization() -> None:
     catalog, observations = _catalog()
     catalog["pages"][0]["materialization"] = {  # type: ignore[index]

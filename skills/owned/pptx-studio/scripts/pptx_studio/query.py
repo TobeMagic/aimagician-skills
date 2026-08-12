@@ -283,6 +283,15 @@ def query_catalog(
         capacity = _capacity(page, region)
         if capacity < query["capacity"]:
             continue
+        candidate_style_signature = style_signature_from_observation(observation)
+        # ``style`` predates the public signature field and normally denotes a
+        # soft visual label (for example ``corporate``).  Once an anchor has
+        # been chosen, however, the only deterministic identifier an agent
+        # may safely carry into later retrieval is the returned style
+        # signature.  Treat that form as an exact hard filter; scoring it as a
+        # free-form visual label silently admitted unrelated template decks.
+        if query["style"] is not None and query["style"].startswith("style_") and query["style"] != candidate_style_signature:
+            continue
         roles = set(observation.get("suggested_roles", []))
         category_roles = _CATEGORY_ROLES.get(str(page.get("category")), frozenset())
         tags = set(observation.get("semantic_tags", []))
@@ -290,7 +299,11 @@ def query_catalog(
         category_role_score = 1.0 if query["role"] in category_roles else 0.0
         visual_role_score = 1.0 if query["role"] in roles else 0.5
         tag_score = 1.0 if not query["tags"] else len(set(query["tags"]) & tags) / len(query["tags"])
-        style_score = 1.0 if query["style"] is None or query["style"] in styles else 0.0
+        style_score = 1.0 if (
+            query["style"] is None
+            or query["style"] == candidate_style_signature
+            or query["style"] in styles
+        ) else 0.0
         capacity_score = 1.0 if query["capacity"] == 0 else min(1.0, capacity / query["capacity"])
         total = round(
             0.50 * category_role_score
@@ -310,7 +323,7 @@ def query_catalog(
             "page_id": page["page_id"],
             "mode": query["mode"],
             "bindable_region_count": bindable_region_count.get(page_id, 0),
-            "style_signature": style_signature_from_observation(observation),
+            "style_signature": candidate_style_signature,
             "gates": ["active_source", "materialization", "observation_hash", "capacity"],
             "scores": {"canonical_role": category_role_score, "visual_role": visual_role_score, "tags": round(tag_score, 6), "style": style_score, "capacity": round(capacity_score, 6), "total": total},
             "reasons": reasons,
