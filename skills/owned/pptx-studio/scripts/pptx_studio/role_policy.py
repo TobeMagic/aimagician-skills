@@ -9,7 +9,13 @@ from __future__ import annotations
 # aligned: a five-card template cannot be offered as a five-item page when
 # the source has only one editable title box.
 MIN_DISTINCT_CLIENT_FACTS_BY_ROLE: dict[str, int] = {
-    "cover": 2,
+    # A certified cover is often a deliberately sparse title composition.
+    # Requiring a presenter/date fact in addition to the report title made a
+    # valid high-end cover ineligible solely because it had no editable
+    # metadata line. The title is the non-negotiable client fact; presenter
+    # and date remain available on the opening/closing or title pages where
+    # the selected native surface supports them.
+    "cover": 1,
     "contents": 5,
     # A chapter divider is intentionally sparse: its primary client-owned
     # statement is the chapter heading. Its ornamental ordinal must never be

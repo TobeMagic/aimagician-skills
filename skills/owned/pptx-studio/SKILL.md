@@ -168,12 +168,13 @@ natural-language direction. The exact
 ```
 
 Before locking an anchor family, perform a one-slide `compose` + `preflight`
-probe for the shortlisted cover. It must expose native title/body slots that
-fit the locked report title and presenter/date line under the physical
-capacities. Reject a visually attractive cover whose native title slots cannot
-hold the real client copy; do this before inspecting or selecting its sibling
-pages. This is a hard eligibility gate, not a cue to reduce font size or add
-freehand text.
+probe for the shortlisted cover. It must expose one native title/body slot
+that fits the locked report title under the physical capacities. A cover is
+permitted to carry only that title: never force presenter/date metadata into a
+decorative title composition that has no certified metadata surface. Reject a
+visually attractive cover whose native surface cannot hold the real title; do
+this before inspecting or selecting its sibling pages. This is a hard
+eligibility gate, not a cue to reduce font size or add freehand text.
 
 When the anchor comes from a certified multi-page work, retrieve its sibling
 pages by repeating the same query with optional
@@ -298,7 +299,7 @@ values are allowed only to clear an unused native text slot; they never
 substitute for customer content. Before `assemble`, confirm that every
 customer-required title, number and conclusion still has one nonempty binding.
 The compiler also enforces a role-specific minimum of *distinct* client facts:
-cover 2, contents 5, section/closing 1, one/two-item 3, three/four/five/six-item 4/5/6/7,
+cover 1, contents 5, section/closing 1, one/two-item 3, three/four/five/six-item 4/5/6/7,
 multi-item/dashboard 6, team 4, timeline/process/business-model 5.  This is a release
 gate, not a suggestion: if `CLIENT_BINDING_COMPLETENESS_INSUFFICIENT` is
 returned, select a lower-capacity candidate or provide/bind the missing

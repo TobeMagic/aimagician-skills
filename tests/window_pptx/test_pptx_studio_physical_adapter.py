@@ -140,7 +140,7 @@ def test_adapter_exact_deck_completeness_uses_selected_native_regions(tmp_path: 
     assert lineage["slides"][0]["binding_completeness"] == {
         "declared_role": "cover",
         "distinct_client_fact_count": 2,
-        "required_distinct_client_fact_count": 2,
+        "required_distinct_client_fact_count": 1,
         "status": "PASS",
     }
 
