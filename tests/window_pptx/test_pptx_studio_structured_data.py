@@ -54,6 +54,75 @@ def test_revenue_contract_publishes_only_customer_schema_and_expands_privately()
 
 
 @pytest.mark.parametrize(
+    ("slide_number", "contract_id", "expected_governed_count", "expected_visible_count", "values"),
+    [
+        (
+            6,
+            "hospital-finance-medical-revenue-trend-v1",
+            25,
+            9,
+            {
+                "trend_series_label": "医疗收入",
+                "trend_periods": ["预算", "本年", "上年"],
+                "trend_amounts": ["46,000", "45,063", "41,600"],
+                "prior_share_series_label": "收入占比",
+                "prior_share_categories": ["检查检验", "药品", "卫材", "医疗服务"],
+                "prior_share_ratios": ["30.1%", "24.3%", "5.8%", "39.8%"],
+                "current_share_series_label": "收入占比",
+                "current_share_categories": ["检查检验", "药品", "卫材", "医疗服务"],
+                "current_share_ratios": ["28.1%", "26.8%", "5.4%", "39.7%"],
+                "comparison_labels": ["前年收入占比", "去年收入占比"],
+                "headline_amounts": ["46,000", "41,600", "45,063"],
+                "headline_metric_labels": ["完成年初预算", "同比增长"],
+                "headline_metrics": ["98.3%", "11.9%"],
+            },
+        ),
+        (
+            7,
+            "hospital-finance-expenditure-table-v1",
+            27,
+            10,
+            {
+                "table_business_header": "业务支出",
+                "table_time_header": "时间",
+                "table_change_header": "增减",
+                "current_year_label": "2025年",
+                "previous_year_label": "去年",
+                "delta_amount_label": "增减额",
+                "delta_rate_label": "增减率",
+                "current_values": ["24,267.26", "5,174.52", "19,969.60", "3,173.94", "1,657.09"],
+                "previous_values": ["22,026.94", "6,862.09", "18,058.74", "2,497.98", "1,562.99"],
+                "delta_values": ["2,240.33", "-1,687.57", "1,910.86", "675.96", "94.10"],
+                "delta_rates": ["9.3%", "-19.0%", "9.5%", "15.0%", "6.0%"],
+                "summary_labels": ["业务支出", "财政基本支出"],
+                "summary_amounts": ["52,242.43", "49,991.23", "2,251.20"],
+                "expense_labels": ["工资薪酬", "资产购置", "药品材料", "运行费用", "个人补助"],
+            },
+        ),
+    ],
+)
+def test_reference_governed_contracts_are_complete_and_do_not_expose_targets(
+    slide_number: int,
+    contract_id: str,
+    expected_governed_count: int,
+    expected_visible_count: int,
+    values: dict[str, object],
+) -> None:
+    contract = contract_for_source(
+        "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839",
+        slide_number,
+    )
+    assert contract is not None
+    assert contract.public_dict()["contract_id"] == contract_id
+    serialized = str(contract.public_dict())
+    assert "peer_" not in serialized
+    assert "shape_" not in serialized
+    assert "table_cell_" not in serialized
+    assert len(expand_contract_values(contract, values)) == expected_governed_count
+    assert len(expand_contract_text_values(contract, values)) == expected_visible_count
+
+
+@pytest.mark.parametrize(
     "values,error",
     [
         ({"series_label": "收入", "categories": ["A"] * 5}, "STRUCTURED_DATA_FIELDS_INVALID"),

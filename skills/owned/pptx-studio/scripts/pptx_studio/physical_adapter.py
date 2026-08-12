@@ -715,14 +715,14 @@ def compile_physical_adapter(
                     )
                 except StructuredDataError as exc:
                     raise PhysicalAdapterError(str(exc)) from exc
-                inventory_groups = {
+                inventory_binding_ids = {
                     str(record.get("peer_group_id"))
+                    if isinstance(record.get("peer_group_id"), str) and record.get("peer_group_id")
+                    else str(record.get("slot_id"))
                     for record in governed_content_inventory.get("slots", ())
-                    if isinstance(record, Mapping)
-                    and isinstance(record.get("peer_group_id"), str)
-                    and record.get("peer_group_id")
+                    if isinstance(record, Mapping) and isinstance(record.get("slot_id"), str)
                 }
-                if inventory_groups != set(replacements):
+                if inventory_binding_ids != set(replacements):
                     raise PhysicalAdapterError("STRUCTURED_DATA_CONTRACT_SOURCE_DRIFT")
                 for peer_group_id, value in replacements.items():
                     physical_fact_id, record = _source_fact(value)
