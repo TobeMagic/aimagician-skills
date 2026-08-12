@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -41,6 +42,39 @@ from .qa import run_studio_qa
 
 class PhysicalAdapterError(ValueError):
     """A selected catalog page cannot safely be materialized."""
+
+
+# These are certified-template artefacts, never customer facts.  Leaving one
+# behind is both a release failure and an unreasonable burden on an agent
+# which only receives semantic regions rather than raw OOXML.  A longer,
+# unbound narrative sentence is treated the same way: it is commercial sample
+# copy, not a structural label such as "目录" or an axis tick.
+_TEMPLATE_PLACEHOLDER_RE = re.compile(
+    r"(?:20XX|20\dX|XXX|LOGO|输入标题|点击此处|请替换|占位|某某|Lorem|Your\s+(?:title|text))",
+    re.IGNORECASE,
+)
+_TEMPLATE_BRAND_RE = re.compile(
+    r"(?:B站|哔哩哔哩|bilibili|nestle|雀巢|erke|安踏|Abbott|完美日记|蚂蚁森林)",
+    re.IGNORECASE,
+)
+
+
+def _unbound_template_clear_reason(value: str) -> str | None:
+    """Classify only safe, non-client source copy for compiler-owned clearing."""
+
+    compact = "".join(value.split())
+    if not compact:
+        return None
+    if _TEMPLATE_PLACEHOLDER_RE.search(compact):
+        return "template-placeholder"
+    if _TEMPLATE_BRAND_RE.search(compact):
+        return "template-brand-residue"
+    # A template paragraph is not a reusable visual primitive.  Short labels
+    # stay intact so navigation, axes, and intentionally generic decorations
+    # retain their authored look until the agent elects to bind them.
+    if len(compact) >= 12:
+        return "template-sample-copy"
+    return None
 
 
 def _sha256_bytes(value: bytes) -> str:
@@ -467,7 +501,17 @@ def compile_physical_adapter(
         )
         bindings: dict[str, str] = {}
         specs: dict[str, TextBindingSpec] = {}
+        template_repairs: list[dict[str, str]] = []
         for slot in slots:
+            clear_reason = _unbound_template_clear_reason(slot.text)
+            if clear_reason is not None:
+                bindings[slot.slot_id] = ""
+                specs[slot.slot_id] = TextBindingSpec("", (), "clear")
+                template_repairs.append({
+                    "shape_id": slot.slot_id,
+                    "kind": clear_reason,
+                })
+                continue
             fact_id, record = _source_fact(slot.text)
             fact_records.setdefault(fact_id, record)
             bindings[slot.slot_id] = slot.text
@@ -480,6 +524,7 @@ def compile_physical_adapter(
             "source": {"package_sha256": package_sha, "slide_number": int(slide_number), "source_slide_sha256": graph.slide_sha},
             "text_bindings": [],
             "asset_bindings": [],
+            "template_repairs": template_repairs,
         }
         asset_specs: dict[str, AssetBindingSpec] = {}
         for operation in operations_by_slide.get(slide_id, []):
@@ -552,7 +597,13 @@ def compile_physical_adapter(
     fact_sha = _write_json(fact_path, fact_store)
     asset_path, asset_sha = _asset_manifest(adaptation_request, asset_paths or {}, stage)
     connective_path = stage / "connective-copy.v1.json"
-    connective_sha = _write_json(connective_path, {"schema_version": "1.0", "entries": []})
+    connective_sha = _write_json(
+        connective_path,
+        {
+            "schema_version": "1.0",
+            "entries": [{"id": "connective-clear", "text": ""}],
+        },
+    )
     fingerprint = _sha256_bytes(_canonical_json({"catalog_id": catalog.get("catalog_id"), "composition": composition_plan_sha256(composition_plan), "adaptation": adaptation_plan.get("composition_plan_sha256")}))
     plan = AssemblyPlan(
         schema_version="1.0",

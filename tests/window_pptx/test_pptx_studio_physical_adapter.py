@@ -33,7 +33,9 @@ def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _source_pack(tmp_path: Path) -> tuple[Path, dict[str, object], dict[str, object], dict[str, object], Path]:
+def _source_pack(
+    tmp_path: Path, *, include_placeholder: bool = False,
+) -> tuple[Path, dict[str, object], dict[str, object], dict[str, object], Path]:
     source_root = tmp_path / "private"
     category = source_root / "003-封面模板"
     category.mkdir(parents=True)
@@ -49,6 +51,10 @@ def _source_pack(tmp_path: Path) -> tuple[Path, dict[str, object], dict[str, obj
     subtitle.text_frame.paragraphs[0].text = "模板副标题"
     subtitle.text_frame.paragraphs[0].font.size = Pt(18)
     picture = slide.shapes.add_picture(str(source_image), Inches(7), Inches(3), width=Inches(2.5), height=Inches(1.5))
+    if include_placeholder:
+        placeholder = slide.shapes.add_textbox(Inches(9), Inches(0.2), Inches(1), Inches(0.3))
+        placeholder.text_frame.paragraphs[0].text = "LOGO"
+        placeholder.text_frame.paragraphs[0].font.size = Pt(10)
     presentation.save(deck)
     package_sha = _sha(deck)
     page_id = f"page_{package_sha[:24]}_001"
@@ -123,6 +129,27 @@ def test_adapter_rejects_unmapped_private_package(tmp_path: Path) -> None:
     catalog["pages"][0]["package_sha256"] = "a" * 64  # type: ignore[index]
     with pytest.raises(PhysicalAdapterError, match="PRIVATE_PACKAGE_MISSING"):
         resolve_catalog_sources(catalog, private_source_root=source_root)
+
+
+def test_adapter_clears_unbound_template_placeholder_with_lineage(tmp_path: Path) -> None:
+    source_root, catalog, composition, request, replacement = _source_pack(
+        tmp_path, include_placeholder=True,
+    )
+    adaptation = compile_adaptation(composition, catalog=catalog, request=request)
+    output = tmp_path / "placeholder-cleared.pptx"
+    report, lineage = assemble_from_plans(
+        composition, adaptation, request, catalog=catalog,
+        private_source_root=source_root, workspace=tmp_path / "stage",
+        output_path=output, asset_paths={"cover-image": replacement},
+    )
+    assert report.status == "pass"
+    text = "\n".join(
+        shape.text for shape in Presentation(output).slides[0].shapes
+        if hasattr(shape, "text")
+    )
+    assert "LOGO" not in text
+    assert lineage["slides"][0]["template_repairs"]
+    assert lineage["slides"][0]["template_repairs"][0]["kind"] == "template-placeholder"
 
 
 def test_adapter_returns_actionable_lineage_when_physical_verifier_rejects_release(
