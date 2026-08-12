@@ -56,17 +56,38 @@ def _registry(request: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, str
     return facts, assets, bindings
 
 
+def _physical_region_capacities(preflight: Mapping[str, Any]) -> dict[tuple[str, str], int]:
+    """Return the native capacities observed for this exact composition plan."""
+
+    if preflight.get("status") != "PASS" or not isinstance(preflight.get("slides"), list):
+        raise AdaptationError("PREFLIGHT_INVALID")
+    capacities: dict[tuple[str, str], int] = {}
+    for slide in preflight["slides"]:
+        if not isinstance(slide, Mapping) or not isinstance(slide.get("slide_id"), str) or not isinstance(slide.get("regions"), list):
+            raise AdaptationError("PREFLIGHT_INVALID")
+        for region in slide["regions"]:
+            if not isinstance(region, Mapping) or not isinstance(region.get("region_id"), str) or type(region.get("native_capacity")) is not int:
+                raise AdaptationError("PREFLIGHT_INVALID")
+            key = (slide["slide_id"], region["region_id"])
+            if key in capacities:
+                raise AdaptationError("PREFLIGHT_INVALID")
+            capacities[key] = region["native_capacity"]
+    return capacities
+
+
 def compile_adaptation(
     composition_plan: Mapping[str, Any],
     *,
     catalog: Mapping[str, Any],
     request: Mapping[str, Any],
+    preflight: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compile only safe, value-free references for a later materializer."""
 
     if composition_plan.get("schema_version") != "1.0" or composition_plan.get("status") != "PASS":
         raise AdaptationError("COMPOSITION_PLAN_INVALID")
     facts, assets, bindings = _registry(request)
+    physical_capacities = _physical_region_capacities(preflight) if preflight is not None else None
     pages = {str(page.get("page_id")): page for page in catalog.get("pages", []) if isinstance(page, Mapping)}
     regions = {str(region.get("region_id")): region for region in catalog.get("regions", []) if isinstance(region, Mapping)}
     selected = {str(item.get("slide_id")): item for item in composition_plan.get("slides", []) if isinstance(item, Mapping)}
@@ -91,9 +112,18 @@ def compile_adaptation(
             region = regions.get(region_id)
             if region is None or region.get("page_id") != page.get("page_id") or region_id not in source.get("region_ids", []):
                 raise AdaptationError("REGION_NOT_SELECTED")
-            capacity = region.get("capacity", {}).get("max_text_chars", 0) if isinstance(region.get("capacity"), Mapping) else 0
+            if physical_capacities is None:
+                capacity = region.get("capacity", {}).get("max_text_chars", 0) if isinstance(region.get("capacity"), Mapping) else 0
+            else:
+                capacity = physical_capacities.get((slide_id, region_id))
+                if capacity is None:
+                    raise AdaptationError("PREFLIGHT_REGION_NOT_SELECTED")
             if type(capacity) is not int or len(facts[fact_id]) > capacity:
-                raise AdaptationError("TEXT_CAPACITY_EXCEEDED")
+                raise AdaptationError(
+                    "TEXT_CAPACITY_EXCEEDED"
+                    f":slide_id={slide_id}:region_id={region_id}:fact_id={fact_id}"
+                    f":requested_chars={len(facts[fact_id])}:capacity={capacity}"
+                )
             target = (slide_id, region_id)
             if target in targets:
                 raise AdaptationError("BINDING_TARGET_DUPLICATE")

@@ -270,9 +270,9 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         _write_json(args.composition_output, result)
         return {"status": result["status"], "composition_output": str(args.composition_output), "summary": {"strategy": result["strategy"], "slide_count": len(result["slides"])}}
     if args.command == "adapt":
-        if args.catalog is None or args.composition_plan is None or args.adaptation_input is None or args.adaptation_output is None:
+        if args.catalog is None or args.composition_plan is None or args.adaptation_input is None or args.adaptation_output is None or args.preflight_output is None:
             raise ValueError("ADAPTATION_ARGUMENT_REQUIRED")
-        result = compile_adaptation(_read_json(args.composition_plan), catalog=_read_json(args.catalog), request=_read_json(args.adaptation_input))
+        result = compile_adaptation(_read_json(args.composition_plan), catalog=_read_json(args.catalog), request=_read_json(args.adaptation_input), preflight=_read_json(args.preflight_output))
         _write_json(args.adaptation_output, result)
         return {"status": result["status"], "adaptation_output": str(args.adaptation_output), "summary": {"operation_count": len(result["operations"])}}
     if args.command == "bind-outline":

@@ -30,6 +30,13 @@ def _request() -> dict[str, object]:
     return {"schema_version": "1.0", "facts": [{"fact_id": "fact_title", "value": "2025 年度工作汇报"}], "assets": [{"asset_id": "asset_cover", "sha256": "c" * 64}], "bindings": [{"slide_id": "s01", "operation": "replace_text", "region_id": "region_a_title", "shape_id": None, "fact_id": "fact_title", "asset_id": None}, {"slide_id": "s01", "operation": "replace_asset", "region_id": None, "shape_id": "3", "fact_id": None, "asset_id": "asset_cover"}]}
 
 
+def _preflight(capacity: int = 30) -> dict[str, object]:
+    return {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
+        {"region_id": "region_a_title", "native_capacity": capacity},
+        {"region_id": "region_a_subtitle", "native_capacity": capacity},
+    ]}]}
+
+
 def test_adaptation_contains_only_bound_references() -> None:
     catalog, plan = _inputs()
     request = _request()
@@ -52,12 +59,13 @@ def test_adaptation_rejects_source_drift() -> None:
 
 def test_cli_adaptation_uses_only_catalog_and_plan_json(tmp_path: Path) -> None:
     catalog, plan = _inputs()
-    paths = {name: tmp_path / f"{name}.json" for name in ("manifest", "catalog", "plan", "request", "output")}
+    paths = {name: tmp_path / f"{name}.json" for name in ("manifest", "catalog", "plan", "request", "preflight", "output")}
     paths["manifest"].write_text(json.dumps({"status": "APPLIED"}), encoding="utf-8")
     paths["catalog"].write_text(json.dumps(catalog), encoding="utf-8")
     paths["plan"].write_text(json.dumps(plan), encoding="utf-8")
     paths["request"].write_text(json.dumps(_request()), encoding="utf-8")
-    result = run(["adapt", "--source-root", str(tmp_path), "--archive-root", str(tmp_path), "--manifest", str(paths["manifest"]), "--catalog", str(paths["catalog"]), "--composition-plan", str(paths["plan"]), "--adaptation-input", str(paths["request"]), "--adaptation-output", str(paths["output"])])
+    paths["preflight"].write_text(json.dumps(_preflight()), encoding="utf-8")
+    result = run(["adapt", "--source-root", str(tmp_path), "--archive-root", str(tmp_path), "--manifest", str(paths["manifest"]), "--catalog", str(paths["catalog"]), "--composition-plan", str(paths["plan"]), "--preflight-output", str(paths["preflight"]), "--adaptation-input", str(paths["request"]), "--adaptation-output", str(paths["output"])])
     assert result["status"] == "PASS"
     assert len(json.loads(paths["output"].read_text(encoding="utf-8"))["operations"]) == 2
 
@@ -77,3 +85,12 @@ def test_adaptation_fails_closed(mutate, error: str) -> None:  # type: ignore[no
     mutate(request)
     with pytest.raises(AdaptationError, match=error):
         compile_adaptation(plan, catalog=catalog, request=request)
+
+
+def test_adaptation_uses_physical_preflight_capacity_over_catalog_hint() -> None:
+    catalog, plan = _inputs()
+    catalog["regions"][0]["capacity"]["max_text_chars"] = 4  # type: ignore[index]
+
+    result = compile_adaptation(plan, catalog=catalog, request=_request(), preflight=_preflight(30))
+
+    assert result["operations"][0]["capacity"] == 30

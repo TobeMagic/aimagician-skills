@@ -23,7 +23,11 @@ _SEMANTIC_ROLES = frozenset({"title", "label", "metric", "body", "any"})
 
 
 def _compact_len(value: str) -> int:
-    return len("".join(value.split()))
+    # PowerPoint stores whitespace in the text run.  Capacity decisions must
+    # use the same raw character measure as adaptation and the physical
+    # importer; removing spaces here made a fact appear to fit during binding
+    # and fail later in a different compiler stage.
+    return len(value)
 
 
 def _preflight_regions(preflight: Mapping[str, Any]) -> dict[str, list[dict[str, Any]]]:

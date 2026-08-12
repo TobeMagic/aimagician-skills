@@ -242,7 +242,10 @@ preflight, prefers the requested semantic role, applies the exact native
 capacity, generates stable fact IDs, and returns a strict adaptation request.
 It fails on an overflow or an unavailable slot; it never truncates, duplicates
 or silently falls back to a template's sample copy. Then run `adapt` on that
-generated adaptation request.
+generated adaptation request **and the same `--preflight-output` file**. The
+physical preflight is the only capacity authority for adaptation; catalog
+capacities are retrieval hints and must not override a successfully bound
+native slot.
 
 The preflight also reports a value-free `content_contract` per selected page:
 the number of certified title, label, metric and body slots that can accept
