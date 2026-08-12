@@ -148,6 +148,20 @@ def test_shrink_to_fit_mutates_only_target_body_policy_and_text() -> None:
     assert actual.count(b"<a:spAutoFit/>") == 1
 
 
+def test_shrink_to_fit_allows_layout_inherited_font_size() -> None:
+    source = _fit_policy_slide_xml().replace(b'<a:rPr sz="1800"/>', b"", 1)
+
+    actual = _adapt_slide_text(
+        source,
+        {"shape_2": "Longer governed copy"},
+        allowed_slots=("shape_2", "shape_3"),
+        fit_policies={"shape_2": "shrink-to-fit"},
+    )
+
+    assert b'<a:normAutofit fontScale="40000" lnSpcReduction="20000"/>' in actual
+    assert b"Longer governed copy" in actual
+
+
 def test_text_adaptation_preserves_existing_run_styles() -> None:
     source = (
         f'<p:sld xmlns:p="{PML_NS}" xmlns:a="{DML_NS}"><p:cSld><p:spTree>'

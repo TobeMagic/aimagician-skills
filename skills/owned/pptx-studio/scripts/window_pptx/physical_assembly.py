@@ -2139,9 +2139,14 @@ def _scale_shape_text_runs(
 
     updated = _TEXT_SIZE_ATTRIBUTE_RE.sub(replace_size, segment)
     if changed == 0:
-        raise PhysicalAssemblyError(
-            f"shrink-to-fit binding requires explicit run size: {slot_id}"
-        )
+        # Some certified native text placeholders inherit their size from the
+        # slide layout and therefore have no run-level ``sz`` attribute. The
+        # governed caller still installs ``normAutofit`` on this exact text
+        # body, which lets PowerPoint/LibreOffice fit the inherited style
+        # without changing any geometry or inventing a font size. Treating
+        # that safe case as a hard error makes an otherwise editable template
+        # unusable for ordinary client copy.
+        return segment
     return updated
 
 
