@@ -127,6 +127,7 @@ def test_query_excludes_missing_or_mismatched_observation() -> None:
         (["brand-characters", "company-history"], ["anime", "corporate-blue"]),
         (["landscape", "sailboat", "template"], ["nature-themed", "corporate"]),
         (["automotive", "annual-report"], ["corporate", "dark"]),
+        (["traditional Chinese medicine", "pathology", "financial-report"], ["corporate", "green"]),
     ],
 )
 def test_institutional_finance_query_excludes_incompatible_visual_subjects(

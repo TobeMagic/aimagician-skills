@@ -34,6 +34,17 @@ _INSTITUTIONAL_FINANCE_EXCLUSIONS = (
     # with which to recontextualize automotive, agricultural or food brands.
     "automotive", "car", "agricultural", "agriculture", "coffee", "banana",
     "citrus", "farming", "farm",
+    # "Institutional finance" is not a loose green/medical visual style.  A
+    # hospital report can retain neutral healthcare imagery, but it cannot
+    # honestly inherit a deck whose composition depends on a particular TCM
+    # product, pathology specimen, experimental result or crop story.  Those
+    # subjects must be supplied by the client and explicitly bound as assets;
+    # the text-only route has no authority to silently repurpose them.
+    "traditional chinese medicine", "tcm", "herbal medicine", "herbal",
+    "moxibustion", "anatomy", "dermatology", "digestive system",
+    "histology", "pathology", "mouse model", "experimental support",
+    "epidemiology", "essential oils", "tea products", "medicinal plants",
+    "rural revitalization", "crop showcase", "cultivation",
 )
 # User-confirmed source categories are stronger evidence of a page's intended
 # structural role than an OCR/vision model's free-form description.  Visual
