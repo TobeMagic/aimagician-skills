@@ -34,3 +34,19 @@ def test_outline_binding_rejects_overflow_without_guessing() -> None:
         compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
             {"value": "这是一段明确超过所有认证槽位容量且不得截断的客户文字内容", "semantic_role": "body"},
         ]}]}, preflight=_preflight())
+
+
+def test_outline_binding_reserves_the_largest_slot_for_later_long_copy() -> None:
+    preflight = {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
+        {"region_id": "r-short", "native_capacity": 6, "shape_slots": [{"semantic_role": "label"}]},
+        {"region_id": "r-long", "native_capacity": 24, "shape_slots": [{"semantic_role": "body"}]},
+    ]}]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "治理基础", "semantic_role": "label"},
+        {"value": "预算事前校验与月度偏差复盘闭环", "semantic_role": "body"},
+    ]}]}, preflight=preflight)
+
+    # Facts retain client narrative order, while the allocator has prevented
+    # the short first label from consuming the only long-capacity surface.
+    assert [item["fact_id"] for item in result["facts"]] == ["s01-f01", "s01-f02"]
+    assert [item["region_id"] for item in result["bindings"]] == ["r-short", "r-long"]

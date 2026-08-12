@@ -76,13 +76,32 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
             raise BriefBindingError("OUTLINE_SLIDE_UNKNOWN")
         seen_slides.add(slide_id)
         available = list(regions_by_slide[slide_id])
+        prepared: list[dict[str, Any]] = []
         for ordinal, item in enumerate(slide["facts"], start=1):
             if not isinstance(item, Mapping) or set(item) != _FACT_FIELDS or not isinstance(item.get("value"), str) or not isinstance(item.get("semantic_role"), str):
                 raise BriefBindingError("OUTLINE_FACT_INVALID")
             value, requested_role = item["value"], item["semantic_role"]
             if not value or requested_role not in _SEMANTIC_ROLES:
                 raise BriefBindingError("OUTLINE_FACT_INVALID")
-            required = _compact_len(value)
+            prepared.append({
+                "ordinal": ordinal,
+                "value": value,
+                "requested_role": requested_role,
+                "required": _compact_len(value),
+            })
+
+        # Allocate scarce long-capacity regions first. A presentation outline
+        # is naturally written title → metric → body; consuming a 31-character
+        # body slot for an early five-character label can make a later source
+        # grounded conclusion falsely appear impossible. Allocation order is
+        # internal only: stable fact IDs and output order remain the model's
+        # original narrative order.
+        allocated: dict[int, dict[str, Any]] = {}
+        for item in sorted(prepared, key=lambda record: (-record["required"], record["ordinal"])):
+            ordinal = int(item["ordinal"])
+            value = str(item["value"])
+            requested_role = str(item["requested_role"])
+            required = int(item["required"])
             fitting = [region for region in available if region["capacity"] >= required]
             if requested_role != "any":
                 exact = [region for region in fitting if requested_role in region["semantic_roles"]]
@@ -94,12 +113,17 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
                 )
             chosen = min(fitting, key=lambda region: (region["capacity"], region["region_id"]))
             available.remove(chosen)
+            allocated[ordinal] = {"value": value, "region_id": chosen["region_id"]}
+
+        for item in prepared:
+            ordinal = int(item["ordinal"])
+            binding = allocated[ordinal]
             fact_id = f"{slide_id}-f{ordinal:02d}"
-            facts.append({"fact_id": fact_id, "value": value})
+            facts.append({"fact_id": fact_id, "value": binding["value"]})
             bindings.append({
                 "slide_id": slide_id,
                 "operation": "replace_text",
-                "region_id": chosen["region_id"],
+                "region_id": binding["region_id"],
                 "shape_id": None,
                 "fact_id": fact_id,
                 "asset_id": None,
