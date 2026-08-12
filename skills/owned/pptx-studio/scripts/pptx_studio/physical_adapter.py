@@ -671,7 +671,7 @@ def compile_physical_adapter(
         # certified region instead; page/component assembly remains subject to
         # the normal role floor. The lineage makes this reduced editable
         # surface explicit for later visual/release review.
-        if composition_plan.get("strategy") == "exact_deck":
+        if composition_plan.get("strategy") in {"exact_deck", "family_assembly"}:
             selected_region_ids = source.get("region_ids")
             if not isinstance(selected_region_ids, list) or not selected_region_ids:
                 raise PhysicalAdapterError("COMPOSITION_SOURCE_REGIONS_INVALID")

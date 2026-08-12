@@ -180,17 +180,22 @@ under the rule above. This permits a
 coherent full-work template to retain its own chapter/data cadence; it does
 not authorize cross-deck random mixing.
 
-For a normal `page_assembly` with an anchor family of eight or more pages,
+For a complete-work adaptation with an anchor family of eight or more pages,
 first call `inspect-deck` once on the chosen anchor `deck_id`. This is an
 authorized **family-anatomy lookup**, not an uncontrolled fallback and not a
-substitute for candidate validation. From its sanitized inventory choose the
+substitute for source/materialization validation. From its sanitized inventory choose the
 unique pages that best express the locked narrative, excluding every page that
 reports `requires_structured_data=true` when complete data is unavailable.
-Then submit those chosen IDs through one bounded `query-batch` revalidation
-(one request per selected slide, with `candidate_ids`) before composing. If
-the family cannot supply all required roles/capacity safely, select a different
+Then use `strategy:"family_assembly"`: all 15 selected source pages must be
+unique and belong to that exact inspected anchor deck; composition rechecks
+source scope, observation hash, native regions, capacity, data-surface and
+family identity. Do **not** force those pages through generic role
+`candidate_ids` revalidation: an editorial annual-report page may truthfully
+be labelled `financial-overview` rather than `five-item`. The physical binding
+and QA gates still require nonempty client facts for every eligible page. If
+the family cannot supply all required pages/capacity safely, select a different
 anchor family; only then may the one registered compatible fallback signature
-be considered.
+be considered through normal `page_assembly`.
 
 For an `exact_deck` candidate, call `inspect-deck` with the returned `deck_id`
 and write its value-free inventory to `work/deck-inventory.json`:

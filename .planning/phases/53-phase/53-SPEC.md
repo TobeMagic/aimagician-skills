@@ -105,6 +105,7 @@ the already governed local private library outside the client folder.
 | 4 | May a chart-heavy reference page be used when the brief only supplies headline metrics? | No. Query/preflight expose a value-free structured-data requirement and selection must choose a compatible no-data-surface page until a complete dataset is locked. |
 | 5 | Does a full-bleed certified background image make a physical template page a rasterized slide? | No, provided the imported page retains a material native shape system or editable text surface. QA still rejects a screenshot-like page only when both non-picture native coverage and editable-text coverage are sparse. |
 | 6 | May a clean-room agent inspect the selected anchor family before it composes a 15-page page assembly? | Yes. `inspect-deck` is an explicit bounded family-anatomy step, followed by candidate-ID revalidation. It preserves the style lock and eliminates the false conflict between coherent family reuse and per-page proof. |
+| 7 | Must an inspected complete-work page pass a generic role taxonomy before flexible recomposition? | No. `family_assembly` is a restricted complete-work adaptation route: every page remains unique, editable, data-safe, capacity-checked and from the exact anchor deck, but generic role labels do not override the certified work's own editorial anatomy. |
 
 ## Blocking Questions
 

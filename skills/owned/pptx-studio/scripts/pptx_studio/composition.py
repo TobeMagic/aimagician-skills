@@ -22,7 +22,7 @@ class CompositionError(ValueError):
     """Raised when an agent intent exceeds governed composition authority."""
 
 
-_STRATEGIES = frozenset({"exact_deck", "page_assembly", "component_assembly"})
+_STRATEGIES = frozenset({"exact_deck", "family_assembly", "page_assembly", "component_assembly"})
 _REQUEST_FIELDS = frozenset({"schema_version", "strategy", "art_direction", "slides"})
 _ART_FIELDS = frozenset({"anchor_page_id", "allowed_style_signatures"})
 _SLIDE_FIELDS = frozenset({"slide_id", "role", "candidate_ids", "selected_candidate_id", "minimum_capacity"})
@@ -235,7 +235,14 @@ def compile_composition(
             # preflight and binding-completeness gate retain authority over its
             # actual editable surface. Page/component assembly keeps the
             # stricter role floor before any source import.
-            required_regions = 1 if strategy == "exact_deck" else minimum_distinct_client_facts(item["role"])
+            # ``family_assembly`` is the controlled adaptation route for a
+            # complete certified work. Unlike exact-deck reproduction, its
+            # source order may be recomposed for the client narrative; unlike
+            # generic page assembly, it must not reject a genuine editorial
+            # page because a visual classifier did not reduce it to one of the
+            # small generic role labels. It remains constrained to the anchor
+            # deck, physical native slots and the downstream binding gate.
+            required_regions = 1 if strategy in {"exact_deck", "family_assembly"} else minimum_distinct_client_facts(item["role"])
             if len(source_region_ids) < required_regions:
                 raise CompositionError("BINDABLE_REGION_COUNT_INSUFFICIENT")
             # Composition-request v1 carries only narrative and page-selection
@@ -265,7 +272,7 @@ def compile_composition(
             raise CompositionError("STYLE_SIGNATURE_NOT_ALLOWED")
         if not same_certified_theme_family and not _style_profiles_compatible(anchor_profile, style_profile(page, observations)):
             raise CompositionError("STYLE_FALLBACK_INCOMPATIBLE")
-        if strategy != "exact_deck" and not _role_matches(page, detail, str(item["role"])):
+        if strategy not in {"exact_deck", "family_assembly"} and not _role_matches(page, detail, str(item["role"])):
             raise CompositionError("ROLE_INCOMPATIBLE")
         if type(capacity) is not int or capacity < item["minimum_capacity"]:
             raise CompositionError("CAPACITY_INSUFFICIENT")
@@ -280,6 +287,12 @@ def compile_composition(
                 raise CompositionError("EXACT_DECK_SEQUENCE_INVALID")
             used_source_pages.add(str(page["page_id"]))
             last_exact_slide_number = slide_number
+        elif strategy == "family_assembly":
+            # A family assembly is still a physical-template composition, not
+            # a relaxed cross-deck collage. The explicit anchor family is the
+            # only source authority.
+            if str(page.get("deck_id")) != anchor_deck_id:
+                raise CompositionError("FAMILY_ASSEMBLY_SOURCE_DECK_INVALID")
         rank = list(item["candidate_ids"]).index(selected_id) + 1
         output_slides.append({
             "slide_id": item["slide_id"],
@@ -302,7 +315,7 @@ def compile_composition(
                 ),
                 "capacity": capacity,
                 "capacity_residue": capacity - item["minimum_capacity"],
-                "confidence": 1.0 if strategy == "exact_deck" else (0.85 if strategy == "page_assembly" else 0.7),
+                "confidence": 1.0 if strategy == "exact_deck" else (0.95 if strategy == "family_assembly" else (0.85 if strategy == "page_assembly" else 0.7)),
             },
         })
     return {
@@ -314,6 +327,7 @@ def compile_composition(
             "anchor_style_signature": anchor_signature,
             "allowed_style_signatures": sorted(allowed_signatures),
             "exact_deck_id": exact_deck_id,
+            "family_deck_id": anchor_deck_id if strategy == "family_assembly" else None,
         },
         "slides": output_slides,
     }

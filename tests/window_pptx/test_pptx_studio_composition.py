@@ -95,6 +95,39 @@ def test_exact_deck_composition_is_stable_and_schema_valid() -> None:
     validate(first, schema)
 
 
+def test_family_assembly_allows_recomposition_inside_anchor_work_only() -> None:
+    catalog, observations, signatures = _fixture()
+    request = _request(signatures, strategy="family_assembly")
+    # The closing source is deliberately used for a different narrative role.
+    # A complete certified work owns that page's visual grammar; the family
+    # route validates its real native surface rather than a lossy classifier.
+    request["slides"][1]["role"] = "process"  # type: ignore[index]
+
+    plan = compile_composition(catalog, observations=observations, request=request)
+
+    assert plan["art_direction"]["family_deck_id"] == "deck_aaaaaaaaaaaaaaaaaaaaaaaa"
+    assert plan["slides"][1]["evidence"]["confidence"] == 0.95
+
+
+def test_family_assembly_rejects_source_outside_anchor_work() -> None:
+    catalog, observations, signatures = _fixture()
+    # Make the external source visually compatible, so this exercise reaches
+    # the stronger family-identity gate rather than failing earlier on style.
+    observations["page_cccccccccccccccccccccccc_001"]["observation"]["visual_style"] = ["editorial", "dark"]  # type: ignore[index]
+    signatures["page_cccccccccccccccccccccccc_001"] = style_signature(  # type: ignore[index]
+        next(page for page in catalog["pages"] if page["page_id"] == "page_cccccccccccccccccccccccc_001"), observations,  # type: ignore[index]
+    )
+    request = _request(signatures, strategy="family_assembly")
+    request["slides"][1].update({  # type: ignore[index]
+        "role": "process",
+        "selected_candidate_id": "page_cccccccccccccccccccccccc_001",
+        "candidate_ids": ["page_cccccccccccccccccccccccc_001"],
+    })
+
+    with pytest.raises(CompositionError, match="FAMILY_ASSEMBLY_SOURCE_DECK_INVALID"):
+        compile_composition(catalog, observations=observations, request=request)
+
+
 def _select_other_deck(request: dict[str, object], signatures: dict[str, str]) -> None:
     request["art_direction"].update({  # type: ignore[union-attr]
         "allowed_style_signatures": [

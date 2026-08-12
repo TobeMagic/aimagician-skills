@@ -6,7 +6,7 @@
   "required": ["schema_version", "strategy", "art_direction", "slides"],
   "properties": {
     "schema_version": {"const": "1.0"},
-    "strategy": {"enum": ["exact_deck", "page_assembly", "component_assembly"]},
+    "strategy": {"enum": ["exact_deck", "family_assembly", "page_assembly", "component_assembly"]},
     "art_direction": {
       "type": "object",
       "required": ["anchor_page_id", "allowed_style_signatures"],
