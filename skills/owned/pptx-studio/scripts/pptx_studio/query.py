@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import re
 from typing import Any, Mapping
 
 from .role_policy import minimum_distinct_client_facts
@@ -13,7 +14,7 @@ class QueryError(ValueError):
     """Raised for an invalid query instead of falling back to file discovery."""
 
 
-_ALLOWED_REQUEST = {"mode", "role", "tags", "style", "capacity", "limit", "suitability", "candidate_ids"}
+_ALLOWED_REQUEST = {"mode", "role", "tags", "style", "capacity", "limit", "suitability", "candidate_ids", "deck_id"}
 _MODES = {"deck", "page", "region"}
 _SUITABILITY_PROFILES = {"general", "institutional-finance"}
 _INSTITUTIONAL_FINANCE_EXCLUSIONS = (
@@ -27,6 +28,12 @@ _INSTITUTIONAL_FINANCE_EXCLUSIONS = (
     # not.  This is deliberately a suitability constraint, not a deletion of
     # the private library: those pages remain queryable for suitable briefs.
     "landscape", "mountain", "clouds", "sailboat", "scenery", "nature-themed",
+    # Full-work template covers can otherwise dominate on page-family count
+    # while carrying an unmistakably unrelated commercial subject.  An
+    # institutional finance/hospital briefing has no approved client imagery
+    # with which to recontextualize automotive, agricultural or food brands.
+    "automotive", "car", "agricultural", "agriculture", "coffee", "banana",
+    "citrus", "farming", "farm",
 )
 # User-confirmed source categories are stronger evidence of a page's intended
 # structural role than an OCR/vision model's free-form description.  Visual
@@ -176,7 +183,13 @@ def _validate_request(request: Mapping[str, Any]) -> dict[str, Any]:
             raise QueryError("CANDIDATE_IDS_INVALID")
         if mode != "page":
             raise QueryError("CANDIDATE_IDS_MODE_INVALID")
-    return {"mode": mode, "role": role, "tags": _normal_tags(request.get("tags")), "style": style, "capacity": capacity, "limit": limit, "suitability": suitability, "candidate_ids": candidate_ids}
+    deck_id = request.get("deck_id")
+    if deck_id is not None and (
+        not isinstance(deck_id, str)
+        or not re.fullmatch(r"deck_[0-9a-f]{24}", deck_id)
+    ):
+        raise QueryError("DECK_ID_INVALID")
+    return {"mode": mode, "role": role, "tags": _normal_tags(request.get("tags")), "style": style, "capacity": capacity, "limit": limit, "suitability": suitability, "candidate_ids": candidate_ids, "deck_id": deck_id}
 
 
 def _suitability_safe(observation: Mapping[str, Any], *, profile: str) -> bool:
@@ -270,6 +283,8 @@ def query_catalog(
         candidate_filter = query["candidate_ids"]
         if candidate_filter is not None and candidate_id not in candidate_filter:
             continue
+        if query["deck_id"] is not None and page.get("deck_id") != query["deck_id"]:
+            continue
         if not candidate_id or page.get("category") not in active:
             continue
         if not materialization_eligible(page):
@@ -342,7 +357,15 @@ def query_catalog(
             "scores": {"canonical_role": category_role_score, "visual_role": visual_role_score, "tags": round(tag_score, 6), "style": style_score, "capacity": round(capacity_score, 6), "total": total},
             "reasons": reasons,
         })
-    candidates.sort(key=lambda item: (-item["scores"]["total"], item["candidate_id"]))
+    # A single-page category cover may carry a perfect canonical-role score
+    # while a complete work's coherent cover receives only visual-role credit.
+    # For anchor discovery, put the complete eligible family first so the
+    # agent can choose a reusable design direction rather than a loud orphan.
+    candidates.sort(key=lambda item: (
+        -int(item["theme_family_page_count"]) if query["mode"] == "page" and query["role"] == "cover" else 0,
+        -item["scores"]["total"],
+        item["candidate_id"],
+    ))
     selected = candidates[:query["limit"]]
     return {"schema_version": "1.0", "status": "PASS" if selected else "NO_MATCH", "request": query, "candidates": selected}
 

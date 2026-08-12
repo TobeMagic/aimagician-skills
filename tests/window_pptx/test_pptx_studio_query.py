@@ -106,6 +106,7 @@ def test_query_excludes_missing_or_mismatched_observation() -> None:
     [
         (["brand-characters", "company-history"], ["anime", "corporate-blue"]),
         (["landscape", "sailboat", "template"], ["nature-themed", "corporate"]),
+        (["automotive", "annual-report"], ["corporate", "dark"]),
     ],
 )
 def test_institutional_finance_query_excludes_incompatible_visual_subjects(
@@ -196,6 +197,35 @@ def test_query_treats_returned_style_signature_as_an_exact_anchor_filter() -> No
     assert [item["page_id"] for item in result["candidates"]] == [
         "page_aaaaaaaaaaaaaaaaaaaaaaaa_001",
     ]
+
+
+def test_query_can_constrain_role_retrieval_to_returned_complete_theme_family() -> None:
+    catalog, observations = _catalog()
+    sibling = {
+        "page_id": "page_aaaaaaaaaaaaaaaaaaaaaaaa_002",
+        "deck_id": "deck_aaaaaaaaaaaaaaaaaaaaaaaa",
+        "category": "039-结尾模板",
+        "render": {"image_sha256": "c" * 64},
+        "component_eligible": True,
+        "shapes": [{"max_chars": 90}],
+    }
+    catalog["active_categories"].append("039-结尾模板")  # type: ignore[union-attr]
+    catalog["pages"].append(sibling)  # type: ignore[union-attr]
+    catalog["regions"].extend([  # type: ignore[union-attr]
+        {"region_id": "region_sibling_1", "page_id": sibling["page_id"], "region_kind": "title", "capacity": {"max_text_chars": 30}},
+    ])
+    observations[sibling["page_id"]] = {
+        "page_id": sibling["page_id"], "image_sha256": "c" * 64,
+        "observation": {"semantic_tags": ["annual-report"], "suggested_roles": ["closing"], "visual_style": ["dark", "editorial"], "uncertainty": "none"},
+    }
+
+    result = query_catalog(
+        catalog,
+        observations=observations,
+        request={"mode": "page", "role": "closing", "deck_id": "deck_aaaaaaaaaaaaaaaaaaaaaaaa"},
+    )
+
+    assert [item["page_id"] for item in result["candidates"]] == [sibling["page_id"]]
 
 
 def test_query_excludes_catalog_page_blocked_by_physical_materialization() -> None:

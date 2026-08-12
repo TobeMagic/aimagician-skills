@@ -73,7 +73,7 @@ Use `$PPTX_STUDIO_MANAGER` only. It always requires
 client-local `work/` sentinel paths for those three parser arguments. Do not
 search the filesystem for alternatives.
 
-For each retrieval, write exactly this JSON shape (all seven fields are
+For each initial retrieval, write exactly this JSON shape (all seven fields are
 required; `style` may be `null`) and invoke `query` with the supplied catalog
 and observation index:
 
@@ -142,7 +142,12 @@ natural-language direction. The exact
 {"anchor_page_id":"page_<24-lowercase-hex>_001","allowed_style_signatures":["style_<24-lowercase-hex>"]}
 ```
 
-When the anchor comes from a certified multi-page work, its other pages are a
+When the anchor comes from a certified multi-page work, retrieve its sibling
+pages by repeating the same query with optional
+`"deck_id":"deck_<24-lowercase-hex>"` copied from the returned cover. Do not
+use a page-level `style_signature` to retrieve siblings: those pages can carry
+different vision signatures while retaining the same native theme. When the
+anchor comes from a certified multi-page work, its other pages are a
 controlled theme family: their shared PowerPoint master/palette/grid outranks
 per-page vision wording such as “infographic” versus “corporate”. You may add
 only the anchor signature plus one independently compatible fallback signature
