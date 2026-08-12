@@ -59,7 +59,7 @@ def test_revenue_contract_publishes_only_customer_schema_and_expands_privately()
         (
             6,
             "hospital-finance-medical-revenue-trend-v1",
-            25,
+            27,
             9,
             {
                 "trend_series_label": "医疗收入",

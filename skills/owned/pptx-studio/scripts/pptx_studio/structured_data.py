@@ -118,7 +118,16 @@ _CONTRACTS: tuple[StructuredDataContract, ...] = (
             StructuredField("headline_metrics", "percentage", 2, (5, 5)),
         ),
         governed_targets={
-            "trend_series_label": (("peer_a277fe88de4355a941e5a019",),),
+            # The two workbook header cells are not rendered by the chart but
+            # are retained in its embedded workbook.  They must move with the
+            # customer series label so a physically reused page contains no
+            # stale sample copy.  They remain aliases of one semantic field:
+            # an agent neither sees nor supplies an implementation-only value.
+            "trend_series_label": ((
+                "peer_a277fe88de4355a941e5a019",
+                "workbook_cell_55820963b28a0f8c52851b78",
+                "workbook_cell_eb9d8d2acb2e5cadb59b5ded",
+            ),),
             "trend_periods": tuple((item,) for item in ("peer_dc880db7c6ae0570c9418e9b", "peer_6c866209df37a66462c9b370", "peer_76e448f4f21f6c3ac7ed6468")),
             "trend_amounts": tuple((item,) for item in ("peer_991cb2dce1a1ca03eba5dbea", "peer_37e1e14b51c90c73d1f91336", "peer_e78029c54dfaf750dbd5181f")),
             "prior_share_series_label": (("peer_65a5336f48dc84182cfc731f",),),
