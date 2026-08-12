@@ -155,7 +155,7 @@ substitute for customer content. Before `assemble`, confirm that every
 customer-required title, number and conclusion still has one nonempty binding.
 The compiler also enforces a role-specific minimum of *distinct* client facts:
 cover 2, contents 5, one/two-item 3, three/four/five/six-item 4/5/6/7,
-multi-item 6, team 4, timeline/process/business-model 5.  This is a release
+multi-item/dashboard 6, team 4, timeline/process/business-model 5.  This is a release
 gate, not a suggestion: if `CLIENT_BINDING_COMPLETENESS_INSUFFICIENT` is
 returned, select a lower-capacity candidate or provide/bind the missing
 client facts.  Never satisfy it by repeating a title or retaining template

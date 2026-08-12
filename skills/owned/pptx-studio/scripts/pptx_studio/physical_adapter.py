@@ -88,8 +88,14 @@ _MIN_DISTINCT_CLIENT_FACTS_BY_ROLE: dict[str, int] = {
     "comparison": 5,
     "matrix": 5,
     "roadmap": 5,
+    "dashboard": 6,
     "data": 4,
     "table": 4,
+    "product": 4,
+    "quote": 2,
+    "partners": 4,
+    "case-study": 4,
+    "map": 4,
 }
 
 
