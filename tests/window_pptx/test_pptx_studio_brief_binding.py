@@ -39,6 +39,17 @@ def test_outline_binding_rejects_overflow_without_guessing() -> None:
         ]}]}, preflight=_preflight())
 
 
+def test_outline_binding_never_uses_a_title_or_metric_surface_for_body_copy() -> None:
+    preflight = {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
+        {"region_id": "r-title", "native_capacity": 32, "shape_slots": [{"semantic_role": "title"}]},
+        {"region_id": "r-metric", "native_capacity": 32, "shape_slots": [{"semantic_role": "metric"}]},
+    ]}]}
+    with pytest.raises(BriefBindingError, match=r"OUTLINE_FACT_NO_FITTING_SLOT:slide_id=s01:ordinal=1"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+            {"value": "这是一条不能冒充标题或指标的经营解释", "semantic_role": "body"},
+        ]}]}, preflight=preflight)
+
+
 def test_outline_binding_reserves_the_largest_slot_for_later_long_copy() -> None:
     preflight = {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
         {"region_id": "r-short", "native_capacity": 6, "shape_slots": [{"semantic_role": "label"}]},

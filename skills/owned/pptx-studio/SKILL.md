@@ -248,7 +248,8 @@ small `content-outline.v1.json` instead: it has only `schema_version` and
 `slides`; each slide has `slide_id` and an ordered `facts` list; every fact is
 `{"value":"approved client copy","semantic_role":"title|label|metric|body|any"}`.
 The `bind-outline` command chooses only unused certified native slots from the
-preflight, prefers the requested semantic role, applies the exact native
+preflight, **requires** the requested semantic role (only `any` is
+role-agnostic), applies the exact native
 capacity, generates stable fact IDs, and returns a strict adaptation request.
 It fails on an overflow or an unavailable slot; it never truncates, duplicates
 or silently falls back to a template's sample copy. Then run `adapt` on that
@@ -263,6 +264,14 @@ client content. Use it to preserve the visual grammar of cards and dashboards
 (for example, a five-card financial page normally needs its five labels and
 corresponding metrics), rather than merely satisfying the role's minimum fact
 floor. It contains no template copy, shape IDs or geometry.
+
+Treat a zero count as an absolute design constraint. In particular, a
+chart-led page with `body: 0` must carry its interpretation through its
+published structured data, title, labels and metrics; do not add a prose
+finding as `body` and expect it to occupy a headline/card surface. Omit the
+secondary prose, shorten it into a fitting approved label, or select a page
+with a certified body region. A binding failure is a required replan, never a
+reason to relabel prose as `title`, `metric`, or `any`.
 
 For a selected governed data page, the same preflight exposes a value-free
 `governed_content_contract.data_contract`. This is the sole authority for the

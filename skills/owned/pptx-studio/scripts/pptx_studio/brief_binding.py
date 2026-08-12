@@ -81,9 +81,11 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
     """Return a strict v1 adaptation request from a semantic outline.
 
     Facts are allocated greedily to the smallest fitting unused region.  An
-    explicit semantic role is preferred; the allocator safely falls back to a
-    certified ``body``/other region only when no exact visual role fits.  It
-    fails rather than truncating, duplicating, or inventing client content.
+    explicit semantic role is an authority boundary, not a visual preference:
+    a body cannot consume a title or metric surface merely because it is long.
+    Only ``any`` is permitted to use a role-agnostic surface.  The compiler
+    fails rather than truncating, duplicating, inventing client content, or
+    corrupting a page's visual hierarchy.
     """
 
     if set(outline) != _OUTLINE_FIELDS or outline.get("schema_version") != "1.0" or not isinstance(outline.get("slides"), list):
@@ -128,9 +130,14 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
             required = int(item["required"])
             fitting = [region for region in available if region["capacity"] >= required]
             if requested_role != "any":
-                exact = [region for region in fitting if requested_role in region["semantic_roles"]]
-                if exact:
-                    fitting = exact
+                # A title/body/metric's semantic role is derived from the
+                # certified source page.  Falling back across roles looked
+                # superficially helpful but lets a long body replace a
+                # headline, particularly on chart-led editorial pages.
+                fitting = [
+                    region for region in fitting
+                    if requested_role in region["semantic_roles"]
+                ]
             if not fitting:
                 raise BriefBindingError(
                     "OUTLINE_FACT_NO_FITTING_SLOT"

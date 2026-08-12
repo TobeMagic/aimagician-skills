@@ -122,6 +122,61 @@ def test_reference_governed_contracts_are_complete_and_do_not_expose_targets(
     assert len(expand_contract_text_values(contract, values)) == expected_visible_count
 
 
+def test_reference_data_contracts_preserve_chart_and_table_semantic_order() -> None:
+    trend = contract_for_source(
+        "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839", 6,
+    )
+    assert trend is not None
+    trend_values = {
+        "trend_series_label": "SERIES",
+        "trend_periods": ["P1", "P2", "P3"],
+        "trend_amounts": ["101", "202", "303"],
+        "prior_share_series_label": "PRIOR",
+        "prior_share_categories": ["P-A", "P-B", "P-C", "P-D"],
+        "prior_share_ratios": ["1%", "2%", "3%", "4%"],
+        "current_share_series_label": "CURRENT",
+        "current_share_categories": ["C-A", "C-B", "C-C", "C-D"],
+        "current_share_ratios": ["5%", "6%", "7%", "8%"],
+        "comparison_labels": ["LEFT", "RIGHT"],
+        "headline_amounts": ["401", "402", "403"],
+        "headline_metric_labels": ["RATE", "YOY"],
+        "headline_metrics": ["9%", "10%"],
+    }
+    trend_expanded = expand_contract_values(trend, trend_values)
+    assert trend_expanded["peer_76e448f4f21f6c3ac7ed6468"] == "SERIES"
+    assert trend_expanded["peer_a277fe88de4355a941e5a019"] == "P1"
+    assert trend_expanded["peer_e16ee229e78521a459b0204e"] == "PRIOR"
+    assert trend_expanded["peer_65a5336f48dc84182cfc731f"] == "P-A"
+    assert trend_expanded["peer_eed7194fc9c5a929ad5d56a7"] == "CURRENT"
+    assert trend_expanded["peer_b11ced8b3ac599a47cf6ba0d"] == "C-A"
+
+    table = contract_for_source(
+        "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839", 7,
+    )
+    assert table is not None
+    table_values = {
+        "table_business_header": "业务支出", "table_time_header": "时间", "table_change_header": "增减",
+        "current_year_label": "2025", "previous_year_label": "2024", "delta_amount_label": "差额", "delta_rate_label": "比率",
+        "current_values": ["C1", "C2", "C3", "C4", "C5"],
+        "previous_values": ["P1", "P2", "P3", "P4", "P5"],
+        "delta_values": ["D1", "D2", "D3", "D4", "D5"],
+        "delta_rates": ["R1", "R2", "R3", "R4", "R5"],
+        "summary_labels": ["总支出", "财政基本"], "summary_amounts": ["S1", "S2", "S3"],
+        "expense_labels": ["项目1", "项目2", "项目3", "项目4", "项目5"],
+    }
+    table_expanded = expand_contract_values(table, table_values)
+    # The physical table is row-major; every semantic field must remain
+    # column-major across all five rows rather than following raw XML order.
+    assert table_expanded["table_cell_32430ca774fb0d9b2aa158fb"] == "C1"
+    assert table_expanded["table_cell_63c9e1fa3e7512f3f0608018"] == "C2"
+    assert table_expanded["table_cell_9beffd1036f8f272192aaecb"] == "P1"
+    assert table_expanded["table_cell_c1b29a30a6dbf4a1d389b236"] == "P2"
+    assert table_expanded["table_cell_41d3df671f23b38d6ec6293a"] == "D1"
+    assert table_expanded["table_cell_b8fa8dcc9328eb358d51693c"] == "D2"
+    assert table_expanded["table_cell_b1eb7848d629c452e33a90a5"] == "R1"
+    assert table_expanded["table_cell_9552567c84b7b3bdd4c97040"] == "R2"
+
+
 @pytest.mark.parametrize(
     "values,error",
     [
