@@ -9,6 +9,8 @@ from collections.abc import Mapping
 from typing import Any
 
 from .query import (
+    _SUITABILITY_PROFILES,
+    _suitability_safe,
     governed_content_slot_count,
     materialization_eligible,
     role_matches_page,
@@ -24,7 +26,7 @@ class CompositionError(ValueError):
 
 _STRATEGIES = frozenset({"exact_deck", "family_assembly", "page_assembly", "component_assembly"})
 _REQUEST_FIELDS = frozenset({"schema_version", "strategy", "art_direction", "slides"})
-_ART_FIELDS = frozenset({"anchor_page_id", "allowed_style_signatures"})
+_ART_FIELDS = frozenset({"anchor_page_id", "allowed_style_signatures", "suitability"})
 _SLIDE_FIELDS = frozenset({"slide_id", "role", "candidate_ids", "selected_candidate_id", "minimum_capacity"})
 
 
@@ -124,12 +126,15 @@ def _validate_request(request: Mapping[str, Any]) -> tuple[str, Mapping[str, Any
         raise CompositionError("ART_DIRECTION_INVALID")
     anchor = art.get("anchor_page_id")
     signatures = art.get("allowed_style_signatures")
+    suitability = art.get("suitability")
     if not isinstance(anchor, str) or not anchor:
         raise CompositionError("ART_DIRECTION_ANCHOR_INVALID")
     if not isinstance(signatures, list) or not signatures or any(not isinstance(item, str) or not item.startswith("style_") for item in signatures):
         raise CompositionError("STYLE_SIGNATURES_INVALID")
     if len(set(signatures)) != len(signatures) or len(signatures) > 2:
         raise CompositionError("STYLE_SIGNATURES_DUPLICATE")
+    if suitability not in _SUITABILITY_PROFILES:
+        raise CompositionError("SUITABILITY_INVALID")
     slides = request.get("slides")
     if not isinstance(slides, list) or not slides:
         raise CompositionError("SLIDES_INVALID")
@@ -261,6 +266,12 @@ def compile_composition(
         if type(page.get("slide_number")) is not int or int(page["slide_number"]) < 1:
             raise CompositionError("SOURCE_PROVENANCE_INVALID")
         detail = _observation(page, observations)
+        # Query results are advisory candidates; a model can otherwise copy a
+        # stale page ID into a composition request and bypass the subject
+        # filter.  Re-apply the same certified visual-subject policy at the
+        # compilation boundary before any private source is opened.
+        if not _suitability_safe(detail, profile=str(art["suitability"])):
+            raise CompositionError("SOURCE_SUBJECT_INCOMPATIBLE")
         signature = style_signature(page, observations)
         same_certified_theme_family = str(page.get("deck_id")) == anchor_deck_id
         # One complete certified PPTX is an indivisible visual family.  Its

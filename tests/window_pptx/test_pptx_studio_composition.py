@@ -72,7 +72,7 @@ def _request(signatures: dict[str, str], *, strategy: str = "exact_deck") -> dic
     return {
         "schema_version": "1.0",
         "strategy": strategy,
-        "art_direction": {"anchor_page_id": "page_aaaaaaaaaaaaaaaaaaaaaaaa_001", "allowed_style_signatures": [signatures["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]]},
+        "art_direction": {"anchor_page_id": "page_aaaaaaaaaaaaaaaaaaaaaaaa_001", "allowed_style_signatures": [signatures["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]], "suitability": "general"},
         "slides": [
             {"slide_id": "s01", "role": "cover", "candidate_ids": ["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"], "selected_candidate_id": "page_aaaaaaaaaaaaaaaaaaaaaaaa_001", "minimum_capacity": 60},
             {"slide_id": "s02", "role": "closing", "candidate_ids": ["page_aaaaaaaaaaaaaaaaaaaaaaaa_002"], "selected_candidate_id": "page_aaaaaaaaaaaaaaaaaaaaaaaa_002", "minimum_capacity": 60},
@@ -125,6 +125,20 @@ def test_family_assembly_rejects_source_outside_anchor_work() -> None:
     })
 
     with pytest.raises(CompositionError, match="FAMILY_ASSEMBLY_SOURCE_DECK_INVALID"):
+        compile_composition(catalog, observations=observations, request=request)
+
+
+def test_composition_reapplies_subject_suitability_to_preselected_page() -> None:
+    """A copied candidate ID cannot bypass the query-stage subject filter."""
+
+    catalog, observations, signatures = _fixture()
+    request = _request(signatures)
+    request["art_direction"]["suitability"] = "institutional-finance"  # type: ignore[index]
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"]["semantic_tags"] = [  # type: ignore[index]
+        "traditional Chinese medicine", "annual-report",
+    ]
+
+    with pytest.raises(CompositionError, match="SOURCE_SUBJECT_INCOMPATIBLE"):
         compile_composition(catalog, observations=observations, request=request)
 
 

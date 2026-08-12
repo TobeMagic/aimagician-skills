@@ -9,10 +9,11 @@
     "strategy": {"enum": ["exact_deck", "family_assembly", "page_assembly", "component_assembly"]},
     "art_direction": {
       "type": "object",
-      "required": ["anchor_page_id", "allowed_style_signatures"],
+      "required": ["anchor_page_id", "allowed_style_signatures", "suitability"],
       "properties": {
         "anchor_page_id": {"type": "string", "pattern": "^page_[0-9a-f]{24}_[0-9]{3}$"},
-        "allowed_style_signatures": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^style_[0-9a-f]{24}$"}}
+        "allowed_style_signatures": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^style_[0-9a-f]{24}$"}},
+        "suitability": {"enum": ["general", "institutional-finance"]}
       },
       "additionalProperties": false
     },
