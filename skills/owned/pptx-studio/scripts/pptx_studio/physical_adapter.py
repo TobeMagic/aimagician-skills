@@ -14,6 +14,7 @@ import json
 import os
 import re
 import zipfile
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -50,7 +51,7 @@ class PhysicalAdapterError(ValueError):
 # unbound narrative sentence is treated the same way: it is commercial sample
 # copy, not a structural label such as "目录" or an axis tick.
 _TEMPLATE_PLACEHOLDER_RE = re.compile(
-    r"(?:20XX|20\dX|XXX|LOGO|输入标题|点击此处|请替换|占位|某某|Lorem|Your\s+(?:title|text))",
+    r"(?:20XX|20\dX|XXX|LOGO|(?:输入|添加|点击)(?:文本|大|主|副|内容){0,4}标题|请替换|占位|某某|Lorem|Your\s+(?:title|text))",
     re.IGNORECASE,
 )
 _TEMPLATE_BRAND_RE = re.compile(
@@ -59,7 +60,7 @@ _TEMPLATE_BRAND_RE = re.compile(
 )
 
 
-def _unbound_template_clear_reason(value: str) -> str | None:
+def _unbound_template_clear_reason(value: str, *, occurrence_count: int = 1) -> str | None:
     """Classify only safe, non-client source copy for compiler-owned clearing."""
 
     compact = "".join(value.split())
@@ -69,6 +70,10 @@ def _unbound_template_clear_reason(value: str) -> str | None:
         return "template-placeholder"
     if _TEMPLATE_BRAND_RE.search(compact):
         return "template-brand-residue"
+    if occurrence_count >= 3 and re.fullmatch(r"\d+(?:\.\d+)?(?:万|元|%|人|项|个)?", compact):
+        return "template-repeated-data"
+    if re.fullmatch(r"\d{1,2}", compact):
+        return "template-ordinal"
     # A template paragraph is not a reusable visual primitive.  Short labels
     # stay intact so navigation, axes, and intentionally generic decorations
     # retain their authored look until the agent elects to bind them.
@@ -502,8 +507,15 @@ def compile_physical_adapter(
         bindings: dict[str, str] = {}
         specs: dict[str, TextBindingSpec] = {}
         template_repairs: list[dict[str, str]] = []
+        source_text_counts = Counter(
+            "".join(slot.text.split()) for slot in slots if slot.text.strip()
+        )
         for slot in slots:
-            clear_reason = _unbound_template_clear_reason(slot.text)
+            compact_source_text = "".join(slot.text.split())
+            clear_reason = _unbound_template_clear_reason(
+                slot.text,
+                occurrence_count=source_text_counts[compact_source_text],
+            )
             if clear_reason is not None:
                 bindings[slot.slot_id] = ""
                 specs[slot.slot_id] = TextBindingSpec("", (), "clear")

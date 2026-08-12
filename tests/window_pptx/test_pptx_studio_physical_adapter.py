@@ -19,6 +19,7 @@ sys.path.insert(0, str(SCRIPT_ROOT))
 from pptx_studio.adaptation import compile_adaptation  # noqa: E402
 from pptx_studio.physical_adapter import (  # noqa: E402
     PhysicalAdapterError,
+    _unbound_template_clear_reason,
     assemble_from_plans,
     compile_physical_adapter,
     preflight_native_slots,
@@ -150,6 +151,22 @@ def test_adapter_clears_unbound_template_placeholder_with_lineage(tmp_path: Path
     assert "LOGO" not in text
     assert lineage["slides"][0]["template_repairs"]
     assert lineage["slides"][0]["template_repairs"][0]["kind"] == "template-placeholder"
+
+
+@pytest.mark.parametrize(
+    ("value", "occurrences", "reason"),
+    [
+        ("输入大标题", 1, "template-placeholder"),
+        ("添加文本标题", 1, "template-placeholder"),
+        ("32万", 6, "template-repeated-data"),
+        ("03", 1, "template-ordinal"),
+        ("目录", 1, None),
+    ],
+)
+def test_unbound_template_clear_policy_is_conservative_and_visual(
+    value: str, occurrences: int, reason: str | None,
+) -> None:
+    assert _unbound_template_clear_reason(value, occurrence_count=occurrences) == reason
 
 
 def test_adapter_returns_actionable_lineage_when_physical_verifier_rejects_release(
