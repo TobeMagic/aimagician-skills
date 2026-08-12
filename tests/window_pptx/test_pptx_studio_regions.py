@@ -25,7 +25,7 @@ def test_extract_regions_is_stable_and_excludes_image_only() -> None:
     second = extract_regions(page)
 
     assert first == second
-    assert [item["region_kind"] for item in first] == ["title", "content-block"]
+    assert [item["region_kind"] for item in first] == ["title", "content-item"]
     assert first[0]["editable_shape_ids"] == ["2"]
     assert first[1]["capacity"]["max_text_chars"] == 120
 

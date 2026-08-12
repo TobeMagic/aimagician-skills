@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v7
 milestone_name: PPTX Studio Curated Composition
-current_phase: 52
-current_phase_name: PPTX Studio Migration and Agent Workflow
+current_phase: 53
+current_phase_name: Clean-Room Work-Report Acceptance and Release
 status: in_progress
-stopped_at: v7 Phase 52 is being specified around physical materialization, quality harness, and flag-day public skill migration
+stopped_at: v7 Phase 53 clean-room Codex work-report acceptance and independent visual-release audit
 last_updated: "2026-08-12T17:50:00+08:00"
 last_activity: 2026-08-12
 progress:
@@ -68,11 +68,11 @@ fully independent AI blind-review contexts for v6 acceptance.
 ## Current Position
 
 Milestone: v7 PPTX Studio Curated Composition
-Current Phase: 50
-Current Phase Name: Asset Curation and Visual Catalog
-Status: In Progress — Phase 51 is committed as `43d8ab0`; Phase 52 now binds
-validated composition/adaptation plans to physical PPTX assembly and quality
-repair, then performs the public `pptx-studio` migration only after tests pass.
+Current Phase: 53
+Current Phase Name: Clean-Room Work-Report Acceptance and Release
+Status: In Progress — Phase 52 is committed as `a36f4b8` and `4c57d0b`; it
+binds composition/adaptation plans to physical PPTX assembly, adds evidence QA,
+and migrates the public owned skill identity to `pptx-studio`.
 Last Activity: 2026-08-12
 
 ### Preserved Control-Plane History

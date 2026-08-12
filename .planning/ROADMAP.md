@@ -865,7 +865,7 @@ maintaining one art direction and editable PPTX output.
 
 **Depends on:** v6.1 Phase 49
 **Requirements:** [V7-CURATE-01, V7-CATALOG-01, V7-VISION-01, V7-REGION-01, V7-QUERY-01]
-**Status:** In Progress
+**Status:** Complete
 
 ### Phase 51: Composition Retrieval and Governed Adaptation
 
@@ -885,7 +885,7 @@ without granting the authoring model visual implementation authority.
 
 **Depends on:** Phase 50
 **Requirements:** [V7-COMPOSE-01, V7-ADAPT-01]
-**Status:** In Progress
+**Status:** Complete
 
 ### Phase 52: PPTX Studio Migration and Agent Workflow
 
@@ -906,7 +906,7 @@ QA/repair, and client-safe delivery.
 
 **Depends on:** Phase 51
 **Requirements:** [V7-SKILL-01, V7-QA-01, V7-MIGRATE-01]
-**Status:** In Progress
+**Status:** Complete
 
 ### Phase 53: Clean-Room Work-Report Acceptance and Release
 
@@ -927,13 +927,13 @@ visual, and independent audit gates.
 
 **Depends on:** Phase 52
 **Requirements:** [V7-ACCEPT-01, V7-RELEASE-01]
-**Status:** Planned
+**Status:** In Progress
 
 ## v7 Progress
 
 | Phase | Status | Completed |
 |-------|--------|-----------|
-| 50. Asset Curation and Visual Catalog | In Progress | — |
-| 51. Composition Retrieval and Governed Adaptation | In Progress | — |
-| 52. PPTX Studio Migration and Agent Workflow | In Progress | — |
-| 53. Clean-Room Work-Report Acceptance and Release | Planned | — |
+| 50. Asset Curation and Visual Catalog | Complete | 2026-08-12 |
+| 51. Composition Retrieval and Governed Adaptation | Complete | 2026-08-12 |
+| 52. PPTX Studio Migration and Agent Workflow | Complete | 2026-08-12 |
+| 53. Clean-Room Work-Report Acceptance and Release | In Progress | — |

@@ -57,7 +57,10 @@ def extract_regions(page: Mapping[str, Any]) -> list[dict[str, Any]]:
     text_shapes.sort(key=lambda shape: (int(shape["bbox"]["y"]), int(shape["bbox"]["x"]), str(shape["shape_id"])))
     title = text_shapes[0]
     records = [_record(page, "title", [title], "primary")]
-    rest = text_shapes[1:]
-    if rest:
-        records.append(_record(page, "content-block", rest, "supporting"))
+    # A content region is deliberately one native text shape, rather than one
+    # slide-wide aggregate.  A model may bind facts but cannot choose geometry;
+    # this granularity lets the compiler replace a card label, a metric and a
+    # caption independently without duplicating the same copy across a page.
+    for shape in text_shapes[1:]:
+        records.append(_record(page, "content-item", [shape], "supporting"))
     return records
