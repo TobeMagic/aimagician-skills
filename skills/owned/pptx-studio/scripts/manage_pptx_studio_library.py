@@ -123,7 +123,15 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         result = plan_curation(args.source_root, archive_root=args.archive_root)
         _write_json(args.manifest, result)
         return {"status": result["status"], "manifest": str(args.manifest), "summary": {"active_categories": len(result["active_categories"]), "inactive_categories": result["inactive_categories"], "inactive_packages": len(result["inactive_packages"]), "active_tree_sha256": result["active_tree_sha256"], "inactive_tree_sha256": result["inactive_tree_sha256"]}}
-    manifest = _read_json(args.manifest)
+    # Catalog query, composition and assembly are client-facing production
+    # operations.  They retain these three parser arguments only for a stable
+    # command contract; they must not require a curation manifest in the clean
+    # client folder.  Reading it eagerly made a valid query fail before it
+    # could reach its JSON request whenever the documented sentinel path did
+    # not exist.
+    manifest: dict[str, Any] | None = None
+    if args.command in {"apply", "verify", "recover", "render"}:
+        manifest = _read_json(args.manifest)
     if args.command == "apply":
         result = apply_curation(manifest, args.source_root, archive_root=args.archive_root)
         _write_json(args.manifest, result)
@@ -165,7 +173,7 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
     if args.command == "render":
         if args.asset_index is None or args.render_index is None or args.evidence_root is None:
             raise ValueError("RENDER_ARGUMENT_REQUIRED")
-        if manifest.get("status") != "APPLIED":
+        if manifest is None or manifest.get("status") != "APPLIED":
             raise ValueError("CURATION_NOT_APPLIED")
         verify_curation(manifest, args.source_root, archive_root=args.archive_root)
         completed = complete_render_index(

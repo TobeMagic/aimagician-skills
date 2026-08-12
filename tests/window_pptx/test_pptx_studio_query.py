@@ -414,7 +414,6 @@ def test_cli_query_uses_catalog_and_complete_observations_only(tmp_path: Path) -
     source, archive = tmp_path / "source", tmp_path / "archive"
     source.mkdir()
     archive.mkdir()
-    manifest.write_text(json.dumps({"schema_version": "1.0", "status": "APPLIED"}), encoding="utf-8")
     catalog_path, observations_path, request_path, output_path = (tmp_path / name for name in ("catalog.json", "observations.json", "request.json", "result.json"))
     catalog_path.write_text(json.dumps(catalog), encoding="utf-8")
     observations_path.write_text(json.dumps({"status": "COMPLETE", "observations": list(observations.values())}), encoding="utf-8")
@@ -426,3 +425,4 @@ def test_cli_query_uses_catalog_and_complete_observations_only(tmp_path: Path) -
     candidate = json.loads(output_path.read_text(encoding="utf-8"))["candidates"][0]
     assert candidate["page_id"] == "page_aaaaaaaaaaaaaaaaaaaaaaaa_001"
     assert candidate["style_signature"].startswith("style_")
+    assert not manifest.exists(), "query must accept the documented client-local manifest sentinel"
