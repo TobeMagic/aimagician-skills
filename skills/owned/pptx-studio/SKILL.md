@@ -167,6 +167,14 @@ natural-language direction. The exact
 {"anchor_page_id":"page_<24-lowercase-hex>_001","allowed_style_signatures":["style_<24-lowercase-hex>"]}
 ```
 
+Before locking an anchor family, perform a one-slide `compose` + `preflight`
+probe for the shortlisted cover. It must expose native title/body slots that
+fit the locked report title and presenter/date line under the physical
+capacities. Reject a visually attractive cover whose native title slots cannot
+hold the real client copy; do this before inspecting or selecting its sibling
+pages. This is a hard eligibility gate, not a cue to reduce font size or add
+freehand text.
+
 When the anchor comes from a certified multi-page work, retrieve its sibling
 pages by repeating the same query with optional
 `"deck_id":"deck_<24-lowercase-hex>"` copied from the returned cover. Do not
