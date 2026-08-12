@@ -102,6 +102,11 @@ def _select_other_deck(request: dict[str, object], signatures: dict[str, str]) -
             signatures["page_cccccccccccccccccccccccc_001"],
         ]
     })
+
+
+def _select_dense_role_on_page_assembly(request: dict[str, object], signatures: dict[str, str]) -> None:
+    request["strategy"] = "page_assembly"
+    request["slides"][0].update({"role": "five-item"})  # type: ignore[index]
     request["slides"][1].update({  # type: ignore[index]
         "role": "process",
         "selected_candidate_id": "page_cccccccccccccccccccccccc_001",
@@ -115,7 +120,7 @@ def _select_other_deck(request: dict[str, object], signatures: dict[str, str]) -
         (lambda request, signatures: request["art_direction"].update({"allowed_style_signatures": ["style_" + "f" * 24]}), "ANCHOR_SIGNATURE_NOT_ALLOWED"),
         (_select_other_deck, "STYLE_FALLBACK_INCOMPATIBLE"),
         (lambda request, signatures: request["slides"][0].update({"selected_candidate_id": "missing", "candidate_ids": ["missing"]}), "PAGE_CANDIDATE_UNKNOWN"),
-        (lambda request, signatures: request["slides"][0].update({"role": "five-item"}), "BINDABLE_REGION_COUNT_INSUFFICIENT"),
+        (_select_dense_role_on_page_assembly, "BINDABLE_REGION_COUNT_INSUFFICIENT"),
     ],
 )
 def test_composition_fails_closed(mutate, error: str) -> None:  # type: ignore[no-untyped-def]
@@ -167,6 +172,27 @@ def test_exact_certified_deck_is_a_theme_family_despite_page_level_vision_labels
     request = _request(signatures)
     plan = compile_composition(catalog, observations=observations, request=request)
     assert plan["slides"][1]["evidence"]["style_match"] == "same_certified_theme_family"
+
+
+def test_exact_deck_allows_a_certified_chart_page_with_only_one_native_slot() -> None:
+    catalog, observations, signatures = _fixture()
+    # The page is an intentional member of the complete source work but its
+    # chart is a protected graphic and only its heading is native text. A
+    # normal page assembly must not relabel it as a dashboard; exact-deck
+    # reproduction may retain it and leaves the actual slot check to preflight.
+    catalog["regions"] = [  # type: ignore[index]
+        item for item in catalog["regions"]  # type: ignore[index]
+        if item["page_id"] != "page_aaaaaaaaaaaaaaaaaaaaaaaa_002"
+        or item["region_id"] == "region_a_closing_title"
+    ]
+    request = _request(signatures)
+    request["slides"][1].update({  # type: ignore[index]
+        "role": "dashboard", "minimum_capacity": 20,
+    })
+    assert compile_composition(catalog, observations=observations, request=request)["status"] == "PASS"
+    request["strategy"] = "page_assembly"
+    with pytest.raises(CompositionError, match="BINDABLE_REGION_COUNT_INSUFFICIENT"):
+        compile_composition(catalog, observations=observations, request=request)
 
 
 def test_composition_rejects_more_than_one_cross_deck_style_fallback() -> None:

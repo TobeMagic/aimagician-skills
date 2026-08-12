@@ -408,5 +408,69 @@ def query_catalog(
     return {"schema_version": "1.0", "status": "PASS" if selected else "NO_MATCH", "request": query, "candidates": selected}
 
 
+def inspect_certified_deck(
+    catalog: Mapping[str, Any],
+    *,
+    observations: Mapping[str, Mapping[str, Any]],
+    deck_id: str,
+) -> dict[str, Any]:
+    """Return a bounded, value-free inventory for one already-certified deck.
+
+    A complete work cannot be assembled reliably by asking a model to issue a
+    separate semantic-role query for every page: visual classifiers naturally
+    call a work-report page ``financial-overview`` rather than the local
+    taxonomy's ``five-item``. After a cover query identifies a family, this
+    inspection route exposes only family page IDs, source order, safe capacity
+    summary and sanitized visual observations. It is not a file-system browse,
+    preview export or a route to private template bytes.
+    """
+
+    if not isinstance(deck_id, str) or not re.fullmatch(r"deck_[0-9a-f]{24}", deck_id):
+        raise QueryError("DECK_ID_INVALID")
+    active = set(catalog.get("active_categories", []))
+    all_pages = [
+        page for page in catalog.get("pages", [])
+        if isinstance(page, Mapping)
+        and str(page.get("deck_id")) == deck_id
+        and page.get("category") in active
+        and materialization_eligible(page)
+    ]
+    if not all_pages:
+        return {"schema_version": "1.0", "status": "NO_MATCH", "deck_id": deck_id, "pages": []}
+    region_by_page: dict[str, list[Mapping[str, Any]]] = {}
+    for region in catalog.get("regions", []):
+        if isinstance(region, Mapping):
+            region_by_page.setdefault(str(region.get("page_id")), []).append(region)
+
+    pages: list[dict[str, Any]] = []
+    for page in sorted(all_pages, key=lambda item: (int(item.get("slide_number", 0)), str(item.get("page_id")))):
+        detail = _observation_for(page, observations)
+        if detail is None:
+            # A complete work can be selected only when every returned page
+            # remains hash-bound to a non-uncertain visual observation.
+            return {"schema_version": "1.0", "status": "NO_MATCH", "deck_id": deck_id, "pages": []}
+        page_regions = region_by_page.get(str(page.get("page_id")), [])
+        grammar = {"title": 0, "content": 0}
+        for region in page_regions:
+            kind = str(region.get("region_kind", "content-item"))
+            grammar["title" if kind == "title" else "content"] += len(region.get("editable_shape_ids", []) or [])
+        pages.append({
+            "page_id": page.get("page_id"),
+            "slide_number": page.get("slide_number"),
+            "style_signature": style_signature_from_observation(detail),
+            "bindable_region_count": len(page_regions),
+            "native_text_slot_count": grammar["title"] + grammar["content"],
+            "content_grammar": grammar,
+            "visual_observation": {
+                "composition": detail.get("composition", ""),
+                "hierarchy": detail.get("hierarchy", ""),
+                "semantic_tags": list(detail.get("semantic_tags", [])),
+                "suggested_roles": list(detail.get("suggested_roles", [])),
+                "text_density": detail.get("text_density", ""),
+            },
+        })
+    return {"schema_version": "1.0", "status": "PASS", "deck_id": deck_id, "pages": pages}
+
+
 def serialize_query_result(result: Mapping[str, Any]) -> str:
     return json.dumps(result, ensure_ascii=False, sort_keys=True, separators=(",", ":"))

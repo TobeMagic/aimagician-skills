@@ -211,6 +211,7 @@ def test_adapter_rejects_sparse_customer_binding_for_dense_declared_role(tmp_pat
     """A rich page role cannot release with only a title and one detail."""
 
     source_root, catalog, composition, request, _replacement = _source_pack(tmp_path)
+    composition["strategy"] = "page_assembly"  # type: ignore[index]
     composition["slides"][0]["role"] = "five-item"  # type: ignore[index]
     adaptation = compile_adaptation(composition, catalog=catalog, request=request)
     with pytest.raises(

@@ -49,8 +49,12 @@ For each slide retrieve a role- and capacity-safe candidate:
   specialist categories.
 
 Use `exact_deck` only when a complete certified work genuinely matches the
-brief. Otherwise use `page_assembly`; use `component_assembly` only for a
-bounded safe region.
+brief. In that route, first query a cover, then inspect the returned `deck_id`
+as one ordered page family and map the client narrative to those inspected
+page IDs. Do not try to force every page through the generic role taxonomy:
+full works often contain a chart or editorial page whose visual label is more
+specific than `dashboard` or `five-item`. Otherwise use `page_assembly`; use
+`component_assembly` only for a bounded safe region.
 
 ### Retrieval command contract
 
@@ -158,6 +162,26 @@ only the anchor signature plus one independently compatible fallback signature
 under the rule above. This permits a
 coherent full-work template to retain its own chapter/data cadence; it does
 not authorize cross-deck random mixing.
+
+For an `exact_deck` candidate, call `inspect-deck` with the returned `deck_id`
+and write its value-free inventory to `work/deck-inventory.json`:
+
+```bash
+$PPTX_STUDIO_MANAGER inspect-deck ... --catalog "$CATALOG" \
+  --observation-index "$OBSERVATIONS" --deck-id "deck_<24-lowercase-hex>" \
+  --query-output work/deck-inventory.json
+```
+
+The inventory contains only ordered `page_id`, a safe native text-slot count,
+content grammar and sanitized visual composition/tags. It contains no preview,
+template copy, path, geometry or private bytes. Use it to select each unique
+source page in source order. `exact_deck` accepts the inspected page's genuine
+visual form even where its generic role label is imperfect; it still requires
+at least one native text slot and the later preflight/binding gate reports the
+actual editable surface. A page whose static chart would make client facts
+misleading must instead be represented by a compatible physical fallback or
+be rejected at rendered inspection—never leave wrong template figures as
+client evidence.
 
 For example, the full composition request begins as follows (replace all
 placeholder values only with query-result values):

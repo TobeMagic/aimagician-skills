@@ -225,7 +225,17 @@ def compile_composition(
                 raise CompositionError("PAGE_CANDIDATE_UNKNOWN")
             source_region_ids = [str(region_id) for region_id, record in regions.items() if record.get("page_id") == page.get("page_id")]
             capacity = _page_capacity(page)
-            if len(source_region_ids) < minimum_distinct_client_facts(item["role"]):
+            # Exact-deck reuse is a controlled reproduction route. A page may
+            # be a certified chart/infographic whose vision label does not map
+            # to the generic role taxonomy and whose visible data surface is a
+            # single native heading. It still needs at least one editable
+            # client slot, but cannot honestly be rejected as a six-card page
+            # merely because a classifier called it a dashboard. The native
+            # preflight and binding-completeness gate retain authority over its
+            # actual editable surface. Page/component assembly keeps the
+            # stricter role floor before any source import.
+            required_regions = 1 if strategy == "exact_deck" else minimum_distinct_client_facts(item["role"])
+            if len(source_region_ids) < required_regions:
                 raise CompositionError("BINDABLE_REGION_COUNT_INSUFFICIENT")
         if page.get("category") not in active:
             raise CompositionError("SOURCE_SCOPE_INVALID")
@@ -247,7 +257,7 @@ def compile_composition(
             raise CompositionError("STYLE_SIGNATURE_NOT_ALLOWED")
         if not same_certified_theme_family and not _style_profiles_compatible(anchor_profile, style_profile(page, observations)):
             raise CompositionError("STYLE_FALLBACK_INCOMPATIBLE")
-        if not _role_matches(page, detail, str(item["role"])):
+        if strategy != "exact_deck" and not _role_matches(page, detail, str(item["role"])):
             raise CompositionError("ROLE_INCOMPATIBLE")
         if type(capacity) is not int or capacity < item["minimum_capacity"]:
             raise CompositionError("CAPACITY_INSUFFICIENT")

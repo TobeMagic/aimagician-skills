@@ -33,6 +33,11 @@ Prove the migrated Skill with a fresh capable-model agent in a clean
   governed composition/adaptation and physical assembly only.
 - Evidence must show directory/section/body/closing anatomy and a complete
   catalog-page/package/slide/slot lineage for every page.
+- When a complete certified work is the semantic and visual match, the agent
+  must be able to inspect its ordered, value-free page inventory after cover
+  retrieval and select the complete family without misclassifying each page
+  through a generic component-category role. Its actual native text surface
+  remains explicit and governs binding/visual release.
 
 ### V7-RELEASE-01: Independent release proof
 

@@ -640,7 +640,20 @@ def compile_physical_adapter(
             if isinstance(binding, Mapping) and isinstance(binding.get("fact_id"), str)
         }
         declared_role = str(selected.get("role", "content"))
-        required_client_fact_count = minimum_distinct_client_facts(declared_role)
+        # A fully certified exact-deck reproduction retains its original
+        # source order and may include a chart page with only a native heading
+        # (the visible chart itself is a protected template graphic). Do not
+        # pretend that six client facts can be made editable where only one
+        # certified slot exists. Require a nonempty fact for every available
+        # certified region instead; page/component assembly remains subject to
+        # the normal role floor. The lineage makes this reduced editable
+        # surface explicit for later visual/release review.
+        if composition_plan.get("strategy") == "exact_deck":
+            required_client_fact_count = max(1, min(
+                minimum_distinct_client_facts(declared_role), len(source_regions),
+            ))
+        else:
+            required_client_fact_count = minimum_distinct_client_facts(declared_role)
         slide_lineage["binding_completeness"] = {
             "declared_role": declared_role,
             "distinct_client_fact_count": len(distinct_client_fact_ids),

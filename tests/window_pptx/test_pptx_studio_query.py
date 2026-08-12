@@ -11,7 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 
-from pptx_studio.query import QueryError, query_catalog, serialize_query_result  # noqa: E402
+from pptx_studio.query import QueryError, inspect_certified_deck, query_catalog, serialize_query_result  # noqa: E402
 from pptx_studio.composition import style_signature  # noqa: E402
 from manage_pptx_studio_library import run  # noqa: E402
 
@@ -226,6 +226,52 @@ def test_query_can_constrain_role_retrieval_to_returned_complete_theme_family() 
     )
 
     assert [item["page_id"] for item in result["candidates"]] == [sibling["page_id"]]
+
+
+def test_inspect_certified_deck_exposes_only_hash_bound_value_free_page_inventory() -> None:
+    catalog, observations = _catalog()
+    sibling = {
+        "page_id": "page_aaaaaaaaaaaaaaaaaaaaaaaa_002",
+        "deck_id": "deck_aaaaaaaaaaaaaaaaaaaaaaaa",
+        "category": "003-封面模板",
+        "render": {"image_sha256": "c" * 64},
+        "component_eligible": True,
+        "shapes": [{"max_chars": 30}],
+        "slide_number": 2,
+    }
+    catalog["pages"][0]["slide_number"] = 1  # type: ignore[index]
+    catalog["pages"].append(sibling)  # type: ignore[union-attr]
+    catalog["regions"].append({  # type: ignore[union-attr]
+        "region_id": "region_sibling_1", "page_id": sibling["page_id"],
+        "region_kind": "title", "editable_shape_ids": ["2"],
+        "capacity": {"max_text_chars": 30},
+    })
+    observations[sibling["page_id"]] = {
+        "page_id": sibling["page_id"], "image_sha256": "c" * 64,
+        "observation": {
+            "semantic_tags": ["annual-report"], "suggested_roles": ["chart"],
+            "visual_style": ["dark", "editorial"], "composition": "chart left",
+            "hierarchy": "title then chart", "text_density": "low", "uncertainty": "none",
+        },
+    }
+
+    result = inspect_certified_deck(
+        catalog, observations=observations, deck_id="deck_aaaaaaaaaaaaaaaaaaaaaaaa",
+    )
+
+    assert result["status"] == "PASS"
+    assert [item["page_id"] for item in result["pages"]] == [
+        "page_aaaaaaaaaaaaaaaaaaaaaaaa_001", sibling["page_id"],
+    ]
+    assert result["pages"][1]["content_grammar"] == {"title": 1, "content": 0}
+    assert "package_sha256" not in result["pages"][1]
+
+
+def test_inspect_certified_deck_fails_closed_for_unknown_or_hash_drifted_family() -> None:
+    catalog, observations = _catalog()
+    assert inspect_certified_deck(catalog, observations=observations, deck_id="deck_" + "c" * 24)["status"] == "NO_MATCH"
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["image_sha256"] = "c" * 64
+    assert inspect_certified_deck(catalog, observations=observations, deck_id="deck_" + "a" * 24)["status"] == "NO_MATCH"
 
 
 def test_query_excludes_catalog_page_blocked_by_physical_materialization() -> None:

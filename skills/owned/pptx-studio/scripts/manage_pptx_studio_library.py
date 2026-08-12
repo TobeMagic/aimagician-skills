@@ -13,7 +13,7 @@ from typing import Any, Mapping, Sequence
 from pptx_studio.catalog import compile_catalog, serialize_catalog
 from pptx_studio.curation import ACTIVE_GAOJIE_CATEGORIES, apply_curation, plan_curation, recover_curation, verify_curation
 from pptx_studio.rendering import complete_render_index
-from pptx_studio.query import query_catalog
+from pptx_studio.query import inspect_certified_deck, query_catalog
 from pptx_studio.composition import compile_composition
 from pptx_studio.adaptation import compile_adaptation
 from pptx_studio.brief_binding import compile_outline_bindings
@@ -75,7 +75,7 @@ def render_index_from_asset_index(path: Path) -> dict[str, dict[str, Any]]:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "refresh-render-index", "rebuild-catalog", "query", "compose", "preflight", "bind-outline", "adapt", "assemble", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
+    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "refresh-render-index", "rebuild-catalog", "query", "inspect-deck", "compose", "preflight", "bind-outline", "adapt", "assemble", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--archive-root", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
@@ -87,6 +87,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--catalog", type=Path)
     parser.add_argument("--query-input", type=Path)
     parser.add_argument("--query-output", type=Path)
+    parser.add_argument("--deck-id")
     parser.add_argument("--composition-input", type=Path)
     parser.add_argument("--composition-output", type=Path)
     parser.add_argument("--composition-plan", type=Path)
@@ -192,6 +193,22 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         )
         _write_json(args.query_output, result)
         return {"status": result["status"], "query_output": str(args.query_output), "summary": {"candidate_count": len(result["candidates"])}}
+    if args.command == "inspect-deck":
+        if args.catalog is None or args.observation_index is None or args.deck_id is None or args.query_output is None:
+            raise ValueError("DECK_INSPECTION_ARGUMENT_REQUIRED")
+        observation_payload = _read_json(args.observation_index)
+        entries = observation_payload.get("observations")
+        if observation_payload.get("status") != "COMPLETE" or not isinstance(entries, list):
+            raise ValueError("OBSERVATION_INDEX_INCOMPLETE")
+        observations = {
+            item.get("page_id"): item for item in entries
+            if isinstance(item, dict) and isinstance(item.get("page_id"), str)
+        }
+        result = inspect_certified_deck(
+            _read_json(args.catalog), observations=observations, deck_id=args.deck_id,
+        )
+        _write_json(args.query_output, result)
+        return {"status": result["status"], "query_output": str(args.query_output), "summary": {"page_count": len(result["pages"])}}
     if args.command == "compose":
         if args.catalog is None or args.observation_index is None or args.composition_input is None or args.composition_output is None:
             raise ValueError("COMPOSITION_ARGUMENT_REQUIRED")
