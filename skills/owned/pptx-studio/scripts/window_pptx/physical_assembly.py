@@ -4109,7 +4109,11 @@ def _prepare_governed_content_replacements(
                 page_id=slide.page_template.page_id,
                 slot_id=slot_id,
                 shape_id=shape_id,
-                binding_kind="embedded",
+                binding_kind=(
+                    "source-decoration"
+                    if mode == "source-decoration-numeric"
+                    else "embedded"
+                ),
                 mode=mode,
                 source_text=source_text,
                 source_sha256=_sha256_bytes(source_text.encode("utf-8")),
@@ -5210,14 +5214,15 @@ def _slide_structure_signature(slide_xml: bytes) -> str:
         root = ET.fromstring(slide_xml)
     except ET.ParseError:
         return ""
-    def canonical(node: ET.Element, governed_text_size: bool = False) -> Any:
+    def canonical(node: ET.Element) -> Any:
         local = node.tag.rsplit("}", 1)[-1]
-        if local in {"sp", "graphicFrame", "cxnSp"}:
-            governed_text_size = any(
-                descendant.tag.rsplit("}", 1)[-1]
-                in {"spAutoFit", "normAutofit", "noAutofit"}
-                for descendant in node.iter()
-            )
+        # Text may legitimately be replaced, fragmented, fitted and resized by
+        # the governed adapter.  It is not evidence of a change to the source
+        # page's geometry or object structure.  The surrounding shape/table
+        # hierarchy remains in the signature, so a flattened page or an
+        # invented shape still fails lineage verification.
+        if local == "txBody":
+            return ["__GOVERNED_TEXT_SURFACE__"]
         if local == "srcRect":
             return None
         if local in {"spAutoFit", "normAutofit", "noAutofit"}:
@@ -5225,15 +5230,14 @@ def _slide_structure_signature(slide_xml: bytes) -> str:
         children = [
             value
             for child in list(node)
-            if (value := canonical(child, governed_text_size)) is not None
+            if (value := canonical(child)) is not None
         ]
         text = "__GOVERNED_TEXT__" if local == "t" else (node.text or "").strip()
         attributes = [
             (
                 key,
                 "__GOVERNED_TEXT_SIZE__"
-                if governed_text_size
-                and local in {"rPr", "defRPr", "endParaRPr"}
+                if local in {"rPr", "defRPr", "endParaRPr"}
                 and key == "sz"
                 else value,
             )
@@ -5958,6 +5962,18 @@ def _verify_source_residue(
             status="pass",
         )
 
+    # The catalog deliberately errs on the conservative side and can classify
+    # a one/two digit template page marker as governed content.  Assembly
+    # clears that marker and retains a non-client evidence row; it is not a
+    # customer-data slot for residue verification.
+    cleared_decoration_keys = {
+        (item.ordinal, item.slot_id)
+        for item in binding_evidence
+        if (
+            item.binding_kind == "source-decoration"
+            and item.mode == "source-decoration-numeric"
+        )
+    }
     expected_records: dict[tuple[int, str], tuple[AssemblyTargetSlide, Mapping[str, Any]]] = {}
     for slide in plan.target_slides:
         inventory = slide.page_template.governed_content_inventory
@@ -5967,6 +5983,8 @@ def _verify_source_residue(
             ):
                 continue
             key = (slide.ordinal, str(record["slot_id"]))
+            if key in cleared_decoration_keys:
+                continue
             if key in expected_records:
                 raise PhysicalAssemblyError(
                     f"GOVERNED_CONTENT_DUPLICATE_SLOT_ID: {slide.ordinal}:{record['slot_id']}"
@@ -7055,7 +7073,6 @@ def assemble_physical_deck(
                 raise PhysicalAssemblyError(
                     "REQUIRED_FACTS_NOT_BOUND: " + ",".join(missing_required)
                 )
-
         master_paths = sorted(
             path[len("ppt/"):] if path.startswith("ppt/") else path
             for path in imported_master_paths

@@ -205,6 +205,22 @@ def test_structure_signature_treats_autofit_run_size_as_governed() -> None:
     assert _slide_structure_signature(source) == _slide_structure_signature(target)
 
 
+def test_structure_signature_ignores_added_governed_text_fit_surface() -> None:
+    source = _fit_policy_slide_xml().replace(
+        b'<a:bodyPr wrap="none"><a:spAutoFit/></a:bodyPr>',
+        b'<a:bodyPr wrap="none"/>',
+        1,
+    )
+    target = _adapt_slide_text(
+        source,
+        {"shape_2": "Longer governed copy"},
+        allowed_slots=("shape_2", "shape_3"),
+        fit_policies={"shape_2": "no-autofit"},
+    )
+
+    assert _slide_structure_signature(source) == _slide_structure_signature(target)
+
+
 def _style_clone_slide_xml() -> bytes:
     return (
         f'<p:sld xmlns:p="{PML_NS}" xmlns:a="{DML_NS}" '
