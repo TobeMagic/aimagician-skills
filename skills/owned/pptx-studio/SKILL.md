@@ -194,7 +194,8 @@ first call `inspect-deck` once on the chosen anchor `deck_id`. This is an
 authorized **family-anatomy lookup**, not an uncontrolled fallback and not a
 substitute for source/materialization validation. From its sanitized inventory choose the
 unique pages that best express the locked narrative, excluding every page that
-reports `requires_structured_data=true` when complete data is unavailable.
+reports `requires_structured_data=true` unless the brief contains the complete
+dataset required by that page's published `data_contract`.
 Then use `strategy:"family_assembly"`: all 15 selected source pages must be
 unique and belong to that exact inspected anchor deck; composition rechecks
 source scope, observation hash, native regions, capacity, data-surface and
@@ -264,12 +265,17 @@ corresponding metrics), rather than merely satisfying the role's minimum fact
 floor. It contains no template copy, shape IDs or geometry.
 
 Before selecting a candidate, inspect `requires_structured_data` in the query
-result. In the current text-and-image adaptation route it must be `false`.
-A native chart/table/workbook page is not decorative: it needs a separately
-locked, complete dataset for every category and value. Do not select it merely
-because the brief has a few headline metrics, do not clear its data, and never
-retain the template's sample figures. Select a compatible native-text page and
-represent only the facts the client supplied.
+result. A native chart/table/workbook page is not decorative: select it only
+when the brief supplies its complete published `data_contract` (all fields,
+counts and `max_chars`). Do not select it merely because the brief has a few
+headline metrics, do not clear its data, and never retain the template's sample
+figures. Put the complete semantic values in a separate
+`structured-data.v1.json` file, with only `{"structured_data":[...]}`; each
+entry is `{"slide_id":"...","contract_id":"...","values":{...}}`.
+Pass it to `bind-outline --structured-data work/structured-data.v1.json`.
+The model never sees source shape IDs, workbook cells, chart XML, colours or
+geometry. If the data is incomplete or a value exceeds `max_chars`, choose a
+compatible native-text page or shorten the customer-approved display notation.
 
 For `assemble`, pass both different files explicitly: `--adaptation-input`
 points to the generated request and `--adaptation-plan` points to the compiled

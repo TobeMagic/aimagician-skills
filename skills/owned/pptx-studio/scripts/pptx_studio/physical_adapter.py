@@ -40,6 +40,13 @@ from .adaptation import adaptation_request_sha256, compile_adaptation, serialize
 from .composition import composition_plan_sha256
 from .qa import run_studio_qa
 from .role_policy import minimum_distinct_client_facts
+from .structured_data import (
+    StructuredDataError,
+    contract_by_id,
+    contract_for_source,
+    expand_contract_text_values,
+    expand_contract_values,
+)
 
 
 class PhysicalAdapterError(ValueError):
@@ -263,6 +270,26 @@ def _request_facts(request: Mapping[str, Any]) -> dict[str, str]:
     return result
 
 
+def _structured_data_requests(request: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    """Read validated per-slide datasets without exposing any private mapping."""
+
+    raw = request.get("structured_data")
+    if not isinstance(raw, list):
+        raise PhysicalAdapterError("ADAPTATION_REQUEST_INVALID")
+    result: dict[str, Mapping[str, Any]] = {}
+    for entry in raw:
+        if (
+            not isinstance(entry, Mapping)
+            or not isinstance(entry.get("slide_id"), str)
+            or not isinstance(entry.get("contract_id"), str)
+            or not isinstance(entry.get("values"), Mapping)
+            or str(entry["slide_id"]) in result
+        ):
+            raise PhysicalAdapterError("ADAPTATION_REQUEST_INVALID")
+        result[str(entry["slide_id"])] = entry
+    return result
+
+
 def _page_lookup(catalog: Mapping[str, Any]) -> tuple[dict[str, Mapping[str, Any]], dict[str, Mapping[str, Any]]]:
     pages = catalog.get("pages")
     regions = catalog.get("regions")
@@ -336,9 +363,10 @@ def preflight_native_slots(
             raise PhysicalAdapterError("SOURCE_PACKAGE_UNREADABLE") from exc
         if not governed_inventory.get("complete"):
             raise PhysicalAdapterError("SOURCE_CONTENT_INVENTORY_INCOMPLETE")
-        if governed_inventory.get("content_slot_count", 0):
+        structured_contract = contract_for_source(package_sha, int(slide_number))
+        if governed_inventory.get("content_slot_count", 0) and structured_contract is None:
             raise PhysicalAdapterError(
-                f"STRUCTURED_DATA_REQUIRED:slide_id={slide_id}"
+                f"STRUCTURED_DATA_CONTRACT_UNAVAILABLE:slide_id={slide_id}"
             )
         slots_by_id = {slot.slot_id: slot for slot in slots}
         source_regions = source.get("region_ids")
@@ -393,10 +421,18 @@ def preflight_native_slots(
                 )
                 for role in ("title", "label", "metric", "body")
             },
-            "governed_content_contract": {
-                "requires_structured_data": False,
-                "governed_content_slot_count": 0,
-            },
+            "governed_content_contract": (
+                {
+                    "requires_structured_data": True,
+                    "governed_content_slot_count": governed_inventory["content_slot_count"],
+                    "data_contract": structured_contract.public_dict(),
+                }
+                if structured_contract is not None
+                else {
+                    "requires_structured_data": False,
+                    "governed_content_slot_count": 0,
+                }
+            ),
         })
     return {
         "schema_version": "1.0",
@@ -494,6 +530,7 @@ def compile_physical_adapter(
     page_by_id, region_by_id = _page_lookup(catalog)
     source_paths = resolve_catalog_sources(catalog, private_source_root=private_source_root)
     request_facts = _request_facts(adaptation_request)
+    structured_requests = _structured_data_requests(adaptation_request)
     operations_by_slide: dict[str, list[Mapping[str, Any]]] = {}
     for operation in adaptation_plan.get("operations", []):
         if not isinstance(operation, Mapping) or not isinstance(operation.get("slide_id"), str):
@@ -538,12 +575,12 @@ def compile_physical_adapter(
             raise PhysicalAdapterError("SOURCE_PACKAGE_UNREADABLE") from exc
         if not governed_content_inventory.get("complete"):
             raise PhysicalAdapterError("SOURCE_CONTENT_INVENTORY_INCOMPLETE")
-        # The v1 adaptation route owns text/image bindings only. Composition
-        # rejects these pages earlier, but retain the same fail-closed boundary
-        # at materialization so a hand-edited plan cannot preserve certified
-        # template sample values as purported customer evidence.
-        if governed_content_inventory.get("content_slot_count", 0):
-            raise PhysicalAdapterError("STRUCTURED_DATA_REQUIRED")
+        structured_contract = contract_for_source(package_sha, int(slide_number))
+        requires_structured_data = bool(
+            governed_content_inventory.get("content_slot_count", 0)
+        )
+        if requires_structured_data and structured_contract is None:
+            raise PhysicalAdapterError("STRUCTURED_DATA_CONTRACT_UNAVAILABLE")
         template = PageTemplate(
             schema_version="1.0",
             page_id=legacy_page_id,
@@ -606,9 +643,12 @@ def compile_physical_adapter(
             "source": {"package_sha256": package_sha, "slide_number": int(slide_number), "source_slide_sha256": graph.slide_sha},
             "text_bindings": [],
             "asset_bindings": [],
+            "structured_data_bindings": [],
             "template_repairs": template_repairs,
         }
         asset_specs: dict[str, AssetBindingSpec] = {}
+        governed_specs: dict[str, TextBindingSpec] = {}
+        structured_fact_ids: set[str] = set()
         for operation in operations_by_slide.get(slide_id, []):
             operation_kind = operation.get("operation")
             if operation_kind == "replace_text":
@@ -655,13 +695,77 @@ def compile_physical_adapter(
                     raise PhysicalAdapterError("ASSET_OPERATION_DRIFT")
                 asset_specs[slot_id] = AssetBindingSpec(asset_id, "cover")
                 slide_lineage["asset_bindings"].append({"shape_id": slot_id, "asset_id": asset_id, "asset_sha256": operation.get("asset_sha256")})
+            elif operation_kind == "replace_structured_data":
+                contract_id = operation.get("contract_id")
+                request_entry = structured_requests.get(slide_id)
+                if (
+                    not requires_structured_data
+                    or not isinstance(contract_id, str)
+                    or request_entry is None
+                    or request_entry.get("contract_id") != contract_id
+                    or structured_contract is None
+                    or contract_by_id(contract_id) != structured_contract
+                ):
+                    raise PhysicalAdapterError("STRUCTURED_DATA_OPERATION_DRIFT")
+                values = request_entry["values"]
+                try:
+                    replacements = expand_contract_values(structured_contract, values)
+                    visible_replacements = expand_contract_text_values(
+                        structured_contract, values,
+                    )
+                except StructuredDataError as exc:
+                    raise PhysicalAdapterError(str(exc)) from exc
+                inventory_groups = {
+                    str(record.get("peer_group_id"))
+                    for record in governed_content_inventory.get("slots", ())
+                    if isinstance(record, Mapping)
+                    and isinstance(record.get("peer_group_id"), str)
+                    and record.get("peer_group_id")
+                }
+                if inventory_groups != set(replacements):
+                    raise PhysicalAdapterError("STRUCTURED_DATA_CONTRACT_SOURCE_DRIFT")
+                for peer_group_id, value in replacements.items():
+                    physical_fact_id, record = _source_fact(value)
+                    fact_records.setdefault(physical_fact_id, record)
+                    structured_fact_ids.add(physical_fact_id)
+                    governed_specs[peer_group_id] = TextBindingSpec(
+                        value, (physical_fact_id,), "auto",
+                    )
+                for slot_id, value in visible_replacements.items():
+                    slot = slots_by_id.get(slot_id)
+                    if slot is None:
+                        raise PhysicalAdapterError("STRUCTURED_DATA_TEXT_SLOT_UNRESOLVED")
+                    requested_chars = len("".join(value.split()))
+                    if requested_chars > slot.max_chars:
+                        raise PhysicalAdapterError(
+                            "STRUCTURED_DATA_TEXT_SLOT_CAPACITY_EXCEEDED"
+                            f":slide_id={slide_id}:shape_id={slot_id}"
+                            f":requested_chars={requested_chars}:native_capacity={slot.max_chars}"
+                        )
+                    physical_fact_id, record = _source_fact(value)
+                    fact_records.setdefault(physical_fact_id, record)
+                    structured_fact_ids.add(physical_fact_id)
+                    bindings[slot_id] = value
+                    specs[slot_id] = TextBindingSpec(
+                        value, (physical_fact_id,), "auto", "shrink-to-fit",
+                    )
+                slide_lineage["structured_data_bindings"].append({
+                    "contract_id": contract_id,
+                    "field_counts": operation.get("field_counts"),
+                    "replacement_count": len(replacements) + len(visible_replacements),
+                })
             else:
                 raise PhysicalAdapterError("ADAPTATION_OPERATION_UNKNOWN")
+        if requires_structured_data and not governed_specs:
+            raise PhysicalAdapterError("STRUCTURED_DATA_BINDING_REQUIRED")
+        if not requires_structured_data and governed_specs:
+            raise PhysicalAdapterError("STRUCTURED_DATA_SOURCE_INVALID")
         distinct_client_fact_ids = {
             str(binding["fact_id"])
             for binding in slide_lineage["text_bindings"]
             if isinstance(binding, Mapping) and isinstance(binding.get("fact_id"), str)
         }
+        distinct_client_fact_ids.update(structured_fact_ids)
         declared_role = str(selected.get("role", "content"))
         # A fully certified exact-deck reproduction retains its original
         # source order and may include a chart page with only a native heading
@@ -703,6 +807,7 @@ def compile_physical_adapter(
             title="",
             headline="",
             text_binding_specs=specs,
+            governed_content_binding_specs=governed_specs,
             asset_binding_specs=asset_specs,
         ))
         lineage_slides.append(slide_lineage)

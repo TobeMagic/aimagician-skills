@@ -125,6 +125,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--composition-plan", type=Path)
     parser.add_argument("--preflight-output", type=Path)
     parser.add_argument("--content-outline", type=Path, help="semantic client facts ordered per selected slide")
+    parser.add_argument("--structured-data", type=Path, help="semantic governed chart/table data: an object with only structured_data")
     parser.add_argument("--adaptation-input", type=Path)
     parser.add_argument("--adaptation-output", type=Path)
     parser.add_argument("--adaptation-plan", type=Path, help="compiled adaptation plan consumed by assemble")
@@ -281,8 +282,13 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         result = compile_outline_bindings(
             _read_json(args.content_outline), preflight=_read_json(args.preflight_output),
         )
+        if args.structured_data is not None:
+            structured_payload = _read_json(args.structured_data)
+            if set(structured_payload) != {"structured_data"} or not isinstance(structured_payload.get("structured_data"), list):
+                raise ValueError("STRUCTURED_DATA_INPUT_INVALID")
+            result["structured_data"] = structured_payload["structured_data"]
         _write_json(args.adaptation_output, result)
-        return {"status": "PASS", "adaptation_input": str(args.adaptation_output), "summary": {"fact_count": len(result["facts"]), "binding_count": len(result["bindings"])}}
+        return {"status": "PASS", "adaptation_input": str(args.adaptation_output), "summary": {"fact_count": len(result["facts"]), "binding_count": len(result["bindings"]), "structured_data_count": len(result["structured_data"])}}
     if args.command == "preflight":
         if any(value is None for value in (args.catalog, args.composition_plan, args.private_source_root, args.preflight_output)):
             raise ValueError("PREFLIGHT_ARGUMENT_REQUIRED")

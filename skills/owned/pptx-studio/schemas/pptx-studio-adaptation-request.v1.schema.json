@@ -3,7 +3,7 @@
   "$id": "https://pptx-studio.local/schemas/pptx-studio-adaptation-request.v1.schema.json",
   "title": "PPTX Studio Governed Adaptation Request v1",
   "type": "object",
-  "required": ["schema_version", "facts", "assets", "bindings"],
+  "required": ["schema_version", "facts", "assets", "bindings", "structured_data"],
   "properties": {
     "schema_version": {"const": "1.0"},
     "facts": {
@@ -36,6 +36,19 @@
           "shape_id": {"type": ["string", "null"]},
           "fact_id": {"type": ["string", "null"]},
           "asset_id": {"type": ["string", "null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "structured_data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slide_id", "contract_id", "values"],
+        "properties": {
+          "slide_id": {"type": "string", "minLength": 1},
+          "contract_id": {"type": "string", "minLength": 1},
+          "values": {"type": "object"}
         },
         "additionalProperties": false
       }

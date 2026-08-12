@@ -24,9 +24,18 @@ class StructuredField:
     name: str
     kind: str
     count: int
+    # Per-item limits are part of the public contract.  They let a weaker
+    # model safely choose a compact display format before it writes a request,
+    # while source shape IDs and geometry remain private.
+    max_chars: tuple[int, ...]
 
     def public_dict(self) -> dict[str, Any]:
-        return {"name": self.name, "kind": self.kind, "count": self.count}
+        return {
+            "name": self.name,
+            "kind": self.kind,
+            "count": self.count,
+            "max_chars": list(self.max_chars),
+        }
 
 
 @dataclass(frozen=True)
@@ -39,6 +48,10 @@ class StructuredDataContract:
     # These identifiers never leave this module or the physical assembly
     # report; agents only receive ``fields`` above.
     peer_groups: Mapping[str, tuple[str, ...]]
+    # Native text slots are the visible labels/cards associated with the same
+    # data. They are deliberately private, just like peer groups: public
+    # clients provide semantic values, never shape IDs or geometry.
+    text_slots: Mapping[str, tuple[str, ...]]
 
     def public_dict(self) -> dict[str, Any]:
         return {
@@ -58,9 +71,10 @@ _CONTRACTS: tuple[StructuredDataContract, ...] = (
         package_sha256=_WORK_REPORT_SHA,
         slide_number=5,
         fields=(
-            StructuredField("series_label", "text", 1),
-            StructuredField("categories", "text", 5),
-            StructuredField("ratios", "percentage", 5),
+            StructuredField("series_label", "text", 1, (8,)),
+            StructuredField("categories", "text", 5, (5, 6, 5, 5, 5)),
+            StructuredField("ratios", "percentage", 5, (5, 5, 4, 4, 4)),
+            StructuredField("amounts", "number", 5, (10, 8, 10, 10, 8)),
         ),
         peer_groups={
             "series_label": ("peer_a7dccbdf223dc8d3fdde7c77",),
@@ -78,6 +92,11 @@ _CONTRACTS: tuple[StructuredDataContract, ...] = (
                 "peer_535d1e27c003fb78b26034dc",
                 "peer_e61e900868dc765df343917e",
             ),
+        },
+        text_slots={
+            "categories": ("shape_43", "shape_34", "shape_15", "shape_25", "shape_20"),
+            "ratios": ("shape_44", "shape_35", "shape_16", "shape_26", "shape_21"),
+            "amounts": ("shape_45", "shape_36", "shape_17", "shape_27", "shape_22"),
         },
     ),
 )
@@ -105,12 +124,16 @@ def validate_values(contract: StructuredDataContract, values: Mapping[str, Any])
         raise StructuredDataError("STRUCTURED_DATA_FIELDS_INVALID")
     result: dict[str, tuple[str, ...]] = {}
     for name, field in expected.items():
+        if len(field.max_chars) != field.count or any(limit < 1 for limit in field.max_chars):
+            raise StructuredDataError("STRUCTURED_DATA_PRIVATE_MAPPING_INVALID")
         raw = values[name]
         sequence = raw if isinstance(raw, list) else [raw]
         if not isinstance(sequence, list) or len(sequence) != field.count:
             raise StructuredDataError(f"STRUCTURED_DATA_CARDINALITY_INVALID:{name}")
         if any(not isinstance(value, str) or not value.strip() for value in sequence):
             raise StructuredDataError(f"STRUCTURED_DATA_VALUE_INVALID:{name}")
+        if any(len(value) > limit for value, limit in zip(sequence, field.max_chars, strict=True)):
+            raise StructuredDataError(f"STRUCTURED_DATA_VALUE_CAPACITY_EXCEEDED:{name}")
         result[name] = tuple(sequence)
     return result
 
@@ -122,6 +145,8 @@ def expand_contract_values(contract: StructuredDataContract, values: Mapping[str
     expanded: dict[str, str] = {}
     for field in contract.fields:
         groups = contract.peer_groups.get(field.name, ())
+        if not groups:
+            continue
         if len(groups) != field.count:
             raise StructuredDataError("STRUCTURED_DATA_PRIVATE_MAPPING_INVALID")
         for group, value in zip(groups, checked[field.name], strict=True):
@@ -131,11 +156,30 @@ def expand_contract_values(contract: StructuredDataContract, values: Mapping[str
     return expanded
 
 
+def expand_contract_text_values(contract: StructuredDataContract, values: Mapping[str, Any]) -> dict[str, str]:
+    """Return certified visible-card replacements, keyed by private slot ID."""
+
+    checked = validate_values(contract, values)
+    expanded: dict[str, str] = {}
+    for field in contract.fields:
+        slots = contract.text_slots.get(field.name, ())
+        if not slots:
+            continue
+        if len(slots) != field.count:
+            raise StructuredDataError("STRUCTURED_DATA_PRIVATE_TEXT_MAPPING_INVALID")
+        for slot_id, value in zip(slots, checked[field.name], strict=True):
+            if slot_id in expanded:
+                raise StructuredDataError("STRUCTURED_DATA_PRIVATE_TEXT_MAPPING_DUPLICATE")
+            expanded[slot_id] = value
+    return expanded
+
+
 __all__ = [
     "StructuredDataContract",
     "StructuredDataError",
     "contract_by_id",
     "contract_for_source",
     "expand_contract_values",
+    "expand_contract_text_values",
     "validate_values",
 ]

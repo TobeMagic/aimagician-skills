@@ -18,6 +18,7 @@ from .query import (
     style_signature_from_observation,
 )
 from .role_policy import minimum_distinct_client_facts
+from .structured_data import contract_for_source
 
 
 class CompositionError(ValueError):
@@ -250,13 +251,14 @@ def compile_composition(
             required_regions = 1 if strategy in {"exact_deck", "family_assembly"} else minimum_distinct_client_facts(item["role"])
             if len(source_region_ids) < required_regions:
                 raise CompositionError("BINDABLE_REGION_COUNT_INSUFFICIENT")
-            # Composition-request v1 carries only narrative and page-selection
-            # authority. It cannot describe a chart/table dataset, so a page
-            # whose editable data lives outside text boxes must not be selected
-            # by this route. A structured-data contract may opt in later; it
-            # must never be inferred from headline metrics or free-form prose.
-            if governed_content_slot_count(page) > 0:
-                raise CompositionError("STRUCTURED_DATA_REQUIRED")
+            # A native chart/table/workbook page is eligible only when a
+            # source-fingerprinted business-data contract exists. A later
+            # adaptation request must still provide every declared value;
+            # this never grants generic chart-editing authority.
+            if governed_content_slot_count(page) > 0 and contract_for_source(
+                str(page.get("package_sha256")), int(page.get("slide_number", 0)),
+            ) is None:
+                raise CompositionError("STRUCTURED_DATA_CONTRACT_UNAVAILABLE")
         if page.get("category") not in active:
             raise CompositionError("SOURCE_SCOPE_INVALID")
         if not materialization_eligible(page):

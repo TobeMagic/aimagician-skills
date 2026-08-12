@@ -8,16 +8,24 @@ from collections.abc import Mapping
 from typing import Any
 
 from .composition import composition_plan_sha256
+from .query import governed_content_slot_count
+from .structured_data import (
+    StructuredDataError,
+    contract_by_id,
+    contract_for_source,
+    validate_values,
+)
 
 
 class AdaptationError(ValueError):
     """Raised when a binding requests undeclared visual implementation authority."""
 
 
-_REQUEST_FIELDS = frozenset({"schema_version", "facts", "assets", "bindings"})
+_REQUEST_FIELDS = frozenset({"schema_version", "facts", "assets", "bindings", "structured_data"})
 _FACT_FIELDS = frozenset({"fact_id", "value"})
 _ASSET_FIELDS = frozenset({"asset_id", "sha256"})
 _BINDING_FIELDS = frozenset({"slide_id", "operation", "region_id", "shape_id", "fact_id", "asset_id"})
+_STRUCTURED_FIELDS = frozenset({"slide_id", "contract_id", "values"})
 _FORBIDDEN = frozenset({"text", "x", "y", "w", "h", "color", "font", "size", "style", "xml", "ooxml", "path", "locator"})
 
 
@@ -33,11 +41,15 @@ def adaptation_request_sha256(request: Mapping[str, Any]) -> str:
     ).hexdigest()
 
 
-def _registry(request: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, str], list[Mapping[str, Any]]]:
+def _registry(request: Mapping[str, Any]) -> tuple[
+    dict[str, str], dict[str, str], list[Mapping[str, Any]], list[Mapping[str, Any]],
+]:
     if set(request) != _REQUEST_FIELDS or request.get("schema_version") != "1.0":
         raise AdaptationError("REQUEST_SCHEMA_INVALID")
-    facts_raw, assets_raw, bindings = request.get("facts"), request.get("assets"), request.get("bindings")
-    if not isinstance(facts_raw, list) or not isinstance(assets_raw, list) or not isinstance(bindings, list):
+    facts_raw, assets_raw, bindings, structured_data = (
+        request.get("facts"), request.get("assets"), request.get("bindings"), request.get("structured_data"),
+    )
+    if not isinstance(facts_raw, list) or not isinstance(assets_raw, list) or not isinstance(bindings, list) or not isinstance(structured_data, list):
         raise AdaptationError("REGISTRY_SCHEMA_INVALID")
     facts: dict[str, str] = {}
     for item in facts_raw:
@@ -53,7 +65,7 @@ def _registry(request: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, str
         if item["asset_id"] in assets:
             raise AdaptationError("ASSET_DUPLICATE")
         assets[item["asset_id"]] = item["sha256"]
-    return facts, assets, bindings
+    return facts, assets, bindings, structured_data
 
 
 def _physical_region_capacities(preflight: Mapping[str, Any]) -> dict[tuple[str, str], int]:
@@ -86,7 +98,7 @@ def compile_adaptation(
 
     if composition_plan.get("schema_version") != "1.0" or composition_plan.get("status") != "PASS":
         raise AdaptationError("COMPOSITION_PLAN_INVALID")
-    facts, assets, bindings = _registry(request)
+    facts, assets, bindings, structured_entries = _registry(request)
     physical_capacities = _physical_region_capacities(preflight) if preflight is not None else None
     pages = {str(page.get("page_id")): page for page in catalog.get("pages", []) if isinstance(page, Mapping)}
     regions = {str(region.get("region_id")): region for region in catalog.get("regions", []) if isinstance(region, Mapping)}
@@ -141,6 +153,52 @@ def compile_adaptation(
                 raise AdaptationError("BINDING_TARGET_DUPLICATE")
             targets.add(target)
             operations.append({"slide_id": slide_id, "operation": operation, "shape_id": shape_id, "asset_id": asset_id, "asset_sha256": assets[asset_id]})
+    structured_by_slide: dict[str, Mapping[str, Any]] = {}
+    for entry in structured_entries:
+        if not isinstance(entry, Mapping) or set(entry) != _STRUCTURED_FIELDS:
+            raise AdaptationError("STRUCTURED_DATA_SCHEMA_INVALID")
+        slide_id, contract_id, values = (
+            entry.get("slide_id"), entry.get("contract_id"), entry.get("values"),
+        )
+        if not isinstance(slide_id, str) or not isinstance(contract_id, str) or not isinstance(values, Mapping):
+            raise AdaptationError("STRUCTURED_DATA_SCHEMA_INVALID")
+        if slide_id in structured_by_slide or slide_id not in selected:
+            raise AdaptationError("STRUCTURED_DATA_SLIDE_INVALID")
+        source = selected[slide_id].get("source")
+        if not isinstance(source, Mapping):
+            raise AdaptationError("PLAN_SOURCE_INVALID")
+        page = pages.get(str(source.get("page_id")))
+        if page is None:
+            raise AdaptationError("SOURCE_DRIFT")
+        contract = contract_by_id(contract_id)
+        source_contract = contract_for_source(
+            str(page.get("package_sha256")), int(page.get("slide_number", 0)),
+        )
+        if contract is None or contract != source_contract:
+            raise AdaptationError("STRUCTURED_DATA_CONTRACT_INVALID")
+        try:
+            checked = validate_values(contract, values)
+        except StructuredDataError as exc:
+            raise AdaptationError(str(exc)) from exc
+        structured_by_slide[slide_id] = entry
+        operations.append({
+            "slide_id": slide_id,
+            "operation": "replace_structured_data",
+            "contract_id": contract.contract_id,
+            "field_counts": {field.name: len(checked[field.name]) for field in contract.fields},
+        })
+    for slide_id, item in selected.items():
+        source = item.get("source")
+        if not isinstance(source, Mapping):
+            raise AdaptationError("PLAN_SOURCE_INVALID")
+        page = pages.get(str(source.get("page_id")))
+        if page is None:
+            raise AdaptationError("SOURCE_DRIFT")
+        requires_data = governed_content_slot_count(page) > 0
+        if requires_data and slide_id not in structured_by_slide:
+            raise AdaptationError(f"STRUCTURED_DATA_BINDING_REQUIRED:slide_id={slide_id}")
+        if not requires_data and slide_id in structured_by_slide:
+            raise AdaptationError(f"STRUCTURED_DATA_SOURCE_INVALID:slide_id={slide_id}")
     return {
         "schema_version": "1.0",
         "status": "PASS",

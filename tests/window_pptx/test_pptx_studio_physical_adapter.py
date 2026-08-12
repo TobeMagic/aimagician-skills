@@ -101,6 +101,7 @@ def _source_pack(
             {"slide_id": "slide-01", "operation": "replace_text", "region_id": region_subtitle, "shape_id": None, "fact_id": "report-subtitle", "asset_id": None},
             {"slide_id": "slide-01", "operation": "replace_asset", "region_id": None, "shape_id": picture_id, "fact_id": None, "asset_id": "cover-image"},
         ],
+        "structured_data": [],
     }
     return source_root, catalog, composition, request, replacement
 

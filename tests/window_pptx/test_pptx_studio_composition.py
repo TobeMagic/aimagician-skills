@@ -224,7 +224,7 @@ def test_exact_certified_deck_is_a_theme_family_despite_page_level_vision_labels
 def test_composition_rejects_native_chart_without_structured_data_contract() -> None:
     catalog, observations, signatures = _fixture()
     # A complete source deck may contain a strong chart page with only one
-    # native heading, but composition-request v1 carries no chart/table data.
+    # native heading, but an unregistered source has no data contract.
     # Neither exact-deck nor page assembly may preserve its sample values.
     catalog["regions"] = [  # type: ignore[index]
         item for item in catalog["regions"]  # type: ignore[index]
@@ -238,7 +238,7 @@ def test_composition_rejects_native_chart_without_structured_data_contract() -> 
     request["slides"][1].update({  # type: ignore[index]
         "role": "dashboard", "minimum_capacity": 20,
     })
-    with pytest.raises(CompositionError, match="STRUCTURED_DATA_REQUIRED"):
+    with pytest.raises(CompositionError, match="STRUCTURED_DATA_CONTRACT_UNAVAILABLE"):
         compile_composition(catalog, observations=observations, request=request)
     request["strategy"] = "page_assembly"
     with pytest.raises(CompositionError, match="BINDABLE_REGION_COUNT_INSUFFICIENT"):

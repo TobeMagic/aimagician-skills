@@ -132,4 +132,13 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
                 "fact_id": fact_id,
                 "asset_id": None,
             })
-    return {"schema_version": "1.0", "facts": facts, "assets": [], "bindings": bindings}
+    # Structured data is deliberately a distinct semantic payload.  Normal
+    # text-only decks still carry the empty field so every downstream stage
+    # sees one strict adaptation-request schema.
+    return {
+        "schema_version": "1.0",
+        "facts": facts,
+        "assets": [],
+        "bindings": bindings,
+        "structured_data": [],
+    }

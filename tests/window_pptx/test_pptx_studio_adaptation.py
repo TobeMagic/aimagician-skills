@@ -22,12 +22,12 @@ def _inputs() -> tuple[dict[str, object], dict[str, object]]:
     catalog = {"active_categories": ["003-封面模板"], "pages": [page], "regions": [{"region_id": "region_a_title", "page_id": page["page_id"], "capacity": {"max_text_chars": 30}}, {"region_id": "region_a_subtitle", "page_id": page["page_id"], "capacity": {"max_text_chars": 30}}]}
     observations = {page["page_id"]: {"page_id": page["page_id"], "image_sha256": "b" * 64, "observation": {"suggested_roles": ["cover"], "semantic_tags": ["annual-report"], "visual_style": ["editorial"], "uncertainty": "none"}}}
     signature = style_signature(page, observations)
-    plan = compile_composition(catalog, observations=observations, request={"schema_version": "1.0", "strategy": "page_assembly", "art_direction": {"anchor_page_id": page["page_id"], "allowed_style_signatures": [signature]}, "slides": [{"slide_id": "s01", "role": "cover", "candidate_ids": [page["page_id"]], "selected_candidate_id": page["page_id"], "minimum_capacity": 20}]})
+    plan = compile_composition(catalog, observations=observations, request={"schema_version": "1.0", "strategy": "page_assembly", "art_direction": {"anchor_page_id": page["page_id"], "allowed_style_signatures": [signature], "suitability": "general"}, "slides": [{"slide_id": "s01", "role": "cover", "candidate_ids": [page["page_id"]], "selected_candidate_id": page["page_id"], "minimum_capacity": 20}]})
     return catalog, plan
 
 
 def _request() -> dict[str, object]:
-    return {"schema_version": "1.0", "facts": [{"fact_id": "fact_title", "value": "2025 年度工作汇报"}], "assets": [{"asset_id": "asset_cover", "sha256": "c" * 64}], "bindings": [{"slide_id": "s01", "operation": "replace_text", "region_id": "region_a_title", "shape_id": None, "fact_id": "fact_title", "asset_id": None}, {"slide_id": "s01", "operation": "replace_asset", "region_id": None, "shape_id": "3", "fact_id": None, "asset_id": "asset_cover"}]}
+    return {"schema_version": "1.0", "facts": [{"fact_id": "fact_title", "value": "2025 年度工作汇报"}], "assets": [{"asset_id": "asset_cover", "sha256": "c" * 64}], "bindings": [{"slide_id": "s01", "operation": "replace_text", "region_id": "region_a_title", "shape_id": None, "fact_id": "fact_title", "asset_id": None}, {"slide_id": "s01", "operation": "replace_asset", "region_id": None, "shape_id": "3", "fact_id": None, "asset_id": "asset_cover"}], "structured_data": []}
 
 
 def _preflight(capacity: int = 30) -> dict[str, object]:
