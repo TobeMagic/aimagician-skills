@@ -6,6 +6,8 @@ import json
 import hashlib
 from typing import Any, Mapping
 
+from .role_policy import minimum_distinct_client_facts
+
 
 class QueryError(ValueError):
     """Raised for an invalid query instead of falling back to file discovery."""
@@ -180,6 +182,10 @@ def query_catalog(
     pages = {str(page.get("page_id")): page for page in catalog.get("pages", []) if isinstance(page, Mapping)}
     decks = {str(deck.get("deck_id")): deck for deck in catalog.get("decks", []) if isinstance(deck, Mapping)}
     regions = [item for item in catalog.get("regions", []) if isinstance(item, Mapping)]
+    bindable_region_count = {
+        page_id: sum(1 for item in regions if str(item.get("page_id")) == page_id)
+        for page_id in pages
+    }
     raw: list[tuple[str, Mapping[str, Any], Mapping[str, Any] | None]] = []
     if query["mode"] == "page":
         raw = [(page_id, page, None) for page_id, page in pages.items()]
@@ -200,6 +206,13 @@ def query_catalog(
         if observation is None:
             continue
         if not _suitability_safe(observation, profile=query["suitability"]):
+            continue
+        page_id = str(page.get("page_id"))
+        required_regions = minimum_distinct_client_facts(query["role"])
+        # A visual five-card layout with only one editable title box is not a
+        # reusable five-item page. Filter it before the agent spends a full
+        # assembly cycle discovering the mismatch.
+        if query["mode"] == "page" and bindable_region_count.get(page_id, 0) < required_regions:
             continue
         capacity = _capacity(page, region)
         if capacity < query["capacity"]:
@@ -230,6 +243,7 @@ def query_catalog(
             "candidate_id": candidate_id,
             "page_id": page["page_id"],
             "mode": query["mode"],
+            "bindable_region_count": bindable_region_count.get(page_id, 0),
             "style_signature": style_signature_from_observation(observation),
             "gates": ["active_source", "observation_hash", "capacity"],
             "scores": {"canonical_role": category_role_score, "visual_role": visual_role_score, "tags": round(tag_score, 6), "style": style_score, "capacity": round(capacity_score, 6), "total": total},

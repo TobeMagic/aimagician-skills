@@ -39,6 +39,7 @@ from window_pptx.physical_assembly import (
 from .adaptation import adaptation_request_sha256, compile_adaptation, serialize_adaptation_plan
 from .composition import composition_plan_sha256
 from .qa import run_studio_qa
+from .role_policy import minimum_distinct_client_facts
 
 
 class PhysicalAdapterError(ValueError):
@@ -58,52 +59,6 @@ _TEMPLATE_BRAND_RE = re.compile(
     r"(?:B站|哔哩哔哩|bilibili|nestle|雀巢|erke|安踏|Abbott|完美日记|蚂蚁森林)",
     re.IGNORECASE,
 )
-
-# A page can be technically editable yet visually fail if a high-capacity
-# template is populated with only a heading and the remaining cards, steps or
-# chart labels are cleared.  These minima deliberately count *distinct client
-# facts*, rather than text boxes: repeating one sentence into six cards must
-# not pass as a complete six-item page.  Sparse navigational pages retain safe
-# low minima, while a semantic content role must demonstrate that its intended
-# information structure was actually supplied by the client brief.
-_MIN_DISTINCT_CLIENT_FACTS_BY_ROLE: dict[str, int] = {
-    "cover": 2,
-    "contents": 5,
-    "section": 2,
-    "title": 2,
-    "closing": 2,
-    "one-item": 3,
-    "two-item": 3,
-    "three-item": 4,
-    "four-item": 5,
-    "five-item": 6,
-    "six-item": 7,
-    "multi-item": 6,
-    "team": 4,
-    "awards": 4,
-    "timeline": 5,
-    "process": 5,
-    "flow": 5,
-    "business-model": 5,
-    "comparison": 5,
-    "matrix": 5,
-    "roadmap": 5,
-    "dashboard": 6,
-    "data": 4,
-    "table": 4,
-    "product": 4,
-    "quote": 2,
-    "partners": 4,
-    "case-study": 4,
-    "map": 4,
-}
-
-
-def _minimum_distinct_client_facts(role: object) -> int:
-    """Return the release floor for a declared semantic page role."""
-
-    return _MIN_DISTINCT_CLIENT_FACTS_BY_ROLE.get(str(role), 2)
-
 
 def _unbound_template_clear_reason(value: str, *, occurrence_count: int = 1) -> str | None:
     """Classify only safe, non-client source copy for compiler-owned clearing."""
@@ -639,7 +594,7 @@ def compile_physical_adapter(
             if isinstance(binding, Mapping) and isinstance(binding.get("fact_id"), str)
         }
         declared_role = str(selected.get("role", "content"))
-        required_client_fact_count = _minimum_distinct_client_facts(declared_role)
+        required_client_fact_count = minimum_distinct_client_facts(declared_role)
         slide_lineage["binding_completeness"] = {
             "declared_role": declared_role,
             "distinct_client_fact_count": len(distinct_client_fact_ids),

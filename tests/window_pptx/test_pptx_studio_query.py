@@ -34,6 +34,11 @@ def _catalog() -> tuple[dict[str, object], dict[str, object]]:
             "page_id": page["page_id"],
             "region_kind": "title",
             "capacity": {"max_text_chars": 30},
+        }, {
+            "region_id": "region_bbbbbbbbbbbbbbbbbbbb",
+            "page_id": page["page_id"],
+            "region_kind": "content-item",
+            "capacity": {"max_text_chars": 30},
         }],
     }
     observations = {
@@ -67,6 +72,7 @@ def test_query_is_bounded_explainable_and_stable() -> None:
     assert candidate["scores"]["canonical_role"] == 1.0
     assert "canonical_category_role" in candidate["reasons"]
     assert candidate["style_signature"] == style_signature(catalog["pages"][0], observations)  # type: ignore[index]
+    assert candidate["bindable_region_count"] == 2
 
 
 @pytest.mark.parametrize(

@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from .query import _CATEGORY_ROLES, style_profile_from_observation, style_signature_from_observation
+from .role_policy import minimum_distinct_client_facts
 
 
 class CompositionError(ValueError):
@@ -205,6 +206,8 @@ def compile_composition(
                 raise CompositionError("PAGE_CANDIDATE_UNKNOWN")
             source_region_ids = [str(region_id) for region_id, record in regions.items() if record.get("page_id") == page.get("page_id")]
             capacity = _page_capacity(page)
+            if len(source_region_ids) < minimum_distinct_client_facts(item["role"]):
+                raise CompositionError("BINDABLE_REGION_COUNT_INSUFFICIENT")
         if page.get("category") not in active:
             raise CompositionError("SOURCE_SCOPE_INVALID")
         if not isinstance(page.get("deck_id"), str) or not re.fullmatch(r"[0-9a-f]{64}", str(page.get("package_sha256"))):

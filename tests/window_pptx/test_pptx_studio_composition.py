@@ -55,6 +55,8 @@ def _fixture() -> tuple[dict[str, object], dict[str, object], dict[str, str]]:
     regions = [
         {"region_id": "region_a_title", "page_id": cover["page_id"], "capacity": {"max_text_chars": 30}},
         {"region_id": "region_a_body", "page_id": cover["page_id"], "capacity": {"max_text_chars": 100}},
+        {"region_id": "region_a_closing_title", "page_id": closing["page_id"], "capacity": {"max_text_chars": 30}},
+        {"region_id": "region_a_closing_body", "page_id": closing["page_id"], "capacity": {"max_text_chars": 100}},
         {"region_id": "region_c_body", "page_id": process["page_id"], "capacity": {"max_text_chars": 100}},
     ]
     catalog = {"active_categories": ["003-封面模板", "039-结尾模板", "050-架构流程"], "pages": pages, "regions": regions}
@@ -109,6 +111,7 @@ def _select_other_deck(request: dict[str, object], signatures: dict[str, str]) -
         (lambda request, signatures: request["art_direction"].update({"allowed_style_signatures": ["style_" + "f" * 24]}), "ANCHOR_SIGNATURE_NOT_ALLOWED"),
         (_select_other_deck, "STYLE_FALLBACK_INCOMPATIBLE"),
         (lambda request, signatures: request["slides"][0].update({"selected_candidate_id": "missing", "candidate_ids": ["missing"]}), "PAGE_CANDIDATE_UNKNOWN"),
+        (lambda request, signatures: request["slides"][0].update({"role": "five-item"}), "BINDABLE_REGION_COUNT_INSUFFICIENT"),
     ],
 )
 def test_composition_fails_closed(mutate, error: str) -> None:  # type: ignore[no-untyped-def]

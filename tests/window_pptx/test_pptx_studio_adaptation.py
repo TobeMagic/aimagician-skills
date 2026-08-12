@@ -19,7 +19,7 @@ from manage_pptx_studio_library import run  # noqa: E402
 
 def _inputs() -> tuple[dict[str, object], dict[str, object]]:
     page = {"page_id": "page_aaaaaaaaaaaaaaaaaaaaaaaa_001", "deck_id": "deck_aaaaaaaaaaaaaaaaaaaaaaaa", "package_sha256": "a" * 64, "slide_number": 1, "category": "003-封面模板", "render": {"image_sha256": "b" * 64}, "component_eligible": True, "shapes": [{"shape_id": "2", "kind": "text", "max_chars": 30}, {"shape_id": "3", "kind": "image", "max_chars": 0}]}
-    catalog = {"active_categories": ["003-封面模板"], "pages": [page], "regions": [{"region_id": "region_a_title", "page_id": page["page_id"], "capacity": {"max_text_chars": 30}}]}
+    catalog = {"active_categories": ["003-封面模板"], "pages": [page], "regions": [{"region_id": "region_a_title", "page_id": page["page_id"], "capacity": {"max_text_chars": 30}}, {"region_id": "region_a_subtitle", "page_id": page["page_id"], "capacity": {"max_text_chars": 30}}]}
     observations = {page["page_id"]: {"page_id": page["page_id"], "image_sha256": "b" * 64, "observation": {"suggested_roles": ["cover"], "semantic_tags": ["annual-report"], "visual_style": ["editorial"], "uncertainty": "none"}}}
     signature = style_signature(page, observations)
     plan = compile_composition(catalog, observations=observations, request={"schema_version": "1.0", "strategy": "page_assembly", "art_direction": {"anchor_page_id": page["page_id"], "allowed_style_signatures": [signature]}, "slides": [{"slide_id": "s01", "role": "cover", "candidate_ids": [page["page_id"]], "selected_candidate_id": page["page_id"], "minimum_capacity": 20}]})
