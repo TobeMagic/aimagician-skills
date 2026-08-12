@@ -201,6 +201,20 @@ def _capacity(page: Mapping[str, Any], region: Mapping[str, Any] | None) -> int:
     return sum(int(shape.get("max_chars", 0)) for shape in page.get("shapes", []) if isinstance(shape, Mapping))
 
 
+def materialization_eligible(page: Mapping[str, Any]) -> bool:
+    """Return the catalog-certified physical-assembly eligibility.
+
+    Older, explicitly supplied test catalogs have no such record and remain
+    readable.  Every compiled production catalog carries this field; a marked
+    blocked page is never a query, composition or physical-assembly candidate.
+    """
+
+    record = page.get("materialization")
+    return record is None or (
+        isinstance(record, Mapping) and record.get("status") == "eligible"
+    )
+
+
 def _observation_for(page: Mapping[str, Any], observations: Mapping[str, Mapping[str, Any]]) -> Mapping[str, Any] | None:
     observation = observations.get(str(page.get("page_id")))
     if not isinstance(observation, Mapping):
@@ -247,6 +261,8 @@ def query_catalog(
         if candidate_filter is not None and candidate_id not in candidate_filter:
             continue
         if not candidate_id or page.get("category") not in active:
+            continue
+        if not materialization_eligible(page):
             continue
         if query["mode"] == "region" and page.get("component_eligible") is not True:
             continue
@@ -295,7 +311,7 @@ def query_catalog(
             "mode": query["mode"],
             "bindable_region_count": bindable_region_count.get(page_id, 0),
             "style_signature": style_signature_from_observation(observation),
-            "gates": ["active_source", "observation_hash", "capacity"],
+            "gates": ["active_source", "materialization", "observation_hash", "capacity"],
             "scores": {"canonical_role": category_role_score, "visual_role": visual_role_score, "tags": round(tag_score, 6), "style": style_score, "capacity": round(capacity_score, 6), "total": total},
             "reasons": reasons,
         })

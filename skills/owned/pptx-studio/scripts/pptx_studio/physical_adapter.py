@@ -455,6 +455,9 @@ def compile_physical_adapter(
         page = page_by_id.get(str(page_id))
         if page is None:
             raise PhysicalAdapterError("CATALOG_PAGE_MISSING")
+        materialization = page.get("materialization")
+        if isinstance(materialization, Mapping) and materialization.get("status") != "eligible":
+            raise PhysicalAdapterError("CATALOG_MATERIALIZATION_INELIGIBLE")
         package_sha = str(source.get("package_sha256", ""))
         slide_number = source.get("slide_number")
         if package_sha != page.get("package_sha256") or slide_number != page.get("slide_number") or package_sha not in source_paths:

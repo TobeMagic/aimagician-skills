@@ -8,7 +8,12 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from .query import role_matches_page, style_profile_from_observation, style_signature_from_observation
+from .query import (
+    materialization_eligible,
+    role_matches_page,
+    style_profile_from_observation,
+    style_signature_from_observation,
+)
 from .role_policy import minimum_distinct_client_facts
 
 
@@ -170,7 +175,7 @@ def compile_composition(
     pages = {str(page.get("page_id")): page for page in catalog.get("pages", []) if isinstance(page, Mapping)}
     regions = {str(region.get("region_id")): region for region in catalog.get("regions", []) if isinstance(region, Mapping)}
     anchor = pages.get(str(art["anchor_page_id"]))
-    if anchor is None or anchor.get("category") not in active:
+    if anchor is None or anchor.get("category") not in active or not materialization_eligible(anchor):
         raise CompositionError("ANCHOR_PAGE_INVALID")
     anchor_signature = style_signature(anchor, observations)
     anchor_profile = style_profile(anchor, observations)
@@ -224,6 +229,8 @@ def compile_composition(
                 raise CompositionError("BINDABLE_REGION_COUNT_INSUFFICIENT")
         if page.get("category") not in active:
             raise CompositionError("SOURCE_SCOPE_INVALID")
+        if not materialization_eligible(page):
+            raise CompositionError("SOURCE_MATERIALIZATION_INELIGIBLE")
         if not isinstance(page.get("deck_id"), str) or not re.fullmatch(r"[0-9a-f]{64}", str(page.get("package_sha256"))):
             raise CompositionError("SOURCE_PROVENANCE_INVALID")
         if type(page.get("slide_number")) is not int or int(page["slide_number"]) < 1:

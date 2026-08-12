@@ -67,7 +67,7 @@ def test_query_is_bounded_explainable_and_stable() -> None:
     assert first["status"] == "PASS"
     candidate = first["candidates"][0]
     assert candidate["candidate_id"] == "region_aaaaaaaaaaaaaaaaaaaa"
-    assert candidate["gates"] == ["active_source", "observation_hash", "capacity"]
+    assert candidate["gates"] == ["active_source", "materialization", "observation_hash", "capacity"]
     assert candidate["scores"]["total"] == 1.0
     assert candidate["scores"]["canonical_role"] == 1.0
     assert "canonical_category_role" in candidate["reasons"]
@@ -161,6 +161,23 @@ def test_query_can_revalidate_a_bounded_preselected_candidate() -> None:
     )
     assert result["status"] == "PASS"
     assert result["candidates"][0]["page_id"] == "page_aaaaaaaaaaaaaaaaaaaaaaaa_001"
+
+
+def test_query_excludes_catalog_page_blocked_by_physical_materialization() -> None:
+    catalog, observations = _catalog()
+    catalog["pages"][0]["materialization"] = {  # type: ignore[index]
+        "status": "blocked",
+        "governed_content_slot_count": 4,
+        "blocker_codes": ["chart-reference-cache-unmapped"],
+    }
+
+    result = query_catalog(
+        catalog,
+        observations=observations,
+        request={"mode": "page", "role": "cover"},
+    )
+
+    assert result["status"] == "NO_MATCH"
 
 
 def test_query_rejects_candidate_filter_for_region_mode() -> None:

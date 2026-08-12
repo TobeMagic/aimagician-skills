@@ -154,6 +154,39 @@ def _render_record(render_index: Mapping[str, Mapping[str, Any]], package_sha: s
     return {"image_sha256": image_sha, "width": width, "height": height, "visual_quality": round(float(quality), 8)}
 
 
+def _materialization_record(archive: zipfile.ZipFile, *, slide_number: int) -> dict[str, Any]:
+    """Publish whether a page can be physically assembled without source residue.
+
+    A native chart is not automatically safe to reuse.  The physical assembler
+    must either be able to enumerate and govern every chart/table/workbook
+    value or reject the page; otherwise a new client deck could retain stale
+    commercial sample data.  Compute that fact while compiling the private
+    catalog, rather than making an agent discover it after it has committed a
+    whole narrative to a page choice.  Deliberately expose only count and
+    stable error codes -- never source content or paths.
+    """
+
+    # The conservative content scanner is shared with the stable physical
+    # importer.  Keeping one implementation avoids a catalog claiming a page
+    # is safe which the assembler later refuses for a different interpretation
+    # of chart/workbook closure.
+    from window_pptx.page_template_library import _compile_governed_content_inventory
+
+    inventory = _compile_governed_content_inventory(archive, slide_number)
+    errors = inventory.get("scan_errors", [])
+    if not isinstance(errors, list) or any(not isinstance(item, str) for item in errors):
+        raise CatalogError("MATERIALIZATION_INVENTORY_INVALID")
+    complete = inventory.get("complete") is True
+    slots = inventory.get("slots", [])
+    if not isinstance(slots, list):
+        raise CatalogError("MATERIALIZATION_INVENTORY_INVALID")
+    return {
+        "status": "eligible" if complete else "blocked",
+        "governed_content_slot_count": len(slots),
+        "blocker_codes": sorted(set(errors)),
+    }
+
+
 def compile_catalog(
     source_root: Path | str,
     *,
@@ -203,6 +236,9 @@ def compile_catalog(
                             "style": {"palette": list(palette), "tone": "unknown"},
                             "editability": editability,
                             "component_eligible": bool(text_shapes),
+                            "materialization": _materialization_record(
+                                archive, slide_number=slide_number,
+                            ),
                             "shapes": shapes,
                         })
             except zipfile.BadZipFile as exc:

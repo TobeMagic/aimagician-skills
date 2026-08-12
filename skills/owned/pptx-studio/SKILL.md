@@ -58,7 +58,7 @@ The operator must provide these environment variables before production:
 `PPTX_STUDIO_SKILL_ROOT`, `PPTX_STUDIO_MANAGER`,
 `PPTX_STUDIO_PRIVATE_ROOT` and `PPTX_STUDIO_PRIVATE_SOURCE_ROOT`. The manager must equal
 `$PPTX_STUDIO_SKILL_ROOT/scripts/manage_pptx_studio_library.py`; the catalog
-is `$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/catalogs/gaojie-active.v2.json`
+is `$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/catalogs/gaojie-active.v3.json`
 and the observation index is
 `$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/vision/gaojie-active-observations.v1.json`; the physical certified-category root is
 `$PPTX_STUDIO_PRIVATE_SOURCE_ROOT` (currently `sources/gaojie` below the
@@ -97,7 +97,9 @@ results in client-local `work/` evidence; never copy a catalog, preview or
 source package there.
 
 For page retrieval, the catalog already excludes a candidate whose independent
-native text-region count is below that role's client-fact floor. Treat a
+native text-region count is below that role's client-fact floor *or whose
+native chart/table/workbook content cannot be completely governed by the
+physical importer*. Treat a
 `NO_MATCH` as a cue to select a lower-cardinality narrative form or split the
 message; never relabel a one-textbox page as a five-item or dashboard page.
 Certified semantic tags also recognize standard complete-work page anatomy:

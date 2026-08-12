@@ -76,6 +76,11 @@ def test_catalog_is_deterministic_and_uses_hash_identity(tmp_path: Path) -> None
     assert "example.pptx" not in page["page_id"]
     assert page["render"]["image_sha256"] == "a" * 64
     assert page["shapes"][0]["text"] == "Quarterly outlook"
+    assert page["materialization"] == {
+        "status": "eligible",
+        "governed_content_slot_count": 0,
+        "blocker_codes": [],
+    }
     assert first["region_count"] == len(first["regions"])
     assert first["region_count"] >= 1
     assert first["category_index"] == {ACTIVE_GAOJIE_CATEGORIES[0]: 1}
