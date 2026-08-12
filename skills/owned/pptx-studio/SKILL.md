@@ -73,15 +73,20 @@ Use `$PPTX_STUDIO_MANAGER` only. It always requires
 client-local `work/` sentinel paths for those three parser arguments. Do not
 search the filesystem for alternatives.
 
-For each retrieval, write exactly this JSON shape (all six fields are
+For each retrieval, write exactly this JSON shape (all seven fields are
 required; `style` may be `null`) and invoke `query` with the supplied catalog
 and observation index:
 
 ```json
-{"mode":"page","role":"cover","tags":[],"style":null,"capacity":0,"limit":6}
+{"mode":"page","role":"cover","tags":[],"style":null,"capacity":0,"limit":6,"suitability":"institutional-finance"}
 ```
 
-Use only returned `candidate_id` values in the composition request. The role
+Set `suitability` to `institutional-finance` for a hospital, government,
+finance or institutional report; this excludes pages whose certified visual
+observation identifies anime/characters, metaverse/robot imagery, mobile-app
+mockups, gaming, energy-product or similarly incompatible subject matter.
+Use `general` only when the locked brief genuinely permits such material. Use
+only returned `candidate_id` values in the composition request. The role
 vocabulary includes `cover`, `contents`, `section`, `closing`, `one-item`,
 `two-item` through `six-item`, `multi-item`, `team`, `timeline`, `process`,
 `business-model`, `product`, `quote`, `partners`, `case-study` and `map`.

@@ -11,8 +11,15 @@ class QueryError(ValueError):
     """Raised for an invalid query instead of falling back to file discovery."""
 
 
-_ALLOWED_REQUEST = {"mode", "role", "tags", "style", "capacity", "limit"}
+_ALLOWED_REQUEST = {"mode", "role", "tags", "style", "capacity", "limit", "suitability"}
 _MODES = {"deck", "page", "region"}
+_SUITABILITY_PROFILES = {"general", "institutional-finance"}
+_INSTITUTIONAL_FINANCE_EXCLUSIONS = (
+    "anime", "brand-characters", "metaverse", "virtual world", "vr",
+    "robot", "smartphone", "app screenshots", "product showcase",
+    "warehouse", "energy", "fuel cells", "nature journal", "solar cells",
+    "gaming", "fashion",
+)
 # User-confirmed source categories are stronger evidence of a page's intended
 # structural role than an OCR/vision model's free-form description.  Visual
 # evidence still determines style and fine-grained semantic compatibility.
@@ -113,7 +120,25 @@ def _validate_request(request: Mapping[str, Any]) -> dict[str, Any]:
     limit = request.get("limit", 5)
     if type(limit) is not int or not 1 <= limit <= 6:
         raise QueryError("LIMIT_INVALID")
-    return {"mode": mode, "role": role, "tags": _normal_tags(request.get("tags")), "style": style, "capacity": capacity, "limit": limit}
+    suitability = request.get("suitability", "general")
+    if suitability not in _SUITABILITY_PROFILES:
+        raise QueryError("SUITABILITY_INVALID")
+    return {"mode": mode, "role": role, "tags": _normal_tags(request.get("tags")), "style": style, "capacity": capacity, "limit": limit, "suitability": suitability}
+
+
+def _suitability_safe(observation: Mapping[str, Any], *, profile: str) -> bool:
+    """Reject subject matter certified as incompatible with the locked brief."""
+
+    if profile == "general":
+        return True
+    corpus = " ".join(
+        [
+            *[item for item in observation.get("semantic_tags", ()) if isinstance(item, str)],
+            *[item for item in observation.get("visual_style", ()) if isinstance(item, str)],
+            str(observation.get("composition", "")),
+        ]
+    ).casefold()
+    return not any(token in corpus for token in _INSTITUTIONAL_FINANCE_EXCLUSIONS)
 
 
 def _capacity(page: Mapping[str, Any], region: Mapping[str, Any] | None) -> int:
@@ -167,6 +192,8 @@ def query_catalog(
             continue
         observation = _observation_for(page, observations)
         if observation is None:
+            continue
+        if not _suitability_safe(observation, profile=query["suitability"]):
             continue
         capacity = _capacity(page, region)
         if capacity < query["capacity"]:

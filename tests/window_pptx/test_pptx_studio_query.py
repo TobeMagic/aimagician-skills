@@ -93,6 +93,32 @@ def test_query_excludes_missing_or_mismatched_observation() -> None:
     assert result["candidates"] == []
 
 
+def test_institutional_finance_query_excludes_anime_or_technology_subjects() -> None:
+    catalog, observations = _catalog()
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"].update({
+        "semantic_tags": ["brand-characters", "company-history"],
+        "visual_style": ["anime", "corporate-blue"],
+    })
+    result = query_catalog(
+        catalog,
+        observations=observations,
+        request={"mode": "page", "role": "cover", "suitability": "institutional-finance"},
+    )
+    assert result["status"] == "NO_MATCH"
+
+
+def test_general_query_keeps_subject_specific_pages_available() -> None:
+    catalog, observations = _catalog()
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"].update({
+        "semantic_tags": ["brand-characters"], "visual_style": ["anime"],
+    })
+    result = query_catalog(
+        catalog, observations=observations,
+        request={"mode": "page", "role": "cover", "suitability": "general"},
+    )
+    assert result["status"] == "PASS"
+
+
 def test_canonical_category_role_outranks_incorrect_visual_role() -> None:
     catalog, observations = _catalog()
     other = {
