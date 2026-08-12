@@ -56,6 +56,7 @@ from window_pptx.physical_assembly import (
     _validate_fragment_group_bindings,
     _validate_query_selection_evidence,
     _verify_all_relationships,
+    _verify_python_pptx,
     assemble_physical_deck,
     load_assembly_plan,
     resolve_project_file,
@@ -1389,6 +1390,39 @@ def test_verifier_rejects_raster_dominant_slide_with_decorative_shape(
     assert report.status == "fail"
     assert report.editability.raster_dominant_slide_count == 1
     assert report.editability.native_editable is False
+
+
+def test_full_bleed_certified_background_with_native_editorial_system_is_editable(
+    tmp_path: Path,
+) -> None:
+    """A full-page background is not a rasterized slide when art remains native."""
+
+    pptx = pytest.importorskip("pptx")
+    image_module = pytest.importorskip("PIL.Image")
+    from pptx.enum.shapes import MSO_SHAPE
+
+    image_path = tmp_path / "background.png"
+    image_module.new("RGB", (1600, 900), (24, 48, 72)).save(image_path)
+    output = tmp_path / "editorial-background.pptx"
+    presentation = pptx.Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    slide.shapes.add_picture(
+        str(image_path), 0, 0, presentation.slide_width, presentation.slide_height,
+    )
+    # A native panel/rail system has material visual extent even though the
+    # deliberately minimalist title itself occupies little page area.
+    slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE, 0, 0, presentation.slide_width, presentation.slide_height // 2,
+    )
+    title = slide.shapes.add_textbox(914400, 914400, 3657600, 457200)
+    title.text = "章节一"
+    presentation.save(output)
+
+    result = _verify_python_pptx(output)
+
+    assert result[0] is True
+    assert result[7] == 1  # full-bleed picture remains recorded
+    assert result[8] == 0  # but it is not screenshot/raster dominant
 
 
 def test_verifier_rejects_full_screenshot_with_tiny_native_decoys(

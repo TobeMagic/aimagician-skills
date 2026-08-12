@@ -949,7 +949,7 @@ def _python_pptx_statistics(
             picture_coverage >= thresholds.dominant_picture_union
             and (
                 native_coverage < thresholds.sparse_native_union
-                or text_coverage < thresholds.sparse_text_union
+                and text_coverage < thresholds.sparse_text_union
             )
         )
         if native_object_count == 0:

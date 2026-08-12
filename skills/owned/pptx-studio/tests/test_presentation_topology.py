@@ -764,6 +764,40 @@ def test_full_slide_picture_exposes_raster_coverage_statistics(tmp_path: Path) -
     assert result.statistics.slides[0].native_coverage < 0.01
 
 
+def test_full_bleed_background_with_material_native_editorial_system_is_not_raster_dominant(
+    tmp_path: Path,
+) -> None:
+    pptx = pytest.importorskip("pptx")
+    from pptx.enum.shapes import MSO_SHAPE
+
+    image_path = tmp_path / "editorial-background.png"
+    image_path.write_bytes(
+        base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk"
+            "/w8AAusB9Y9Z4SIAAAAASUVORK5CYII="
+        )
+    )
+    output = tmp_path / "editorial-background.pptx"
+    presentation = pptx.Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    slide.shapes.add_picture(
+        str(image_path), 0, 0, presentation.slide_width, presentation.slide_height,
+    )
+    slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE, 0, 0, presentation.slide_width, presentation.slide_height // 2,
+    )
+    heading = slide.shapes.add_textbox(914400, 914400, 3657600, 457200)
+    heading.text = "章节一"
+    presentation.save(output)
+
+    result = inspect_presentation_topology(output)
+
+    assert result.status == "pass"
+    assert result.statistics is not None
+    assert result.statistics.full_slide_raster_count == 1
+    assert result.statistics.raster_dominant_slide_count == 0
+
+
 def test_scaled_group_picture_uses_composed_group_geometry(tmp_path: Path) -> None:
     pptx = pytest.importorskip("pptx")
     image_path = tmp_path / "group-pixel.png"

@@ -5668,8 +5668,17 @@ def _verify_python_pptx(
         picture_coverage = rectangle_union_area(picture_rectangles) / slide_area
         native_coverage = rectangle_union_area(native_rectangles) / slide_area
         text_coverage = rectangle_union_area(text_rectangles) / slide_area
+        # Certified commercial pages frequently use one full-bleed bitmap as
+        # background art while preserving a native shape system and a
+        # deliberately sparse editorial heading. That is materially different
+        # from rasterising a whole slide and adding a tiny native decoy. Treat
+        # the slide as raster-dominant only when *both* its non-picture native
+        # surface and its editable text surface are sparse. The conjunction
+        # keeps rejecting screenshots with decorative shapes/text while
+        # allowing an imported, physically certified background to coexist
+        # with real editable geometry.
         if picture_coverage >= 0.90 and (
-            native_coverage < 0.10 or text_coverage < 0.04
+            native_coverage < 0.10 and text_coverage < 0.04
         ):
             raster_dominant_slides += 1
     slide_count = len(pres.slides)
