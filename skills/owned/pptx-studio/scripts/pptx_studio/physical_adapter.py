@@ -398,8 +398,25 @@ def compile_physical_adapter(
                 for raw_shape_id in raw_shape_ids:
                     slot_id = f"shape_{raw_shape_id}"
                     slot = slots_by_id.get(slot_id)
-                    if slot is None or len("".join(value.split())) > slot.max_chars:
-                        raise PhysicalAdapterError("TEXT_SLOT_CAPACITY_EXCEEDED")
+                    requested_chars = len("".join(value.split()))
+                    if slot is None:
+                        raise PhysicalAdapterError(
+                            "TEXT_SLOT_UNRESOLVED"
+                            f":slide_id={slide_id}:region_id={region['region_id']}"
+                            f":shape_id={slot_id}:fact_id={fact_ref}"
+                        )
+                    if requested_chars > slot.max_chars:
+                        # Catalog capacity is deliberately a fast conservative
+                        # retrieval signal. The source slide is authoritative at
+                        # assembly time, so report the exact non-secret binding
+                        # identifier and native capacity rather than forcing an
+                        # agent to guess which value must be shortened/split.
+                        raise PhysicalAdapterError(
+                            "TEXT_SLOT_CAPACITY_EXCEEDED"
+                            f":slide_id={slide_id}:region_id={region['region_id']}"
+                            f":shape_id={slot_id}:fact_id={fact_ref}"
+                            f":requested_chars={requested_chars}:native_capacity={slot.max_chars}"
+                        )
                     bindings[slot_id] = value
                     specs[slot_id] = TextBindingSpec(value, (physical_fact_id,), "auto", "shrink-to-fit")
                     slide_lineage["text_bindings"].append({"region_id": region["region_id"], "shape_id": slot_id, "fact_id": fact_ref, "replacement_sha256": _sha256_bytes(value.encode("utf-8"))})

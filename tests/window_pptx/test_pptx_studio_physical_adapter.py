@@ -134,6 +134,32 @@ def test_adapter_rejects_value_plan_drift(tmp_path: Path) -> None:
         )
 
 
+def test_adapter_reports_actionable_native_slot_capacity_mismatch(tmp_path: Path) -> None:
+    source_root, catalog, composition, request, _replacement = _source_pack(tmp_path)
+    # Deliberately let catalog retrieval accept a value that the actual native
+    # source slot cannot fit. The error must identify the safe plan IDs and
+    # numeric capacities, never literal client copy or a private path.
+    catalog["regions"][0]["capacity"]["max_text_chars"] = 4000  # type: ignore[index]
+    catalog["pages"][0]["shapes"][0]["max_chars"] = 4000  # type: ignore[index]
+    request["facts"][0]["value"] = "超长标题" * 500  # type: ignore[index]
+    adaptation = compile_adaptation(composition, catalog=catalog, request=request)
+    with pytest.raises(
+        PhysicalAdapterError,
+        match=(
+            r"TEXT_SLOT_CAPACITY_EXCEEDED:slide_id=slide-01:region_id=region-title:"
+            r"shape_id=shape_.*:fact_id=report-title:requested_chars=[0-9]+:native_capacity=[0-9]+"
+        ),
+    ):
+        compile_physical_adapter(
+            composition,
+            adaptation,
+            request,
+            catalog=catalog,
+            private_source_root=source_root,
+            workspace=tmp_path / "stage",
+        )
+
+
 def test_cli_assembly_writes_only_output_and_nonliteral_lineage(tmp_path: Path) -> None:
     source_root, catalog, composition, request, replacement = _source_pack(tmp_path)
     adaptation = compile_adaptation(composition, catalog=catalog, request=request)

@@ -104,6 +104,13 @@ records catalog page, package hash, slide number, slot and asset/fact hashes.
 The only automatic repair is compiler-owned `shrink-to-fit` in an approved
 text slot before import. Any other defect requires replan/reassembly.
 
+If assembly returns `TEXT_SLOT_CAPACITY_EXCEEDED`, use its `slide_id`,
+`region_id`, `fact_id`, `requested_chars` and `native_capacity` fields to
+shorten or split only that confirmed fact, recompile `adapt`, then retry
+assembly. This runtime-native capacity is authoritative over a retrieval-time
+catalog estimate; do not guess, freehand-edit, or repeatedly retry unchanged
+plans.
+
 Before beginning a client run, read the public Skill and manager from the
 stable path supplied by the operator. Confirm those two paths still exist
 immediately before `query`, and stop with `RUNTIME_UNAVAILABLE` if either
