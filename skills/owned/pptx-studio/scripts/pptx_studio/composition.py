@@ -8,7 +8,7 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from .query import _CATEGORY_ROLES, style_profile_from_observation, style_signature_from_observation
+from .query import role_matches_page, style_profile_from_observation, style_signature_from_observation
 from .role_policy import minimum_distinct_client_facts
 
 
@@ -104,9 +104,7 @@ def _page_capacity(page: Mapping[str, Any]) -> int:
 
 
 def _role_matches(page: Mapping[str, Any], detail: Mapping[str, Any], role: str) -> bool:
-    category_roles = _CATEGORY_ROLES.get(str(page.get("category")), frozenset())
-    visual_roles = detail.get("suggested_roles", [])
-    return role in category_roles or (isinstance(visual_roles, list) and role in visual_roles)
+    return role_matches_page(page, detail, role)
 
 
 def _validate_request(request: Mapping[str, Any]) -> tuple[str, Mapping[str, Any], list[Mapping[str, Any]]]:

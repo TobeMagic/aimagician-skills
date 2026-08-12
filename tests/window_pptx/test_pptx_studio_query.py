@@ -134,6 +134,21 @@ def test_general_query_keeps_subject_specific_pages_available() -> None:
     assert result["status"] == "PASS"
 
 
+def test_query_recognizes_certified_chapter_tag_as_section_role() -> None:
+    catalog, observations = _catalog()
+    catalog["pages"][0]["category"] = "057-优秀作品"  # type: ignore[index]
+    catalog["active_categories"] = ["057-优秀作品"]
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"].update({
+        "semantic_tags": ["chapter_title", "annual-report"],
+        "suggested_roles": ["title"],
+    })
+    result = query_catalog(
+        catalog, observations=observations,
+        request={"mode": "page", "role": "section"},
+    )
+    assert result["status"] == "PASS"
+
+
 def test_canonical_category_role_outranks_incorrect_visual_role() -> None:
     catalog, observations = _catalog()
     other = {

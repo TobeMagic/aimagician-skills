@@ -100,6 +100,11 @@ For page retrieval, the catalog already excludes a candidate whose independent
 native text-region count is below that role's client-fact floor. Treat a
 `NO_MATCH` as a cue to select a lower-cardinality narrative form or split the
 message; never relabel a one-textbox page as a five-item or dashboard page.
+Certified semantic tags also recognize standard complete-work page anatomy:
+`chapter_title`/`section_divider` is a `section`, and agenda/outline is
+`contents`. Use those returned candidates rather than rejecting a good
+complete-work page solely because its visual observation used a more specific
+label.
 
 For `page_assembly`, every `selected_candidate_id` must be unique across the
 deck. The physical importer intentionally rejects a repeated source page;

@@ -56,6 +56,43 @@ _CATEGORY_ROLES: dict[str, frozenset[str]] = {
     "082-地图排版": frozenset({"map"}),
 }
 
+_ROLE_SEMANTIC_HINTS: dict[str, frozenset[str]] = {
+    "cover": frozenset({"cover", "title slide", "title_slide", "title slide"}),
+    "contents": frozenset({"contents", "agenda", "outline", "table of contents", "table-of-contents", "navigation"}),
+    "section": frozenset({"section", "chapter", "chapter_title", "chapter-title", "section divider", "section_divider", "section header", "section-header"}),
+    "closing": frozenset({"closing", "thank you", "thanks", "presentation end", "presentation_end", "end"}),
+    "dashboard": frozenset({"dashboard", "kpi", "metrics", "data visualization", "data_visualization", "performance assessment"}),
+    "process": frozenset({"process", "flow", "workflow", "roadmap", "flowchart"}),
+    "timeline": frozenset({"timeline", "milestone", "milestones", "schedule", "annual_work_plan"}),
+    "team": frozenset({"team", "team introduction", "team_introduction", "profile cards", "profile_cards"}),
+}
+
+
+def role_matches_page(page: Mapping[str, Any], observation: Mapping[str, Any], role: str) -> bool:
+    """Match a page role using certified category, vision role and tags.
+
+    Full-work template decks frequently identify a chapter divider as
+    ``chapter_title`` in visual evidence rather than the generic ``section``
+    role.  Treat that controlled taxonomy as equivalent; never use free-form
+    model prose as a role grant.
+    """
+
+    if role in _CATEGORY_ROLES.get(str(page.get("category")), frozenset()):
+        return True
+    suggested = observation.get("suggested_roles", [])
+    if isinstance(suggested, list) and role in suggested:
+        return True
+    hints = _ROLE_SEMANTIC_HINTS.get(role)
+    if not hints:
+        return False
+    terms = {
+        str(item).casefold()
+        for field in ("semantic_tags", "suggested_roles")
+        for item in observation.get(field, [])
+        if isinstance(item, str)
+    }
+    return bool(terms & hints)
+
 
 def style_profile_from_observation(observation: Mapping[str, Any]) -> dict[str, str]:
     """Reduce certified visual evidence to the public style-cluster taxonomy."""
@@ -214,6 +251,8 @@ def query_catalog(
         # assembly cycle discovering the mismatch.
         if query["mode"] == "page" and bindable_region_count.get(page_id, 0) < required_regions:
             continue
+        if query["mode"] == "page" and not role_matches_page(page, observation, query["role"]):
+            continue
         capacity = _capacity(page, region)
         if capacity < query["capacity"]:
             continue
@@ -222,7 +261,7 @@ def query_catalog(
         tags = set(observation.get("semantic_tags", []))
         styles = set(observation.get("visual_style", []))
         category_role_score = 1.0 if query["role"] in category_roles else 0.0
-        visual_role_score = 1.0 if query["role"] in roles else 0.0
+        visual_role_score = 1.0 if query["role"] in roles else 0.5
         tag_score = 1.0 if not query["tags"] else len(set(query["tags"]) & tags) / len(query["tags"])
         style_score = 1.0 if query["style"] is None or query["style"] in styles else 0.0
         capacity_score = 1.0 if query["capacity"] == 0 else min(1.0, capacity / query["capacity"])
