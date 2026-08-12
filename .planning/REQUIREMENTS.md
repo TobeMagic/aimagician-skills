@@ -609,8 +609,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | V7-VISION-01 | Phase 50 | Complete |
 | V7-REGION-01 | Phase 50 | Complete |
 | V7-QUERY-01 | Phase 50 | Complete |
-| V7-COMPOSE-01 | Phase 51 | Planned |
-| V7-ADAPT-01 | Phase 51 | Planned |
+| V7-COMPOSE-01 | Phase 51 | In Progress |
+| V7-ADAPT-01 | Phase 51 | In Progress |
 | V7-SKILL-01 | Phase 52 | Planned |
 | V7-QA-01 | Phase 52 | Planned |
 | V7-MIGRATE-01 | Phase 52 | Planned |

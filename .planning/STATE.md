@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v7
 milestone_name: PPTX Studio Curated Composition
-current_phase: 50
-current_phase_name: Asset Curation and Visual Catalog
+current_phase: 51
+current_phase_name: Composition Retrieval and Governed Adaptation
 status: in_progress
-stopped_at: v7 Phase 50 closure evidence is complete; commit and Phase 51 activation remain
+stopped_at: v7 Phase 51 contract and failing-test boundary are being established in the isolated pptx-studio worktree
 last_updated: "2026-08-12T17:50:00+08:00"
 last_activity: 2026-08-12
 progress:
@@ -70,8 +70,9 @@ fully independent AI blind-review contexts for v6 acceptance.
 Milestone: v7 PPTX Studio Curated Composition
 Current Phase: 50
 Current Phase Name: Asset Curation and Visual Catalog
-Status: In Progress — Phase 50 closure evidence passed focused tests, workflow
-completion and an independent blind audit; commit and Phase 51 activation are next.
+Status: In Progress — Phase 50 is committed as `a324de7`; Phase 51 now turns
+catalog retrieval into governed whole-deck/page/component decisions and
+fact-bound adaptation plans before any physical package mutation.
 Last Activity: 2026-08-12
 
 ### Preserved Control-Plane History

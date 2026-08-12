@@ -36,6 +36,7 @@ The repository also contains a planning-managed Window-PPTX production engine. I
 | CTX-DEC-007 | `pptx-studio` is the target public Skill identity. There is no compatibility shim; `window-pptx` remains only until the migration phase has passing source/install tests. | USR-V7-01 | Active | CTX-DEC-005 |
 | CTX-DEC-008 | Private Gaojie bytes remain local and ignored. Phase 50 keeps only user-approved category directories active and archives all other source categories recoverably with a hash manifest; it never deletes them. | USR-V7-01 | Active | CTX-DEC-006 |
 | CTX-DEC-009 | Retrieval is three-layered: deck record for complete reuse, page record for coherent assembly, and region record for controlled component adaptation. Visual observations are derived from authorized rendered PNGs, hash-bound, and never committed as private payloads. | USR-V7-01 | Active | NONE |
+| CTX-PPTX-STUDIO-010 | PPTX Studio composition uses deterministic strategy precedence (`exact_deck`, `page_assembly`, `component_assembly`), one catalog-derived style anchor plus explicit signature allowlist, and fact/asset-ID-only adaptation plans. The model cannot emit geometry, colors/fonts, OOXML, or literal replacement text in a materialization plan. | V7 Phase 51 | Active | CTX-DEC-009 |
 
 ## Verification And Delivery Baseline
 

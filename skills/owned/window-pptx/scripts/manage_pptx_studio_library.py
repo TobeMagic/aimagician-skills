@@ -14,6 +14,8 @@ from pptx_studio.catalog import compile_catalog, serialize_catalog
 from pptx_studio.curation import apply_curation, plan_curation, recover_curation, verify_curation
 from pptx_studio.rendering import complete_render_index
 from pptx_studio.query import query_catalog
+from pptx_studio.composition import compile_composition
+from pptx_studio.adaptation import compile_adaptation
 from pptx_studio.visual_batches import ingest_batch_report, plan_visual_batches, prompt_for_batch, run_agnes_batch, run_agnes_range
 
 
@@ -71,7 +73,7 @@ def render_index_from_asset_index(path: Path) -> dict[str, dict[str, Any]]:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "query", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
+    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "query", "compose", "adapt", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--archive-root", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
@@ -83,6 +85,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--catalog", type=Path)
     parser.add_argument("--query-input", type=Path)
     parser.add_argument("--query-output", type=Path)
+    parser.add_argument("--composition-input", type=Path)
+    parser.add_argument("--composition-output", type=Path)
+    parser.add_argument("--composition-plan", type=Path)
+    parser.add_argument("--adaptation-input", type=Path)
+    parser.add_argument("--adaptation-output", type=Path)
     parser.add_argument("--private-root", type=Path)
     parser.add_argument("--completion-evidence-root", type=Path)
     parser.add_argument("--observation-index", type=Path)
@@ -146,6 +153,23 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         )
         _write_json(args.query_output, result)
         return {"status": result["status"], "query_output": str(args.query_output), "summary": {"candidate_count": len(result["candidates"])}}
+    if args.command == "compose":
+        if args.catalog is None or args.observation_index is None or args.composition_input is None or args.composition_output is None:
+            raise ValueError("COMPOSITION_ARGUMENT_REQUIRED")
+        observation_payload = _read_json(args.observation_index)
+        entries = observation_payload.get("observations")
+        if observation_payload.get("status") != "COMPLETE" or not isinstance(entries, list):
+            raise ValueError("OBSERVATION_INDEX_INCOMPLETE")
+        observations = {item.get("page_id"): item for item in entries if isinstance(item, dict) and isinstance(item.get("page_id"), str)}
+        result = compile_composition(_read_json(args.catalog), observations=observations, request=_read_json(args.composition_input))
+        _write_json(args.composition_output, result)
+        return {"status": result["status"], "composition_output": str(args.composition_output), "summary": {"strategy": result["strategy"], "slide_count": len(result["slides"])}}
+    if args.command == "adapt":
+        if args.catalog is None or args.composition_plan is None or args.adaptation_input is None or args.adaptation_output is None:
+            raise ValueError("ADAPTATION_ARGUMENT_REQUIRED")
+        result = compile_adaptation(_read_json(args.composition_plan), catalog=_read_json(args.catalog), request=_read_json(args.adaptation_input))
+        _write_json(args.adaptation_output, result)
+        return {"status": result["status"], "adaptation_output": str(args.adaptation_output), "summary": {"operation_count": len(result["operations"])}}
     if args.command == "vision-plan":
         if any(value is None for value in (args.catalog, args.asset_index, args.render_index, args.private_root, args.completion_evidence_root, args.batch_plan)):
             raise ValueError("VISION_PLAN_ARGUMENT_REQUIRED")

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/pptx-studio-composition-plan.v1.schema.json",
+  "title": "PPTX Studio Composition Plan v1",
+  "type": "object",
+  "required": ["schema_version", "status", "strategy", "art_direction", "slides"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "status": {"const": "PASS"},
+    "strategy": {"enum": ["exact_deck", "page_assembly", "component_assembly"]},
+    "art_direction": {"type": "object"},
+    "slides": {"type": "array", "minItems": 1}
+  },
+  "additionalProperties": false
+}

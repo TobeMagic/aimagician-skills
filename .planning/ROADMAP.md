@@ -885,7 +885,7 @@ without granting the authoring model visual implementation authority.
 
 **Depends on:** Phase 50
 **Requirements:** [V7-COMPOSE-01, V7-ADAPT-01]
-**Status:** Planned
+**Status:** In Progress
 
 ### Phase 52: PPTX Studio Migration and Agent Workflow
 
@@ -934,6 +934,6 @@ visual, and independent audit gates.
 | Phase | Status | Completed |
 |-------|--------|-----------|
 | 50. Asset Curation and Visual Catalog | In Progress | — |
-| 51. Composition Retrieval and Governed Adaptation | Planned | — |
+| 51. Composition Retrieval and Governed Adaptation | In Progress | — |
 | 52. PPTX Studio Migration and Agent Workflow | Planned | — |
 | 53. Clean-Room Work-Report Acceptance and Release | Planned | — |
