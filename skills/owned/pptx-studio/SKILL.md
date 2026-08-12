@@ -182,6 +182,11 @@ It fails on an overflow or an unavailable slot; it never truncates, duplicates
 or silently falls back to a template's sample copy. Then run `adapt` on that
 generated adaptation request.
 
+For `assemble`, pass both different files explicitly: `--adaptation-input`
+points to the generated request and `--adaptation-plan` points to the compiled
+plan. This deliberate separation prevents a request from being mistaken for
+its compiled plan.
+
 Every replacement must fit a certified region. If approved copy is too long,
 shorten it from the source or split the narrative; never reshape the slide.
 

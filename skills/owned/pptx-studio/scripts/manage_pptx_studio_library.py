@@ -94,6 +94,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--content-outline", type=Path, help="semantic client facts ordered per selected slide")
     parser.add_argument("--adaptation-input", type=Path)
     parser.add_argument("--adaptation-output", type=Path)
+    parser.add_argument("--adaptation-plan", type=Path, help="compiled adaptation plan consumed by assemble")
     parser.add_argument("--private-source-root", type=Path)
     parser.add_argument("--assembly-workspace", type=Path)
     parser.add_argument("--pptx-output", type=Path)
@@ -202,14 +203,15 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
             "summary": {"slide_count": result["slide_count"], "region_count": result["region_count"]},
         }
     if args.command == "assemble":
-        if any(value is None for value in (args.catalog, args.composition_plan, args.adaptation_input, args.adaptation_output, args.private_source_root, args.assembly_workspace, args.pptx_output, args.lineage_output)):
+        adaptation_plan_path = args.adaptation_plan or args.adaptation_output
+        if any(value is None for value in (args.catalog, args.composition_plan, args.adaptation_input, adaptation_plan_path, args.private_source_root, args.assembly_workspace, args.pptx_output, args.lineage_output)):
             raise ValueError("ASSEMBLY_ARGUMENT_REQUIRED")
         raw_asset_paths = _read_json(args.asset_paths) if args.asset_paths is not None else {}
         if not all(isinstance(key, str) and isinstance(value, str) for key, value in raw_asset_paths.items()):
             raise ValueError("ASSET_PATHS_INVALID")
         report, lineage = assemble_from_plans(
             _read_json(args.composition_plan),
-            _read_json(args.adaptation_output),
+            _read_json(adaptation_plan_path),
             _read_json(args.adaptation_input),
             catalog=_read_json(args.catalog),
             private_source_root=args.private_source_root,
