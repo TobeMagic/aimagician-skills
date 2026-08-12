@@ -52,6 +52,29 @@ Use `exact_deck` only when a complete certified work genuinely matches the
 brief. Otherwise use `page_assembly`; use `component_assembly` only for a
 bounded safe region.
 
+### Retrieval command contract
+
+Use the supplied `manage_pptx_studio_library.py` only. It always requires
+`--source-root`, `--archive-root` and `--manifest`; production harnesses pass
+client-local `work/` sentinel paths for those three parser arguments. Do not
+search the filesystem for alternatives.
+
+For each retrieval, write exactly this JSON shape (all six fields are
+required; `style` may be `null`) and invoke `query` with the supplied catalog
+and observation index:
+
+```json
+{"mode":"page","role":"cover","tags":[],"style":null,"capacity":0,"limit":6}
+```
+
+Use only returned `candidate_id` values in the composition request. The role
+vocabulary includes `cover`, `contents`, `section`, `closing`, `one-item`,
+`two-item` through `six-item`, `multi-item`, `team`, `timeline`, `process`,
+`business-model`, `product`, `quote`, `partners`, `case-study` and `map`.
+Use `page_assembly` for a normal mixed-role business deck. Preserve query
+results in client-local `work/` evidence; never copy a catalog, preview or
+source package there.
+
 ## 3. Plan and bind without visual implementation authority
 
 Compile a composition plan and then an adaptation plan. The model may return
@@ -62,6 +85,15 @@ fonts, colours, CSS/HTML, code, OOXML or post-assembly repairs.
 Every replacement must fit a certified region. If approved copy is too long,
 shorten it from the source or split the narrative; never reshape the slide.
 
+`composition-request.json` has only `schema_version`, `strategy`,
+`art_direction` and `slides`; every slide has only `slide_id`, `role`,
+`candidate_ids`, `selected_candidate_id` and `minimum_capacity`. Compile it
+with `compose` before writing `adaptation-request.json`. An adaptation request
+has only `schema_version`, `facts`, `assets` and `bindings`; each binding must
+include all of `slide_id`, `operation`, `region_id`, `shape_id`, `fact_id` and
+`asset_id`, using `null` for fields inapplicable to that operation. Compile it
+with `adapt` before `assemble`.
+
 ## 4. Assemble, inspect and deliver
 
 The materializer resolves selected package hashes only below the private root,
@@ -71,6 +103,12 @@ records catalog page, package hash, slide number, slot and asset/fact hashes.
 
 The only automatic repair is compiler-owned `shrink-to-fit` in an approved
 text slot before import. Any other defect requires replan/reassembly.
+
+Before beginning a client run, read the public Skill and manager from the
+stable path supplied by the operator. Confirm those two paths still exist
+immediately before `query`, and stop with `RUNTIME_UNAVAILABLE` if either
+changes. Do not substitute an old global Skill directory, a historical
+`window-pptx` installation or an unapproved renderer.
 
 Release only after all gates pass:
 
