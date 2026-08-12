@@ -121,18 +121,35 @@ def _slide_record(
     width: int,
     height: int,
 ) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
+    # The historical lightweight scanner only walked direct children of
+    # ``p:spTree``. Commercial PPTX authors routinely put metric labels inside
+    # nested ``p:grpSp`` diagrams; treating the group as a single shape made a
+    # data page appear to have just one editable heading even though its labels
+    # and values are ordinary native text. Reuse the physical importer's slot
+    # discovery here so catalog capacity, preflight and actual replacement all
+    # agree on the same recursive, shape-ID-addressable text surface.
+    from window_pptx.page_template_library import PageTemplateError, _discover_slots
+
     try:
-        root = ET.fromstring(payload)
-    except ET.ParseError as exc:
+        slots = _discover_slots(
+            payload.decode("utf-8", errors="strict"),
+            slide_width=width,
+            slide_height=height,
+        )
+    except (UnicodeDecodeError, PageTemplateError) as exc:
         raise CatalogError("SLIDE_XML_INVALID") from exc
-    tree = _child(root, "spTree")
-    if tree is None:
-        raise CatalogError("SLIDE_SHAPETREE_MISSING")
-    shapes: list[dict[str, Any]] = []
-    for order, node in enumerate(list(tree), start=1):
-        record = _shape_record(node, width=width, height=height, order=order)
-        if record is not None:
-            shapes.append(record)
+    shapes = [
+        {
+            "shape_id": str(slot.shape_id),
+            "name": "",
+            "kind": "text",
+            "text": slot.text,
+            "bbox": dict(slot.bbox),
+            "max_chars": slot.max_chars,
+            "z_order": slot.reading_order,
+        }
+        for slot in slots
+    ]
     palette = tuple(sorted(set(f"#{item.upper()}" for item in _SRGB_RE.findall(payload.decode("utf-8", errors="ignore")))))
     return shapes, palette[:6]
 

@@ -22,7 +22,7 @@ def _sha(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
-def _pptx(path: Path, *, image_only: bool = False) -> str:
+def _pptx(path: Path, *, image_only: bool = False, nested_group: bool = False) -> str:
     slide = (
         '<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
         'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:cSld>'
@@ -35,6 +35,12 @@ def _pptx(path: Path, *, image_only: bool = False) -> str:
             '<p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/></p:nvSpPr><p:spPr><a:xfrm><a:off x="100000" y="100000"/><a:ext cx="6000000" cy="800000"/></a:xfrm></p:spPr><p:txBody><a:p><a:r><a:t>Quarterly outlook</a:t></a:r></a:p></p:txBody></p:sp>'
             '<p:sp><p:nvSpPr><p:cNvPr id="3" name="Body"/></p:nvSpPr><p:spPr><a:xfrm><a:off x="100000" y="1200000"/><a:ext cx="6000000" cy="2500000"/></a:xfrm></p:spPr><p:txBody><a:p><a:r><a:t>Evidence and action</a:t></a:r></a:p></p:txBody></p:sp>'
         )
+        if nested_group:
+            slide += (
+                '<p:grpSp><p:nvGrpSpPr><p:cNvPr id="4" name="MetricGroup"/></p:nvGrpSpPr><p:grpSpPr/>'
+                '<p:sp><p:nvSpPr><p:cNvPr id="5" name="Metric"/></p:nvSpPr><p:spPr><a:xfrm><a:off x="100000" y="4000000"/><a:ext cx="2000000" cy="500000"/></a:xfrm></p:spPr><p:txBody><a:p><a:r><a:t>96.9%</a:t></a:r></a:p></p:txBody></p:sp>'
+                '</p:grpSp>'
+            )
     slide += "</p:spTree></p:cSld></p:sld>"
     presentation = (
         '<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
@@ -47,12 +53,12 @@ def _pptx(path: Path, *, image_only: bool = False) -> str:
     return _sha(path.read_bytes())
 
 
-def _root(tmp_path: Path, *, image_only: bool = False) -> tuple[Path, dict[str, dict[str, object]]]:
+def _root(tmp_path: Path, *, image_only: bool = False, nested_group: bool = False) -> tuple[Path, dict[str, dict[str, object]]]:
     root = tmp_path / "private" / "sources" / "gaojie"
     for category in ACTIVE_GAOJIE_CATEGORIES:
         (root / category).mkdir(parents=True)
     package = root / ACTIVE_GAOJIE_CATEGORIES[0] / "example.pptx"
-    digest = _pptx(package, image_only=image_only)
+    digest = _pptx(package, image_only=image_only, nested_group=nested_group)
     render = {
         f"{digest}:001": {
             "image_sha256": "a" * 64,
@@ -109,3 +115,14 @@ def test_catalog_marks_image_only_page_non_component_eligible(tmp_path: Path) ->
 
     assert catalog["pages"][0]["editability"] == "image_only"
     assert catalog["pages"][0]["component_eligible"] is False
+
+
+def test_catalog_recursively_indexes_native_text_in_grouped_diagrams(tmp_path: Path) -> None:
+    root, render = _root(tmp_path, nested_group=True)
+
+    catalog = compile_catalog(root, render_index=render)
+
+    page = catalog["pages"][0]
+    assert [shape["shape_id"] for shape in page["shapes"]] == ["2", "3", "5"]
+    assert page["shapes"][-1]["text"] == "96.9%"
+    assert len([region for region in catalog["regions"] if region["page_id"] == page["page_id"]]) == 3
