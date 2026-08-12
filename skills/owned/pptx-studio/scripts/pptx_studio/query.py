@@ -221,7 +221,16 @@ def _suitability_safe(observation: Mapping[str, Any], *, profile: str) -> bool:
             str(observation.get("composition", "")),
         ]
     ).casefold()
-    return not any(token in corpus for token in _INSTITUTIONAL_FINANCE_EXCLUSIONS)
+    # A bare exclusion such as ``car`` must match a subject token, not an
+    # arbitrary substring: otherwise a finance page described as a “data
+    # card” is falsely rejected. Multiword exclusions are intentionally kept
+    # as phrase matches; they are curated complete subject labels.
+    def excluded(token: str) -> bool:
+        if re.fullmatch(r"[a-z0-9]+", token):
+            return re.search(rf"(?<![a-z0-9]){re.escape(token)}(?![a-z0-9])", corpus) is not None
+        return token in corpus
+
+    return not any(excluded(token) for token in _INSTITUTIONAL_FINANCE_EXCLUSIONS)
 
 
 def _capacity(page: Mapping[str, Any], region: Mapping[str, Any] | None) -> int:

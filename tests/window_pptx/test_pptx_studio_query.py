@@ -11,7 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 
-from pptx_studio.query import QueryError, inspect_certified_deck, query_catalog, serialize_query_result  # noqa: E402
+from pptx_studio.query import QueryError, _suitability_safe, inspect_certified_deck, query_catalog, serialize_query_result  # noqa: E402
 from pptx_studio.composition import style_signature  # noqa: E402
 from manage_pptx_studio_library import run  # noqa: E402
 
@@ -95,6 +95,17 @@ def test_query_marks_native_chart_data_surface_without_exposing_source_content()
     assert candidate["governed_content_slot_count"] == 12
     assert candidate["requires_structured_data"] is True
     assert "chart" not in json.dumps(candidate, ensure_ascii=False).casefold()
+
+
+def test_institutional_finance_subject_filter_does_not_reject_data_cards_as_cars() -> None:
+    assert _suitability_safe(
+        {"semantic_tags": ["financial report", "data card"], "visual_style": ["corporate"]},
+        profile="institutional-finance",
+    )
+    assert not _suitability_safe(
+        {"semantic_tags": ["automotive", "car"], "visual_style": ["corporate"]},
+        profile="institutional-finance",
+    )
 
 
 @pytest.mark.parametrize(
