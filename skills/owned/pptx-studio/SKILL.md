@@ -54,7 +54,19 @@ bounded safe region.
 
 ### Retrieval command contract
 
-Use the supplied `manage_pptx_studio_library.py` only. It always requires
+The operator must provide these environment variables before production:
+`PPTX_STUDIO_SKILL_ROOT`, `PPTX_STUDIO_MANAGER` and
+`PPTX_STUDIO_PRIVATE_ROOT`. The manager must equal
+`$PPTX_STUDIO_SKILL_ROOT/scripts/manage_pptx_studio_library.py`; the catalog
+is `$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/catalogs/gaojie-active.v2.json`
+and the observation index is
+`$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/vision/gaojie-active-observations.v1.json`.
+At the start of a run, verify those exact paths with `test -f` or stop with
+`RUNTIME_UNAVAILABLE`. Do not discover them by scanning the filesystem. Never
+write a private path, catalog content, preview or source package into the
+client folder or final summary.
+
+Use `$PPTX_STUDIO_MANAGER` only. It always requires
 `--source-root`, `--archive-root` and `--manifest`; production harnesses pass
 client-local `work/` sentinel paths for those three parser arguments. Do not
 search the filesystem for alternatives.
@@ -148,9 +160,9 @@ catalog estimate; do not guess, freehand-edit, or repeatedly retry unchanged
 plans.
 
 Before beginning a client run, read the public Skill and manager from the
-stable path supplied by the operator. Confirm those two paths still exist
-immediately before `query`, and stop with `RUNTIME_UNAVAILABLE` if either
-changes. Do not substitute an old global Skill directory, a historical
+operator-provided runtime variables above. Confirm those exact paths still
+exist immediately before `query`, and stop with `RUNTIME_UNAVAILABLE` if
+either changes. Do not substitute an old global Skill directory, a historical
 `window-pptx` installation or an unapproved renderer.
 
 Release only after all gates pass:
