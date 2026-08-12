@@ -122,9 +122,13 @@ different returned candidate for each occurrence. Treat
 `PAGE_SOURCE_DUPLICATE` as a composition correction, not an assembly retry.
 
 Every returned candidate also has `page_id`, `deck_id`,
-`theme_family_page_count` and a certified `style_signature`. Prefer a cover
+`theme_family_page_count`, `theme_family_visual_quality` and a certified
+`style_signature`. Prefer a cover
 from a complete certified work with enough eligible sibling pages for the
-deck, rather than selecting the visually loudest single-page cover. Choose
+deck, rather than selecting the visually loudest single-page cover. A complete
+family whose certified minimum portable visual-quality signal is below `0.80`
+is not eligible as the deck anchor; this is only a prefilter and never replaces
+the required independent rendered review. Choose
 the cover candidate's `page_id` as
 `art_direction.anchor_page_id`; copy its exact `style_signature` into
 `allowed_style_signatures`. A complete anchor deck's sibling pages are allowed

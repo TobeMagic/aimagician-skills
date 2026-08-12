@@ -74,6 +74,12 @@ _ROLE_SEMANTIC_HINTS: dict[str, frozenset[str]] = {
     "team": frozenset({"team", "team introduction", "team_introduction", "profile cards", "profile_cards"}),
 }
 
+# A complete-work anchor is a quality commitment, not merely a convenient
+# source of many pages. The portable render fingerprint is only a coarse
+# prefilter; later blind visual review remains mandatory. It nonetheless
+# rejects a family whose weak pages would otherwise win solely on page count.
+_COMPLETE_FAMILY_MIN_VISUAL_QUALITY = 0.80
+
 
 def role_matches_page(page: Mapping[str, Any], observation: Mapping[str, Any], role: str) -> bool:
     """Match a page role using certified category, vision role and tags.
@@ -268,6 +274,25 @@ def query_catalog(
         )
         for deck_id in decks
     }
+    family_visual_quality = {
+        deck_id: [
+            float(page.get("render", {}).get("visual_quality", 0.0))
+            for page in pages.values()
+            if str(page.get("deck_id")) == deck_id
+            and page.get("category") in active
+            and materialization_eligible(page)
+            and isinstance(page.get("render"), Mapping)
+            and isinstance(page.get("render", {}).get("visual_quality"), (int, float))
+        ]
+        for deck_id in decks
+    }
+    family_quality_stats = {
+        deck_id: {
+            "min": min(values) if values else 0.0,
+            "mean": sum(values) / len(values) if values else 0.0,
+        }
+        for deck_id, values in family_visual_quality.items()
+    }
     raw: list[tuple[str, Mapping[str, Any], Mapping[str, Any] | None]] = []
     if query["mode"] == "page":
         raw = [(page_id, page, None) for page_id, page in pages.items()]
@@ -304,6 +329,15 @@ def query_catalog(
         if query["mode"] == "page" and bindable_region_count.get(page_id, 0) < required_regions:
             continue
         if query["mode"] == "page" and not role_matches_page(page, observation, query["role"]):
+            continue
+        deck_id = str(page.get("deck_id"))
+        stats = family_quality_stats.get(deck_id, {"min": 0.0, "mean": 0.0})
+        if (
+            query["mode"] == "page"
+            and query["role"] == "cover"
+            and family_page_count.get(deck_id, 0) >= 8
+            and stats["min"] < _COMPLETE_FAMILY_MIN_VISUAL_QUALITY
+        ):
             continue
         capacity = _capacity(page, region)
         if capacity < query["capacity"]:
@@ -347,9 +381,11 @@ def query_catalog(
             "candidate_id": candidate_id,
             "page_id": page["page_id"],
             "deck_id": page.get("deck_id"),
-            "theme_family_page_count": family_page_count.get(
-                str(page.get("deck_id")), 0,
-            ),
+            "theme_family_page_count": family_page_count.get(deck_id, 0),
+            "theme_family_visual_quality": {
+                "minimum": round(stats["min"], 6),
+                "mean": round(stats["mean"], 6),
+            },
             "mode": query["mode"],
             "bindable_region_count": bindable_region_count.get(page_id, 0),
             "style_signature": candidate_style_signature,
@@ -362,6 +398,7 @@ def query_catalog(
     # For anchor discovery, put the complete eligible family first so the
     # agent can choose a reusable design direction rather than a loud orphan.
     candidates.sort(key=lambda item: (
+        -float(item["theme_family_visual_quality"]["mean"]) if query["mode"] == "page" and query["role"] == "cover" else 0,
         -int(item["theme_family_page_count"]) if query["mode"] == "page" and query["role"] == "cover" else 0,
         -item["scores"]["total"],
         item["candidate_id"],

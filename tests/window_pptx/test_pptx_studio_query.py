@@ -245,6 +245,36 @@ def test_query_excludes_catalog_page_blocked_by_physical_materialization() -> No
     assert result["status"] == "NO_MATCH"
 
 
+def test_cover_query_rejects_weak_complete_theme_family() -> None:
+    catalog, observations = _catalog()
+    catalog["pages"][0]["render"]["visual_quality"] = 0.91  # type: ignore[index]
+    weak_deck = "deck_cccccccccccccccccccccccc"
+    for ordinal in range(1, 9):
+        page_id = f"page_cccccccccccccccccccccccc_{ordinal:03d}"
+        image_sha = f"{ordinal:064x}"
+        page = {
+            "page_id": page_id,
+            "deck_id": weak_deck,
+            "category": "003-封面模板",
+            "render": {"image_sha256": image_sha, "visual_quality": 0.70},
+            "component_eligible": True,
+            "shapes": [{"max_chars": 90}],
+        }
+        catalog["pages"].append(page)  # type: ignore[union-attr]
+        observations[page_id] = {
+            "page_id": page_id,
+            "image_sha256": image_sha,
+            "observation": observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"],
+        }
+    catalog["decks"].append({"deck_id": weak_deck, "category": "003-封面模板"})  # type: ignore[union-attr]
+
+    result = query_catalog(catalog, observations=observations, request={"mode": "page", "role": "cover"})
+
+    assert result["status"] == "PASS"
+    assert all(item["deck_id"] != weak_deck for item in result["candidates"])
+    assert result["candidates"][0]["theme_family_visual_quality"]["mean"] == 0.91
+
+
 def test_query_rejects_candidate_filter_for_region_mode() -> None:
     catalog, observations = _catalog()
     with pytest.raises(QueryError, match="CANDIDATE_IDS_MODE_INVALID"):
