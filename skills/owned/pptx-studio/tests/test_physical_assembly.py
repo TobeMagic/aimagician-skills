@@ -40,6 +40,7 @@ from window_pptx.physical_assembly import (
     _SourcePackageContext,
     _build_source_graph,
     _adapt_slide_text,
+    _auto_authorize_governed_value,
     _apply_governed_style_clones,
     _cover_crop_values,
     _discover_picture_slots,
@@ -78,6 +79,16 @@ DML_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
 def test_semantic_character_count_ignores_template_layout_whitespace() -> None:
     assert _semantic_character_count("深入" + (" " * 23) + "临床科室") == 6
     assert _semantic_character_count("A\nB\tC") == 3
+
+
+def test_unbound_short_integer_template_marker_is_cleared_not_authorized() -> None:
+    replacement, fact_refs, connective_ref, mode = _auto_authorize_governed_value(
+        "1", facts={}, connective_copy={},
+    )
+    assert replacement == ""
+    assert fact_refs == ()
+    assert connective_ref == ""
+    assert mode == "source-decoration-numeric"
 
 
 def _fit_policy_slide_xml(*, fit_node: str = "spAutoFit") -> bytes:
