@@ -16,6 +16,7 @@ from .curation import (
 )
 from .composition import CompositionError, compile_composition, composition_plan_sha256, style_profile, style_signature
 from .adaptation import AdaptationError, compile_adaptation
+from .brief_binding import BriefBindingError, compile_outline_bindings
 
 __all__ = [
     "ACTIVE_GAOJIE_CATEGORIES",
@@ -26,8 +27,10 @@ __all__ = [
     "recover_curation",
     "verify_curation",
     "AdaptationError",
+    "BriefBindingError",
     "CompositionError",
     "compile_adaptation",
+    "compile_outline_bindings",
     "compile_composition",
     "composition_plan_sha256",
     "style_signature",

@@ -167,8 +167,20 @@ placeholder values only with query-result values):
 Compile a composition plan, then run the native-capacity preflight, and only
 then write the adaptation plan. The model may return
 only candidate IDs, selected IDs, roles, fact IDs, asset IDs and selection
-reasons. It may not output raw text as a visual decision, paths, coordinates,
+reasons. Approved client copy belongs only in the separate content outline,
+never as a visual implementation decision. It may not output paths, coordinates,
 fonts, colours, CSS/HTML, code, OOXML or post-assembly repairs.
+
+For normal client work, do **not** hand-map `region_id` and `shape_id`. Write a
+small `content-outline.v1.json` instead: it has only `schema_version` and
+`slides`; each slide has `slide_id` and an ordered `facts` list; every fact is
+`{"value":"approved client copy","semantic_role":"title|label|metric|body|any"}`.
+The `bind-outline` command chooses only unused certified native slots from the
+preflight, prefers the requested semantic role, applies the exact native
+capacity, generates stable fact IDs, and returns a strict adaptation request.
+It fails on an overflow or an unavailable slot; it never truncates, duplicates
+or silently falls back to a template's sample copy. Then run `adapt` on that
+generated adaptation request.
 
 Every replacement must fit a certified region. If approved copy is too long,
 shorten it from the source or split the narrative; never reshape the slide.
