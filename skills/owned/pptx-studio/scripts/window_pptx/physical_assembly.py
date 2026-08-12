@@ -3707,6 +3707,16 @@ def _auto_authorize_governed_value(
             f"GOVERNED_CONTENT_AUTHORITY_AMBIGUOUS: {source_text}"
         )
 
+    # A one- or two-digit isolated literal in an embedded governed-content
+    # surface is a certified-template decoration (commonly a page marker), not
+    # client data. Handle it before numeric matching: otherwise every genuine
+    # customer value containing that digit makes the marker ambiguous. It must
+    # not survive into a client deliverable. Longer, decimal, percent, signed
+    # and all fact-matched numeric source content continues through the
+    # fail-closed authority checks below.
+    if re.fullmatch(r"[0-9]{1,2}", source_text):
+        return "", (), "", "source-decoration-numeric"
+
     if _decimal_literal(source_text) is not None:
         for scalar_only, mode in (
             (True, "source-numeric-scalar"),
@@ -3740,15 +3750,6 @@ def _auto_authorize_governed_value(
                     f"GOVERNED_CONTENT_NUMERIC_AUTHORITY_AMBIGUOUS: {source_text}"
                 )
 
-        # A one- or two-digit isolated literal with no authoritative fact is a
-        # certified-template decoration (commonly a page marker), not client
-        # data. It must not survive into a client deliverable, but treating it
-        # as a numeric fact would spuriously collide with every real number
-        # containing that digit. Clear this narrow residue class; all longer,
-        # decimal, percent, signed or matched numeric source content remains
-        # fail-closed above.
-        if re.fullmatch(r"[0-9]{1,2}", source_text):
-            return "", (), "", "source-decoration-numeric"
 
     alias = _GOVERNED_CONNECTIVE_ALIASES.get(source_text)
     if alias is not None:
