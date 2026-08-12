@@ -75,7 +75,7 @@ def render_index_from_asset_index(path: Path) -> dict[str, dict[str, Any]]:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "query", "compose", "preflight", "bind-outline", "adapt", "assemble", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
+    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "refresh-render-index", "rebuild-catalog", "query", "compose", "preflight", "bind-outline", "adapt", "assemble", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--archive-root", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
@@ -132,6 +132,35 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
     if args.command == "recover":
         result = recover_curation(manifest, args.source_root, archive_root=args.archive_root, apply=args.apply)
         return result
+    if args.command == "refresh-render-index":
+        if args.render_index is None or args.evidence_root is None:
+            raise ValueError("RENDER_ARGUMENT_REQUIRED")
+        # A curated private library may receive a user-authorized core template
+        # after its initial archive transaction.  This command never moves or
+        # deletes sources; it simply extends hash-bound render evidence for the
+        # explicitly declared active tree.
+        from pptx_studio.catalog import _safe_source_root
+
+        _safe_source_root(args.source_root, ACTIVE_GAOJIE_CATEGORIES)
+        existing = _read_json(args.render_index).get("pages", {})
+        if not isinstance(existing, dict):
+            raise ValueError("RENDER_INDEX_INVALID")
+        completed = complete_render_index(
+            args.source_root, existing_index=existing, evidence_root=args.evidence_root,
+        )
+        _write_json(args.render_index, completed)
+        return {"status": "PASS", "render_index": str(args.render_index), "summary": {"rendered_package_count": completed["rendered_package_count"], "page_count": completed["page_count"]}}
+    if args.command == "rebuild-catalog":
+        if args.render_index is None or args.catalog_output is None:
+            raise ValueError("COMPILE_ARGUMENT_REQUIRED")
+        # Same no-mutation maintenance boundary as refresh-render-index.
+        render_payload = _read_json(args.render_index)
+        pages = render_payload.get("pages")
+        if not isinstance(pages, dict):
+            raise ValueError("RENDER_INDEX_INVALID")
+        catalog = compile_catalog(args.source_root, render_index=pages)
+        _write_json(args.catalog_output, catalog)
+        return {"status": "PASS", "catalog": str(args.catalog_output), "summary": {"deck_count": catalog["deck_count"], "page_count": catalog["page_count"], "region_count": catalog["region_count"], "catalog_sha256": __import__("hashlib").sha256(serialize_catalog(catalog).encode("utf-8")).hexdigest()}}
     if args.command == "render":
         if args.asset_index is None or args.render_index is None or args.evidence_root is None:
             raise ValueError("RENDER_ARGUMENT_REQUIRED")
