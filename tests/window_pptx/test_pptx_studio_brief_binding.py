@@ -30,7 +30,10 @@ def test_outline_binding_uses_native_capacity_and_semantic_role() -> None:
 
 
 def test_outline_binding_rejects_overflow_without_guessing() -> None:
-    with pytest.raises(BriefBindingError, match="OUTLINE_FACT_NO_FITTING_SLOT"):
+    with pytest.raises(
+        BriefBindingError,
+        match=r"OUTLINE_FACT_NO_FITTING_SLOT:slide_id=s01:ordinal=1:requested_chars=[0-9]+:remaining_slots=body:24x1,metric:5x1,title:8x1",
+    ):
         compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
             {"value": "这是一段明确超过所有认证槽位容量且不得截断的客户文字内容", "semantic_role": "body"},
         ]}]}, preflight=_preflight())

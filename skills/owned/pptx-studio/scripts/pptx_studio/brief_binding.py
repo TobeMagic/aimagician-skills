@@ -57,6 +57,26 @@ def _preflight_regions(preflight: Mapping[str, Any]) -> dict[str, list[dict[str,
     return result
 
 
+def _remaining_capacity_summary(regions: list[dict[str, Any]]) -> str:
+    """Return a compact public repair hint without leaking template copy.
+
+    A weak model cannot reliably infer why a fact failed from its ordinal
+    alone.  Report only certified role/capacity aggregates, never source text,
+    shape IDs, geometry or private paths.  This is sufficient for it to remove
+    a low-priority fact, shorten an approved label, or split the narrative.
+    """
+
+    buckets: dict[tuple[str, int], int] = {}
+    for region in regions:
+        capacity = int(region["capacity"])
+        for role in sorted(str(item) for item in region["semantic_roles"]):
+            buckets[(role, capacity)] = buckets.get((role, capacity), 0) + 1
+    return ",".join(
+        f"{role}:{capacity}x{count}"
+        for (role, capacity), count in sorted(buckets.items())
+    ) or "none"
+
+
 def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[str, Any]) -> dict[str, Any]:
     """Return a strict v1 adaptation request from a semantic outline.
 
@@ -113,7 +133,9 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
                     fitting = exact
             if not fitting:
                 raise BriefBindingError(
-                    f"OUTLINE_FACT_NO_FITTING_SLOT:slide_id={slide_id}:ordinal={ordinal}:requested_chars={required}"
+                    "OUTLINE_FACT_NO_FITTING_SLOT"
+                    f":slide_id={slide_id}:ordinal={ordinal}:requested_chars={required}"
+                    f":remaining_slots={_remaining_capacity_summary(available)}"
                 )
             chosen = min(fitting, key=lambda region: (region["capacity"], region["region_id"]))
             available.remove(chosen)
