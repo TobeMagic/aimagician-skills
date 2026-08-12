@@ -58,7 +58,7 @@ The operator must provide these environment variables before production:
 `PPTX_STUDIO_SKILL_ROOT`, `PPTX_STUDIO_MANAGER`,
 `PPTX_STUDIO_PRIVATE_ROOT` and `PPTX_STUDIO_PRIVATE_SOURCE_ROOT`. The manager must equal
 `$PPTX_STUDIO_SKILL_ROOT/scripts/manage_pptx_studio_library.py`; the catalog
-is `$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/catalogs/gaojie-active.v3.json`
+is `$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/catalogs/gaojie-active.v4.json`
 and the observation index is
 `$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/vision/gaojie-active-observations.v1.json`; the physical certified-category root is
 `$PPTX_STUDIO_PRIVATE_SOURCE_ROOT` (currently `sources/gaojie` below the
