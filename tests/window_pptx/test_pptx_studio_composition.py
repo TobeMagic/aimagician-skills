@@ -127,6 +127,18 @@ def test_component_requires_safe_region_and_explicit_signature() -> None:
     assert plan["slides"][0]["source"]["region_ids"] == ["region_a_title"]
 
 
+def test_page_assembly_rejects_repeated_physical_source_before_materialization() -> None:
+    catalog, observations, signatures = _fixture()
+    request = _request(signatures, strategy="page_assembly")
+    request["slides"][1].update({  # type: ignore[index]
+        "role": "cover",
+        "candidate_ids": ["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"],
+        "selected_candidate_id": "page_aaaaaaaaaaaaaaaaaaaaaaaa_001",
+    })
+    with pytest.raises(CompositionError, match="PAGE_SOURCE_DUPLICATE"):
+        compile_composition(catalog, observations=observations, request=request)
+
+
 def test_cli_composition_uses_compiled_json_only(tmp_path: Path) -> None:
     catalog, observations, signatures = _fixture()
     paths = {name: tmp_path / f"{name}.json" for name in ("manifest", "catalog", "observations", "request", "output")}

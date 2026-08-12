@@ -45,6 +45,7 @@
   artifact and none counts toward acceptance. The next run must consume the
   native-capacity preflight result.
 - The next clean run supersedes `/tmp/pptx-studio-phase53-client-preflight.lsOLo9`: it is a valid failed-author evidence pack, not a release artifact. Its failure is fixed at the public interface instead of by instructing the model to inspect hidden implementation.
+- `/tmp/pptx-studio-phase53-client-compose.LNv0tS` is also failed-author evidence only: it reached governed adaptation but had no valid PPTX or release claim after a duplicate physical-page rejection. The next clean run must have a unique selected page per slide and preserve nonempty customer content.
 
 ## Delivery Contract
 

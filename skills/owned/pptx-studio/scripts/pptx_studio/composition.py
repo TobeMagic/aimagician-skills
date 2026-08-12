@@ -102,6 +102,7 @@ def _validate_request(request: Mapping[str, Any]) -> tuple[str, Mapping[str, Any
     if not isinstance(slides, list) or not slides:
         raise CompositionError("SLIDES_INVALID")
     seen: set[str] = set()
+    selected_page_ids: set[str] = set()
     for item in slides:
         if not isinstance(item, Mapping) or set(item) != _SLIDE_FIELDS:
             raise CompositionError("SLIDE_SCHEMA_INVALID")
@@ -117,6 +118,14 @@ def _validate_request(request: Mapping[str, Any]) -> tuple[str, Mapping[str, Any
             raise CompositionError("CANDIDATE_IDS_INVALID")
         if len(set(candidates)) != len(candidates) or not isinstance(selected, str) or selected not in candidates:
             raise CompositionError("CANDIDATE_SELECTION_INVALID")
+        # Physical assembly imports a certified source page once. Reusing one
+        # page ID would fail later and also makes a deck visibly repetitive, so
+        # reject it while the agent still has the candidate lists to choose a
+        # distinct alternative.
+        if strategy != "component_assembly":
+            if selected in selected_page_ids:
+                raise CompositionError("PAGE_SOURCE_DUPLICATE")
+            selected_page_ids.add(selected)
         if type(capacity) is not int or capacity < 0:
             raise CompositionError("SLIDE_CAPACITY_INVALID")
     return strategy, art, slides

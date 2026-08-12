@@ -75,6 +75,12 @@ Use `page_assembly` for a normal mixed-role business deck. Preserve query
 results in client-local `work/` evidence; never copy a catalog, preview or
 source package there.
 
+For `page_assembly`, every `selected_candidate_id` must be unique across the
+deck. The physical importer intentionally rejects a repeated source page;
+when a page type recurs (for example section dividers or data cards), select a
+different returned candidate for each occurrence. Treat
+`PAGE_SOURCE_DUPLICATE` as a composition correction, not an assembly retry.
+
 Every returned candidate also has `page_id` and a certified
 `style_signature`. Choose the cover candidate's `page_id` as
 `art_direction.anchor_page_id`; copy its exact `style_signature` into
@@ -118,6 +124,11 @@ include all of `slide_id`, `operation`, `region_id`, `shape_id`, `fact_id` and
 `asset_id`, using `null` for fields inapplicable to that operation. Compile it
 with `adapt` before `assemble`. Catalog capacity is a retrieval hint only and
 must never be used in place of the native-capacity preflight.
+
+Each fact record is exactly `{"fact_id":"...","value":"..."}`. Empty
+values are allowed only to clear an unused native text slot; they never
+substitute for customer content. Before `assemble`, confirm that every
+customer-required title, number and conclusion still has one nonempty binding.
 
 ## 4. Assemble, inspect and deliver
 
