@@ -55,12 +55,14 @@ bounded safe region.
 ### Retrieval command contract
 
 The operator must provide these environment variables before production:
-`PPTX_STUDIO_SKILL_ROOT`, `PPTX_STUDIO_MANAGER` and
-`PPTX_STUDIO_PRIVATE_ROOT`. The manager must equal
+`PPTX_STUDIO_SKILL_ROOT`, `PPTX_STUDIO_MANAGER`,
+`PPTX_STUDIO_PRIVATE_ROOT` and `PPTX_STUDIO_PRIVATE_SOURCE_ROOT`. The manager must equal
 `$PPTX_STUDIO_SKILL_ROOT/scripts/manage_pptx_studio_library.py`; the catalog
 is `$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/catalogs/gaojie-active.v2.json`
 and the observation index is
-`$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/vision/gaojie-active-observations.v1.json`.
+`$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/vision/gaojie-active-observations.v1.json`; the physical certified-category root is
+`$PPTX_STUDIO_PRIVATE_SOURCE_ROOT` (currently `sources/gaojie` below the
+private library root).
 At the start of a run, verify those exact paths with `test -f` or stop with
 `RUNTIME_UNAVAILABLE`. Do not discover them by scanning the filesystem. Never
 write a private path, catalog content, preview or source package into the
@@ -126,7 +128,7 @@ shorten it from the source or split the narrative; never reshape the slide.
 `art_direction` and `slides`; every slide has only `slide_id`, `role`,
 `candidate_ids`, `selected_candidate_id` and `minimum_capacity`. Compile it
 with `compose`, then invoke `preflight` with the composition plan, catalog,
-private source root and `work/native-capacity-preflight.json`. This value-free
+`$PPTX_STUDIO_PRIVATE_SOURCE_ROOT` and `work/native-capacity-preflight.json`. This value-free
 result is the authority for every selected `region_id`: bind text only when it
 fits that region's `native_capacity` (and every listed `shape_slots` capacity).
 Split the narrative across distinct selected regions/pages when it does not;
