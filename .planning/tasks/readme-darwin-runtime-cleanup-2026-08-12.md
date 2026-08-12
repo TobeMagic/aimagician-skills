@@ -60,7 +60,7 @@ Fast-forward to the latest master baseline, work directly on master, inspect rem
 - [x] Re-run Darwin static audits and record accepted deltas.
 - [x] Remove only current generated caches and confirm no `skills/*/evals` remains.
 - [x] Run local verification and independent OpenCode audit against the frozen implementation revision.
-- [ ] Commit and push `master`; synchronize Codex/OpenCode and verify owner-only installation.
+- [x] Commit and push `master`; synchronize Codex/OpenCode and verify owner-only installation.
 
 ## Evidence
 
@@ -74,7 +74,7 @@ Fast-forward to the latest master baseline, work directly on master, inspect rem
 
 ## Final Decision
 
-Implementation requirements are complete. The only remaining delivery action is the explicitly authorized master commit/push and owner-only Codex/OpenCode synchronization; those actions are kept separate from the audited implementation record.
+Implementation and delivery requirements are complete. Commit `2169c88` is pushed to `origin/master`, and the managed Codex/OpenCode targets both report a healthy owner-only set of 24 active Skills. The independent audit reviewed the frozen implementation revision; the remaining closure records are metadata-only.
 
 ## Independent Completion Audit
 
@@ -99,4 +99,4 @@ Implementation requirements are complete. The only remaining delivery action is 
 
 ## Current Checkpoint
 
-Implementation and independent audit are complete. The first audit rejected a temporary 27-count claim; the empty untracked placeholders were removed, count-bearing assets were regenerated at 24, and the second audit passed. Commit/push and owner-only Codex/OpenCode synchronization remain the next delivery action.
+Implementation, independent audit, commit/push, and owner-only Codex/OpenCode synchronization are complete. The first audit rejected a temporary 27-count claim; the empty untracked placeholders were removed, count-bearing assets were regenerated at 24, and the second audit passed. Commit `2169c88` is pushed to `origin/master`; both managed targets report 24 detected and 24 managed active Skills with no issues.

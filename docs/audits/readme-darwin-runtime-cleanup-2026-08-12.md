@@ -3,7 +3,7 @@
 **Status:** Complete  
 **Task:** `readme-darwin-runtime-cleanup-2026-08-12`  
 **Source request:** `USR-20260812-001`  
-**Reviewed implementation point:** master worktree at `047627257cbfb617a324f0e9e704789c9533edd0` before metadata closure records  
+**Reviewed implementation point:** pushed master implementation commit `2169c88` (the exact frozen worktree content reviewed before commit)
 **Parent context:** v6.1 Phase 49; Window-PPTX behavior was explicitly out of scope.
 
 ## Outcome
@@ -70,14 +70,18 @@ These scores are static quality evidence only; behavioral tests, source inspecti
 **Fallback reason:** DeepSeek rate-limit response during the second audit; the runner selected the configured Agnes fallback.  
 **Session:** `ses_0099b3604ffeFzWHlpGCI2n1Go`  
 **Run status:** PASS  
-**Review point:** strict read-only `--review-worktree` against the master implementation worktree at `047627257cbfb617a324f0e9e704789c9533edd0`  
+**Review point:** strict read-only `--review-worktree` against the implementation worktree at `047627257cbfb617a324f0e9e704789c9533edd0`, committed without content changes as `2169c88`
 **Controller spot-check:** Local image inspection, Agnes visual evidence, browser assertions, ffmpeg decode, package exclusion check, and source/README count parity.  
 **Requirement matrix:** PASS  
 **Blocker:** None  
 **Important:** None  
 **Nitpick:** README asset paths intentionally differ by document location: root uses `./docs/assets`, English README uses `./assets`; both resolve correctly.
 
-The audit loaded `aimagician-superpower`, `github-readme-highstar`, `interface-design`, `skill-optimizer`, `cli-agent-delegator`, and `vision-analysis` before substantive review. It confirmed no Window-PPTX diff and approved commit/push and owner-only target synchronization as the remaining delivery actions.
+The audit loaded `aimagician-superpower`, `github-readme-highstar`, `interface-design`, `skill-optimizer`, `cli-agent-delegator`, and `vision-analysis` before substantive review. It confirmed no Window-PPTX diff, and the controller subsequently completed the approved commit/push and owner-only target synchronization.
+
+## Delivery
+
+`2169c88` was pushed to `origin/master`. The post-commit owner-only synchronization and target health checks are recorded by the controller after this audit; no non-owned Skill is part of the source set.
 
 ## Scope Closure
 
