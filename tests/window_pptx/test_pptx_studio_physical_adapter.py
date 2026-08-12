@@ -207,6 +207,25 @@ def test_adapter_rejects_value_plan_drift(tmp_path: Path) -> None:
         )
 
 
+def test_adapter_rejects_sparse_customer_binding_for_dense_declared_role(tmp_path: Path) -> None:
+    """A rich page role cannot release with only a title and one detail."""
+
+    source_root, catalog, composition, request, _replacement = _source_pack(tmp_path)
+    composition["slides"][0]["role"] = "five-item"  # type: ignore[index]
+    adaptation = compile_adaptation(composition, catalog=catalog, request=request)
+    with pytest.raises(
+        PhysicalAdapterError,
+        match=(
+            r"CLIENT_BINDING_COMPLETENESS_INSUFFICIENT:slide_id=slide-01:role=five-item:"
+            r"bound_distinct_facts=2:required_distinct_facts=6"
+        ),
+    ):
+        compile_physical_adapter(
+            composition, adaptation, request, catalog=catalog,
+            private_source_root=source_root, workspace=tmp_path / "stage",
+        )
+
+
 def test_adapter_reports_actionable_native_slot_capacity_mismatch(tmp_path: Path) -> None:
     source_root, catalog, composition, request, _replacement = _source_pack(tmp_path)
     # Deliberately let catalog retrieval accept a value that the actual native

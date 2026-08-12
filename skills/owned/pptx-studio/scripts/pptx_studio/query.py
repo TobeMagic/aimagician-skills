@@ -19,6 +19,12 @@ _INSTITUTIONAL_FINANCE_EXCLUSIONS = (
     "robot", "smartphone", "app screenshots", "product showcase",
     "warehouse", "energy", "fuel cells", "nature journal", "solar cells",
     "gaming", "fashion",
+    # A finance/institutional brief without supplied imagery must not inherit
+    # an unrelated stock-photo subject merely because its layout is usable.
+    # Neutral abstract geometry remains available; scenic/photo narratives do
+    # not.  This is deliberately a suitability constraint, not a deletion of
+    # the private library: those pages remain queryable for suitable briefs.
+    "landscape", "mountain", "clouds", "sailboat", "scenery", "nature-themed",
 )
 # User-confirmed source categories are stronger evidence of a page's intended
 # structural role than an OCR/vision model's free-form description.  Visual

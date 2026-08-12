@@ -84,7 +84,9 @@ and observation index:
 Set `suitability` to `institutional-finance` for a hospital, government,
 finance or institutional report; this excludes pages whose certified visual
 observation identifies anime/characters, metaverse/robot imagery, mobile-app
-mockups, gaming, energy-product or similarly incompatible subject matter.
+mockups, gaming, energy-product, or unsupported scenic stock-photo subjects
+(mountains, clouds, sailboats and landscapes), as well as similarly
+incompatible material.
 Use `general` only when the locked brief genuinely permits such material. Use
 only returned `candidate_id` values in the composition request. The role
 vocabulary includes `cover`, `contents`, `section`, `closing`, `one-item`,
@@ -151,6 +153,13 @@ Each fact record is exactly `{"fact_id":"...","value":"..."}`. Empty
 values are allowed only to clear an unused native text slot; they never
 substitute for customer content. Before `assemble`, confirm that every
 customer-required title, number and conclusion still has one nonempty binding.
+The compiler also enforces a role-specific minimum of *distinct* client facts:
+cover 2, contents 5, one/two-item 3, three/four/five/six-item 4/5/6/7,
+multi-item 6, team 4, timeline/process/business-model 5.  This is a release
+gate, not a suggestion: if `CLIENT_BINDING_COMPLETENESS_INSUFFICIENT` is
+returned, select a lower-capacity candidate or provide/bind the missing
+client facts.  Never satisfy it by repeating a title or retaining template
+sample copy.
 
 ## 4. Assemble, inspect and deliver
 
@@ -179,8 +188,8 @@ Release only after all gates pass:
 
 - output has complete physical page/slot lineage and opens as editable PPTX;
 - package integrity, relationships, bounds, text overflow, tiny text,
-  placeholder/source residue, overlap, density, repetition, image crop and
-  style coherence checks pass;
+  placeholder/source residue, binding completeness, overlap, density,
+  repetition, image crop and style coherence checks pass;
 - LibreOffice opens the deck; PowerPoint COM is optional certification only;
 - a fresh visual reviewer that did not author/select the deck reviews rendered
   pages against the locked rubric. Do not self-score or self-approve release.

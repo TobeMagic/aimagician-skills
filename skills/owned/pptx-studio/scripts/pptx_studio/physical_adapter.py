@@ -59,6 +59,45 @@ _TEMPLATE_BRAND_RE = re.compile(
     re.IGNORECASE,
 )
 
+# A page can be technically editable yet visually fail if a high-capacity
+# template is populated with only a heading and the remaining cards, steps or
+# chart labels are cleared.  These minima deliberately count *distinct client
+# facts*, rather than text boxes: repeating one sentence into six cards must
+# not pass as a complete six-item page.  Sparse navigational pages retain safe
+# low minima, while a semantic content role must demonstrate that its intended
+# information structure was actually supplied by the client brief.
+_MIN_DISTINCT_CLIENT_FACTS_BY_ROLE: dict[str, int] = {
+    "cover": 2,
+    "contents": 5,
+    "section": 2,
+    "title": 2,
+    "closing": 2,
+    "one-item": 3,
+    "two-item": 3,
+    "three-item": 4,
+    "four-item": 5,
+    "five-item": 6,
+    "six-item": 7,
+    "multi-item": 6,
+    "team": 4,
+    "awards": 4,
+    "timeline": 5,
+    "process": 5,
+    "flow": 5,
+    "business-model": 5,
+    "comparison": 5,
+    "matrix": 5,
+    "roadmap": 5,
+    "data": 4,
+    "table": 4,
+}
+
+
+def _minimum_distinct_client_facts(role: object) -> int:
+    """Return the release floor for a declared semantic page role."""
+
+    return _MIN_DISTINCT_CLIENT_FACTS_BY_ROLE.get(str(role), 2)
+
 
 def _unbound_template_clear_reason(value: str, *, occurrence_count: int = 1) -> str | None:
     """Classify only safe, non-client source copy for compiler-owned clearing."""
@@ -588,11 +627,33 @@ def compile_physical_adapter(
                 slide_lineage["asset_bindings"].append({"shape_id": slot_id, "asset_id": asset_id, "asset_sha256": operation.get("asset_sha256")})
             else:
                 raise PhysicalAdapterError("ADAPTATION_OPERATION_UNKNOWN")
+        distinct_client_fact_ids = {
+            str(binding["fact_id"])
+            for binding in slide_lineage["text_bindings"]
+            if isinstance(binding, Mapping) and isinstance(binding.get("fact_id"), str)
+        }
+        declared_role = str(selected.get("role", "content"))
+        required_client_fact_count = _minimum_distinct_client_facts(declared_role)
+        slide_lineage["binding_completeness"] = {
+            "declared_role": declared_role,
+            "distinct_client_fact_count": len(distinct_client_fact_ids),
+            "required_distinct_client_fact_count": required_client_fact_count,
+            "status": "PASS" if len(distinct_client_fact_ids) >= required_client_fact_count else "FAIL",
+        }
+        if len(distinct_client_fact_ids) < required_client_fact_count:
+            # Intentionally expose IDs and counts only: source template copy,
+            # client facts and private source paths are not diagnostics.
+            raise PhysicalAdapterError(
+                "CLIENT_BINDING_COMPLETENESS_INSUFFICIENT"
+                f":slide_id={slide_id}:role={declared_role}"
+                f":bound_distinct_facts={len(distinct_client_fact_ids)}"
+                f":required_distinct_facts={required_client_fact_count}"
+            )
         targets.append(AssemblyTargetSlide(
             ordinal=ordinal,
             page_template=template,
             bindings=bindings,
-            narrative_role=str(selected.get("role", "content")),
+            narrative_role=declared_role,
             title="",
             headline="",
             text_binding_specs=specs,

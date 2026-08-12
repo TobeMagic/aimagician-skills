@@ -93,11 +93,20 @@ def test_query_excludes_missing_or_mismatched_observation() -> None:
     assert result["candidates"] == []
 
 
-def test_institutional_finance_query_excludes_anime_or_technology_subjects() -> None:
+@pytest.mark.parametrize(
+    ("semantic_tags", "visual_style"),
+    [
+        (["brand-characters", "company-history"], ["anime", "corporate-blue"]),
+        (["landscape", "sailboat", "template"], ["nature-themed", "corporate"]),
+    ],
+)
+def test_institutional_finance_query_excludes_incompatible_visual_subjects(
+    semantic_tags: list[str], visual_style: list[str],
+) -> None:
     catalog, observations = _catalog()
     observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"].update({
-        "semantic_tags": ["brand-characters", "company-history"],
-        "visual_style": ["anime", "corporate-blue"],
+        "semantic_tags": semantic_tags,
+        "visual_style": visual_style,
     })
     result = query_catalog(
         catalog,
