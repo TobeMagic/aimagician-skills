@@ -96,6 +96,11 @@ Use `page_assembly` for a normal mixed-role business deck. Preserve query
 results in client-local `work/` evidence; never copy a catalog, preview or
 source package there.
 
+For page retrieval, the catalog already excludes a candidate whose independent
+native text-region count is below that role's client-fact floor. Treat a
+`NO_MATCH` as a cue to select a lower-cardinality narrative form or split the
+message; never relabel a one-textbox page as a five-item or dashboard page.
+
 For `page_assembly`, every `selected_candidate_id` must be unique across the
 deck. The physical importer intentionally rejects a repeated source page;
 when a page type recurs (for example section dividers or data cards), select a
