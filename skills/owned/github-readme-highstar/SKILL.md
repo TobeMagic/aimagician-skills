@@ -1,10 +1,6 @@
 ---
 name: github-readme-highstar
-description: |
-  生成或重构“高星仓库风格”的 GitHub README，重点是层级分明、视觉元素统一、信息入口明确。
-  当用户提到“README 规范化”“高质量项目首页”“万级 star 风格 README”“模板化仓库说明”、
-  “README 封面 / Banner / Hero”“Github 项目品牌视觉”“产品展示”“README Demo 视频 / GIF 动态封面”时触发。
-  适用于开源项目 README、合集型 README、个人项目主页，以及仓库首屏视觉与产品媒体集成。
+description: Use when creating or restructuring a GitHub README, repository homepage, README cover, Banner, Hero, README 封面 / Banner / Hero, product showcase, Github 项目品牌视觉, Launcher screen, or README demo GIF/video; do not use for unrelated Markdown documentation without repository presentation or branding work.
 compatibility:
   tools:
     - bash
@@ -58,22 +54,44 @@ metadata:
 
 ## Workflow
 
-1. 信息盘点
-   - 明确项目定位（一句话）
-   - 明确目标读者（使用者 / 贡献者 / 面试官）
-   - 收集最关键命令（安装、运行、验证）
-   - 从代码、测试和当前文档核对产品名、版本、能力、Launcher、链接与已交付边界
-2. 结构设计
-   - 先定目录结构和锚点，再填内容
-   - 长文档必须有 TOC（Table of Contents）
-3. 视觉统一
-   - 顶部优先放经过产品理解和视觉验证的封面图
-   - 仅保留少量高价值徽章（版本、许可证、CI）
-   - 用真实截图、流程、表格或对照替代冗长段落
-4. 入口优化
-   - 顶部给出快速开始路径
-   - 中部给出功能与架构入口
-   - 尾部给出贡献、许可证、联系方式
+### 1. Evidence Pass
+
+- 明确项目定位、目标读者和首屏要支持的决策。
+- 从代码、测试和当前文档核对产品名、版本、能力、Launcher、命令、链接与已交付边界。
+- 区分当前能力、实验能力、计划内容和历史内容；不以旧 README 作为唯一事实来源。
+
+**CHECKPOINT:** 在写文案或生成媒体前，形成产品事实清单和一条可验证的主信息。
+
+### 2. Structure Pass
+
+- 先定标题层级、目录锚点和快速开始，再填正文。
+- 长文档必须有 TOC；安装、第一条可运行命令和核心用例应在首屏路径内。
+- 用真实命令、流程、表格、截图或产品状态替代没有信息增量的营销段落。
+
+### 3. Visual Route
+
+- README Cover、Banner、Hero、Poster、Launcher 或 Demo 请求先路由到 `interface-design`。
+- 视觉 Skill 与本 Skill 共用同一份事实清单和 visual brief，不能分别编造产品故事。
+- 静态主视觉优先保证缩放可读；动态媒体必须有可复现源、poster、尺寸和体积预算。
+
+**CHECKPOINT:** 视觉方向、最终媒体格式、相对路径、alt 文本和静态 fallback 未锁定前，不把图片或 GIF 接入 README。
+
+### 4. Integration And QA
+
+- 顶部提供项目身份、定位、少量高价值徽章和快速开始入口。
+- 中部提供能力、架构、使用示例和目标边界；尾部提供贡献、许可证和联系方式。
+- 检查 Markdown 锚点、相对路径、命令可复制性、浅色/深色背景、完整尺寸和 GitHub 缩放尺寸。
+
+**CHECKPOINT:** 只有当静态 README 在没有播放动态媒体时仍能完整表达产品，且所有可见事实都有来源，才允许交付。
+
+## Failure Handling
+
+| Trigger | First Response | Fallback |
+|---|---|---|
+| 产品事实、版本或命令无法从当前代码和文档确认 | 停止宣传性文案，标记未知并请求确认 | 只交付结构和待补证据清单 |
+| 浏览器、媒体编码或视觉检查工具不可用 | 验证 HTML 源和静态 poster，记录未运行的派生物 | 保留可复现源，禁止声称 GIF/视频已通过 |
+| 动态媒体体积过大、首帧不可读或路径失效 | 修正源、尺寸或编码后重跑 | 仅使用静态 hero，保留动态源待后续生成 |
+| 用户要求的是原生 PPTX 而非 HTML 视觉 | 路由到 `window-pptx` 并停止 HTML 交付 | 输出 README 视觉 brief，不伪装成 PPTX |
 
 ## Repository Visual Workflow
 

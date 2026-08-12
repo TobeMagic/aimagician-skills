@@ -24,7 +24,7 @@ Cover embed example:
 
 ```md
 <p align="center">
-  <img src="./docs/assets/readme-cover.webp" alt="Project cover" width="100%" />
+  <img src="./docs/assets/skillbird-readme-hero.webp" alt="Skillbird local-first skill registry syncing an owned catalog to AI coding agents" width="100%" />
 </p>
 ```
 
@@ -73,5 +73,6 @@ Cover design guidance:
 - README cover exists and is referenced by a relative path.
 - README cover facts, version, commands, and visible UI match current source-of-truth evidence.
 - Cover remains readable at realistic GitHub column width and against light/dark page backgrounds.
+- A short repository-relative GIF may supplement the hero, but it never carries the only product proof.
 - Any linked video has a static poster and the README remains complete without playback.
 - README ends with contribution + license + contact entry.

@@ -560,3 +560,42 @@ engineering workflow.
 - Deleting user worktrees, untracked acceptance artifacts, source mirrors, or
   historical planning evidence.
 - Recording secrets, raw transcripts, or unverified claims in project memory.
+
+## USR-20260812-001: Master README visual upgrade, Darwin refinement, and repository cleanup
+
+**Status:** Accepted
+**Source:** User instruction on 2026-08-12 after plan discussion
+
+### Original Request
+
+Fast-forward the repository to the latest master baseline, continue work on the
+master branch, inspect remaining optimization opportunities and Darwin results,
+use image generation to improve the Skill README presentation, and simplify
+unused files or folders without weakening owned Skill capability or deleting
+valuable history.
+
+### Accepted Decisions
+
+- Use a fast-forward master strategy and work only in the clean master-sync
+  worktree; preserve the user's dirty Window-PPTX worktree.
+- Use a static generated hero plus a deterministic dynamic preview with a
+  repository-relative source and static fallback.
+- Optimize runtime noise and stale current documentation, but keep archived
+  Skills, planning records, quality evidence, and required runtime assets
+  recoverable.
+- Use the repository's `skill-optimizer` Darwin protocol rather than adding a
+  duplicate Darwin Skill.
+
+### Derived Requirements
+
+- README-01
+- README-02
+- SKILL-OPT-02
+- CLEAN-01
+- VERIFY-01
+
+### Exclusions
+
+- Window-PPTX behavior or private asset changes.
+- Reintroducing third-party installers or Skill-local evaluation corpora.
+- Deleting historical phase, audit, archive, or user-owned worktree data.

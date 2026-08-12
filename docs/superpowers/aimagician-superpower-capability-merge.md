@@ -54,7 +54,7 @@ The previous owned runtime contained one router plus nine short capability modul
 | Brainstorming, assumptions, option comparison, decomposition | `ideation-and-scope.md` |
 | Quick, phase, research, MVP, TDD, repair, review and ultra plans | `planning-modes.md` plus plan template and gate |
 | Agent roles, model routing, status and review order | `agent-orchestration.md` plus role prompts |
-| Sequential, autonomous, parallel and worktree execution | `execution-modes.md`; write lanes delegate to `parallel-worktree-pr-flow` |
+| Sequential, autonomous, parallel and worktree execution | `execution-modes.md`; independent lanes delegate to `agent-workstream-orchestrator` |
 | Root-cause debugging, waiting, pollution and forensics | `debugging-and-forensics.md` plus debugging scripts |
 | Tests, evals, UAT, validation and requirement evidence | `verification-and-uat.md` plus trace runtime |
 | Requirement audit, cleanup, learning, completion and handoff | `audit-and-closure.md` plus complete gate |

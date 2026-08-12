@@ -65,6 +65,8 @@ Classify the request before choosing a workflow. The default path is the shortes
 
 Escalate when any signal is present: unclear goal, multiple modules, public contract or schema change, data or security impact, deployment or production behavior, hard-to-reverse changes, cross-agent coordination, or the user explicitly requests review/audit. Downgrade when the same work has already been explored, scoped, or accepted.
 
+**CHECKPOINT:** Before editing, record the selected tier, objective, acceptance signal, allowed scope, and the one verification result that can prove completion. If the tier is unclear, discuss it before mutation.
+
 ## Adaptive Start And Resume Gate
 
 Run the full recovery gate for High work, phase/milestone work, resume/compaction/handoff, missing context, or uncertain repository state. Quick and bounded Standard work starts from the latest request and current local evidence; read only sources that can change the next action.
@@ -198,6 +200,8 @@ Inspect known local sources directly, but do not spend the main context window o
 
 Bring back findings that affect scope, dependencies, risk, UX, data, schedule, or acceptance. Resolve blocking ambiguity. Lock the specification, boundaries, assumptions, and implementation decisions before planning. If requirements change later, update and re-lock the specification first.
 
+**CHECKPOINT:** Do not enter implementation with a material unknown, an unlocked boundary, or a plan step that cannot be mapped to an accepted requirement or goal criterion.
+
 ### 6. Plan And Review
 
 Define the behavior contract, durable domain vocabulary, invariants, interfaces, failure semantics, and highest observable test seams. For meaningful design choices, compare at least two structurally different options before committing. Map every requirement ID to vertical slices and exact verification. Classify delivery as `Deployable` or `Non-deployable`; define LOCAL, CI/PREMERGE, risk-based PREVIEW, and POSTMERGE evidence, plus every `ONLINE_ONLY` exception and its failure response. Order dependency waves, define file scopes, checkpoints, migration, rollback or roll-forward, and integration. If one material uncertainty remains, route it to a disposable logic, integration, UI, or operations prototype with an evidence stop condition before production planning. For substantial work, use `cli-agent-delegator` to run a fresh independent plan reviewer; revise until no Blocker or Important finding remains.
@@ -221,6 +225,8 @@ Any `FAIL`, `NOT_RUN`, unresolved `Blocker`, or unresolved `Important` keeps the
 ### 10. Handoff And Complete
 
 Update durable state and summarize what changed, what passed, what was not verified, residual risk, current git state, and the exact next action. Quick/Standard work closes when the acceptance signal is verified and delivery is complete. High non-deployable work may close after its explicit `N/A` delivery fields and independent audit pass. Deployable work remains open after merge until the implementation merge SHA, deployed artifact match, required online checks, recovery status, and a fresh postmerge independent audit are recorded. A metadata-only planning closure commit may follow; identify it separately from the implementation artifact.
+
+**CHECKPOINT:** A green test is not completion by itself. Before claiming done, reconcile the original request, requirement or goal mapping, actual diff, user-visible result, audit findings, delivery state, and the next resumable checkpoint.
 
 ## Runtime Assistance
 

@@ -5,9 +5,9 @@ milestone_name: Window-PPTX Physical Template Assembly
 current_phase: 49
 current_phase_name: Physical Template Assembly and Work-Report Acceptance
 status: in_progress
-stopped_at: v6.1 Phase 49 evidence is accepted on pushed master f6dc1f2; workflow completion gate and terminal handoff are pending
-last_updated: "2026-08-11T12:20:00+08:00"
-last_activity: 2026-08-11
+stopped_at: v6.1 Phase 49 evidence is accepted; controlled off-phase repository maintenance `USR-20260812-001` is running on the synchronized master baseline
+last_updated: "2026-08-12T22:00:00+08:00"
+last_activity: 2026-08-12
 progress:
   total_phases: 51
   completed_phases: 46
@@ -26,7 +26,7 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v6.1 Phase 49 is complete on pushed master `f6dc1f2`.
+**Current focus:** v6.1 Phase 49 evidence is accepted. A controlled off-phase repository-maintenance task `USR-20260812-001` is updating the synchronized master baseline without changing Window-PPTX behavior.
 Its certified physical-page assembly passed clean-room generation, recursive
 OPC/editability QA, three independent blind reviews, fresh premerge approval,
 source/Codex/OpenCode install parity, and a fresh pushed-master completion
@@ -69,7 +69,7 @@ fully independent AI blind-review contexts for v6 acceptance.
 Milestone: v6.1 Window-PPTX Physical Template Assembly
 Current Phase: 49
 Current Phase Name: Physical Template Assembly and Work-Report Acceptance
-Status: In Progress — all acceptance evidence PASS; workflow completion gate pending on pushed master `f6dc1f2`
+Status: In Progress — all acceptance evidence PASS; workflow completion gate and this controlled maintenance task remain separately tracked
 Last Activity: 2026-08-11
 
 ### Preserved Control-Plane History

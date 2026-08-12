@@ -19,6 +19,16 @@
   <b><a href="#architecture">Architecture</a></b>
 </p>
 
+<p align="center">
+  <img src="./docs/assets/skillbird-readme-hero.webp" alt="Skillbird local-first skill registry syncing an owned catalog to AI coding agents" width="100%" />
+</p>
+
+<p align="center">
+  <img src="./docs/assets/skillbird-readme-demo.gif" alt="Skillbird demo showing category selection and synchronized agent targets" width="100%" />
+</p>
+
+<p align="center"><a href="./docs/assets/skillbird-readme-demo.html">Open the reproducible demo source</a></p>
+
 ---
 
 ## What It Is
@@ -216,7 +226,7 @@ node skills/owned/interface-design/scripts/export-html-deck-pptx.mjs --slides sl
 node skills/owned/interface-design/scripts/export-html-stage-pptx.mjs --html deck.html --out deck.pptx --mode fidelity
 ```
 
-The owned catalog currently contains 24 active Skills. Runtime packages contain only capability instructions, references, templates, and helpers; evaluation corpora live under `quality/skill-evals/` and are not installed. Full upstream source mirrors used during consolidation stay ignored under each Skill's `references/_external_repos/`; they are neither packaged nor installed. Project-specific preferences and resumable memory live under `.planning/`, outside general-purpose Skills. The distillation, optimization, HTML presentation, and YapCLI validation record is in [`docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md`](docs/audits/distillation-and-html-presentation-optimization-2026-07-27.md).
+The owned catalog currently contains 24 active Skills. Runtime packages contain only capability instructions, references, templates, and helpers; evaluation corpora live under `quality/skill-evals/` and are not installed. Full upstream source mirrors used during consolidation stay ignored under each Skill's `references/_external_repos/`; they are neither packaged nor installed. Project-specific preferences and resumable memory live under `.planning/`, outside general-purpose Skills. The distillation, optimization, HTML presentation, README visual, and Skillbird validation records are kept under `docs/audits/`.
 
 See [`docs/design/html-universal-design-capability-merge.md`](docs/design/html-universal-design-capability-merge.md) for the capability analysis and boundary decisions.
 

@@ -4,6 +4,11 @@ coverage/
 .claude/
 __pycache__/
 *.py[cod]
+.DS_Store
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
 .superpowers/
 skills/owned/*/references/_external_repos/
 .planning/references/

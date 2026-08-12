@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Skillbird README Demo</title>
+  <style>
+    :root {
+      --paper: #f6f1e7;
+      --ink: #172027;
+      --muted: #68757b;
+      --panel: #18232a;
+      --panel-2: #22313a;
+      --line: #3b4a52;
+      --cyan: #24c6d4;
+      --amber: #efb448;
+      --coral: #ef705e;
+      --white: #f7fbfb;
+      --progress: 0%;
+      --active: 0;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-width: 1600px;
+      min-height: 900px;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body { overflow: hidden; }
+
+    .stage {
+      position: relative;
+      width: 1600px;
+      height: 900px;
+      overflow: hidden;
+      background: var(--paper);
+    }
+
+    .stage::before,
+    .stage::after {
+      position: absolute;
+      content: "";
+      width: 260px;
+      height: 1px;
+      background: #d8d0c2;
+    }
+
+    .stage::before { top: 72px; left: 76px; }
+    .stage::after { right: 76px; bottom: 72px; }
+
+    .copy {
+      position: absolute;
+      top: 108px;
+      left: 92px;
+      width: 500px;
+    }
+
+    .eyebrow,
+    .micro,
+    .terminal-line,
+    .target-name {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      color: #68757b;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 24px 0 18px;
+      max-width: 460px;
+      font-size: 64px;
+      line-height: .98;
+      letter-spacing: -.04em;
+      font-weight: 800;
+    }
+
+    .lead {
+      margin: 0;
+      max-width: 410px;
+      color: var(--muted);
+      font-size: 22px;
+      line-height: 1.45;
+    }
+
+    .proof {
+      display: flex;
+      gap: 10px;
+      margin-top: 38px;
+      flex-wrap: wrap;
+      max-width: 430px;
+    }
+
+    .proof span {
+      border: 1px solid #c9c0b2;
+      padding: 9px 12px;
+      color: #425058;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 13px;
+      font-weight: 700;
+      background: #fbf8f2;
+    }
+
+    .board {
+      position: absolute;
+      top: 106px;
+      right: 82px;
+      width: 860px;
+      height: 690px;
+    }
+
+    .catalog {
+      position: absolute;
+      top: 70px;
+      left: 0;
+      width: 430px;
+      height: 556px;
+      border: 1px solid #43525a;
+      background: var(--panel);
+      box-shadow: 18px 20px 0 #ddd4c6;
+      transition: transform .35s ease;
+    }
+
+    .catalog.active { transform: translateY(-8px); }
+
+    .window-bar {
+      display: flex;
+      align-items: center;
+      height: 44px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--line);
+      color: #a7b3b7;
+      font-size: 12px;
+    }
+
+    .window-dots { display: flex; gap: 7px; margin-right: 14px; }
+    .window-dots i { display: block; width: 9px; height: 9px; border-radius: 50%; background: #607078; }
+    .window-dots i:nth-child(1) { background: var(--coral); }
+    .window-dots i:nth-child(2) { background: var(--amber); }
+    .window-dots i:nth-child(3) { background: var(--cyan); }
+
+    .catalog-body { padding: 24px; }
+
+    .catalog-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+
+    .catalog-heading strong { color: var(--white); font-size: 24px; }
+    .catalog-heading small { color: #91a0a5; font-family: monospace; font-size: 12px; }
+
+    .category {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 56px;
+      margin: 9px 0;
+      padding: 0 14px;
+      border: 1px solid #33434c;
+      color: #b8c4c6;
+      background: #1d2a31;
+      transition: border-color .25s ease, background-color .25s ease, color .25s ease;
+    }
+
+    .category::before {
+      content: "[]";
+      color: var(--cyan);
+      font-family: monospace;
+      font-weight: 700;
+    }
+
+    .category.active {
+      border-color: var(--amber);
+      color: var(--white);
+      background: #29353a;
+    }
+
+    .category.active::before { color: var(--amber); }
+
+    .category b { font-size: 15px; font-weight: 700; }
+    .category em { margin-left: auto; color: #819097; font-family: monospace; font-size: 12px; font-style: normal; }
+
+    .route {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 420px;
+      height: 690px;
+    }
+
+    .route-line {
+      position: absolute;
+      left: 0;
+      width: 90px;
+      height: 2px;
+      transform-origin: left center;
+      background: var(--line);
+      transition: background-color .3s ease, width .3s ease;
+    }
+
+    .route-line::after {
+      position: absolute;
+      right: -8px;
+      top: -4px;
+      content: ">";
+      color: inherit;
+      font-family: monospace;
+      font-weight: 700;
+    }
+
+    .route-line.live { width: 112px; background: var(--cyan); }
+    .route-line.amber.live { background: var(--amber); }
+    .route-line.coral.live { background: var(--coral); }
+    .line-one { top: 170px; transform: rotate(-18deg); }
+    .line-two { top: 345px; transform: rotate(0deg); }
+    .line-three { top: 520px; transform: rotate(18deg); }
+
+    .target {
+      position: absolute;
+      right: 0;
+      width: 280px;
+      height: 142px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 10px 12px 0 #ddd4c6;
+      transition: transform .35s ease, border-color .35s ease;
+    }
+
+    .target.active { transform: translateX(10px); border-color: var(--cyan); }
+    .target.target-two.active { border-color: var(--amber); }
+    .target.target-three.active { border-color: var(--coral); }
+    .target-one { top: 82px; }
+    .target-two { top: 274px; }
+    .target-three { top: 466px; }
+
+    .target-name {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 38px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      color: var(--white);
+      font-size: 12px;
+    }
+
+    .target-name::after { content: "SYNC"; color: var(--cyan); font-size: 10px; }
+    .target-two .target-name::after { color: var(--amber); }
+    .target-three .target-name::after { color: var(--coral); }
+
+    .target-body { padding: 15px; }
+    .target-row { display: flex; align-items: center; gap: 9px; margin: 9px 0; color: #9fadb0; font-family: monospace; font-size: 11px; }
+    .target-row i { display: block; width: 8px; height: 8px; border: 1px solid #63737a; }
+    .target-row.ready i { border-color: var(--cyan); background: var(--cyan); }
+    .target-row.ready { color: #dae4e4; }
+
+    .terminal {
+      position: absolute;
+      bottom: 0;
+      left: 76px;
+      width: 500px;
+      height: 116px;
+      padding: 16px 18px;
+      border: 1px solid #43525a;
+      background: #111a1f;
+      box-shadow: 12px 14px 0 #ddd4c6;
+    }
+
+    .terminal-line { margin: 8px 0; color: #a7b5b8; font-size: 12px; }
+    .terminal-line strong { color: var(--cyan); font-weight: 700; }
+    .terminal-line.result strong { color: var(--amber); }
+
+    .progress {
+      position: absolute;
+      bottom: 42px;
+      left: 92px;
+      width: 450px;
+      height: 3px;
+      background: #d7cfc1;
+    }
+
+    .progress::after {
+      display: block;
+      width: var(--progress);
+      height: 3px;
+      content: "";
+      background: var(--cyan);
+      transition: width .2s linear;
+    }
+
+    .footer {
+      position: absolute;
+      right: 92px;
+      bottom: 40px;
+      color: #738087;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" id="stage" aria-label="Skillbird product workflow demo">
+    <section class="copy">
+      <div class="eyebrow">SKILLBIRD / LOCAL-FIRST REGISTRY</div>
+      <h1>One catalog.<br />Every agent.</h1>
+      <p class="lead">Keep the owned Skill set clean, choose only what the task needs, and sync the same source of truth to every coding CLI.</p>
+      <div class="proof" aria-label="Product capabilities">
+        <span>24 OWNED SKILLS</span>
+        <span>6 CATEGORIES</span>
+        <span>GLOBAL / PROJECT</span>
+      </div>
+    </section>
+
+    <section class="board" aria-label="Catalog and target synchronization">
+      <div class="catalog" id="catalog">
+        <div class="window-bar"><span class="window-dots"><i></i><i></i><i></i></span>owned catalog / taxonomy</div>
+        <div class="catalog-body">
+          <div class="catalog-heading"><strong>Active set</strong><small>source of truth</small></div>
+          <div class="category" data-index="0"><b>build</b><em>engineering</em></div>
+          <div class="category" data-index="1"><b>research</b><em>evidence</em></div>
+          <div class="category" data-index="2"><b>design</b><em>visual</em></div>
+          <div class="category" data-index="3"><b>documents</b><em>delivery</em></div>
+          <div class="category" data-index="4"><b>operate</b><em>targets</em></div>
+          <div class="category" data-index="5"><b>strategy</b><em>context</em></div>
+        </div>
+      </div>
+
+      <div class="route" aria-hidden="true">
+        <div class="route-line line-one" data-line="0"></div>
+        <div class="route-line amber line-two" data-line="1"></div>
+        <div class="route-line coral line-three" data-line="2"></div>
+
+        <div class="target target-one" data-target="0">
+          <div class="target-name">codex</div>
+          <div class="target-body"><div class="target-row ready"><i></i>aimagician-superpower</div><div class="target-row"><i></i>interface-design</div><div class="target-row"><i></i>agent-workstream</div></div>
+        </div>
+        <div class="target target-two" data-target="1">
+          <div class="target-name">opencode</div>
+          <div class="target-body"><div class="target-row ready"><i></i>cli-agent-delegator</div><div class="target-row"><i></i>vision-analysis</div><div class="target-row"><i></i>webapp-testing</div></div>
+        </div>
+        <div class="target target-three" data-target="2">
+          <div class="target-name">claude</div>
+          <div class="target-body"><div class="target-row ready"><i></i>skill-creator</div><div class="target-row"><i></i>llm-know-how-wiki</div><div class="target-row"><i></i>github-pr-workflow</div></div>
+        </div>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-line"><strong>$</strong> skillbird install --category build --scope global</div>
+        <div class="terminal-line result"><strong>+</strong> preview confirmed / managed targets synchronized</div>
+      </div>
+    </section>
+
+    <div class="progress" aria-hidden="true"></div>
+    <div class="footer">owned skills / previewed sync / verifiable handoff</div>
+  </main>
+
+  <script>
+    const stage = document.getElementById("stage");
+    const catalog = document.getElementById("catalog");
+    const categories = [...document.querySelectorAll(".category")];
+    const targets = [...document.querySelectorAll(".target")];
+    const lines = [...document.querySelectorAll(".route-line")];
+
+    function setDesignTime(seconds) {
+      const duration = 8;
+      const time = ((Number(seconds) || 0) % duration + duration) % duration;
+      const progress = Math.round((time / duration) * 100);
+      const stageIndex = Math.min(5, Math.floor(time / 1.25));
+      const targetIndex = Math.min(2, Math.floor(Math.max(0, time - 1.5) / 2.1));
+
+      stage.style.setProperty("--progress", `${progress}%`);
+      stage.style.setProperty("--active", stageIndex);
+      catalog.classList.toggle("active", time > 0.3 && time < 7.6);
+      categories.forEach((item, index) => item.classList.toggle("active", index === stageIndex));
+      lines.forEach((item, index) => item.classList.toggle("live", time > 1.2 + index * 1.8));
+      targets.forEach((item, index) => item.classList.toggle("active", index === targetIndex && time > 2.1));
+    }
+
+    window.__setDesignTime = setDesignTime;
+    window.__VISUAL_READY__ = true;
+    setDesignTime(0);
+  </script>
+</body>
+</html>
