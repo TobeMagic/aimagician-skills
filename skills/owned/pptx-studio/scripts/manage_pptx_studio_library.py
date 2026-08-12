@@ -73,9 +73,41 @@ def render_index_from_asset_index(path: Path) -> dict[str, dict[str, Any]]:
     return result
 
 
+def _complete_observations(path: Path) -> dict[str, dict[str, Any]]:
+    """Load only hash-bound, completed visual observations for retrieval."""
+
+    observation_payload = _read_json(path)
+    entries = observation_payload.get("observations")
+    if observation_payload.get("status") != "COMPLETE" or not isinstance(entries, list):
+        raise ValueError("OBSERVATION_INDEX_INCOMPLETE")
+    return {
+        item.get("page_id"): item for item in entries
+        if isinstance(item, dict) and isinstance(item.get("page_id"), str)
+    }
+
+
+def _query_batch_request(path: Path) -> list[tuple[str, dict[str, Any]]]:
+    payload = _read_json(path)
+    queries = payload.get("queries")
+    if not isinstance(queries, list) or not 1 <= len(queries) <= 24:
+        raise ValueError("QUERY_BATCH_INVALID")
+    parsed: list[tuple[str, dict[str, Any]]] = []
+    identifiers: set[str] = set()
+    for item in queries:
+        if not isinstance(item, dict):
+            raise ValueError("QUERY_BATCH_INVALID")
+        request_id = item.get("request_id")
+        request = item.get("request")
+        if not isinstance(request_id, str) or not request_id or request_id in identifiers or not isinstance(request, dict):
+            raise ValueError("QUERY_BATCH_INVALID")
+        identifiers.add(request_id)
+        parsed.append((request_id, request))
+    return parsed
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "refresh-render-index", "rebuild-catalog", "query", "inspect-deck", "compose", "preflight", "bind-outline", "adapt", "assemble", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
+    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "refresh-render-index", "rebuild-catalog", "query", "query-batch", "inspect-deck", "compose", "preflight", "bind-outline", "adapt", "assemble", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--archive-root", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
@@ -186,14 +218,7 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
     if args.command == "query":
         if args.catalog is None or args.observation_index is None or args.query_input is None or args.query_output is None:
             raise ValueError("QUERY_ARGUMENT_REQUIRED")
-        observation_payload = _read_json(args.observation_index)
-        entries = observation_payload.get("observations")
-        if observation_payload.get("status") != "COMPLETE" or not isinstance(entries, list):
-            raise ValueError("OBSERVATION_INDEX_INCOMPLETE")
-        by_page_id = {
-            item.get("page_id"): item for item in entries
-            if isinstance(item, dict) and isinstance(item.get("page_id"), str)
-        }
+        by_page_id = _complete_observations(args.observation_index)
         result = query_catalog(
             _read_json(args.catalog),
             observations=by_page_id,
@@ -201,6 +226,22 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         )
         _write_json(args.query_output, result)
         return {"status": result["status"], "query_output": str(args.query_output), "summary": {"candidate_count": len(result["candidates"])}}
+    if args.command == "query-batch":
+        if args.catalog is None or args.observation_index is None or args.query_input is None or args.query_output is None:
+            raise ValueError("QUERY_ARGUMENT_REQUIRED")
+        catalog = _read_json(args.catalog)
+        observations = _complete_observations(args.observation_index)
+        results = [
+            {"request_id": request_id, "result": query_catalog(catalog, observations=observations, request=request)}
+            for request_id, request in _query_batch_request(args.query_input)
+        ]
+        payload = {
+            "schema_version": "1.0",
+            "status": "PASS" if all(item["result"]["status"] == "PASS" for item in results) else "NO_MATCH",
+            "results": results,
+        }
+        _write_json(args.query_output, payload)
+        return {"status": payload["status"], "query_output": str(args.query_output), "summary": {"query_count": len(results), "candidate_count": sum(len(item["result"]["candidates"]) for item in results)}}
     if args.command == "inspect-deck":
         if args.catalog is None or args.observation_index is None or args.deck_id is None or args.query_output is None:
             raise ValueError("DECK_INSPECTION_ARGUMENT_REQUIRED")

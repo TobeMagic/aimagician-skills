@@ -426,3 +426,25 @@ def test_cli_query_uses_catalog_and_complete_observations_only(tmp_path: Path) -
     assert candidate["page_id"] == "page_aaaaaaaaaaaaaaaaaaaaaaaa_001"
     assert candidate["style_signature"].startswith("style_")
     assert not manifest.exists(), "query must accept the documented client-local manifest sentinel"
+
+
+def test_cli_query_batch_keeps_requests_separate_and_accepts_manifest_sentinel(tmp_path: Path) -> None:
+    catalog, observations = _catalog()
+    source, archive = tmp_path / "source", tmp_path / "archive"
+    source.mkdir()
+    archive.mkdir()
+    catalog_path, observations_path, request_path, output_path = (tmp_path / name for name in ("catalog.json", "observations.json", "batch.json", "result.json"))
+    catalog_path.write_text(json.dumps(catalog), encoding="utf-8")
+    observations_path.write_text(json.dumps({"status": "COMPLETE", "observations": list(observations.values())}), encoding="utf-8")
+    request_path.write_text(json.dumps({"queries": [
+        {"request_id": "cover", "request": {"mode": "page", "role": "cover", "tags": [], "style": None, "capacity": 0, "limit": 2, "suitability": "general"}},
+        {"request_id": "contents", "request": {"mode": "page", "role": "contents", "tags": [], "style": None, "capacity": 0, "limit": 2, "suitability": "general"}},
+    ]}), encoding="utf-8")
+
+    result = run(["query-batch", "--source-root", str(source), "--archive-root", str(archive), "--manifest", str(tmp_path / "missing-sentinel.json"), "--catalog", str(catalog_path), "--observation-index", str(observations_path), "--query-input", str(request_path), "--query-output", str(output_path)])
+
+    assert result["status"] == "NO_MATCH"
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert [item["request_id"] for item in payload["results"]] == ["cover", "contents"]
+    assert payload["results"][0]["result"]["status"] == "PASS"
+    assert payload["results"][1]["result"]["status"] == "NO_MATCH"

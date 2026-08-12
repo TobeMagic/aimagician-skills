@@ -85,6 +85,13 @@ and observation index:
 {"mode":"page","role":"cover","tags":[],"style":null,"capacity":0,"limit":6,"suitability":"institutional-finance"}
 ```
 
+For a normal mixed-role deck, prefer one `query-batch` call instead of a chain
+of per-role calls. Its `--query-input` is a JSON object with 1–24 unique
+`request_id`/`request` entries, each `request` using that exact seven-field
+shape; it returns the corresponding candidate lists in the same order. This
+is a retrieval convenience only: you still choose explicit returned candidate
+IDs and still run the bounded per-candidate revalidation below.
+
 Set `suitability` to `institutional-finance` for a hospital, government,
 finance or institutional report; this excludes pages whose certified visual
 observation identifies anime/characters, metaverse/robot imagery, mobile-app
