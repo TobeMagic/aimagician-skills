@@ -11,9 +11,12 @@ from __future__ import annotations
 MIN_DISTINCT_CLIENT_FACTS_BY_ROLE: dict[str, int] = {
     "cover": 2,
     "contents": 5,
-    "section": 2,
+    # A chapter divider is intentionally sparse: its primary client-owned
+    # statement is the chapter heading. Its ornamental ordinal must never be
+    # treated as a fabricated business fact merely to meet a numeric floor.
+    "section": 1,
     "title": 2,
-    "closing": 2,
+    "closing": 1,
     "one-item": 3,
     "two-item": 3,
     "three-item": 4,

@@ -123,6 +123,14 @@ natural-language direction. The exact
 {"anchor_page_id":"page_<24-lowercase-hex>_001","allowed_style_signatures":["style_<24-lowercase-hex>"]}
 ```
 
+When the anchor comes from a certified multi-page work, its other pages are a
+controlled theme family: their shared PowerPoint master/palette/grid outranks
+per-page vision wording such as “infographic” versus “corporate”. You may add
+only signatures returned for pages in that same selected certified deck, or
+an independently compatible signature under the rule above. This permits a
+coherent full-work template to retain its own chapter/data cadence; it does
+not authorize cross-deck random mixing.
+
 For example, the full composition request begins as follows (replace all
 placeholder values only with query-result values):
 
@@ -161,7 +169,7 @@ values are allowed only to clear an unused native text slot; they never
 substitute for customer content. Before `assemble`, confirm that every
 customer-required title, number and conclusion still has one nonempty binding.
 The compiler also enforces a role-specific minimum of *distinct* client facts:
-cover 2, contents 5, one/two-item 3, three/four/five/six-item 4/5/6/7,
+cover 2, contents 5, section/closing 1, one/two-item 3, three/four/five/six-item 4/5/6/7,
 multi-item/dashboard 6, team 4, timeline/process/business-model 5.  This is a release
 gate, not a suggestion: if `CLIENT_BINDING_COMPLETENESS_INSUFFICIENT` is
 returned, select a lower-capacity candidate or provide/bind the missing

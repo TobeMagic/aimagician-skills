@@ -157,6 +157,22 @@ def test_page_assembly_allows_dark_cool_professional_cadence_page() -> None:
     assert compile_composition(catalog, observations=observations, request=request)["status"] == "PASS"
 
 
+def test_exact_certified_deck_is_a_theme_family_despite_page_level_vision_labels() -> None:
+    catalog, observations, _signatures = _fixture()
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"]["visual_style"] = ["corporate", "blue"]  # type: ignore[index]
+    # A chart/closing page in the same certified PPTX can be described with
+    # another visual archetype even though it inherits the actual deck master.
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_002"]["observation"]["visual_style"] = ["festive", "red"]  # type: ignore[index]
+    signatures = {str(page["page_id"]): style_signature(page, observations) for page in catalog["pages"]}  # type: ignore[index]
+    request = _request(signatures)
+    request["art_direction"]["allowed_style_signatures"] = [  # type: ignore[index]
+        signatures["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"],
+        signatures["page_aaaaaaaaaaaaaaaaaaaaaaaa_002"],
+    ]
+    plan = compile_composition(catalog, observations=observations, request=request)
+    assert plan["slides"][1]["evidence"]["style_match"] == "same_certified_theme_family"
+
+
 def test_page_assembly_rejects_repeated_physical_source_before_materialization() -> None:
     catalog, observations, signatures = _fixture()
     request = _request(signatures, strategy="page_assembly")

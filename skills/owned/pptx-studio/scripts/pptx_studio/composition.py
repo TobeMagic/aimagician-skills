@@ -176,16 +176,28 @@ def compile_composition(
         raise CompositionError("ANCHOR_PAGE_INVALID")
     anchor_signature = style_signature(anchor, observations)
     anchor_profile = style_profile(anchor, observations)
+    anchor_deck_id = str(anchor.get("deck_id"))
     allowed_signatures = list(art["allowed_style_signatures"])
     if anchor_signature not in allowed_signatures:
         raise CompositionError("ANCHOR_SIGNATURE_NOT_ALLOWED")
-    signature_profiles = {
-        style_signature(page, observations): style_profile(page, observations)
-        for page in pages.values()
-    }
+    signature_pages: dict[str, list[Mapping[str, Any]]] = {}
+    for page in pages.values():
+        signature_pages.setdefault(style_signature(page, observations), []).append(page)
     for signature in allowed_signatures:
-        profile = signature_profiles.get(signature)
-        if profile is None or not _style_profiles_compatible(anchor_profile, profile):
+        signature_candidates = signature_pages.get(signature, [])
+        if not signature_candidates:
+            raise CompositionError("STYLE_FALLBACK_INCOMPATIBLE")
+        # A certified multi-page work is its own strongest style evidence.
+        # OCR/vision descriptions may call its title page "corporate" and a
+        # chart page "infographic" despite sharing the same master, palette,
+        # grid and decoration.  Its sibling pages are therefore a controlled
+        # theme family, not arbitrary cross-style fallback.
+        if any(str(page.get("deck_id")) == anchor_deck_id for page in signature_candidates):
+            continue
+        if not any(
+            _style_profiles_compatible(anchor_profile, style_profile(page, observations))
+            for page in signature_candidates
+        ):
             raise CompositionError("STYLE_FALLBACK_INCOMPATIBLE")
 
     output_slides: list[dict[str, Any]] = []
@@ -222,7 +234,8 @@ def compile_composition(
         signature = style_signature(page, observations)
         if signature not in allowed_signatures:
             raise CompositionError("STYLE_SIGNATURE_NOT_ALLOWED")
-        if not _style_profiles_compatible(anchor_profile, style_profile(page, observations)):
+        same_certified_theme_family = str(page.get("deck_id")) == anchor_deck_id
+        if not same_certified_theme_family and not _style_profiles_compatible(anchor_profile, style_profile(page, observations)):
             raise CompositionError("STYLE_FALLBACK_INCOMPATIBLE")
         if not _role_matches(page, detail, str(item["role"])):
             raise CompositionError("ROLE_INCOMPATIBLE")
@@ -254,7 +267,11 @@ def compile_composition(
                 "selected_candidate_id": selected_id,
                 "candidate_rank": rank,
                 "style_signature": signature,
-                "style_match": "anchor" if signature == anchor_signature else "explicit_fallback",
+                "style_match": (
+                    "anchor" if signature == anchor_signature
+                    else "same_certified_theme_family" if same_certified_theme_family
+                    else "explicit_fallback"
+                ),
                 "capacity": capacity,
                 "capacity_residue": capacity - item["minimum_capacity"],
                 "confidence": 1.0 if strategy == "exact_deck" else (0.85 if strategy == "page_assembly" else 0.7),
