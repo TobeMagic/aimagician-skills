@@ -9,7 +9,7 @@ from jsonschema import validate
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx" / "scripts"
+SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 
 from pptx_studio.composition import CompositionError, compile_composition, serialize_composition_plan, style_signature  # noqa: E402
@@ -83,9 +83,9 @@ def test_exact_deck_composition_is_stable_and_schema_valid() -> None:
     assert serialize_composition_plan(first) == serialize_composition_plan(second)
     assert first["art_direction"]["exact_deck_id"] == "deck_aaaaaaaaaaaaaaaaaaaaaaaa"
     assert first["slides"][0]["evidence"]["style_match"] == "anchor"
-    request_schema = json.loads((REPO_ROOT / "skills" / "owned" / "window-pptx" / "schemas" / "pptx-studio-composition-request.v1.schema.json").read_text(encoding="utf-8"))
+    request_schema = json.loads((REPO_ROOT / "skills" / "owned" / "pptx-studio" / "schemas" / "pptx-studio-composition-request.v1.schema.json").read_text(encoding="utf-8"))
     validate(request, request_schema)
-    schema = json.loads((REPO_ROOT / "skills" / "owned" / "window-pptx" / "schemas" / "pptx-studio-composition-plan.v1.schema.json").read_text(encoding="utf-8"))
+    schema = json.loads((REPO_ROOT / "skills" / "owned" / "pptx-studio" / "schemas" / "pptx-studio-composition-plan.v1.schema.json").read_text(encoding="utf-8"))
     validate(first, schema)
 
 

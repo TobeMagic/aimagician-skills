@@ -56,7 +56,7 @@ node skills/owned/interface-design/scripts/design-router.mjs --task readme-cover
 node skills/owned/interface-design/scripts/design-router.mjs --task product-demo --deliverable video --signals workflow,motion --format json
 ```
 
-`interface-design` owns browser-native artifacts, rendered still/video assets, and HTML slides. Its standard single-file slide player includes keyboard, wheel, touch, overview-card, full-screen, progress, hash, persistence, and print behavior, with fidelity PPTX export from the live HTML stage. Editable `.pptx`, slide masters, Office compatibility, and native PowerPoint QA remain owned by `pptx` or `window-pptx`; editable HTML-first PPTX uses independent slide files, while hybrid native work uses a structured handoff.
+`interface-design` owns browser-native artifacts, rendered still/video assets, and HTML slides. Its standard single-file slide player includes keyboard, wheel, touch, overview-card, full-screen, progress, hash, persistence, and print behavior, with fidelity PPTX export from the live HTML stage. Editable `.pptx`, slide masters, Office compatibility, and native PowerPoint QA remain owned by `pptx` or `pptx-studio`; editable HTML-first PPTX uses independent slide files, while hybrid native work uses a structured handoff.
 
 The catalog contains 26 active owned Skills. Full upstream repositories used for consolidation remain ignored audit references and are not installed or packaged. The distillation, optimization, HTML presentation, and YapCLI validation record is in [`audits/distillation-and-html-presentation-optimization-2026-07-27.md`](audits/distillation-and-html-presentation-optimization-2026-07-27.md).
 

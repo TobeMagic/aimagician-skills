@@ -72,7 +72,7 @@ Route by the required final artifact before designing:
 | README cover, repository banner, poster, product showcase, social image, or other rendered still | `interface-design` | This skill owns product understanding, art direction, source composition, rendering, and visual QA. Image generation may supply a truthful ingredient, but it does not replace the design workflow. |
 | Product demo, motion hero, GIF loop, narrated launch film, or other browser-rendered media | `interface-design` | This skill owns storyboard, deterministic HTML/canvas source, poster fallback, rendering, audio cues, encoding, and frame QA. |
 | HTML-first presentation exported to PDF or PPTX | `interface-design` | Use only when the user explicitly requires HTML as the presentation source. Choose editable or fidelity PPTX before implementation. |
-| Native editable `.pptx`, PowerPoint template, slide master, or Office-compatible deck | `pptx` or `window-pptx` | The PPT skill owns generation, editing, rendering, and Office QA. |
+| Native editable `.pptx`, PowerPoint template, slide master, or Office-compatible deck | `pptx` or `pptx-studio` | The PPT skill owns generation, editing, rendering, and Office QA. |
 | HTML visual exploration followed by native PowerPoint | `interface-design`, then PPT owner | Produce a design brief and handoff contract; rebuild natively. Do not present an HTML conversion as equivalent to native PowerPoint. |
 
 When “presentation” is ambiguous and the final format changes the architecture, confirm browser HTML, explicit HTML-first PDF/PPTX, or native `.pptx`. Explicit HTML-first PPTX requires a second decision between editable objects and full visual fidelity. Read `references/capabilities/delivery-routing.md` for the full contract.

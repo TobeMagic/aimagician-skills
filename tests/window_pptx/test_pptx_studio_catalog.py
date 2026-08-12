@@ -11,7 +11,7 @@ from jsonschema import validate
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx" / "scripts"
+SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 
 from pptx_studio.catalog import CatalogError, compile_catalog, serialize_catalog  # noqa: E402
@@ -80,7 +80,7 @@ def test_catalog_is_deterministic_and_uses_hash_identity(tmp_path: Path) -> None
     assert first["region_count"] >= 1
     assert first["category_index"] == {ACTIVE_GAOJIE_CATEGORIES[0]: 1}
     schema = json.loads(
-        (REPO_ROOT / "skills" / "owned" / "window-pptx" / "schemas" / "pptx-studio-catalog.v1.schema.json").read_text(encoding="utf-8")
+        (REPO_ROOT / "skills" / "owned" / "pptx-studio" / "schemas" / "pptx-studio-catalog.v1.schema.json").read_text(encoding="utf-8")
     )
     validate(first, schema)
     json.dumps(first, ensure_ascii=False)

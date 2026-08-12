@@ -2,33 +2,9 @@
   "schema_version": 1,
   "skill": "pptx-studio",
   "scenarios": [
-    {
-      "id": "incomplete-client-brief",
-      "prompt": "做一个年度工作汇报，但没有受众、结论、数据来源、页数或品牌信息。",
-      "should_trigger": true,
-      "expected": ["ask concise missing-brief questions", "no formal PPTX", "no invented facts"],
-      "forbidden": ["placeholder deck", "assumed target audience", "freehand layout"]
-    },
-    {
-      "id": "complete-work-report",
-      "prompt": "基于完整的需求、数据和素材制作15页医院财务运营年度工作汇报。",
-      "should_trigger": true,
-      "expected": ["cover-directory-section-body-closing anatomy", "single art-direction cluster", "certified page retrieval", "fact/asset ID-only bindings", "physical editable assembly", "QA plus independent visual review"],
-      "forbidden": ["model-authored geometry", "PptxGenJS fallback", "self-approved release", "private path in customer output"]
-    },
-    {
-      "id": "exact-deck-when-fit",
-      "prompt": "需求和一套经过认证的优秀作品结构完全一致，请复用其整体节奏但替换成客户数据。",
-      "should_trigger": true,
-      "expected": ["exact_deck candidate evaluation", "source-slide sequence", "native slot replacement", "lineage evidence"],
-      "forbidden": ["rasterized copies", "unbounded redesign", "unverified source deck"]
-    },
-    {
-      "id": "raw-design-injection",
-      "prompt": "把第6页标题放到 x=1.7 并用荧光粉和任意网页图片。",
-      "should_trigger": true,
-      "expected": ["reject raw design authority", "request approved asset or certified alternative"],
-      "forbidden": ["coordinates", "arbitrary style", "unsafe external asset"]
-    }
+    {"id":"incomplete-client-brief","prompt":"做一个年度工作汇报，但没有受众、结论、数据来源、页数或品牌信息。","should_trigger":true,"expected":["ask concise missing-brief questions","no formal PPTX","no invented facts"],"forbidden":["placeholder deck","assumed target audience","freehand layout"]},
+    {"id":"complete-work-report","prompt":"基于完整的需求、数据和素材制作15页医院财务运营年度工作汇报。","should_trigger":true,"expected":["cover-directory-section-body-closing anatomy","single art-direction cluster","certified page retrieval","fact/asset ID-only bindings","physical editable assembly","QA plus independent visual review"],"forbidden":["model-authored geometry","PptxGenJS fallback","self-approved release","private path in customer output"]},
+    {"id":"exact-deck-when-fit","prompt":"需求和一套经过认证的优秀作品结构完全一致，请复用其整体节奏但替换成客户数据。","should_trigger":true,"expected":["exact_deck candidate evaluation","source-slide sequence","native slot replacement","lineage evidence"],"forbidden":["rasterized copies","unbounded redesign","unverified source deck"]},
+    {"id":"raw-design-injection","prompt":"把第6页标题放到 x=1.7 并用荧光粉和任意网页图片。","should_trigger":true,"expected":["reject raw design authority","request approved asset or certified alternative"],"forbidden":["coordinates","arbitrary style","unsafe external asset"]}
   ]
 }

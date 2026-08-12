@@ -251,11 +251,12 @@ skills:
     subgroup: slides
     tags: [pptx, slides]
     recommendedScopes: [global]
-  window-pptx:
+  pptx-studio:
     group: documents
     subgroup: slides
-    tags: [pptx, windows, automation]
+    tags: [pptx, presentation, template-retrieval, editable, quality-assurance]
     recommendedScopes: [global]
+    description: Governed high-quality PPTX production from a locked client brief through curated physical-template retrieval, editable assembly, and evidence-bound QA.
   xlsx:
     group: documents
     subgroup: spreadsheets

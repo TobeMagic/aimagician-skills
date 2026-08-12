@@ -78,4 +78,4 @@ The stage exporter accepts `<deck-stage> > section` or `#deck > .slide`. It navi
 
 Verify the browser deck first, then the derivative. Check every slide at exact geometry, sequence, notes, overflow, fonts, links, and asset readiness. For editable PPTX, inspect OOXML or reopen in PowerPoint-compatible software and prove text and shapes are native objects. For fidelity PPTX, compare representative rendered slides pixel-for-pixel within the accepted tolerance. Native Office automation may be used as a verifier without changing HTML-first ownership.
 
-Ordinary editable PowerPoint work that does not explicitly require HTML remains owned by `pptx` or `window-pptx`.
+Ordinary editable PowerPoint work that does not explicitly require HTML remains owned by `pptx` or `pptx-studio`.

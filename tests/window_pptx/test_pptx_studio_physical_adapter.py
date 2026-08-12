@@ -12,7 +12,7 @@ from pptx.util import Inches, Pt
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx" / "scripts"
+SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 
 from pptx_studio.adaptation import compile_adaptation  # noqa: E402

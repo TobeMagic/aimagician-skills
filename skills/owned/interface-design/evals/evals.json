@@ -41,7 +41,7 @@
       "id": "native-powerpoint-boundary",
       "prompt": "Deliver an editable PowerPoint .pptx with a slide master and Office compatibility.",
       "should_trigger": false,
-      "expected": ["route to pptx or window-pptx", "native owner controls production and QA"],
+      "expected": ["route to pptx or pptx-studio", "native owner controls production and QA"],
       "forbidden": ["generate HTML as final artifact", "claim HTML conversion is equivalent to native PowerPoint"]
     },
     {

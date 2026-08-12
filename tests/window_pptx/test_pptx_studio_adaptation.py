@@ -9,7 +9,7 @@ from jsonschema import validate
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx" / "scripts"
+SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 
 from pptx_studio.adaptation import AdaptationError, compile_adaptation  # noqa: E402
@@ -37,9 +37,9 @@ def test_adaptation_contains_only_bound_references() -> None:
     assert result["status"] == "PASS"
     assert "2025 年度工作汇报" not in json.dumps(result, ensure_ascii=False)
     assert result["operations"][0]["fact_id"] == "fact_title"
-    request_schema = json.loads((REPO_ROOT / "skills" / "owned" / "window-pptx" / "schemas" / "pptx-studio-adaptation-request.v1.schema.json").read_text(encoding="utf-8"))
+    request_schema = json.loads((REPO_ROOT / "skills" / "owned" / "pptx-studio" / "schemas" / "pptx-studio-adaptation-request.v1.schema.json").read_text(encoding="utf-8"))
     validate(request, request_schema)
-    schema = json.loads((REPO_ROOT / "skills" / "owned" / "window-pptx" / "schemas" / "pptx-studio-adaptation-plan.v1.schema.json").read_text(encoding="utf-8"))
+    schema = json.loads((REPO_ROOT / "skills" / "owned" / "pptx-studio" / "schemas" / "pptx-studio-adaptation-plan.v1.schema.json").read_text(encoding="utf-8"))
     validate(result, schema)
 
 
