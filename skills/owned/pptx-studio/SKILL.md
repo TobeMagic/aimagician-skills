@@ -106,6 +106,13 @@ Certified semantic tags also recognize standard complete-work page anatomy:
 complete-work page solely because its visual observation used a more specific
 label.
 
+After broad retrieval has selected a shortlist, revalidate each chosen page
+with the same seven fields plus optional `candidate_ids`, for example
+`"candidate_ids":["page_<24-lowercase-hex>_001"]`. This bounded audit returns
+only that already-known catalog page and applies the same role, suitability and
+native-region gates. It is not a filesystem lookup and does not permit an
+unregistered page.
+
 For `page_assembly`, every `selected_candidate_id` must be unique across the
 deck. The physical importer intentionally rejects a repeated source page;
 when a page type recurs (for example section dividers or data cards), select a

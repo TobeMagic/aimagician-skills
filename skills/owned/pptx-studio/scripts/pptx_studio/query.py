@@ -13,7 +13,7 @@ class QueryError(ValueError):
     """Raised for an invalid query instead of falling back to file discovery."""
 
 
-_ALLOWED_REQUEST = {"mode", "role", "tags", "style", "capacity", "limit", "suitability"}
+_ALLOWED_REQUEST = {"mode", "role", "tags", "style", "capacity", "limit", "suitability", "candidate_ids"}
 _MODES = {"deck", "page", "region"}
 _SUITABILITY_PROFILES = {"general", "institutional-finance"}
 _INSTITUTIONAL_FINANCE_EXCLUSIONS = (
@@ -168,7 +168,15 @@ def _validate_request(request: Mapping[str, Any]) -> dict[str, Any]:
     suitability = request.get("suitability", "general")
     if suitability not in _SUITABILITY_PROFILES:
         raise QueryError("SUITABILITY_INVALID")
-    return {"mode": mode, "role": role, "tags": _normal_tags(request.get("tags")), "style": style, "capacity": capacity, "limit": limit, "suitability": suitability}
+    candidate_ids = request.get("candidate_ids")
+    if candidate_ids is not None:
+        if not isinstance(candidate_ids, list) or not candidate_ids or len(candidate_ids) > 24:
+            raise QueryError("CANDIDATE_IDS_INVALID")
+        if any(not isinstance(item, str) or not item for item in candidate_ids) or len(set(candidate_ids)) != len(candidate_ids):
+            raise QueryError("CANDIDATE_IDS_INVALID")
+        if mode != "page":
+            raise QueryError("CANDIDATE_IDS_MODE_INVALID")
+    return {"mode": mode, "role": role, "tags": _normal_tags(request.get("tags")), "style": style, "capacity": capacity, "limit": limit, "suitability": suitability, "candidate_ids": candidate_ids}
 
 
 def _suitability_safe(observation: Mapping[str, Any], *, profile: str) -> bool:
@@ -235,6 +243,9 @@ def query_catalog(
                 raw.append((deck_id, first, None))
     candidates: list[dict[str, Any]] = []
     for candidate_id, page, region in raw:
+        candidate_filter = query["candidate_ids"]
+        if candidate_filter is not None and candidate_id not in candidate_filter:
+            continue
         if not candidate_id or page.get("category") not in active:
             continue
         if query["mode"] == "region" and page.get("component_eligible") is not True:

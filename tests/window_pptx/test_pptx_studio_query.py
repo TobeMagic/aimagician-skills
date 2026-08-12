@@ -149,6 +149,29 @@ def test_query_recognizes_certified_chapter_tag_as_section_role() -> None:
     assert result["status"] == "PASS"
 
 
+def test_query_can_revalidate_a_bounded_preselected_candidate() -> None:
+    catalog, observations = _catalog()
+    result = query_catalog(
+        catalog, observations=observations,
+        request={
+            "mode": "page", "role": "cover", "candidate_ids": [
+                "page_aaaaaaaaaaaaaaaaaaaaaaaa_001",
+            ],
+        },
+    )
+    assert result["status"] == "PASS"
+    assert result["candidates"][0]["page_id"] == "page_aaaaaaaaaaaaaaaaaaaaaaaa_001"
+
+
+def test_query_rejects_candidate_filter_for_region_mode() -> None:
+    catalog, observations = _catalog()
+    with pytest.raises(QueryError, match="CANDIDATE_IDS_MODE_INVALID"):
+        query_catalog(
+            catalog, observations=observations,
+            request={"mode": "region", "role": "cover", "candidate_ids": ["region_aaaaaaaaaaaaaaaaaaaa"]},
+        )
+
+
 def test_canonical_category_role_outranks_incorrect_visual_role() -> None:
     catalog, observations = _catalog()
     other = {
