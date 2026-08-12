@@ -357,6 +357,34 @@ def _write_zip(path: Path, parts: dict[str, bytes]) -> None:
             archive.writestr(name, data)
 
 
+def test_governed_inventory_ignores_dynamic_notes_fields_but_keeps_authored_notes(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "notes-field.pptx"
+    _write_zip(
+        source,
+        {
+            "ppt/slides/slide1.xml": b"<p:sld xmlns:p='p'/>",
+            "ppt/slides/_rels/slide1.xml.rels": _rels(
+                ("rId1", f"{OFFICE_REL}/notesSlide", "../notesSlides/notesSlide1.xml", ""),
+            ),
+            "ppt/notesSlides/notesSlide1.xml": (
+                f"<p:notes xmlns:p='{PML_NS}' xmlns:a='{DML_NS}'>"
+                "<p:cSld><p:spTree><p:sp><p:txBody><a:p>"
+                "<a:fld type='datetime1'><a:t>2025-01-01</a:t></a:fld>"
+                "<a:r><a:t>正式备注</a:t></a:r>"
+                "</a:p></p:txBody></p:sp></p:spTree></p:cSld></p:notes>"
+            ).encode(),
+        },
+    )
+    with zipfile.ZipFile(source) as archive:
+        inventory = _compile_governed_content_inventory(archive, 1)
+
+    note_slots = [item for item in inventory["slots"] if item["kind"] == "notes-text"]
+    assert len(note_slots) == 1
+    assert note_slots[0]["source_text"] == "正式备注"
+
+
 def _chart_source(path: Path, *, external_target: str | None = None) -> None:
     chart_type = "application/vnd.openxmlformats-officedocument.drawingml.chart+xml"
     style_type = "application/vnd.ms-office.chartstyle+xml"
