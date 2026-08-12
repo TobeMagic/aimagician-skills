@@ -58,6 +58,10 @@ def _fixture() -> tuple[dict[str, object], dict[str, object], dict[str, str]]:
         {"region_id": "region_a_closing_title", "page_id": closing["page_id"], "capacity": {"max_text_chars": 30}},
         {"region_id": "region_a_closing_body", "page_id": closing["page_id"], "capacity": {"max_text_chars": 100}},
         {"region_id": "region_c_body", "page_id": process["page_id"], "capacity": {"max_text_chars": 100}},
+        {"region_id": "region_c_step_1", "page_id": process["page_id"], "capacity": {"max_text_chars": 30}},
+        {"region_id": "region_c_step_2", "page_id": process["page_id"], "capacity": {"max_text_chars": 30}},
+        {"region_id": "region_c_step_3", "page_id": process["page_id"], "capacity": {"max_text_chars": 30}},
+        {"region_id": "region_c_step_4", "page_id": process["page_id"], "capacity": {"max_text_chars": 30}},
     ]
     catalog = {"active_categories": ["003-封面模板", "039-结尾模板", "050-架构流程"], "pages": pages, "regions": regions}
     signatures = {str(page["page_id"]): style_signature(page, observations) for page in pages}
@@ -139,6 +143,18 @@ def test_page_assembly_rejects_warm_fallback_from_cool_anchor() -> None:
     _select_other_deck(request, signatures)
     with pytest.raises(CompositionError, match="STYLE_FALLBACK_INCOMPATIBLE"):
         compile_composition(catalog, observations=observations, request=request)
+
+
+def test_page_assembly_allows_dark_cool_professional_cadence_page() -> None:
+    catalog, observations, signatures = _fixture()
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"]["visual_style"] = ["corporate", "blue"]  # type: ignore[index]
+    observations["page_cccccccccccccccccccccccc_001"]["observation"]["visual_style"] = ["technology", "dark", "blue"]  # type: ignore[index]
+    signatures = {str(page["page_id"]): style_signature(page, observations) for page in catalog["pages"]}  # type: ignore[index]
+    request = _request(signatures, strategy="page_assembly")
+    _select_other_deck(request, signatures)
+    # The cool dark process page provides controlled rhythm within the same
+    # blue professional system; red/green/warm pages remain rejected above.
+    assert compile_composition(catalog, observations=observations, request=request)["status"] == "PASS"
 
 
 def test_page_assembly_rejects_repeated_physical_source_before_materialization() -> None:

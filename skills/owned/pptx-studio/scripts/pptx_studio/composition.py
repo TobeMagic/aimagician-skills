@@ -71,20 +71,24 @@ def _style_profiles_compatible(
     """Allow controlled family variants without collapsing visual direction.
 
     The previous two-axis taxonomy treated a blue finance deck and a red
-    ceremonial deck as equivalent ``corporate/balanced`` pages. Colour and
-    luminance are visible design commitments, so a page may fall back only
-    inside the anchor's colour family and tone. Corporate/minimal/technology
-    are permitted as one professional family to retain enough specialist
-    process/chart pages; other archetypes are intentionally isolated.
+    ceremonial deck as equivalent ``corporate/balanced`` pages. Colour is a
+    non-negotiable deck commitment. Within a cool professional system, a
+    dark-blue chapter/data/process page is an intentional cadence change, not
+    a style break, so balanced and dark tones may coexist. Neutral/light,
+    warm, green and non-professional fallbacks remain isolated.
     """
 
     if anchor["color_family"] != candidate["color_family"]:
         return False
-    if anchor["tone"] != candidate["tone"]:
-        return False
     professional = {"corporate", "minimal", "technology"}
     if anchor["archetype"] in professional:
-        return candidate["archetype"] in professional
+        if candidate["archetype"] not in professional:
+            return False
+        if anchor["color_family"] == "cool":
+            return anchor["tone"] in {"balanced", "dark"} and candidate["tone"] in {"balanced", "dark"}
+        return anchor["tone"] == candidate["tone"]
+    if anchor["tone"] != candidate["tone"]:
+        return False
     return anchor["archetype"] == candidate["archetype"]
 
 
