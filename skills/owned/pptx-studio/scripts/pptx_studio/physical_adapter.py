@@ -51,7 +51,7 @@ class PhysicalAdapterError(ValueError):
 # unbound narrative sentence is treated the same way: it is commercial sample
 # copy, not a structural label such as "目录" or an axis tick.
 _TEMPLATE_PLACEHOLDER_RE = re.compile(
-    r"(?:20XX|20\dX|XXX|LOGO|(?:输入|添加|点击)(?:文本|大|主|副|内容){0,4}标题|请替换|占位|某某|Lorem|Your\s+(?:title|text))",
+    r"(?:20XX|20\dX|XXX|LOGO|(?:输入|添加|点击)[^\n]{0,12}标题|请替换|占位|某某|Lorem|Your\s+(?:title|text))",
     re.IGNORECASE,
 )
 _TEMPLATE_BRAND_RE = re.compile(
@@ -74,11 +74,12 @@ def _unbound_template_clear_reason(value: str, *, occurrence_count: int = 1) -> 
         return "template-repeated-data"
     if re.fullmatch(r"\d{1,2}", compact):
         return "template-ordinal"
-    # A template paragraph is not a reusable visual primitive.  Short labels
-    # stay intact so navigation, axes, and intentionally generic decorations
-    # retain their authored look until the agent elects to bind them.
-    if len(compact) >= 12:
-        return "template-sample-copy"
+    # Source copy is retained only where it is a truly generic navigation
+    # token.  Everything else requires an explicit client-fact binding: this
+    # prevents short but semantically wrong template slogans (for example a
+    # generic two-layer concept) from escaping the old length-only rule.
+    if compact.casefold() not in {"目录", "contents", "part", "ppt"}:
+        return "unbound-template-copy"
     return None
 
 

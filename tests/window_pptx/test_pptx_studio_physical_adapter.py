@@ -160,6 +160,8 @@ def test_adapter_clears_unbound_template_placeholder_with_lineage(tmp_path: Path
         ("添加文本标题", 1, "template-placeholder"),
         ("32万", 6, "template-repeated-data"),
         ("03", 1, "template-ordinal"),
+        ("添加总结性文本标题", 1, "template-placeholder"),
+        ("两层含义", 1, "unbound-template-copy"),
         ("目录", 1, None),
     ],
 )
