@@ -179,6 +179,38 @@ def test_outline_binding_rejects_sparse_rich_text_only_template() -> None:
         }]}, preflight=preflight)
 
 
+def test_outline_binding_requires_coverage_of_dense_card_groups() -> None:
+    groups = [
+        {"component_group": f"group.{index:02d}", "component_keys": [f"label.{index:02d}", f"metric.{index:02d}"]}
+        for index in range(1, 5)
+    ]
+    components = [entry for group in groups for entry in (
+        {"component_key": group["component_keys"][0]},
+        {"component_key": group["component_keys"][1]},
+    )]
+    regions = [
+        {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+         "shape_slots": [{"semantic_role": "title"}]},
+    ] + [
+        {"region_id": f"r-{key}", "component_key": key, "native_capacity": 12,
+         "shape_slots": [{"semantic_role": "label" if key.startswith("label") else "metric"}]}
+        for group in groups for key in group["component_keys"]
+    ]
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "dashboard",
+        "content_contract": {"title": 1, "label": 4, "metric": 4, "body": 0},
+        "component_contract": [{"component_key": "title.01"}, *components],
+        "component_groups": groups, "regions": regions,
+    }]}
+    sparse = {"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "经营指标", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "预算率", "semantic_role": "label", "component_group": "group.01"},
+        {"value": "96.9%", "semantic_role": "metric", "component_group": "group.01"},
+    ]}]}
+    with pytest.raises(BriefBindingError, match=r"OUTLINE_COMPONENT_GROUP_COVERAGE_INSUFFICIENT:slide_id=s01:provided=1:required=2"):
+        compile_outline_bindings(sparse, preflight=preflight)
+
+
 def test_outline_binding_uses_complete_component_groups_instead_of_raw_density() -> None:
     preflight = {"status": "PASS", "slides": [{
         "slide_id": "s01",
@@ -231,6 +263,23 @@ def test_outline_binding_requires_a_title_for_a_certified_title_surface() -> Non
                 {"value": "经营分析", "semantic_role": "label"},
             ],
         }]}, preflight=preflight)
+
+
+def test_outline_binding_requires_subtitle_body_for_section_with_native_panel() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "section",
+        "content_contract": {"title": 1, "label": 0, "metric": 0, "body": 1},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-body", "native_capacity": 24,
+             "shape_slots": [{"semantic_role": "body"}]},
+        ],
+    }]}
+    with pytest.raises(BriefBindingError, match=r"OUTLINE_STRUCTURAL_COVERAGE_INSUFFICIENT:slide_id=s01:role=body"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+            {"value": "运营", "semantic_role": "title"},
+        ]}]}, preflight=preflight)
 
 
 def test_outline_binding_does_not_fill_specialist_roadmap_ornaments() -> None:

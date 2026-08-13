@@ -70,6 +70,13 @@ def _structural_coverage_requirements(
         contract = slide.get("content_contract")
         if not isinstance(contract, Mapping):
             return {}
+        # Some certified section dividers are a single editorial word; others
+        # visibly reserve a subtitle/statement panel.  The latter looks
+        # broken when template-copy cleanup leaves the panel empty.  Require a
+        # factual body only when the native page actually publishes a body
+        # surface, preserving intentionally sparse one-word dividers.
+        if declared_role == "section" and type(contract.get("body")) is int and contract["body"] > 0:
+            return {"body": 1}
         # A certified native component group is a stronger density signal than
         # the raw count of text boxes.  A dashboard/page can contain many
         # auxiliary numbers, units and decorative labels; requiring 65% of
@@ -283,6 +290,41 @@ def _published_component_groups(preflight_slide: Mapping[str, Any]) -> dict[str,
             raise BriefBindingError("OUTLINE_COMPONENT_GROUP_INVALID")
         result[group_id] = set(keys)
     return result
+
+
+def _require_component_group_coverage(
+    preflight_slide: Mapping[str, Any], prepared: list[Mapping[str, Any]],
+) -> None:
+    """Keep card-led pages from becoming a mostly empty template shell.
+
+    Complete group membership prevents a broken half-card.  It does not by
+    itself stop an agent from filling only two cards in a certified KPI grid
+    and leaving the rest blank.  Dense dashboard and multi-item pages need a
+    modest visual-group floor; specialised relationship pages are deliberately
+    excluded because their groups can represent ornamental network nodes.
+    """
+
+    if preflight_slide.get("role") not in {"dashboard", "multi-item"}:
+        return
+    group_map = _published_component_groups(preflight_slide)
+    if not group_map:
+        return
+    selected_keys = {
+        item.get("component_key")
+        for item in prepared
+        if isinstance(item.get("component_key"), str)
+    }
+    selected_groups = [
+        group_id for group_id, keys in group_map.items()
+        if keys.intersection(selected_keys)
+    ]
+    required = ceil(len(group_map) * 0.5)
+    if len(selected_groups) < required:
+        raise BriefBindingError(
+            "OUTLINE_COMPONENT_GROUP_COVERAGE_INSUFFICIENT"
+            f":slide_id={preflight_slide.get('slide_id')}"
+            f":provided={len(selected_groups)}:required={required}"
+        )
 
 
 def validate_fact_store(fact_store: Mapping[str, Any]) -> dict[str, Any]:
@@ -518,6 +560,7 @@ def compile_outline_bindings(
             for item in prepared
         ]
         _require_complete_component_groups(preflight_slide, resolved_group_prepared)
+        _require_component_group_coverage(preflight_slide, resolved_group_prepared)
 
         for item in prepared:
             ordinal = int(item["ordinal"])

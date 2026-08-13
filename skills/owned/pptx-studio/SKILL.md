@@ -361,6 +361,10 @@ This is enforced: if the outline selects one member, `bind-outline` rejects
 the page until every member is explicitly populated. Select a simpler page
 when the agreed brief has no truthful fact for the full component; do not
 invent filler or leave a stale template value behind.
+For `dashboard` and `multi-item` pages, the binder also requires at least half
+of the published visual groups to be complete. A two-card outline cannot be
+released into a seven-card KPI grid; either ground enough cards in approved
+facts or choose a lower-cardinality certified page.
 
 This is the central weak-model guardrail: the agent decides only which
 approved client fact belongs to which semantic component; the runtime owns the
