@@ -198,6 +198,59 @@ def _locked_fact_values(fact_store: Mapping[str, Any]) -> dict[str, Mapping[str,
     return values
 
 
+def _require_complete_component_groups(
+    preflight_slide: Mapping[str, Any], prepared: list[Mapping[str, Any]],
+) -> None:
+    """Reject a partially populated certified visual component.
+
+    Native PPTX group membership is intentionally published as opaque component
+    keys.  A weak model can otherwise put a new metric into a dashboard card
+    while leaving its label (or its paired unit/action) as stale template copy.
+    That is mechanically valid OOXML but visually and semantically broken.
+    """
+
+    groups = preflight_slide.get("component_groups")
+    if groups is None:
+        return
+    if not isinstance(groups, list):
+        raise BriefBindingError("OUTLINE_COMPONENT_GROUP_INVALID")
+    published = preflight_slide.get("component_contract")
+    published_keys = {
+        item.get("component_key")
+        for item in published
+        if isinstance(item, Mapping) and isinstance(item.get("component_key"), str)
+    } if isinstance(published, list) else set()
+    selected = {
+        item.get("component_key")
+        for item in prepared
+        if isinstance(item.get("component_key"), str)
+    }
+    for group in groups:
+        if not isinstance(group, Mapping):
+            raise BriefBindingError("OUTLINE_COMPONENT_GROUP_INVALID")
+        group_id = group.get("component_group")
+        keys = group.get("component_keys")
+        if (
+            not isinstance(group_id, str)
+            or not group_id
+            or not isinstance(keys, list)
+            or len(keys) < 2
+            or any(not isinstance(key, str) or not key for key in keys)
+            or len(set(keys)) != len(keys)
+            or (published_keys and not set(keys).issubset(published_keys))
+        ):
+            raise BriefBindingError("OUTLINE_COMPONENT_GROUP_INVALID")
+        chosen = [key for key in keys if key in selected]
+        if chosen and len(chosen) != len(keys):
+            missing = [key for key in keys if key not in selected]
+            raise BriefBindingError(
+                "OUTLINE_COMPONENT_GROUP_INCOMPLETE"
+                f":slide_id={preflight_slide.get('slide_id')}:group={group_id}"
+                f":provided={','.join(chosen)}:required={','.join(keys)}"
+                f":missing={','.join(missing)}"
+            )
+
+
 def validate_fact_store(fact_store: Mapping[str, Any]) -> dict[str, Any]:
     """Validate a locked client ledger before any template retrieval.
 
@@ -298,6 +351,7 @@ def compile_outline_bindings(
                 raise BriefBindingError(
                     f"OUTLINE_COMPONENT_KEY_REQUIRED:slide_id={slide_id}"
                 )
+        _require_complete_component_groups(preflight_slide, prepared)
         coverage = _structural_coverage_requirements(preflight, slide_id=slide_id)
         # A visible, certified title surface is a mandatory part of the page
         # grammar.  Without this gate a weak agent can label its headline as

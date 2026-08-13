@@ -341,6 +341,10 @@ metric, and a roadmap group can contain an ordinal and an action. Bind all
 available client facts for that group before moving to the next group; never
 put a group member's label or value into a different card merely because its
 capacity also fits. A group alias reveals neither source text nor geometry.
+This is enforced: if the outline selects one member, `bind-outline` rejects
+the page until every member is explicitly populated. Select a simpler page
+when the agreed brief has no truthful fact for the full component; do not
+invent filler or leave a stale template value behind.
 
 This is the central weak-model guardrail: the agent decides only which
 approved client fact belongs to which semantic component; the runtime owns the
