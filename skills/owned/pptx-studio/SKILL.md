@@ -334,6 +334,14 @@ components, choose a simpler certified page. `bind-outline` rejects a
 misspelled, role-incompatible, over-capacity or already-used key instead of
 silently spilling the fact into an unrelated card.
 
+When `component_groups` is nonempty, it is a stronger rule than adjacency:
+each opaque `group.01` lists components that the certified source deliberately
+places in one visual unit. For example a KPI group can contain a label and a
+metric, and a roadmap group can contain an ordinal and an action. Bind all
+available client facts for that group before moving to the next group; never
+put a group member's label or value into a different card merely because its
+capacity also fits. A group alias reveals neither source text nor geometry.
+
 This is the central weak-model guardrail: the agent decides only which
 approved client fact belongs to which semantic component; the runtime owns the
 template geometry and all PowerPoint mechanics.

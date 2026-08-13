@@ -532,6 +532,7 @@ def preflight_native_slots(
         # OOXML children can share local coordinates, so bbox sorting would
         # otherwise scramble a dashboard's visible card sequence.
         component_contract: list[dict[str, Any]] = []
+        native_group_by_region: dict[str, tuple[int, str] | None] = {}
         for role in ("title", "label", "metric", "body"):
             candidates: list[tuple[int, str, dict[str, Any]]] = []
             for region in regions:
@@ -546,6 +547,11 @@ def preflight_native_slots(
                     raw_shape_id = raw_shape_slots[0].get("shape_id")
                     slot = slots_by_id.get(str(raw_shape_id))
                     order = slot.reading_order if slot is not None else 10**9
+                    native_group_by_region[str(region["region_id"])] = (
+                        (slot.reading_order, slot.group_id)
+                        if slot is not None and isinstance(slot.group_id, str) and slot.group_id
+                        else None
+                    )
                 else:
                     # Fragment groups retain their first source-character's
                     # native reading order.
@@ -554,6 +560,7 @@ def preflight_native_slots(
                         None,
                     )
                     order = fragment["slots"][0].reading_order if fragment is not None else 10**9
+                    native_group_by_region[str(region["region_id"])] = None
                 candidates.append((int(order), str(region["region_id"]), region))
             for index, (_order, _region_id, region) in enumerate(sorted(candidates), start=1):
                 key = f"{role}.{index:02d}"
@@ -564,6 +571,35 @@ def preflight_native_slots(
                     "native_capacity": region["native_capacity"],
                     "fragment_group": bool(region.get("fragment_group", False)),
                 })
+        # Native groups express a template designer's visual component
+        # grammar (for example label + value in the same KPI card). Publish
+        # only deterministic opaque aliases, never source group IDs or any
+        # geometry. Single-member groups are not useful to a planner.
+        members_by_native_group: dict[str, list[tuple[int, dict[str, Any]]]] = {}
+        by_key = {entry["component_key"]: entry for entry in component_contract}
+        for region in regions:
+            native_group = native_group_by_region.get(str(region["region_id"]))
+            key = region.get("component_key")
+            if native_group is None or not isinstance(key, str):
+                continue
+            _order, raw_group = native_group
+            members_by_native_group.setdefault(raw_group, []).append((native_group[0], by_key[key]))
+        component_groups: list[dict[str, Any]] = []
+        for group_index, members in enumerate(
+            sorted(
+                (items for items in members_by_native_group.values() if len(items) >= 2),
+                key=lambda items: min(item[0] for item in items),
+            ),
+            start=1,
+        ):
+            group_key = f"group.{group_index:02d}"
+            ordered_members = [entry for _order, entry in sorted(members)]
+            for entry in ordered_members:
+                entry["component_group"] = group_key
+            component_groups.append({
+                "component_group": group_key,
+                "component_keys": [entry["component_key"] for entry in ordered_members],
+            })
         slides.append({
             "slide_id": slide_id,
             # The declared role is already validated by composition.  It is
@@ -581,6 +617,7 @@ def preflight_native_slots(
             },
             "regions": regions,
             "component_contract": component_contract,
+            "component_groups": component_groups,
             "content_contract": {
                 role: sum(
                     1
