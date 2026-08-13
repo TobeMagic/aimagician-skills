@@ -284,7 +284,7 @@ unique `id`, exact `text`, `source_id`, locator, status and approved
 slide has `slide_id` and an ordered `facts` list; in a locked production run
 every standalone fact is `{"fact_id":"locked-client-fact-id","semantic_role":"title|label|metric|body","component_key":"title.01"}`.
 For a certified linked unit, use
-`{"fact_id":"locked-client-fact-id","semantic_role":"label|metric|body","component_group":"group.01"}`;
+`{"fact_id":"locked-client-fact-id","semantic_role":"label|metric|body","component_group":"project-card.01"}`;
 the binder resolves the compatible native member. Never put both target fields
 on one fact.
 
@@ -361,6 +361,14 @@ This is enforced: if the outline selects one member, `bind-outline` rejects
 the page until every member is explicitly populated. Select a simpler page
 when the agreed brief has no truthful fact for the full component; do not
 invent filler or leave a stale template value behind.
+The library may also mark a group `required:true`: this is a curated visual
+component (for example a project card whose heading, description, amount and
+unit are separate source shapes). It is not optional whitespace; every such
+group must be completed from separately traceable client facts or the selected
+page is rejected. Never attempt to bypass that gate with a repeated fact or
+invented filler—split the source data into atomic, source-located facts during
+the requirements freeze, or choose a more suitable page.
+
 For any card, relationship or roadmap page with published groups, the binder
 also requires visual-group coverage: a page with one to three groups must
 complete all of them; a larger grid must complete at least half. A two-card
