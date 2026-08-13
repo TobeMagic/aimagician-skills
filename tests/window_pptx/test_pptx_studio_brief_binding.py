@@ -238,6 +238,16 @@ def test_fact_store_validation_exposes_only_freeze_summary() -> None:
     }
 
 
+def test_fact_store_accepts_optional_classification_without_changing_copy() -> None:
+    fact_store = _fact_store()
+    fact_store["facts"][0]["kind"] = "label"  # type: ignore[index]
+    assert validate_fact_store(fact_store)["status"] == "PASS"
+
+    fact_store["facts"][0]["kind"] = 7  # type: ignore[index]
+    with pytest.raises(BriefBindingError, match="FACT_STORE_SCHEMA_INVALID"):
+        validate_fact_store(fact_store)
+
+
 @pytest.mark.parametrize(
     "outline,error",
     [

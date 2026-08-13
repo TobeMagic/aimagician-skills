@@ -175,6 +175,7 @@ def _locked_fact_values(fact_store: Mapping[str, Any]) -> dict[str, Mapping[str,
         if not isinstance(item, Mapping):
             raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
         identifier, text = item.get("id"), item.get("text")
+        kind = item.get("kind")
         if (
             not isinstance(identifier, str)
             or not identifier
@@ -187,6 +188,7 @@ def _locked_fact_values(fact_store: Mapping[str, Any]) -> dict[str, Mapping[str,
             or not isinstance(item.get("recommended_beat"), str)
             or re.fullmatch(r"s(?:0[1-9]|1[0-5])", item["recommended_beat"]) is None
             or identifier in values
+            or (kind is not None and (not isinstance(kind, str) or not kind))
         ):
             raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
         values[identifier] = item
