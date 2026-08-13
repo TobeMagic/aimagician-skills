@@ -282,7 +282,12 @@ unique `id`, exact `text`, `source_id`, locator, status and approved
 `recommended_beat` (`s01`…`s15`). Then write a small
 `content-outline.v1.json`: it has only `schema_version` and `slides`; each
 slide has `slide_id` and an ordered `facts` list; in a locked production run
-every standalone fact is `{"fact_id":"locked-client-fact-id","semantic_role":"title|label|metric|body","component_key":"title.01"}`.
+every standalone fact is normally
+`{"fact_id":"locked-client-fact-id","semantic_role":"title|label|metric|body"}`.
+The binder selects the smallest fitting unused native surface deterministically.
+Use an optional `component_key` only when the narrative deliberately needs a
+specific published surface (for example a hero metric), never as routine slot
+guesswork.
 For a certified linked unit, use
 `{"fact_id":"locked-client-fact-id","semantic_role":"label|metric|body","component_group":"project-card.01"}`;
 the binder resolves the compatible native member. Never put both target fields
@@ -297,7 +302,7 @@ minimum valid shape (extend it with more facts only):
 
 `project`, nonempty `sources`, every source `id`, every fact `status:"active"`,
 and a source ID matching every fact's `source_id` are mandatory. The outline
-must contain only `{fact_id,semantic_role,component_key}` or
+must contain only `{fact_id,semantic_role}`, `{fact_id,semantic_role,component_key}` or
 `{fact_id,semantic_role,component_group}` references; never add `value`,
 `text`, `source_id`, source paths, or a free-form replacement there.
 
@@ -335,11 +340,14 @@ native slot.
 publishes ordered keys such as `title.01`, `label.01`, `label.02`,
 `metric.01` and `body.01`, with only semantic role, native capacity and a
 fragment-lockup flag. It never reveals shape IDs, coordinates, source copy or
-private paths. Use keys for standalone surfaces; for a linked card use its
-published group and let the binder resolve the exact native member.
+private paths. The rule engine auto-allocates ordinary standalone facts by
+semantic role and exact capacity. Use a key only to make an intentional
+surface choice; for a linked card use its published group and let the binder
+resolve the exact native member.
 
 Treat them as a component sequence, never as one interchangeable text pool:
-write a page heading to `title.01`; keep each project/data card's name and
+write a page heading as a `title` fact (or target `title.01` only if it must
+occupy that exact heading); keep each project/data card's name and
 value in the corresponding returned label/metric order; preserve dashboard
 card label/value order; and place clinical-network central totals separately
 from the surrounding chip labels. If the brief cannot fill meaningful

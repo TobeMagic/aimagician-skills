@@ -52,13 +52,15 @@ def test_outline_binding_honors_published_component_key() -> None:
             {"value": "项目进度", "semantic_role": "title", "component_key": "label.01"},
         ]}]}, preflight=preflight)
 
-    with pytest.raises(BriefBindingError, match="OUTLINE_COMPONENT_KEY_REQUIRED:slide_id=s01"):
-        compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
-            {"value": "项目进度", "semantic_role": "title"},
-        ]}]}, preflight=preflight | {"slides": [{
-            **preflight["slides"][0],
-            "component_contract": [{"component_key": "title.01"}],
-        }]})
+    # Ordinary facts intentionally need not know an opaque component ordinal:
+    # the binding engine owns deterministic native-slot selection.
+    auto = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "项目进度", "semantic_role": "title"},
+    ]}]}, preflight=preflight | {"slides": [{
+        **preflight["slides"][0],
+        "component_contract": [{"component_key": "title.01"}],
+    }]})
+    assert auto["bindings"][0]["component_key"] == "title.01"
 
 
 def test_outline_binding_resolves_opaque_component_group_members() -> None:

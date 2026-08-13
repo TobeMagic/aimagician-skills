@@ -453,12 +453,12 @@ def compile_outline_bindings(
             item for item in preflight["slides"]
             if isinstance(item, Mapping) and item.get("slide_id") == slide_id
         )
-        published_components = preflight_slide.get("component_contract")
-        if isinstance(published_components, list) and published_components:
-            if any(item["component_key"] is None and item["component_group"] is None for item in prepared):
-                raise BriefBindingError(
-                    f"OUTLINE_COMPONENT_KEY_REQUIRED:slide_id={slide_id}"
-                )
+        # ``component_contract`` is a deterministic layout API, not a burden
+        # for the authoring agent. A direct component key remains useful when
+        # a client explicitly needs a particular surface, but ordinary facts
+        # can safely omit it: the binder selects the smallest fitting unused
+        # native surface by role and capacity. Requiring opaque ordinals such
+        # as ``metric.07`` made a valid outline turn into slot-guessing.
         component_groups = _published_component_groups(preflight_slide)
         for item in prepared:
             group = item["component_group"]
