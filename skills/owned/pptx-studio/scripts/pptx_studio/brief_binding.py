@@ -134,13 +134,13 @@ def _remaining_capacity_summary(regions: list[dict[str, Any]]) -> str:
     ) or "none"
 
 
-def _locked_fact_values(fact_store: Mapping[str, Any]) -> dict[str, str]:
+def _locked_fact_values(fact_store: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
     """Return the active immutable client-copy ledger for a governed run."""
 
     facts = fact_store.get("facts")
     if fact_store.get("schema_version") != "1.0" or not isinstance(facts, list):
         raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
-    values: dict[str, str] = {}
+    values: dict[str, Mapping[str, Any]] = {}
     for item in facts:
         if not isinstance(item, Mapping):
             raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
@@ -154,7 +154,7 @@ def _locked_fact_values(fact_store: Mapping[str, Any]) -> dict[str, str]:
             or identifier in values
         ):
             raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
-        values[identifier] = text
+        values[identifier] = item
     if not values:
         raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
     return values
@@ -203,9 +203,16 @@ def compile_outline_bindings(
                 if set(item) != _LOCKED_FACT_FIELDS or not isinstance(item.get("fact_id"), str):
                     raise BriefBindingError("LOCKED_FACT_REFERENCE_REQUIRED")
                 output_fact_id = item["fact_id"]
-                value = locked_facts.get(output_fact_id)
-                if value is None:
+                locked_fact = locked_facts.get(output_fact_id)
+                if locked_fact is None:
                     raise BriefBindingError(f"LOCKED_FACT_UNKNOWN:fact_id={output_fact_id}")
+                recommended_beat = locked_fact.get("recommended_beat")
+                if recommended_beat is not None and recommended_beat != slide_id:
+                    raise BriefBindingError(
+                        "LOCKED_FACT_BEAT_MISMATCH"
+                        f":fact_id={output_fact_id}:slide_id={slide_id}"
+                    )
+                value = locked_fact["text"]
                 if output_fact_id in seen_locked_fact_ids:
                     raise BriefBindingError(f"LOCKED_FACT_REUSED:fact_id={output_fact_id}")
                 seen_locked_fact_ids.add(output_fact_id)

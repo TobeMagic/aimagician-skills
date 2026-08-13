@@ -156,3 +156,14 @@ def test_locked_fact_outline_resolves_only_ledger_values() -> None:
 def test_locked_fact_outline_rejects_free_or_unknown_values(outline: dict[str, object], error: str) -> None:
     with pytest.raises(BriefBindingError, match=error):
         compile_outline_bindings(outline, preflight=_preflight(), fact_store=_fact_store())
+
+
+def test_locked_fact_outline_enforces_client_approved_slide_beat() -> None:
+    fact_store = _fact_store()
+    fact_store["facts"][0]["recommended_beat"] = "s02"  # type: ignore[index]
+    outline = {"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"fact_id": "report-title", "semantic_role": "title"},
+    ]}]}
+
+    with pytest.raises(BriefBindingError, match="LOCKED_FACT_BEAT_MISMATCH"):
+        compile_outline_bindings(outline, preflight=_preflight(), fact_store=fact_store)

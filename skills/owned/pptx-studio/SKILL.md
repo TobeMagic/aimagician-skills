@@ -253,12 +253,14 @@ fonts, colours, CSS/HTML, code, OOXML or post-assembly repairs.
 For normal client work, do **not** hand-map `region_id` and `shape_id`. Before
 production, create and lock a `fact-store.v1.json` from the agreed brief and
 authoritative data. It is the client-copy ledger: every active fact has a
-unique `id`, exact `text`, `source_id`, locator and status. Then write a small
+unique `id`, exact `text`, `source_id`, locator, status and approved
+`recommended_beat` (`s01`…`s15`). Then write a small
 `content-outline.v1.json`: it has only `schema_version` and `slides`; each
 slide has `slide_id` and an ordered `facts` list; in a locked run every fact is
 `{"fact_id":"locked-client-fact-id","semantic_role":"title|label|metric|body|any"}`.
 Pass `--fact-store work/fact-store.v1.json` to `bind-outline`. The binding
-command rejects free-form values, unknown IDs and reused IDs. Therefore an
+command rejects free-form values, unknown IDs, reused IDs and a fact bound to
+the wrong approved beat. Therefore an
 agent cannot add a convenient KPI, rewrite a claim, or pad a template merely
 to satisfy a slot count. The legacy value form is for migration tests only,
 not client delivery.
