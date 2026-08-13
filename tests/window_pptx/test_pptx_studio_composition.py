@@ -109,6 +109,19 @@ def test_family_assembly_rejects_role_mismatch_inside_anchor_work() -> None:
         compile_composition(catalog, observations=observations, request=request)
 
 
+def test_exact_deck_rejects_role_mismatch_inside_ordered_work() -> None:
+    """Ordered reproduction cannot reinterpret a certified source page."""
+
+    catalog, observations, signatures = _fixture()
+    request = _request(signatures, strategy="exact_deck")
+    # ``title`` has the same two-region floor as this source page, so the
+    # assertion reaches semantic compatibility rather than only capacity.
+    request["slides"][1]["role"] = "title"  # type: ignore[index]
+
+    with pytest.raises(CompositionError, match="ROLE_INCOMPATIBLE"):
+        compile_composition(catalog, observations=observations, request=request)
+
+
 def test_family_assembly_rejects_source_outside_anchor_work() -> None:
     catalog, observations, signatures = _fixture()
     # Make the external source visually compatible, so this exercise reaches
@@ -241,7 +254,9 @@ def test_composition_rejects_native_chart_without_structured_data_contract() -> 
     with pytest.raises(CompositionError, match="STRUCTURED_DATA_CONTRACT_UNAVAILABLE"):
         compile_composition(catalog, observations=observations, request=request)
     request["strategy"] = "page_assembly"
-    with pytest.raises(CompositionError, match="BINDABLE_REGION_COUNT_INSUFFICIENT"):
+    # Governed data authority is a stronger prerequisite than generic native
+    # region count in every composition route.
+    with pytest.raises(CompositionError, match="STRUCTURED_DATA_CONTRACT_UNAVAILABLE"):
         compile_composition(catalog, observations=observations, request=request)
 
 

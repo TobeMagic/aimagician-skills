@@ -49,10 +49,11 @@ For each slide retrieve a role- and capacity-safe candidate:
   specialist categories.
 
 Use `exact_deck` only when a complete certified work genuinely matches the
-brief **and the client narrative matches its ordered page grammar**. In that
-route, first query a cover, then inspect the returned `deck_id` as one ordered
-page family and map the client narrative to those inspected page IDs. A shared
-master is not sufficient evidence: otherwise use `page_assembly`; use
+brief **and every client page matches its ordered page grammar and native
+content floor**. In that route, first query a cover, then inspect the returned
+`deck_id` as one ordered page family and map the client narrative to those
+inspected page IDs. A shared master and source order are not sufficient
+evidence: otherwise use `page_assembly`; use
 `component_assembly` only for a bounded safe region. `family_assembly` may
 retain one inspected work's visual family, but every selected page must still
 match its declared role and native content capacity.

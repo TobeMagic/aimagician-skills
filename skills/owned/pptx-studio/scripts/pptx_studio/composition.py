@@ -233,33 +233,26 @@ def compile_composition(
                 raise CompositionError("PAGE_CANDIDATE_UNKNOWN")
             source_region_ids = [str(region_id) for region_id, record in regions.items() if record.get("page_id") == page.get("page_id")]
             capacity = _page_capacity(page)
-            # Exact-deck reuse is a controlled reproduction route. A page may
-            # be a certified chart/infographic whose vision label does not map
-            # to the generic role taxonomy and whose visible data surface is a
-            # single native heading. It still needs at least one editable
-            # client slot, but cannot honestly be rejected as a six-card page
-            # merely because a classifier called it a dashboard. The native
-            # preflight and binding-completeness gate retain authority over its
-            # actual editable surface. Page/component assembly keeps the
-            # stricter role floor before any source import.
-            # ``exact_deck`` is the sole literal-reproduction route. A
-            # ``family_assembly`` changes the client narrative and is
-            # therefore a real composition, not permission to reinterpret a
-            # clinical-department network as a process diagram simply because
-            # both pages share one master.  It needs the same role floor as a
-            # normal page assembly; the later native preflight remains the
-            # final capacity authority.
-            required_regions = 1 if strategy == "exact_deck" else minimum_distinct_client_facts(item["role"])
-            if len(source_region_ids) < required_regions:
-                raise CompositionError("BINDABLE_REGION_COUNT_INSUFFICIENT")
             # A native chart/table/workbook page is eligible only when a
-            # source-fingerprinted business-data contract exists. A later
-            # adaptation request must still provide every declared value;
-            # this never grants generic chart-editing authority.
+            # source-fingerprinted business-data contract exists. Check
+            # this before generic region floors so a missing governed-data
+            # authority is never masked as an ordinary capacity repair.
             if governed_content_slot_count(page) > 0 and contract_for_source(
                 str(page.get("package_sha256")), int(page.get("slide_number", 0)),
             ) is None:
                 raise CompositionError("STRUCTURED_DATA_CONTRACT_UNAVAILABLE")
+            # ``exact_deck`` preserves a certified page order, but it does
+            # not make a source page semantically interchangeable.  Allowing
+            # the route to bypass the native-region floor was the mechanism
+            # by which a clinical-department network could be selected for a
+            # financial-efficiency comparison merely because both were in one
+            # attractive work-report deck.  A complete-work reproduction is
+            # allowed only when every client page has the same role grammar
+            # and enough independent client-owned surfaces as page assembly.
+            # Native preflight remains the final per-string capacity authority.
+            required_regions = minimum_distinct_client_facts(item["role"])
+            if len(source_region_ids) < required_regions:
+                raise CompositionError("BINDABLE_REGION_COUNT_INSUFFICIENT")
         if page.get("category") not in active:
             raise CompositionError("SOURCE_SCOPE_INVALID")
         if not materialization_eligible(page):
@@ -286,7 +279,11 @@ def compile_composition(
             raise CompositionError("STYLE_SIGNATURE_NOT_ALLOWED")
         if not same_certified_theme_family and not _style_profiles_compatible(anchor_profile, style_profile(page, observations)):
             raise CompositionError("STYLE_FALLBACK_INCOMPATIBLE")
-        if strategy != "exact_deck" and not _role_matches(page, detail, str(item["role"])):
+        # Source order and a shared master establish visual continuity; they
+        # never establish semantic equivalence.  Enforce the certified
+        # category/vision role mapping for every strategy, including exact
+        # deck reproduction.
+        if not _role_matches(page, detail, str(item["role"])):
             raise CompositionError("ROLE_INCOMPATIBLE")
         if type(capacity) is not int or capacity < item["minimum_capacity"]:
             raise CompositionError("CAPACITY_INSUFFICIENT")
