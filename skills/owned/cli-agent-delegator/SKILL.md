@@ -1,6 +1,6 @@
 ---
 name: cli-agent-delegator
-description: Use for broad or multi-source exploration, repository scanning, architecture mapping, deep web research, image inspection, independent plan/code/spec/verification review, bounded git/test/report/write work, or whenever a locked simple short execution task can be offloaded. Prefer OpenCode, require cli-agent-delegator plus all domain skills to be loaded, and validate critical claims; require a fresh completion audit only for high-risk, planning-managed, deployable, policy-required, or explicitly requested work.
+description: Use only when actually dispatching an external CLI worker for broad or multi-source exploration, repository scanning, architecture mapping, deep web research, image inspection, independent plan/code/spec/verification review, or a bounded operation whose independent execution materially saves controller context. Do not use for one or two known files, trivial checks, or unresolved decisions; require a fresh completion audit only for high-risk, planning-managed, deployable, policy-required, or explicitly requested work.
 category: operate
 subcategory: agent-orchestration
 tags:
@@ -25,23 +25,23 @@ Use external CLI agents as bounded workers while the main Agent keeps the scarce
 
 OpenCode is the current provider. It can explore, research, reason over sanitized visual evidence, run checks, produce reports, review work, and perform a small isolated write task when the controller supplies an exact contract. Pixel understanding is acquired through the owned `vision-analysis` skill before OpenCode reasoning. Future CLI agents can implement the same delegation contract under `references/providers/`.
 
-## Delegation-First Trigger Gate
+## Dispatch Trigger Gate
 
-Before the main Agent starts a broad scan or mechanical verification, ask whether a CLI worker can return the needed evidence without consuming the main context window. Delegate first when any of these is true:
+Before the main Agent starts a broad scan or mechanical verification, ask whether a CLI worker can return the needed evidence with a meaningful net benefit after prompt construction, supervision, and controller validation. Dispatch only when at least one of these is true:
 
 - relevant context spans many unknown files, modules, repositories, documents, logs, issues, APIs, or web sources;
 - the task is repository mapping, implementation-location discovery, dependency or data-flow tracing, deep research, comparison, or image understanding;
 - a fresh independent context should review a plan, specification, diff, verification record, phase, milestone, or completion claim;
-- a bounded worker can inspect git state, run tests, monitor a check, collect failures, or turn raw output into a report;
+- a bounded worker can inspect git state, run a slow or repeated test/check, monitor a long-running check, collect failures, or turn a large raw output into a report;
 - a short, low-risk implementation has an exact write scope and can run in an isolated worktree.
 
-This gate applies even when the user says only “check,” “inspect,” “research,” “review,” “verify,” “audit,” “run the tests,” “fix this small issue,” or “update this file.” Do not let the main Agent silently perform mechanical work that satisfies the short-task gate or a multi-file or multi-source scan that should have been delegated.
+This gate applies even when the user says “check,” “inspect,” “research,” “review,” “verify,” “audit,” “run the tests,” “fix this small issue,” or “update this file,” but wording alone is not sufficient. Compare dispatch overhead with the work first. Do not let the main Agent silently perform a genuinely broad multi-file or multi-source scan that should be delegated; do not create a worker merely to avoid a known-file check.
 
 Do not delegate a lookup limited to one or two known files, a tiny fact already in context, user discussion, unresolved product choices, architecture ownership decisions, security acceptance, or final completion judgment.
 
-## Default Short-Task Gate
+## Bounded-Operation Gate
 
-Delegate a simple short task by default when all of these are true:
+Dispatch a simple short task only when all of these are true **and** a fresh worker, long-running command, independent report, or context saving has a clear benefit:
 
 1. the objective, accepted behavior, and completion evidence are already locked;
 2. the task is local, independently verifiable, and does not require architecture or product judgment;
@@ -58,6 +58,8 @@ Typical eligible work includes:
 - requirement, plan, diff, verification, phase, milestone, or completion review.
 
 If a supposedly short task discovers unresolved behavior, architecture, security, migration, destructive action, secret access, production impact, or required scope expansion, the worker returns `NEEDS_CONTEXT`. The controller resolves the decision before any new dispatch.
+
+Keep these work items in the controller: one or two known files, a single focused command whose output is immediately actionable, a compact local diff review, an edit that needs ongoing user discussion, and any task where prompt construction plus result verification costs more than the work itself.
 
 ## Worker-Side Loading Gate
 
@@ -106,6 +108,28 @@ Choose exactly one mode and state it in the prompt:
 - `bounded-write`: edit only named paths inside isolation selected by the main Agent or `agent-workstream-orchestrator`. The prompt must list allowed files, tests, git policy, and forbidden operations.
 
 For `bounded-write`, do not permit edits in a dirty user worktree. Local commit is allowed only when the prompt explicitly grants it and an independent review has passed. Push, merge, reset, cleanup of user files, system package installation, production mutation, and secret access each require separate explicit authorization.
+
+## Scope Enforcement Contract
+
+### 1. Compile The Scope Manifest
+
+Before dispatch, list exact readable roots, writable paths, forbidden roots, and command classes. A path absent from the manifest is unavailable to the worker; a broad glob must not be used to discover excluded content.
+
+### 2. Bind And Observe
+
+Put the manifest in the prompt and require the worker to announce a path or command before using it. The controller watches the event stream; the first attempted read, glob, shell command, or service call outside scope invalidates the run.
+
+### 3. Recover Without Trusting The Run
+
+Stop the worker, record only the attempted scope expansion and observed side effects, then re-partition or perform the narrow known-file check in the controller. Do not reuse an out-of-scope report as audit or completion evidence.
+
+**CHECKPOINT:** A worker becomes eligible for integration only after its final report, tool trace, paths, and commands all fit the scope manifest.
+
+**CHECKPOINT:** If a worker needs a path, command, service, or permission absent from the manifest, it must return `NEEDS_CONTEXT` before using it; the controller either expands the contract explicitly or routes the decision locally.
+
+**CHECKPOINT:** Before accepting a worker result, confirm the requested evidence exists, the status matches the evidence, and no unapproved side effect requires cleanup or user discussion.
+
+When scope enforcement itself is unavailable, stop the delegated run and fall back to a controller-owned known-file check rather than treating prompt language as a sandbox. The manifest detects visible violations and governs evidence acceptance; it does not impose tool-level access control. Use a runtime-isolated OpenCode configuration before treating unattended worker output as security-sensitive or independent audit evidence.
 
 ## Required Prompt Contract
 
@@ -177,11 +201,13 @@ If validation contradicts the worker, the main Agent resolves it from primary ev
 
 ## Failure Handling Checkpoint
 
-- Explicit quota or model failure: preserve the prompt contract and continue through the declared fallback chain.
-- Healthy progress events: keep waiting; elapsed time alone is not failure.
-- Repeated no-progress events, malformed output, or scope drift: stop that attempt, classify the failure, and retry once with a corrected bounded prompt or different model.
-- Material uncertainty: return `NEEDS_CONTEXT`; the controller decides or discusses before any write.
-- Contradictory completion claim: return `DONE_WITH_CONCERNS` and require controller reproduction. Never promote it to `DONE` from worker confidence alone.
+| Trigger | First response | Fallback |
+|---|---|---|
+| Explicit quota or model failure | Preserve the prompt contract and record the failed provider/model | Continue through the declared fallback chain only after the failed process exits |
+| Repeated no-progress events, malformed output, or scope drift | Stop the attempt and classify the event | Retry once with a corrected bounded prompt or different approved model |
+| Material uncertainty or a contradictory completion claim | Return `NEEDS_CONTEXT` or `DONE_WITH_CONCERNS` | Controller decides or reproduces the decisive evidence before any write or completion claim |
+
+Healthy progress events keep the run alive; elapsed time alone is not failure. Never promote a worker claim to `DONE` from confidence alone.
 
 Before accepting the handoff, confirm the effective model, session, permissions, changed files, decisive evidence, and controller spot-check are all present.
 

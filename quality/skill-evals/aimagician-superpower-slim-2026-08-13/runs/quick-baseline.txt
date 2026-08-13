@@ -1,0 +1,9 @@
+- **Task tier:** Tier 1 (single typo fix, no planning)
+- **Changed files:** `README.md` (line 3: `installes` → `installs`)
+- **Verification:** `node check.mjs` → `quick-fixture: PASS`
+- **Completion status:** Complete
+
+OPENCODE_EXIT=0
+
+--- acceptance ---
+quick-fixture: PASS

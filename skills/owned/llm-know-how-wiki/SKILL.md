@@ -1,16 +1,6 @@
 ---
 name: llm-know-how-wiki
-description: >
-  Build, maintain, query, and lint a project-local LLM-know-how-wiki: a
-  persistent, compiled Markdown knowledge base with raw evidence, curated wiki
-  pages, schema rules, index, and log. Use this skill whenever the user asks to
-  create an LLM wiki, ingest raw docs/repos/Feishu/Linear snapshots, answer from
-  an existing wiki, lint/audit wiki health, inventory project secrets into a
-  controlled local vault, or turn scattered engineering context into a durable
-  knowledge base. This skill should trigger even if the user only says "wiki",
-  "know-how", "ingest", "digest", "secret inventory", "env 管理",
-  "密钥整理", "基于 wiki 回答", "把这些文档编译进知识库", or
-  "维护 LLM-know-how-wiki".
+description: Use when creating, maintaining, querying, linting, or safely ingesting a project-local LLM-know-how-wiki, including evidence compilation, repo/Feishu/Linear snapshots, secret inventory metadata, env management, or answers grounded in a project wiki. Do not use for a one-file note, raw secret disclosure, or generic project memory that has no curated knowledge-base need.
 metadata:
   related_skills:
     - opensource-architecture-research
@@ -32,7 +22,7 @@ tags:
 
 # LLM Know-how Wiki
 
-Use this skill to create and operate a project-local compiled knowledge base inspired by Karpathy's LLM Wiki pattern and the Hermes Agent `llm-wiki` skill. The key idea is not query-time RAG. The agent incrementally compiles raw sources into stable, interlinked Markdown pages so project knowledge compounds over time.
+Use this skill to create and operate a project-local compiled knowledge base. It is not query-time RAG: the agent incrementally compiles raw sources into stable, interlinked Markdown pages so project knowledge compounds over time.
 
 ## Core Model
 
@@ -352,6 +342,36 @@ Use the wiki for curated, source-traceable knowledge that must be queried across
 - Conflicting sources: retain both with provenance and mark the curated claim unresolved until authority is established.
 
 Before answering or closing maintenance, confirm the wiki root, source provenance, current index, lint result, sensitive scan status where applicable, and explicit unknowns.
+
+## Maintenance Checkpoints
+
+### 1. Resolve Authority
+
+Confirm the project-local wiki root, requested mode, source list, and whether the user authorized writes, refresh, or secret inventory before touching a wiki.
+
+### 2. Preserve Evidence Boundaries
+
+For ingest or maintenance, distinguish raw evidence, curated claims, secret metadata, and local-vault values. Do not promote a claim until its source and destination page are explicit.
+
+### 3. Verify The Result
+
+Run the relevant lint and sensitive scan after writes, then report changed pages, skipped sources, unknowns, and the next safe refresh point.
+
+**CHECKPOINT:** A wiki answer or maintenance result remains open when the root, source provenance, index, lint state, or sensitive-scan state is unknown for the requested mode.
+
+**CHECKPOINT:** Confirm the requested answer/write mode, source authority, and sensitive-data boundary before reading a broad workspace or running a repository refresh.
+
+**CHECKPOINT:** If a source, lint, or sensitive scan fails, keep the affected page or digest open and report the verified evidence boundary instead of calling the wiki healthy.
+
+## Failure Handling
+
+| Trigger | First response | Fallback |
+|---|---|---|
+| Wiki root, source authority, or write authorization is unresolved | Stop before initialization, ingest, refresh, or filing | Return candidate roots and the smallest decision needed to continue |
+| Raw evidence conflicts, fetch fails, or adapter output is incomplete | Preserve available provenance and label the affected claim unresolved | Continue only with source-bounded answers or schedule a targeted refresh |
+| Lint, sensitive scan, or vault boundary fails | Prevent health/completion claims and redact any unsafe output | Repair metadata or controlled vault placement, then rerun the failed safety check |
+
+When a suspected secret appears outside the controlled vault, stop broad reporting and route only sanitized metadata through the secret-inventory workflow.
 
 ## Useful Commands
 

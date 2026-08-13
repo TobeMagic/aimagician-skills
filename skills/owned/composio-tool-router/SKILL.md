@@ -57,6 +57,12 @@ Do not use it when:
 - Secret-safe: never print tokens, API keys, OAuth state, or raw files from `~/.composio/`.
 - Output-efficient: summarize candidate tools and only include fields needed for the next decision.
 
+**CHECKPOINT:** Before an external write, the toolkit, action slug, target identity, required fields, dry-run result, duplicate-risk decision, and authorization source must be written in one compact execution record.
+
+**CHECKPOINT:** Confirm that discovery stayed service-scoped and schema-on-demand before expanding to a global search or a different integration path.
+
+**CHECKPOINT:** If any requested action is destructive, public, administrative, or duplicate-sensitive, stop after dry-run until the target and authorization are explicit.
+
 ## Workflow
 
 ### 1. Classify Intent
@@ -79,6 +85,17 @@ Do not use it when:
 - For intent search, use `composio search "<intent>" --toolkits <toolkit> --limit 10`.
 - Prefer service-scoped results over global search to reduce noise.
 
+```bash
+composio tools list linear --limit 50
+composio tools list slack --query "send message" --limit 20
+composio tools info <tool-slug>
+```
+
+```bash
+composio tools info <tool-slug>
+composio execute <tool-slug> --get-schema
+```
+
 ### 4. Select And Inspect
 
 - Choose the smallest tool that matches the user's intent.
@@ -93,6 +110,10 @@ Do not use it when:
 - Before real execution, confirm the exact tool slug, target account/service, destination/resource, payload summary, and whether duplicate execution would be harmful. A delegated post-delivery closure may proceed without another conversational prompt only when the original user authorization named the issue, permitted Linear status/comment closure after merge, and the worker prompt repeats the exact permitted action set. It must still dry-run and report the final payload summary.
 - Execute once. If the response indicates success, do not retry blindly.
 - For failures, summarize the error, connection state, missing scopes or fields, and the safest retry path.
+
+```bash
+composio execute <tool-slug> -d '<approved-json-payload>' --dry-run
+```
 
 ### 6. Return A Compact Tool Report
 
@@ -126,11 +147,19 @@ Keep MCP or another direct integration when the problem needs:
 
 ## Failure Handling And Checkpoint
 
+| Trigger | First response | Fallback |
+|---|---|---|
+| CLI, service connection, or authorization is unavailable | Report the redacted preflight result and the missing capability | Route to a safer first-party CLI or defer execution; never inspect auth caches |
+| Discovery returns no fitting action or schema is incomplete | Broaden the intent query once and inspect only one selected schema | Return the empty result and direct-integration boundary instead of guessing fields |
+| Dry-run or execution exposes a target/payload mismatch | Stop before mutation and show the discrepancy | Request corrected facts or authorization; never blind-retry a possible partial write |
+
 - CLI missing or unauthenticated: report the exact preflight failure and do not invent available actions.
 - Service filter returns no action: broaden the intent query once, then report the empty result and direct-integration alternative.
 - Schema or required field remains unknown: do not execute; inspect only that action's schema and ask for material missing input.
 - Dry-run differs from requested mutation: stop and show the discrepancy.
 - Execution fails: return the redacted error, connection state, safe retry path, and whether any partial mutation may have occurred.
+
+When a retry could duplicate a mutation or conceal a partial result, stop and route reconciliation through a read-only lookup before any further execution.
 
 A write can advance only after service, action slug, identity or connection, required fields, dry-run, and user authorization are all explicit. A read completes only when the result is tied to the selected action and not inferred from a generic service description.
 

@@ -160,6 +160,8 @@ Score concept fit, hierarchy, craft, functionality, specificity, restraint, resp
 
 Report the user flow or story, selected direction, changed files, target viewports or media geometry, interactions exercised, screenshots or tests, accessibility result, media validation, known tradeoffs, source path, and final artifact path. For a hybrid presentation, emit `assets/templates/ppt-handoff.md` and route native production to the PPT owner.
 
+**CHECKPOINT:** Before declaring a browser-native artifact complete, reconcile the accepted deliverable route, real content and claims, target geometry, representative functional path, visual evidence, accessibility findings, fallback behavior, and every derivative marked `NOT_RUN`.
+
 ## Weak-Model Decision Discipline
 
 When judgment is limited, follow these rules in order:

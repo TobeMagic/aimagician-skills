@@ -31,7 +31,7 @@ Use this Skill when at least one condition holds:
 - multiple outputs need integration, conflict control, or a unified acceptance pass;
 - a paused or background session must be tracked and resumed safely.
 
-Do not use it for one short, tightly coupled edit; a decision that depends on unresolved user intent; or work whose files, state, and acceptance cannot be partitioned. In those cases, keep the work in the controller and resolve the boundary first.
+Do not use it for one external worker, one short tightly coupled edit, a single known-file check, a decision that depends on unresolved user intent, or work whose files, state, and acceptance cannot be partitioned. In those cases, keep the work in the controller and resolve the boundary first. `cli-agent-delegator` can dispatch one bounded worker without creating a durable workstream registry.
 
 ## Control Contract
 
@@ -94,18 +94,38 @@ Do not advance a lane unless the current checkpoint passes:
 - `INTEGRATED`: the controller inspected the diff and ran the parent-level decisive check.
 - `CLOSED`: no unresolved Blocker or Important finding remains and the parent checklist is updated.
 
+## Scope And Handoff Validation
+
+### 1. Freeze Each Lane
+
+Record the selected source roots, command classes, forbidden roots, and expected evidence before launch. A read-only lane does not gain access to sibling workstreams, installed copies, or broad repository scans merely because they are convenient.
+
+### 2. Reject Drift Early
+
+If a worker attempts an unlisted path, command, or write, stop that lane and mark its handoff invalid. Preserve only the minimal incident evidence; do not merge conclusions from the drifted run.
+
+### 3. Re-issue The Smallest Contract
+
+Narrow the objective to known paths, or move the unresolved architecture decision to the controller. Restart only after the revised contract and decisive evidence are explicit.
+
+**CHECKPOINT:** `HANDOFF` requires a scope-conformant tool trace as well as output, changed-file, command, and risk evidence.
+
+**CHECKPOINT:** `READY` is invalid until the lane has an explicit owner, allowed roots, forbidden roots, command class, and parent-level acceptance evidence.
+
+**CHECKPOINT:** `INTEGRATED` is invalid until the controller has inspected the integrated diff and rerun the parent-level decisive check.
+
+When a lane cannot produce a scope-conformant trace, stop integration and fall back to a controller-owned, known-path check or a newly isolated lane.
+
 ## Failure Handling
 
-| Failure | Response |
-|---|---|
-| Worker asks a material product or architecture question | Pause the lane; controller discusses or decides, then re-prompt with the decision |
-| Worker drifts outside scope | Stop or discard only that lane's unaccepted changes; tighten scope and restart from a clean checkpoint |
-| Session is silent but still emits progress events | Keep waiting; do not terminate from an arbitrary short timeout |
-| No progress events and no output | Inspect session state, request one status update, then restart or reassign if still stalled |
-| Model or quota failure | Apply the provider fallback policy from `cli-agent-delegator` and preserve the same task contract |
-| Conflicting write scopes | Serialize, re-partition, or isolate in worktrees before further edits |
-| Tests pass but requirements are not covered | Keep the parent work open; repair the implementation or acceptance evidence |
-| Worker result is uncertain or contradicts local evidence | Controller verifies primary sources and records the discrepancy; never average conflicting claims |
+| Trigger | First response | Fallback |
+|---|---|---|
+| Worker asks a material product or architecture question | Pause the lane and obtain a controller decision | Re-prompt with the accepted decision or keep the question with the controller |
+| Worker drifts outside scope or conflicts with local evidence | Stop or discard that lane's unaccepted result | Tighten scope and restart from a clean checkpoint; never average conflicting claims |
+| Session is silent but still emits progress events | Keep waiting; do not terminate from an arbitrary short timeout | Continue event observation until a clear error, repeated no-progress cycle, or explicit cancellation |
+| No progress events and no output | Inspect session state and request one status update | Restart or reassign only after the lane is confirmed stalled |
+| Model/quota failure or conflicting write scopes | Preserve the contract and serialize affected work | Apply the approved provider fallback or isolate the lanes in worktrees |
+| Tests pass but requirements are not covered | Keep the parent requirement open | Repair implementation or acceptance evidence before closure |
 
 ## Runtime Helpers
 

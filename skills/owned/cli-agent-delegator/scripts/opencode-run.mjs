@@ -21,6 +21,36 @@ const ANSI_PATTERN = /\u001b\[[0-?]*[ -/]*[@-~]/g;
 const MODEL_ID_PATTERN = /^([a-z0-9._-]+\/[a-z0-9._-]+)\s*$/gim;
 const MAX_CAPTURED_OUTPUT = 2 * 1024 * 1024;
 
+export function createCancellationController() {
+  let requested = false;
+  let reason = null;
+  const listeners = new Set();
+
+  return {
+    get requested() {
+      return requested;
+    },
+    get reason() {
+      return reason;
+    },
+    request(nextReason = "controller-cancelled") {
+      if (requested) return;
+      requested = true;
+      reason = nextReason;
+      for (const listener of listeners) listener();
+      listeners.clear();
+    },
+    onCancel(listener) {
+      if (requested) {
+        listener();
+        return () => {};
+      }
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    }
+  };
+}
+
 function cachePath() {
   const root = process.env.XDG_CACHE_HOME || join(homedir(), ".cache");
   return join(root, "aimagician-superpower", "cli-agent-delegator", "opencode-models.json");
@@ -324,7 +354,17 @@ function extractSessionId(output) {
   return matches.at(-1)?.[1] ?? null;
 }
 
-async function runOnce({ directory, model, prompt }) {
+async function runOnce({ directory, model, prompt, cancellation }) {
+  if (cancellation?.requested) {
+    return {
+      model,
+      exitCode: 130,
+      signal: null,
+      classification: "cancelled",
+      session: null,
+      output: ""
+    };
+  }
   const args = [
     "run",
     "--dir", directory,
@@ -339,6 +379,9 @@ async function runOnce({ directory, model, prompt }) {
     let output = "";
     let terminalUsageObserved = false;
     let settled = false;
+    const unsubscribe = cancellation?.onCancel(() => {
+      if (!settled) child.kill("SIGTERM");
+    });
 
     const forward = (target, chunk) => {
       const text = chunk.toString();
@@ -355,11 +398,12 @@ async function runOnce({ directory, model, prompt }) {
     child.on("error", (error) => {
       if (settled) return;
       settled = true;
+      unsubscribe?.();
       output = appendTail(output, error.message);
       resolveResult({
         model,
         exitCode: 2,
-        classification: classifyOpenCodeFailure(output, 2),
+        classification: cancellation?.requested ? "cancelled" : classifyOpenCodeFailure(output, 2),
         session: extractSessionId(output),
         output
       });
@@ -367,12 +411,17 @@ async function runOnce({ directory, model, prompt }) {
     child.on("close", (exitCode, signal) => {
       if (settled) return;
       settled = true;
+      unsubscribe?.();
       const normalizedExit = exitCode ?? (signal ? 1 : 2);
       resolveResult({
         model,
         exitCode: normalizedExit,
         signal: signal ?? null,
-        classification: terminalUsageObserved ? "usage-limit" : classifyOpenCodeFailure(output, normalizedExit),
+        classification: cancellation?.requested
+          ? "cancelled"
+          : terminalUsageObserved
+            ? "usage-limit"
+            : classifyOpenCodeFailure(output, normalizedExit),
         session: extractSessionId(output),
         output
       });
@@ -390,7 +439,7 @@ function isInvalidated(model, invalidated) {
     invalidated.quotaScopes.has(model.quotaScope);
 }
 
-export async function runModelChain({ directory, chain, prompt, attempts = [] }) {
+export async function runModelChain({ directory, chain, prompt, attempts = [], cancellation }) {
   const invalidated = {
     models: new Set(),
     providers: new Set(),
@@ -400,6 +449,7 @@ export async function runModelChain({ directory, chain, prompt, attempts = [] })
   let final = null;
 
   for (const model of chain) {
+    if (cancellation?.requested) return { final, attempts, transitions, invalidated, cancelled: true };
     if (isInvalidated(model, invalidated)) {
       transitions.push({ type: "skipped-invalidated", model: model.id, quotaScope: model.quotaScope });
       continue;
@@ -408,9 +458,13 @@ export async function runModelChain({ directory, chain, prompt, attempts = [] })
     let networkRetries = 0;
     let agnesRateLimitEvents = 0;
     while (true) {
-      const result = await runOnce({ directory, model: model.id, prompt });
+      const result = await runOnce({ directory, model: model.id, prompt, cancellation });
       attempts.push(result);
       final = result;
+      if (result.classification === "cancelled" || cancellation?.requested) {
+        transitions.push({ type: "controller-cancelled", model: model.id, reason: cancellation?.reason ?? "controller-cancelled" });
+        return { final, attempts, transitions, invalidated, cancelled: true };
+      }
       if (result.classification === "success") {
         return { final, attempts, transitions, invalidated };
       }
@@ -451,7 +505,7 @@ export async function runModelChain({ directory, chain, prompt, attempts = [] })
     }
   }
 
-  return { final, attempts, transitions, invalidated };
+  return { final, attempts, transitions, invalidated, cancelled: cancellation?.requested === true };
 }
 
 export function buildVisualReasoningPrompt(prompt, visualEvidence) {
@@ -798,13 +852,20 @@ async function main(argv) {
   const executionDirectory = frozenReview?.directory ?? directory;
   if (frozenReview) workerPrompt = frozenReviewPrompt(workerPrompt, frozenReview);
 
+  const cancellation = createCancellationController();
+  const handleSigint = () => cancellation.request("SIGINT");
+  const handleSigterm = () => cancellation.request("SIGTERM");
+  process.once("SIGINT", handleSigint);
+  process.once("SIGTERM", handleSigterm);
+
   try {
     const attempts = [];
     const chainResult = await runModelChain({
       directory: executionDirectory,
       chain: modelChain.chain,
       prompt: workerPrompt,
-      attempts
+      attempts,
+      cancellation
     });
     const primary = attempts[0] ?? null;
     const final = chainResult.final;
@@ -833,11 +894,18 @@ async function main(argv) {
         stable: frozenVerification.stable,
         finalFingerprint: frozenVerification.after
       } : null,
-      runStatus: final?.exitCode === 0 && frozenVerification?.stable !== false ? "DONE" : "BLOCKED"
+      runStatus: chainResult.cancelled
+        ? "CANCELLED"
+        : final?.exitCode === 0 && frozenVerification?.stable !== false
+          ? "DONE"
+          : "BLOCKED"
     };
     process.stderr.write(`OPENCODE_DELEGATION_RESULT ${JSON.stringify(report)}\n`);
+    if (chainResult.cancelled) return 130;
     return final?.exitCode === 0 && frozenVerification?.stable !== false ? 0 : 1;
   } finally {
+    process.removeListener("SIGINT", handleSigint);
+    process.removeListener("SIGTERM", handleSigterm);
     if (frozenReview) await frozenReview.cleanup();
   }
 }

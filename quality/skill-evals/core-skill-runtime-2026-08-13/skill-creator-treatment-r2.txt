@@ -1,0 +1,68 @@
+[0m
+> build · deepseek-v4-flash-free
+[0m
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/skill-creator/SKILL.md
+[0m
+[0m$ [0mmkdir -p skills/owned && ls skills/owned
+(no output)
+[0m
+[0m← [0mWrite skills/owned/release-notes-checker/SKILL.md
+Wrote file successfully.
+[0m
+[0m$ [0mhead -80 skills/owned/release-notes-checker/SKILL.md
+echo "---- grep checks ----"
+grep -nE '^name: release-notes-checker$|^description: Use when|^category: documents$|^subcategory: release-notes$|^tags:$|^  - release-notes$|^  - verification$|^  - changelog$|^## Workflow$|numbered|^1\.|^## Do not use$|^## Guardrails$|Do not use|## Output Contract' skills/owned/release-notes-checker/SKILL.md
+---
+name: release-notes-checker
+description: Use when verifying that a release notes entry matches the shipped behavior, links resolve, and no breaking changes are undocumented.
+category: documents
+subcategory: release-notes
+tags:
+  - release-notes
+  - verification
+  - changelog
+---
+
+# Release Notes Checker
+
+Verify release notes before they ship.
+
+## Workflow
+
+1. Collect the release notes draft and the commit/tag range it claims to cover.
+2. Check every referenced link, issue, and pull request resolves.
+3. Compare claims against merged changes; flag missing breaking-change or deprecation notices.
+4. Confirm version, date, and product names match the release metadata.
+5. Report each finding as pass, warn, or fail with the exact claim and evidence.
+
+## Do not use
+
+- Do not use to write new release notes or draft feature copy; this skill only validates existing notes.
+- Do not use for general documentation review or prose editing.
+
+## Guardrails
+
+- Do not approve notes that omit a breaking change or deprecation you can confirm in the code.
+
+## Output Contract
+
+Report a verdict (approve / changes required) plus a per-item list: claim, check performed, result (pass/warn/fail), and evidence reference.---- grep checks ----
+2:name: release-notes-checker
+3:description: Use when verifying that a release notes entry matches the shipped behavior, links resolve, and no breaking changes are undocumented.
+4:category: documents
+5:subcategory: release-notes
+6:tags:
+7:  - release-notes
+8:  - verification
+9:  - changelog
+16:## Workflow
+18:1. Collect the release notes draft and the commit/tag range it claims to cover.
+24:## Do not use
+26:- Do not use to write new release notes or draft feature copy; this skill only validates existing notes.
+27:- Do not use for general documentation review or prose editing.
+29:## Guardrails
+33:## Output Contract
+[0m
+Validation passed: `skills/owned/release-notes-checker/SKILL.md` created (33 lines). All required frontmatter tokens present and exact — `name: release-notes-checker` (L2), narrow `description: Use when` (L3), `category: documents` (L4), `subcategory: release-notes` (L5), `tags:` with lowercase `release-notes`/`verification`/`changelog` (L6–9). Body contains `## Workflow` with 5 numbered steps (L16–23), `## Do not use` boundary (L24–27), `## Guardrails` safety rule (L29–30), and `## Output Contract` (L33). No implementation source or unrelated directories read; Skillbird not used.
+OPENCODE_EXIT=0
+fixture=/tmp/core-skillcreator-treatment-r2-kPoJj3

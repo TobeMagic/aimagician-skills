@@ -48,6 +48,8 @@ CI, reviewer bots, full regression suites, wiki records, screenshots, and deploy
 
 - Confirm the repository, current branch, intended base, dirty state, and whether the change belongs in a PR or an already-approved target branch.
 - Keep user changes separate. Do not rewrite history, reset, or clean unrelated files.
+- Do not run `gh auth status` as routine PR evidence. Use a target-scoped read-only `gh` query first; inspect authentication only to diagnose an actual auth failure, and never include account names, host-file paths, token metadata, or scopes in the report.
+- Inspect branch protection with the documented REST endpoint once. A 404 establishes that traditional branch protection is absent; optionally inspect repository rulesets with the documented REST endpoint once. Do not guess GraphQL schema types or repeat equivalent protection probes after a definitive response.
 - Use a Linear issue ID in the title/body only when one is actually associated with the work. The title may use `[ISSUE-ID] <title>` when the ticket's canonical title is relevant.
 
 ### 2. Create Or Update
@@ -70,6 +72,13 @@ CI, reviewer bots, full regression suites, wiki records, screenshots, and deploy
 
 ## Failure Handling And Checkpoint
 
+| Trigger | First response | Fallback |
+|---|---|---|
+| Base branch or protection policy is unknown | Inspect repository docs, remote defaults, and current PR state once | Ask the maintainer instead of assuming a branch or bot requirement |
+| `gh` cannot authenticate or required checks are unavailable | Record the exact command and limitation; keep local evidence separate | Hand off a ready-to-review branch or wait only for an enforced external protection |
+| Branch-protection endpoint returns 404 or ruleset query is unavailable | Record the exact resolved protection state without speculating | Treat only local workflow configuration and observed PR checks as advisory evidence |
+| Reviewed head, base, or check result changes | Invalidate affected evidence and re-inspect the actual merge gate | Stop merge and request a new review when a protected update or conflict requires it |
+
 - Unknown base branch or merge policy: inspect repository evidence once, then ask rather than guessing.
 - `gh` unavailable or unauthenticated: report the exact limitation; keep verified local delivery ready and do not fabricate PR state.
 - Required check fails: diagnose the failing protection; advisory or missing optional automation does not block.
@@ -78,6 +87,26 @@ CI, reviewer bots, full regression suites, wiki records, screenshots, and deploy
 
 Before merge, confirm the reviewed head SHA, resolved base, actual required protections, decisive local evidence, and unresolved finding count. After merge, capture the merge SHA; optional tracker or wiki work is a separate closure step.
 
+**CHECKPOINT:** Before creating or updating a PR, confirm repository, base, head, authorization to push, local verification, and which reported checks are actually required.
+
+**CHECKPOINT:** Before merge, confirm current head SHA, base, required reviews/checks, unresolved thread status, merge strategy, and postmerge evidence owner.
+
+**CHECKPOINT:** If any merge prerequisite changed after review, stop merge, refresh only the affected evidence, and route a new reviewer decision when the changed surface is material.
+
 ## Output Contract
 
 Report repository and resolved base branch, PR URL/state, required versus advisory checks, reviews read, verification evidence, merge result, remaining blockers, and deferred post-delivery administration. Do not claim a merge protection has passed without inspecting its current state.
+
+Read [GitHub CLI recipes](references/gh-command-recipes.md) for concrete inspection commands. Read [reviewer-bot guidance](references/reviewer-bot.md) only when a repository actually configures such a bot.
+
+```bash
+gh pr view <number-or-url> --json baseRefName,headRefName,mergeable,reviewDecision
+```
+
+```bash
+gh pr checks <number-or-url> --watch=false
+```
+
+```bash
+gh pr merge <number-or-url> --merge --delete-branch=false
+```

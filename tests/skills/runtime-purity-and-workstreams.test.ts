@@ -23,7 +23,7 @@ describe("runtime-pure Skill architecture", () => {
       await expect(readdir(join(ownedRoot, id, "evals"))).rejects.toThrow();
     }
     expect(await readdir(join(root, "quality", "skill-evals"))).toEqual(
-      expect.arrayContaining(["aimagician-superpower", "skill-optimizer", "window-pptx"])
+      expect.arrayContaining(["aimagician-superpower", "aimagician-superpower-slim-2026-08-13", "skill-optimizer", "window-pptx"])
     );
   });
 
@@ -40,10 +40,11 @@ describe("runtime-pure Skill architecture", () => {
 
   it("routes memory and independent sessions through progressive capability modules", async () => {
     const engineering = await readFile(join(ownedRoot, "aimagician-superpower", "SKILL.md"), "utf8");
+    const capabilityIndex = await readFile(join(ownedRoot, "aimagician-superpower", "references", "capabilities", "index.md"), "utf8");
     const orchestration = await readFile(join(ownedRoot, "agent-workstream-orchestrator", "SKILL.md"), "utf8");
-    expect(engineering).toContain("references/capabilities/project-memory.md");
+    expect(capabilityIndex).toContain("project-memory.md");
     expect(engineering).toContain(".planning/memory/");
-    expect(engineering).toContain("agent-workstream-orchestrator");
+    expect(engineering).toContain("conditional routes, never default preflight");
     expect(orchestration).toContain("Route By Coupling, Risk, And Cost");
     expect(orchestration).toContain("Session is silent but still emits progress events");
     expect(orchestration).toContain("INTEGRATED");

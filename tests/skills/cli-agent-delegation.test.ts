@@ -17,17 +17,16 @@ describe("cli-agent-delegator capability contract", () => {
     expect(skill).toContain("subcategory: agent-orchestration");
   });
 
-  it("puts broad exploration, checks, research, vision, and reviews on the trigger surface", async () => {
+  it("puts broad exploration, research, vision, and independent review on the trigger surface without forcing trivial dispatch", async () => {
     const skill = await readFile(join(delegatorRoot, "SKILL.md"), "utf8");
     const description = frontmatterDescription(skill);
 
-    expect(description).toMatch(/^Use for broad or multi-source exploration/);
+    expect(description).toMatch(/^Use only when actually dispatching an external CLI worker/);
     for (const trigger of [
       "broad or multi-source exploration",
       "deep web research",
       "image inspection",
-      "bounded git/test/report/write work",
-      "whenever a locked simple short execution task can be offloaded",
+      "bounded operation whose independent execution materially saves controller context",
       "independent plan/code/spec/verification review"
     ]) {
       expect(description).toContain(trigger);
@@ -36,9 +35,10 @@ describe("cli-agent-delegator capability contract", () => {
     expect(description).toContain("completion audit only for high-risk, planning-managed, deployable, policy-required, or explicitly requested work");
     expect(skill).toContain("read-only one- or two-file lookup: no forced delegation");
     expect(skill).toContain("Before the main Agent starts a broad scan or mechanical verification");
-    expect(skill).toContain("This gate applies even when the user says only");
-    expect(skill).toContain("Default Short-Task Gate");
-    expect(skill).toContain("Delegate a simple short task by default when all of these are true");
+    expect(skill).toContain("wording alone is not sufficient");
+    expect(skill).toContain("Bounded-Operation Gate");
+    expect(skill).toContain("Dispatch a simple short task only when all of these are true");
+    expect(skill).toContain("Keep these work items in the controller");
     expect(skill).toContain("Worker-Side Loading Gate");
     expect(skill).toContain("Do not rely on worker self-selection from task wording");
     expect(skill).toContain("the controller must put `cli-agent-delegator` and every domain skill in `REQUIRED_SKILLS`");

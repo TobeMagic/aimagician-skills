@@ -1,22 +1,6 @@
 ---
 name: deep-research-system
-description: >
-  Build or reuse a docs-first, multi-source literature research system for any
-  technical direction.
-
-  Use this whenever the user wants deep research, paper scraping, systematic
-  literature review,
-
-  innovation mapping, venue-oriented novelty scouting, query registries,
-  reusable research workflows,
-
-  or a `docs/deep_research` style research package. Also use it when the user
-  asks to automate paper
-
-  collection across sources like OpenAlex, arXiv, Crossref, CVF Open Access, or
-  to turn an existing
-
-  research workflow into a reusable skill or system.
+description: Use when building, extending, or operating a reusable docs-first multi-source literature research system, systematic review, innovation map, query registry, or `docs/deep_research` package. Do not use for a one-off paper lookup, unsourced opinion, or an architecture comparison better owned by opensource-architecture-research.
 compatibility:
   tools:
     - bash
@@ -290,6 +274,30 @@ Recommended companion docs:
 - Do not confuse “1000 retrieved rows” with “1000 relevant papers.”
 - Do not call the work exhaustive unless the evidence really supports that claim.
 - Do not overwrite an existing research package without reading it first.
+
+## Research Checkpoints
+
+### 1. Lock The Research Boundary
+
+Record the decision the research must inform, target root, query/profile scope, source tiers, cutoff date, and what would count as adequate rather than exhaustive coverage.
+
+### 2. Preserve Retrieval Truth
+
+Keep raw retrieval, deduplicated matrix, reviewed shortlist, and coverage gaps distinguishable. A blocked source is evidence of a gap, not permission to claim equivalent coverage.
+
+### 3. Verify The Package
+
+Run the packaged retrieval and matrix path on the selected root, then inspect that the final recommendation links to evidence and unresolved gaps.
+
+**CHECKPOINT:** Do not recommend implementation or publication novelty until the target decision, evidence coverage, source limitations, and reproducible output paths are explicit.
+
+## Failure Handling
+
+| Trigger | First response | Fallback |
+|---|---|---|
+| Query scope, target decision, or output root is ambiguous | Ask for the smallest decision-changing clarification | Create a draft profile and label all unresolved dimensions before retrieval |
+| Source is blocked, keyed, malformed, or returns inconsistent data | Preserve the source-specific failure and continue only with labeled available evidence | Record the coverage gap and route manual or credentialed follow-up without fabricating completeness |
+| Retrieval or matrix validation fails | Keep raw evidence and isolate the failing stage | Repair the reusable script/profile or return a partial package with the failed command and next probe |
 
 ## Examples
 

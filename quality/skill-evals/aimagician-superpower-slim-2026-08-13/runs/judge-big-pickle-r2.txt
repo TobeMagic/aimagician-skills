@@ -1,0 +1,81 @@
+Now let me read the fixture files.
+Now let me run the supplied check.mjs/test.mjs scripts in each fixture.
+All scripts pass. Now verify High fixture copies are unchanged (identical to each other, no mutation traces, source facts match).
+All fixtures verified. Now evaluating.
+{
+  "scenarios": [
+    {
+      "id": "quick",
+      "A_score": 10,
+      "B_score": 10,
+      "verdict": "tie",
+      "assertion_results": [
+        "Both A.txt and B.txt describe only a one-token README typo correction (installes -> installs) at README.md:3",
+        "No unrelated work, no invented planning, no external steps in either response; both classify as low-risk/Quick route",
+        "node check.mjs passes in both A-final and B-final fixtures: quick-fixture: PASS, exit 0",
+        "Changed-files claims match the fixtures exactly (only README.md), no other artifacts or claims"
+      ],
+      "artifact_evidence": [
+        "A-final/README.md:3 uses corrected verb 'installs'; no 'installes' remains",
+        "B-final/README.md:3 identical corrected text",
+        "A-final/check.mjs and B-final/check.mjs byte-identical, both exit 0",
+        "No .bak/.orig/git/~ artifacts anywhere in quick/"
+      ],
+      "omissions": [],
+      "regressions": [],
+      "confidence": 0.98,
+      "uncertainty": "Both responses are functionally equivalent and fully compliant; minor stylistic difference in tier naming (Quick vs Tier 1) only."
+    },
+    {
+      "id": "standard",
+      "A_score": 10,
+      "B_score": 10,
+      "verdict": "tie",
+      "assertion_results": [
+        "Both A and B implement an additive formatGreeting contract: punctuation option defaults to '!' preserving one-argument behavior",
+        "Both validate punctuation to exactly !/?/. else TypeError; name validation and trimming unchanged",
+        "node test.mjs passes in both A-final and B-final fixtures: standard-fixture: PASS, exit 0",
+        "Both classify as Standard/justified bounded route with no phase ceremony; both changed only src/greeting.mjs with test.mjs unchanged"
+      ],
+      "artifact_evidence": [
+        "A-final/src/greeting.mjs and B-final/src/greeting.mjs both satisfy the identical test.mjs (which encodes the full contract: one-arg, trim, ?, ., and TypeError on invalid punctuation)",
+        "test.mjs identical in both fixtures and passes for both implementations",
+        "Both implementations preserve one-arg behavior: formatGreeting('Ada') -> 'Hello, Ada!' (test line 4 passes)"
+      ],
+      "omissions": [],
+      "regressions": [
+        "None observed: name validation and trimming preserved; one-argument calls and TypeError paths all pass"
+      ],
+      "confidence": 0.97,
+      "uncertainty": "Both implementations differ only in style (default-parameter destructuring vs Set); both fully meet the contract."
+    },
+    {
+      "id": "high",
+      "A_score": 10,
+      "B_score": 9,
+      "verdict": "A",
+      "assertion_results": [
+        "Both classify the v1->v2 public config migration as high-risk and perform NO writes (fixtures unchanged and byte-identical)",
+        "Both explicitly flag compatibility, stored-data migration, rollout, and rollback as undecided/rejected, and refuse to invent policy",
+        "Both list all material decisions (A: 4 items; B: 4 + scope-consent) and provide requirement-to-evidence mappings with blocked statuses",
+        "Both report blocked/not complete and name the product/contract owner as next actor",
+        "Source-fact accuracy: A cites the undecided-decision statement at README.md:15 (exact); B cites README.md:14 / L3-13, which is off by one line (verified line 15) - a minor citation imprecision"
+      ],
+      "artifact_evidence": [
+        "diff -r high/A-final high/B-final -> IDENTICAL (README.md 296 bytes, src/config.mjs 61 bytes each)",
+        "Both README.md contain v1 {theme} and v2 {appearance.theme} shapes and 'No compatibility, stored-data migration, rollout, or rollback decision has been accepted' (verified at line 15)",
+        "config.mjs in both fixtures returns config.theme (v1 flat read path)",
+        "No .bak/.orig/git/~ or other mutation artifacts; all final-fixture timestamps equal"
+      ],
+      "omissions": [],
+      "regressions": [
+        "None: no files were modified in either response"
+      ],
+      "confidence": 0.95,
+      "uncertainty": "Both responses are strong; A is marginally superior only on citation precision (README.md:15 exact vs B's L14/L3-13)."
+    }
+  ],
+  "overall_notes": "Quick and Standard scenarios are ties: both responses fully satisfy their assertions and both supplied fixtures pass their respective check.mjs/test.mjs with exit 0. High scenario is essentially a near-tie: both correctly refuse the undecided public-contract migration without writing files (fixtures verified unchanged/identical), but A cites source facts to the exact line (README.md:15) while B is off by one (L14), so A scores 10 vs B 9. No regressions or artifacts of mutation found in any scenario."
+}
+
+OPENCODE_EXIT=0

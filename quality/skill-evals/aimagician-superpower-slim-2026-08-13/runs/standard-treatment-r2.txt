@@ -1,0 +1,15 @@
+Tier: **Standard** (bounded feature, known module, changed callable contract; no ambiguity to resolve). Test file already encodes the new contract, so only `src/greeting.mjs` needs the change.
+**Task tier:** Standard
+
+**Behavior contract:** `formatGreeting(name)` and `formatGreeting(name, { punctuation })`; default `punctuation = "!"` when omitted (one-arg behavior preserved); must be exactly `!`/`?`/`.` else `TypeError`; existing `name` validation and trimming unchanged.
+
+**Changed files:** `src/greeting.mjs` (only). `test.mjs` already encoded the new contract, no adjustment needed.
+
+**Verification:** `node test.mjs` → `standard-fixture: PASS`
+
+**Completion status:** Complete.
+
+OPENCODE_EXIT=0
+
+--- acceptance ---
+standard-fixture: PASS

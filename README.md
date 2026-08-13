@@ -154,21 +154,28 @@ OpenCode delegation triggers, bounded permissions, model routing, independent re
 
 Local-first delivery gates, shared private planning, frozen review points, and Skillbird content-drift validation are recorded in [`docs/audits/local-first-delivery-and-planning-storage-2026-07-30.md`](docs/audits/local-first-delivery-and-planning-storage-2026-07-30.md).
 
-The central owned skill is:
+## Core Runtime Skills
 
 | Skill | Role |
 |---|---|
 | `aimagician-superpower` | Risk-scaled SDD plus project memory, codebase exploration, progressive discovery, prototypes, engineering design, vertical delivery, root-cause debugging, technical review, traceable verification, audit, and handoff |
-| `cli-agent-delegator` | OpenCode delegation for broad discovery, deep research, default short-task execution, bounded git/test/write work, reasoning over acquired visual evidence, dynamic free-model routing, and independent plan/spec/quality/verification/closure review |
-| `agent-workstream-orchestrator` | Provider-neutral tracked sessions for independent exploration, reviews, tests, bounded implementation, optional worktrees, integration ownership, and resumable handoff |
+| `cli-agent-delegator` | External CLI-worker runtime for broad evidence collection, deep research, long-running bounded operations, dynamic free-model routing, and independent reviews when dispatch materially helps |
+| `agent-workstream-orchestrator` | Provider-neutral tracked multi-session and multi-lane coordination with optional worktrees, integration ownership, and resumable handoff |
 | `vision-analysis` | Consent-gated direct Agnes image understanding for screenshots, diagrams, posters, and other visual evidence, with sanitized provenance for downstream reasoning |
 | `interface-design` | HTML/CSS/JS design, prototypes, UI, dashboards, repository branding, covers, posters, product demo video, creative coding, data visualization, HTML presentations, responsive browser QA, and brand routing |
 | `github-readme-highstar` | README information architecture, quick-start clarity, repository visual collaboration, static hero and supplemental demo integration |
 | `system-prompt-engineering` | System-prompt requirements, composition, identity, tools, delegation, safety, memory, search, channel adaptation, code-agent behavior, and evaluation |
-| `skill-creator` | Skill authoring, merging, taxonomy, formatter rules |
-| `skill-optimizer` | Controlled baseline/treatment evaluation, runtime-neutral auditing, independent review, and measured Skill improvement without automatic Git mutation |
-| `knowledge-distillation` | Long-form source mapping, independent method extraction, triple verification, executable Skill construction, and pressure testing |
-| `perspective-distillation` | Ethical person/topic research, cognitive-model synthesis, evidence boundaries, independent validation, and incremental updates |
+
+## Maintainer And On-Demand Skills
+
+These stay installed and searchable, but are not default companions for ordinary application work.
+
+| Skill group | Skills | Trigger |
+|---|---|---|
+| Skill-system maintenance | `skill-creator`, `skill-optimizer` | Creating, merging, auditing, or measuring an owned Skill |
+| Evidence synthesis | `knowledge-distillation`, `perspective-distillation` | Building reusable evidence-backed methods or perspectives |
+| Specialist research | `academic-paper-workflow`, `repo-interview-playbook`, `opensource-architecture-research` | Academic publication work, interview artifacts, or explicit architecture comparison |
+| Environment operations | `gcloud-ops-workflow` | Accepted Google Cloud evidence or guarded GCP operations |
 
 ## Skill Consolidation
 

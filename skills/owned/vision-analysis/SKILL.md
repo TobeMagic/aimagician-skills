@@ -33,6 +33,38 @@ Do not use it for image generation, audio, native PDF parsing, video analysis, o
 4. Treat the returned report as evidence, not final authority. Spot-check completion-critical claims with another reliable viewer or observable product check when available.
 5. For broader reasoning, planning, or review, pass the sanitized textual report to `cli-agent-delegator`; OpenCode should not receive the original image attachment for Agnes.
 
+### 1. Bind Inputs And Question
+
+Name each image, permitted upload scope, inspection question, and expected downstream decision.
+
+### 2. Acquire Sanitized Evidence
+
+Validate inputs, invoke the approved backend, and retain provenance without image bytes, keys, or sensitive URL data.
+
+### 3. Separate Observation From Inference
+
+Return visual observations, inferences, uncertainty, and any need for an independent product check.
+
+### 4. Route The Evidence
+
+Pass only the sanitized report to downstream reasoning, planning, or audit work.
+
+**CHECKPOINT:** Do not upload or interpret pixels until every input path/URL, the inspection question, external-upload authorization, and expected evidence consumer are explicit.
+
+**CHECKPOINT:** Confirm returned provenance, retry classification, and report uncertainty before using visual evidence for a completion or safety decision.
+
+**CHECKPOINT:** If the image, authorization, provider result, or independent spot-check is missing, stop downstream interpretation at the verified boundary.
+
+## Failure Handling
+
+| Trigger | First response | Fallback |
+|---|---|---|
+| Upload authorization, image path, MIME, or size is invalid | Stop before API use and report the safe validation failure | Request an authorized supported image or downscaled derivative; never infer pixels from a filename |
+| Provider returns a transient failure or rate limit | Follow the bounded retry/rate-limit policy in `references/agnes-api.md` and retain sanitized attempt evidence | Return `NOT_RUN` only after the defined terminal failure; do not silently switch to text-only guessing |
+| Observation is ambiguous or completion-critical | Separate observation, inference, and uncertainty in the report | Require an independent viewer or product check before an irreversible decision |
+
+When visual evidence conflicts with code, runtime, or a second viewer, stop the dependent decision and preserve both evidence sources for reconciliation.
+
 ## Command
 
 ```bash

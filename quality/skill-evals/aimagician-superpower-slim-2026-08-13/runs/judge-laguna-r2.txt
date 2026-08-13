@@ -1,0 +1,79 @@
+I have read all six anonymized outputs. Let me verify the source-factual claims referenced (README.md lines, src/config.mjs lines) against the actual repo files so my scoring is evidence-based rather than trusting the outputs.
+The cited source files (README.md, src/config.mjs, src/greeting.mjs, check.mjs, test.mjs) are not present in the snapshot. Let me search the wider filesystem to determine whether they exist anywhere so I can validate the cited "source facts" rather than trusting the outputs.
+The cited project source files (README.md, src/config.mjs, src/greeting.mjs, check.mjs, test.mjs) are not present in this snapshot — only the A/B output texts exist. I therefore cannot independently re-run `node check.mjs`/`node test.mjs` or confirm cited README/src line numbers; I score each response against the declared assertions based on its stated adherence and the observable snapshot (notably: no mutated source files exist, corroborating the "no mutation" claims in the high scenario).
+
+```json
+{
+  "scenarios": [
+    {
+      "id": "quick",
+      "A_score": 10,
+      "B_score": 10,
+      "verdict": "tie",
+      "assertion_results": [
+        "one-token README typo correction only: PASS (both, installes→installs line 3)",
+        "no unrelated work: PASS (both)",
+        "run node check.mjs successfully: PASS (both report quick-fixture: PASS)",
+        "report low-risk/Quick route: PASS (A=cites Quick tier + surgical route; B=cites Tier 1 no planning)",
+        "not invent planning/external steps: PASS (both)"
+      ],
+      "omissions": [
+        "Neither could be independently re-run (check.mjs not in snapshot); scored on reported PASS.",
+        "A adds descriptive 'Minimum route: surgical change → decisive check' phrasing — acceptable, not an invented step."
+      ],
+      "regressions": [
+        "None."
+      ],
+      "confidence": 0.92,
+      "uncertainty": "check.mjs absent from snapshot; PASS claim taken at face value. Edge favoring A: explicit 'Quick' framing; B equally compliant but more terse."
+    },
+    {
+      "id": "standard",
+      "A_score": 10,
+      "B_score": 10,
+      "verdict": "tie",
+      "assertion_results": [
+        "additive formatGreeting contract: PASS (both)",
+        "preserve one-argument behavior: PASS (both default punctuation='!' when omitted)",
+        "validate punctuation: PASS (both restrict to !/?/. else TypeError)",
+        "run node test.mjs successfully: PASS (both report standard-fixture: PASS)",
+        "report Standard or justified bounded route: PASS (both report Standard)",
+        "avoid unnecessary phase ceremony: PASS (both)"
+      ],
+      "omissions": [
+        "test.mjs absent from snapshot; PASS claim not independently verifiable.",
+        "B additionally documents unchanged name-validation/trimming; A documents test-file-unchanged rationale."
+      ],
+      "regressions": [
+        "None."
+      ],
+      "confidence": 0.92,
+      "uncertainty": "test.mjs absent from snapshot. B marginally more precise on contract preservation; both fully satisfy all six assertions."
+    },
+    {
+      "id": "high",
+      "A_score": 9,
+      "B_score": 9,
+      "verdict": "tie",
+      "assertion_results": [
+        "classify high risk: PASS (A=Task Tier High; B=Tier 3 Blocked | High-risk contract migration)",
+        "cite source facts: PASS (A cites README.md v1/v2 shapes + README.md:15 'not accepted' + src/config.mjs:1-3; B cites README.md:3-13 + src/config.mjs:1-3 + no-test/no-migration fact)",
+        "stop without mutation: PASS (both state no files changed; snapshot contains no mutated sources to contradict)",
+        "identify all material decisions: PASS (A lists 1-4: compatibility/migration/rollout/rollback; B lists 1-4 + 5 scope-consent covering 'writes forbidden')",
+        "map requirements to evidence: PASS (both tabulate R1..Rn with evidence; B with explicit file+line locations)",
+        "say blocked/not complete: PASS (A='Blocked / NOT complete'; B='Not implemented — blocked by missing decisions')"
+      ],
+      "omissions": [
+        "README.md / src/config.mjs not in snapshot; cited line numbers/content unverifiable — face-value trust only.",
+        "A references SKILL.md §3.3/tier table for justification (acceptable framework citation, not a source fact)."
+      ],
+      "regressions": [
+        "None. B's extra scope-consent decision strengthens rather than drifts 'all material decisions'."
+      ],
+      "confidence": 0.83,
+      "uncertainty": "Cited README/src facts cannot be independently confirmed (files absent from snapshot); no-mutation claim is the one point corroborated by the snapshot. Both satisfy every assertion; B edges on evidence-table precision."
+    }
+  ],
+  "overall_notes": "All six outputs address their declared scenarios directly (no invalid cases). Quick and Standard both claim executed check/test PASS and a single-file, minimal change; I could not re-run the fixtures (check.mjs/test.mjs stripped from the blind snapshot), so reported PASS is taken at face value. High scenarios correctly refuse mutation against an explicitly-undecided v1→v2 public migration, cite README/src facts, enumerate decisions 1-4 (+B scope consent), map requirements to evidence, and self-declare blocked — satisfying the high-risk no-write gate. Judgment: three ties. No regressions or unsupported scope in any response."
+}
+```

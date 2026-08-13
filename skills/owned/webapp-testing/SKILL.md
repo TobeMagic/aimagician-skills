@@ -7,10 +7,6 @@ tags:
   - playwright
   - webapp
   - verification
-metadata:
-  merged_from:
-    - webapp-testing
-    - playwright-skill
 compatibility:
   tools: [bash, playwright, browser]
   requires: A reachable URL, local dev server, or static HTML entrypoint
@@ -19,12 +15,6 @@ compatibility:
 # Webapp Testing
 
 Use this skill whenever UI behavior must be proven in a browser.
-
-## Source Decisions
-
-- Claude's `webapp-testing` provides the black-box local server pattern and Python Playwright probe style.
-- The existing Playwright skill contributes broad browser verification, screenshot, viewport, and console/network checks.
-- Project-native tests are preferred when the repo already has them; temporary probes stay under `/tmp`.
 
 ## Default Workflow
 
@@ -67,6 +57,38 @@ Use this order when the page behavior is unknown:
 - text does not overlap or overflow;
 - canvas/WebGL/media content is visible when relevant.
 
+## Execution Contract
+
+### 1. Establish A Stable Test Surface
+
+Record the URL, startup command or existing server, target user path, and deterministic readiness signal before probing. Use a loopback server for modules or assets that cannot run from `file://`.
+
+### 2. Prove Behavior Before Pixels
+
+Exercise the target path with accessible selectors, then assert the relevant user-visible state, console errors, failed requests, and keyboard path. Capture screenshots only for visual claims that cannot be asserted semantically.
+
+### 3. Compare The Required Geometry
+
+Run the same route at a desktop and mobile viewport, inspect overflow or overlap, and retain the smallest useful artifact path for review.
+
+**CHECKPOINT:** Do not report a browser result until the URL is reachable, a target state is stable, and console/network findings are classified as expected, fixed, or unresolved.
+
+**CHECKPOINT:** Confirm the browser, viewport, selector, user path, and assertion before creating a screenshot or trace; a capture without a bound behavior is diagnostic only.
+
+**CHECKPOINT:** If local tooling cannot reproduce the requested state, stop at the highest verified layer and report the blocked derivative rather than changing the acceptance claim.
+
+```text
+URL -> stable readiness -> user action -> observable state -> console/network -> responsive evidence
+```
+
+## Failure Handling
+
+| Trigger | First response | Fallback |
+|---|---|---|
+| Server cannot start or target URL is unreachable | Inspect the documented startup command and the first actionable error | Test a static entrypoint or report `NOT_RUN` with the blocking command; do not guess browser behavior |
+| Selector or readiness signal is unstable | Inspect accessible roles and app-specific loaded state | Replace brittle waits with a semantic locator or record the unstable state as a product defect |
+| Console, network, visual, or responsive check fails | Preserve the smallest reproducible route and capture focused evidence | Return a failure report with screenshot/trace path; do not hide it behind a passing HTTP response |
+
 ## Guardrails
 
 - Do not rely on a screenshot alone when behavior matters.
@@ -84,3 +106,5 @@ For each run, provide:
 - pass/fail result;
 - important console/network findings;
 - screenshot path only when it is useful.
+
+Read `references/browser-evidence-contract.md` when the test needs a durable browser-evidence record or a handoff to another agent.

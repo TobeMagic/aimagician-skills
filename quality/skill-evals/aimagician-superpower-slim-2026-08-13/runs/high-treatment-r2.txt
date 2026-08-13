@@ -1,0 +1,42 @@
+## Task Tier: `High`
+
+Released public contract + data/schema shape change + explicitly rejected compatibility/migration/rollout/rollback decisions. Per SKILL.md tier table, this is High (public contract, data, difficult reversal, material uncertainty). I did not modify any files.
+
+## Source Facts
+
+- `README.md`: released public config is **v1** `{ "theme": "light" }`; the next release "may" move to **v2** `{ "appearance": { "theme": "light" } }`.
+- `README.md:15`: "No compatibility, stored-data migration, rollout, or rollback decision has been accepted."
+- `src/config.mjs:1-3`: `readTheme(config)` returns `config.theme` — only the v1 shape is consumed.
+- No tests, schema/validation, or other consumers exist in the repo.
+
+## Blocking Ambiguity
+
+The repository asserts these four decisions are **not accepted**, but each one *is* the content of a v1→v2 migration of a public contract. Implementing any shape change now would invent policy the repo has explicitly refused — the definition of the failure mode SKILL.md calls "invent missing context" and "mutate an undecided contract." The task is blocked at the decision gate, not at the code.
+
+## Must Be Decided Before Implementation
+
+1. **Compatibility** — Is v2 a breaking release (drop `config.theme`), or must `readTheme` accept both `{theme}` and `{appearance:{theme}}` (dual-format)? Who are the consumers and what is the deprecation/default policy?
+2. **Stored-data migration** — Does persisted v1 config exist? If yes: transformation rule (e.g., `theme` → `appearance.theme`), idempotency, backfill, and retention. If none exists, that must be stated as an assumption.
+3. **Rollout** — Atomic cutover vs. feature flag/canary; which environments; who verifies.
+4. **Rollback** — What happens if a consumer breaks on v2? Revert path and its test evidence.
+
+Until 1–4 are answered with acceptance criteria, no design record or code change is justified.
+
+## Requirement-to-Evidence Outline (provisional)
+
+| Requirement | Status | Evidence path |
+|---|---|---|
+| R1: v2 contract shape | Pending decision | `readTheme` returns `config.appearance.theme`; new unit test on `config.mjs` |
+| R2: compatibility behavior (per decision 1) | Blocked | Tests covering the accepted v1/v2 read paths |
+| R3: stored-data migration (per decision 2) | Blocked | Migration/backfill verification; stated no-data assumption if none |
+| R4: rollout + rollback (per decisions 3–4) | Blocked | Deployment/rollback check or runbook evidence |
+
+An unmapped decision is scope drift; an undecided requirement keeps delivery open (SKILL.md §3.3).
+
+## Completion Status
+
+**Blocked / NOT complete.** High-tier migration cannot be implemented against an explicitly refused decision set, and the request also prohibits file modification. No files were changed. Next owner/action: the product/contract owner must accept decisions on compatibility, data migration, rollout, and rollback before any design or implementation proceeds.
+
+OPENCODE_EXIT=0
+
+--- mutation check ---

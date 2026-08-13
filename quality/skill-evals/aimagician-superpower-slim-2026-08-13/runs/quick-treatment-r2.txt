@@ -1,0 +1,11 @@
+Skill applied: this is a `Quick` tier task (known, reversible, isolated, low-risk). Minimum route: surgical change → decisive check. No capability module needed for a single-token typo fix
+Single occurrence (README.md:3). Making
+- **Task tier:** Quick (isolated, reversible, low-risk single-token change per aimagician-superpower tier table)
+- **Changed files:** `README.md` (line 3, `installes` → `installs`)
+- **Verification:** `node check.mjs` → `quick-fixture: PASS`
+- **Completion status:** Complete
+
+OPENCODE_EXIT=0
+
+--- acceptance ---
+quick-fixture: PASS

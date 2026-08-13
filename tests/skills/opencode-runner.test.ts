@@ -1,20 +1,23 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { once } from "node:events";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   DEFAULT_QUOTA_FALLBACK_MODEL,
   buildModelChain,
   buildVisualReasoningPrompt,
   classifyOpenCodeFailure,
+  createCancellationController,
   freeCandidates,
   isTerminalUsageEvent,
   parseVerboseModels,
   prepareFrozenReview,
   quotaPolicyForModel,
-  resolveModelRoute
+  resolveModelRoute,
+  runModelChain
 } from "../../skills/owned/cli-agent-delegator/scripts/opencode-run.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -180,6 +183,64 @@ describe("OpenCode dynamic model runner", () => {
     expect(prompt).toContain('"analysis": "A blue button is clipped."');
   });
 
+  it("does not start a fallback chain after controller cancellation", async () => {
+    const models = parseVerboseModels(verboseModels);
+    const route = buildModelChain({ models, primaryModel: DEEPSEEK, fallbackModels: [OTHER_PROVIDER] });
+    const cancellation = createCancellationController();
+    cancellation.request("test-cancel");
+
+    const result = await runModelChain({
+      directory: process.cwd(),
+      chain: route.chain!,
+      prompt: "This must not launch a worker.",
+      cancellation
+    });
+
+    expect(result.cancelled).toBe(true);
+    expect(result.attempts).toEqual([]);
+    expect(result.transitions).toEqual([]);
+  });
+
+  it("propagates a controller signal to the worker and reports cancellation without fallback", async () => {
+    const fixture = await makeFakeOpenCode();
+    const promptFile = join(fixture.root, "cancel-prompt.txt");
+    await writeFile(promptFile, "Wait for cancellation.", "utf8");
+    const child = spawn(process.execPath, [
+      fixture.runner,
+      "--dir", fixture.root,
+      "--prompt-file", promptFile,
+      "--model", DEEPSEEK,
+      "--fallback-model", OTHER_PROVIDER
+    ], {
+      env: { ...fixture.env, SLOW_RUN: "1" },
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let stderr = "";
+    let stdout = "";
+    let resolveWorkerStarted: (() => void) | undefined;
+    const workerStarted = new Promise<void>((resolve) => {
+      resolveWorkerStarted = resolve;
+    });
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+      if (stdout.includes("ses_fake_waiting")) resolveWorkerStarted?.();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    await workerStarted;
+    child.kill("SIGTERM");
+    const [exitCode] = await once(child, "close") as [number | null, NodeJS.Signals | null];
+
+    expect(exitCode).toBe(130);
+    const resultLine = stderr.split("\n").find((line) => line.startsWith("OPENCODE_DELEGATION_RESULT "));
+    expect(resultLine).toBeDefined();
+    const result = JSON.parse(resultLine!.slice("OPENCODE_DELEGATION_RESULT ".length));
+    expect(result).toMatchObject({ runStatus: "CANCELLED", finalModel: DEEPSEEK });
+    expect(result.attemptChain).toHaveLength(1);
+    expect(result.attemptChain[0]).toMatchObject({ classification: "cancelled" });
+  });
+
   it("reviews an exact commit in a disposable worktree and detects review-point drift", async () => {
     const repository = await mkdtemp(join(tmpdir(), "opencode-frozen-review-"));
     tempDirectories.push(repository);
@@ -214,9 +275,9 @@ const args = process.argv.slice(2);
 if (args[0] === "models") { process.stdout.write(${JSON.stringify(verboseModels)}); process.exit(0); }
 if (args[0] === "run") {
   const model = args[args.indexOf("-m") + 1];
-  if (model === ${JSON.stringify(DEEPSEEK)}) { process.stderr.write("stream error AI_APICallError: HTTP 429 rate limit exceeded\\n"); process.exit(1); }
-  process.stdout.write("session ses_fake_success\\nDONE " + model + "\\n");
-  process.exit(0);
+  if (process.env.SLOW_RUN === "1") { process.stdout.write("session ses_fake_waiting\\n"); setInterval(() => {}, 1_000); }
+  else if (model === ${JSON.stringify(DEEPSEEK)}) { process.stderr.write("stream error AI_APICallError: HTTP 429 rate limit exceeded\\n"); process.exit(1); }
+  else { process.stdout.write("session ses_fake_success\\nDONE " + model + "\\n"); process.exit(0); }
 }
 process.exit(2);
 `, "utf8");

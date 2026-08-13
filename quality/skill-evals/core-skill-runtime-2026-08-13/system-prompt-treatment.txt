@@ -1,0 +1,17 @@
+The skill routes this task through references for composition, identity, tools, safety/injection, conversation/output, and evaluation. Reading those modules now.
+I have the routed references. Now writing the deployable prompt to `weak-prompt.md`.
+Done.
+
+- **Changed file:** `weak-prompt.md` — replaced the 3-line placeholder with a deployable system prompt (v1.0.0): objective/non-goals, authority & trust hierarchy, workflow & decision rules, tool permissions (read-only `lookup_order`; `cancel_order` gated on explicit same-exchange confirmation), safety/injection boundary (untrusted data, no secrets, no authorization override under pressure), JSON output contract (`outcome/action/status/evidence/uncertainty/next_step`), failure/escalation path with stop conditions, and evaluation/self-check/rollback rules.
+- **Command/result:** `node .../prompt-lint.mjs weak-prompt.md --json` → `status: valid`, `issues: []` (exit 0). All 7 base contracts and the tool-permission conditional pass.
+- **Remaining risks:** the confirmation gate and secret handling are prompt-level controls only — they complement, not replace, runtime authorization and secret management (prompt-lint cannot verify runtime enforcement); production soak on real lookups and an adversarial regression suite (per the Rollback rule) are still needed before a broad rollout; model/runtime variant behavior beyond the stated assumption is untested.
+
+OPENCODE_EXIT=0
+
+--- lint ---
+{
+  "schemaVersion": 1,
+  "path": "/tmp/core-prompt-treatment-3eST0s/weak-prompt.md",
+  "status": "valid",
+  "issues": []
+}

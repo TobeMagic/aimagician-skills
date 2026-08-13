@@ -1,0 +1,14 @@
+Task tier: Standard (single-file focused change, no planning).
+
+Behavior contract: `formatGreeting(name, { punctuation = "!" })` — one-arg behavior preserved (`!` default); `punctuation` must be `!`, `?`, or `.`, else `TypeError`.
+
+Changed files: `src/greeting.mjs`. Test file unchanged (already covered the new contract).
+
+Verification: `node test.mjs` → `standard-fixture: PASS`
+
+Completion status: Complete.
+
+OPENCODE_EXIT=0
+
+--- acceptance ---
+standard-fixture: PASS

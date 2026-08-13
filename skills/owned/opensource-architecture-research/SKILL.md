@@ -1,14 +1,6 @@
 ---
 name: opensource-architecture-research
-description: >
-  Use when the user wants deep open-source architecture comparison for a
-  feature, subsystem, or product capability, especially when they mention
-  open-source reference projects, architecture comparison, module taxonomy,
-  heatmaps, horizontal comparison tables, phased delivery, or storing the result
-  in LLM-know-how-wiki/wiki/reference. This skill is for workflows such as
-  researching multi-agent workspace IM, agent platform architecture, chat/IM
-  adapters, orchestration, runtime, memory, tool systems, or other engineering
-  features across multiple repositories.
+description: Use when comparing open-source architectures for a feature, subsystem, or product capability through confirmed repositories, module taxonomy, evidence tables, heatmaps, and phased recommendations. Do not use for a generic web search, one-project code lookup, or adopting external architecture as project fact without an explicit decision.
 metadata:
   related_skills:
     - llm-know-how-wiki
@@ -127,6 +119,32 @@ Before finalizing:
 - major claims cite source paths;
 - report separates open-source reference from project decisions;
 - `wiki/index.md` and `wiki/log.md` are updated when writing into LLM wiki.
+
+## Research Checkpoints
+
+### 1. Confirm The Comparison Frame
+
+Lock the decision context, candidate repositories, expected depth, module taxonomy, output root, and which observations may become project decisions.
+
+### 2. Deliver One Evidence-Bound Layer
+
+Read only paths material to the current layer, annotate every conclusion with source evidence, and stop after the accepted batch boundary unless autonomous continuation was approved.
+
+### 3. Separate Reference From Adoption
+
+Keep comparison findings under `wiki/reference/`; propose a separate architecture or decision record when the user wants to adopt an idea.
+
+**CHECKPOINT:** Do not start a large comparison or final synthesis while the research objects, taxonomy, output root, or evidence availability for the next layer is unresolved.
+
+When evidence cannot support the next comparison layer, stop expansion and fall back to a smaller verified object set rather than filling gaps from repository reputation.
+
+## Failure Handling
+
+| Trigger | First response | Fallback |
+|---|---|---|
+| Research object, license signal, ref, or taxonomy is missing | Record the missing input and retain the comparison as draft | Ask for confirmation or reduce the batch to verified objects only |
+| Repository evidence is inaccessible, stale, or too weak for a claim | Mark the module `UNKNOWN` or `no material` with the inspected path | Use primary docs for a bounded claim or exclude it from the detailed table |
+| A reference recommendation conflicts with project constraints | Surface the incompatible assumption and its cost | Propose a separate adoption decision; never write it as current project architecture |
 
 ## Common Mistakes
 

@@ -93,6 +93,8 @@ metadata:
 | 动态媒体体积过大、首帧不可读或路径失效 | 修正源、尺寸或编码后重跑 | 仅使用静态 hero，保留动态源待后续生成 |
 | 用户要求的是原生 PPTX 而非 HTML 视觉 | 路由到 `window-pptx` 并停止 HTML 交付 | 输出 README 视觉 brief，不伪装成 PPTX |
 
+If a visual render, product fact, or README-scale check fails, stop integration, preserve the editable source, and rerun the same artifact check after the structural cause is corrected.
+
 ## Repository Visual Workflow
 
 当请求涉及封面、Banner、Hero、Poster、Launcher 或 Demo 时，执行完整视觉链路，而不是把需求降级为“生成一张图”：
@@ -131,6 +133,10 @@ metadata:
 - 不要把通用 AI 插画当作产品证明；开发者工具优先展示真实终端、编辑器、Diff、构建、测试或数据流。
 - 不要让动态媒体成为唯一信息来源；GIF 首帧、alt 文本和后续静态产品图必须让核心信息可理解。
 - 若内容很长，必须有目录与分段锚点。
+- Do not use unlicensed, unverifiable, or ephemeral media as repository proof.
+- Do not present a generated poster as a product demo when no real product state is shown.
+- Do not let a visual refresh alter commands, version claims, compatibility, or feature facts without repository evidence.
+- Do not ship a README asset without editable or reproducible source and an inspectable fallback.
 
 ## Output Contract
 
@@ -144,6 +150,15 @@ metadata:
 - 有贡献与许可证
 - 链接可点击、命令可复制
 - 动态媒体使用仓库内相对路径，满足循环与文件预算，并有独立可理解的静态 README 内容
+
+## Artifact Validation Recipe
+
+```bash
+node <interface-design-skill>/scripts/design-router.mjs \
+  --task readme-cover --deliverable image --signals developer-tool,product-proof --format json
+```
+
+**CHECKPOINT:** Before final README integration, confirm the product evidence ledger, source path, rendered path, alt text, static fallback, final display size, and all user-visible claims.
 
 ## Reusable Guidance
 

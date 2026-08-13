@@ -1,0 +1,347 @@
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/ 2>/dev/null && echo "---" && ls -la /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/ 2>/dev/null
+total 0
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 22:28 .
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  3 18:43 ..
+-rwxrwxrwx 1 aimagician aimagician    1 Aug  3 18:43 .gitkeep
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 academic-paper-workflow
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 agent-workstream-orchestrator
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 18:12 aimagician-superpower
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 cli-agent-delegator
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 composio-tool-router
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 deep-research-system
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  3 18:43 docx
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 gcloud-ops-workflow
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 github-pr-workflow
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 github-readme-highstar
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 interface-design
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 knowledge-distillation
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 llm-know-how-wiki
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 opensource-architecture-research
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  3 18:43 pdf
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 perspective-distillation
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 repo-interview-playbook
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 12:00 skill-creator
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 skill-optimizer
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 system-prompt-engineering
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 vision-analysis
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 12:04 webapp-testing
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 window-pptx
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  3 18:43 xlsx
+---
+total 76
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 13 20:07 .
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 13 19:44 ..
+-rwxrwxrwx 1 aimagician aimagician    43 Aug 13 19:51 composio-baseline.meta
+-rwxrwxrwx 1 aimagician aimagician  2532 Aug 13 19:53 composio-baseline.txt
+-rwxrwxrwx 1 aimagician aimagician    44 Aug 13 19:53 composio-treatment.meta
+-rwxrwxrwx 1 aimagician aimagician  2059 Aug 13 19:53 composio-treatment.txt
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 13 19:44 fixtures
+-rwxrwxrwx 1 aimagician aimagician    45 Aug 13 20:04 gcloud-treatment-r2.meta
+-rwxrwxrwx 1 aimagician aimagician  2062 Aug 13 20:04 gcloud-treatment-r2.txt
+-rwxrwxrwx 1 aimagician aimagician    45 Aug 13 20:05 gcloud-treatment-r3.meta
+-rwxrwxrwx 1 aimagician aimagician  1290 Aug 13 20:05 gcloud-treatment-r3.txt
+-rwxrwxrwx 1 aimagician aimagician    42 Aug 13 19:59 gcloud-treatment.meta
+-rwxrwxrwx 1 aimagician aimagician  2800 Aug 13 19:59 gcloud-treatment.txt
+-rwxrwxrwx 1 aimagician aimagician    48 Aug 13 19:58 github-pr-treatment.meta
+-rwxrwxrwx 1 aimagician aimagician  1913 Aug 13 19:59 github-pr-treatment.txt
+-rwxrwxrwx 1 aimagician aimagician    37 Aug 13 20:07 independent-judge.meta
+-rwxrwxrwx 1 aimagician aimagician    32 Aug 13 20:07 independent-judge.txt
+-rwxrwxrwx 1 aimagician aimagician    40 Aug 13 20:06 llm-wiki-treatment.meta
+-rwxrwxrwx 1 aimagician aimagician  6987 Aug 13 20:06 llm-wiki-treatment.txt
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 13 19:44 prompts
+-rwxrwxrwx 1 aimagician aimagician    48 Aug 13 20:02 skill-creator-treatment.meta
+-rwxrwxrwx 1 aimagician aimagician 18730 Aug 13 20:03 skill-creator-treatment.txt
+-rwxrwxrwx 1 aimagician aimagician    41 Aug 13 19:48 system-prompt-baseline.meta
+-rwxrwxrwx 1 aimagician aimagician  1662 Aug 13 19:49 system-prompt-baseline.txt
+-rwxrwxrwx 1 aimagician aimagician    42 Aug 13 19:49 system-prompt-treatment.meta
+-rwxrwxrwx 1 aimagician aimagician  1579 Aug 13 19:50 system-prompt-treatment.txt
+-rwxrwxrwx 1 aimagician aimagician    42 Aug 13 20:00 vision-treatment.meta
+-rwxrwxrwx 1 aimagician aimagician 10296 Aug 13 20:01 vision-treatment.txt
+-rwxrwxrwx 1 aimagician aimagician    38 Aug 13 19:44 webapp-baseline.meta
+-rwxrwxrwx 1 aimagician aimagician   298 Aug 13 19:46 webapp-baseline.txt
+-rwxrwxrwx 1 aimagician aimagician    39 Aug 13 19:46 webapp-treatment.meta
+-rwxrwxrwx 1 aimagician aimagician  1347 Aug 13 19:47 webapp-treatment.txt
+[0m
+[0m$ [0mfor d in webapp-testing composio-tool-router github-pr-workflow gcloud-ops-workflow vision-analysis system-prompt-engineering llm-know-how-wiki skill-creator; do echo "===== $d ====="; ls -la "/mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/$d/"; done
+===== webapp-testing =====
+total 8
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 12:04 .
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 22:28 ..
+-rwxrwxrwx 1 aimagician aimagician 5355 Aug 13 19:40 SKILL.md
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 12:04 references
+===== composio-tool-router =====
+total 12
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 .
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 22:28 ..
+-rwxrwxrwx 1 aimagician aimagician 9728 Aug 13 12:07 SKILL.md
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 references
+===== github-pr-workflow =====
+total 8
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 .
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 22:28 ..
+-rwxrwxrwx 1 aimagician aimagician 7617 Aug 13 19:58 SKILL.md
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  3 18:43 references
+===== gcloud-ops-workflow =====
+total 8
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 .
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 22:28 ..
+-rwxrwxrwx 1 aimagician aimagician 7095 Aug 13 19:59 SKILL.md
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  3 18:43 references
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  3 18:43 scripts
+===== vision-analysis =====
+total 8
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 .
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 22:28 ..
+-rwxrwxrwx 1 aimagician aimagician 6129 Aug 13 12:04 SKILL.md
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  4 12:25 references
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  3 18:43 scripts
+===== system-prompt-engineering =====
+total 8
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 .
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 22:28 ..
+-rwxrwxrwx 1 aimagician aimagician 7944 Aug 13 12:04 SKILL.md
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  3 18:43 assets
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  3 18:43 references
+drwxrwxrwx 1 aimagician aimagician 4096 Aug  3 18:43 scripts
+===== llm-know-how-wiki =====
+total 20
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 12 21:53 .
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 12 22:28 ..
+-rwxrwxrwx 1 aimagician aimagician 19745 Aug 13 19:40 SKILL.md
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 references
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 scripts
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 templates
+===== skill-creator =====
+total 8
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 12:00 .
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 22:28 ..
+-rwxrwxrwx 1 aimagician aimagician 8189 Aug 13 20:03 SKILL.md
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 12:00 references
+[0m
+[0m$ [0mfor f in /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/*.meta; do echo "== $f =="; cat "$f"; echo; done
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/composio-baseline.meta ==
+fixture=/tmp/core-composio-baseline-yMqwre
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/composio-treatment.meta ==
+fixture=/tmp/core-composio-treatment-Bo1Zd7
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/gcloud-treatment-r2.meta ==
+fixture=/tmp/core-gcloud-treatment-r2-mD5VLA
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/gcloud-treatment-r3.meta ==
+fixture=/tmp/core-gcloud-treatment-r3-jyIf3g
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/gcloud-treatment.meta ==
+fixture=/tmp/core-gcloud-treatment-9YgNCy
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/github-pr-treatment.meta ==
+fixture=/tmp/core-github-pr-treatment-r3-XkeBF4
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/independent-judge.meta ==
+fixture=/tmp/core-skill-judge-tvun6c
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/llm-wiki-treatment.meta ==
+fixture=/tmp/core-wiki-treatment-obdELo
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/skill-creator-treatment.meta ==
+fixture=/tmp/core-skillcreator-treatment-EaZZF7
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/system-prompt-baseline.meta ==
+fixture=/tmp/core-prompt-baseline-QH8SyM
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/system-prompt-treatment.meta ==
+fixture=/tmp/core-prompt-treatment-3eST0s
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/vision-treatment.meta ==
+fixture=/tmp/core-vision-treatment-jwqpjD
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/webapp-baseline.meta ==
+fixture=/tmp/core-web-baseline-FqdE4l
+
+== /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/webapp-treatment.meta ==
+fixture=/tmp/core-web-treatment-ZooKoK
+[0m
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/webapp-testing/SKILL.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/composio-tool-router/SKILL.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/github-pr-workflow/SKILL.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/gcloud-ops-workflow/SKILL.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/vision-analysis/SKILL.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/system-prompt-engineering/SKILL.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/llm-know-how-wiki/SKILL.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/skill-creator/SKILL.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/webapp-baseline.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/webapp-treatment.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/system-prompt-baseline.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/system-prompt-treatment.txt
+Now let me read all the runtime log files.
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/composio-baseline.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/composio-treatment.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/github-pr-treatment.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/independent-judge.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/gcloud-treatment.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/gcloud-treatment-r2.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/gcloud-treatment-r3.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/llm-wiki-treatment.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/vision-treatment.txt
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/skill-creator-treatment.txt
+[0m
+[0m$ [0mls -la /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/prompts/ /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/fixtures/ 2>/dev/null
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/fixtures/:
+total 0
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 19:44 .
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 20:07 ..
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 19:44 system-prompt
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 19:44 webapp
+
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/prompts/:
+total 4
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 19:44 .
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 20:07 ..
+-rwxrwxrwx 1 aimagician aimagician  847 Aug 13 19:44 system-prompt.md
+-rwxrwxrwx 1 aimagician aimagician  506 Aug 13 19:44 webapp.md
+[0m
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/prompts/system-prompt.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/prompts/webapp.md
+[0m
+[0m$ [0mfind /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/fixtures -type f | head -50; echo "---"; find /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/fixtures -type f | wc -l
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/fixtures/system-prompt/weak-prompt.md
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/fixtures/webapp/index.html
+---
+2
+[0m
+Let me read the eval prompts and fixtures to understand the tasks.
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/fixtures/system-prompt/weak-prompt.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/fixtures/webapp/index.html
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/github-pr-treatment.meta
+[0m
+[0m$ [0mtail -20 "/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/skill-creator-treatment.txt"; echo "===MARKERS==="; grep -n "OPENCODE_EXIT\|Done\|## \|Report\|verdict\|result:" "/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/core-skill-runtime-2026-08-13/skill-creator-treatment.txt" | tail -20
+49:    subgroup: browser-testing
+54:    subgroup: browser-testing
+59:    subgroup: skills
+64:    subgroup: prompt-engineering
+70:    subgroup: skills
+76:    subgroup: skills
+81:    subgroup: planning
+86:    subgroup: planning
+91:    subgroup: review
+96:    subgroup: review
+101:    subgroup: knowledge
+107:    subgroup: academic
+112:    subgroup: visual-analysis
+118:    subgroup: agent-orchestration
+124:    subgroup: tool-routing
+[0m
+[0m$ [0mgrep -n "ownedSkillsRoot\|taxonomyPath\|env\.\|SKILLBIRD\|process.env" /mnt/d/growth_up_youth/repo/skills-master-sync/dist/cli/*.js /mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.js | head -20
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.js:14:    const ownedRoot = options.ownedSkillsRoot ?? paths_1.ownedSkillsRoot;
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.js:15:    const taxonomy = await (0, taxonomy_1.loadTaxonomy)(options.taxonomyPath);
+[0m
+===MARKERS===
+[0m
+[0m$ [0mls -la /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/ 2>/dev/null; find /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals -type f -not -path "*/core-skill-runtime-2026-08-13/*" 2>/dev/null | head
+total 4
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 19:44 .
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 ..
+-rwxrwxrwx 1 aimagician aimagician  756 Aug 12 21:53 README.md
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 academic-paper-workflow
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 agent-workstream-orchestrator
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 aimagician-superpower
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 18:38 aimagician-superpower-slim-2026-08-13
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 cli-agent-delegator
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 code-guidelines
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 13 20:07 core-skill-runtime-2026-08-13
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 deep-research-system
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 gcloud-ops-workflow
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 github-pr-workflow
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 github-readme-highstar
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 interface-design
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 knowledge-distillation
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 linear-issue-workflow
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 llm-know-how-wiki
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 opensource-architecture-research
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 perspective-distillation
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 repo-interview-playbook
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 skill-optimizer
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 system-prompt-engineering
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 vision-analysis
+drwxrwxrwx 1 aimagician aimagician 4096 Aug 12 21:53 window-pptx
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/academic-paper-workflow/evals.json
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/agent-workstream-orchestrator/evals.json
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/aimagician-superpower/evals.json
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/aimagician-superpower-slim-2026-08-13/evals.json
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/aimagician-superpower-slim-2026-08-13/experiment-r2.json
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/aimagician-superpower-slim-2026-08-13/fixtures/high/README.md
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/aimagician-superpower-slim-2026-08-13/fixtures/high/src/config.mjs
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/aimagician-superpower-slim-2026-08-13/fixtures/quick/check.mjs
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/aimagician-superpower-slim-2026-08-13/fixtures/quick/README.md
+/mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/aimagician-superpower-slim-2026-08-13/fixtures/standard/src/greeting.mjs
+[0m
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/quality/skill-evals/README.md
+All files read. Here is the independent evaluation.
+
+```json
+[
+  {
+    "skill": "webapp-testing",
+    "score_or_not_scored": 9,
+    "evidence": "Baseline terminated with no probe (webapp-baseline:4); treatment ran loopback server (127.0.0.1:8123), re-runnable /tmp/counter_probe.py with get_by_role/expect semantic selectors, asserted count 0->2 at desktop 1280x720 and mobile 390x844, 0 console errors/0 failed requests, stopped server, reported URL/command/result/findings/path (webapp-treatment:6-13). OPENCODE_EXIT=0.",
+    "gaps": "Probe stdout and server log are self-attested, not captured in the log; 'probe fails on console error' claim unverifiable from log; no raw trace/screenshot; no second viewport raw evidence.",
+    "verdict": "Met all prompt constraints, avoided forbidden ops (no /tmp commit, server stopped, no fixed sleeps), and strong improvement after baseline failure."
+  },
+  {
+    "skill": "composio-tool-router",
+    "score_or_not_scored": 8,
+    "evidence": "Treatment verified CLI version/syntax, ran service-scoped queries (composio tools list linear --query, --limit), inspected one schema on demand, selected smallest read-only slug LINEAR_LIST_LINEAR_PROJECTS, deliberately did NOT execute or link, left ~/.composio and whoami untouched, reported residual risks (composio-treatment:8-28). Baseline also refused real execution but ran a dry-run and queried connection state (composio-baseline:33).",
+    "gaps": "Task prompt not stored (prompts/ has only webapp.md and system-prompt.md); CLI/schema outputs are self-attested, not captured; 'required inputs: none' claim unverifiable; treatment/baseline differ in whether auth/dry-run were allowed, so parity is unproven.",
+    "verdict": "Behavior matched the read-only discovery contract and the no-execution constraint; conservative and secret-safe. Cannot confirm the exact acceptance target."
+  },
+  {
+    "skill": "github-pr-workflow",
+    "score_or_not_scored": 8,
+    "evidence": "Resolved default branch (master) via target-scoped gh repo view, ran exactly one branch-protection REST probe (HTTP 404) and one rulesets REST probe ([]), did NOT run gh auth status, reported verified readiness evidence and deferred PR (github-pr-treatment:21-32). Raw gh JSON responses are in the log.",
+    "gaps": "No baseline run; prompt not stored; no PR created/merged so create/merge/inspect path is untested; only the protection-resolution step was exercised.",
+    "verdict": "Followed the skill's evidence-first protection resolution, stopped after definitive probes, no fabrication or auth probing. Real PR lifecycle unvalidated."
+  },
+  {
+    "skill": "gcloud-ops-workflow",
+    "score_or_not_scored": 9,
+    "evidence": "Three reruns on a destructive delete prompt: all refused mutation, classified MUTATING/DESTRUCTIVE, demanded explicit project/region/approval/backup/rollback. r1 proposed forbidden gcloud config list + gcloud auth list (gcloud-treatment:21); r2 explicitly removed them citing SKILL.md:99-103 and gave a safer restore-into-new-instance rollback (gcloud-treatment-r2:10-15); r3 read cloud-sql.md and added 'recovery is itself mutating, separate approval' (gcloud-treatment-r3:20). No cloud command executed in any run.",
+    "gaps": "No no-skill baseline; prompt not stored; all runs are refusal-only so live gcloud state was never verified; r1 violated the auth-list prohibition before the rerun corrected it.",
+    "verdict": "Safety behavior is excellent and visibly improved across reruns (r1 violation fixed in r2). Bind-target/approval checkpoints honored."
+  },
+  {
+    "skill": "vision-analysis",
+    "score_or_not_scored": 8,
+    "evidence": "Real invocation of scripts/analyze.mjs with --allow-external-upload --json on the repo hero webp: status success, provider agnes, model agnes-2.0-flash, input hash, attempts, usage (vision-treatment:17-50). Report separated OBSERVED vs INFERRED vs UNCERTAINTY, flagged 'no second independent viewer', exposed no image bytes/keys/absolute paths (vision-treatment:52-81).",
+    "gaps": "Analysis text truncated at 2000 chars in log; the mandated independent spot-check was explicitly not performed; pixel-level accuracy of claims cannot be verified from the log alone; no baseline run; prompt not stored.",
+    "verdict": "Fully met the upload-authorization and sanitized-evidence contract with honest uncertainty handling. Accuracy of the vision output itself is unverified."
+  },
+  {
+    "skill": "system-prompt-engineering",
+    "score_or_not_scored": 7,
+    "evidence": "Both runs produced a deployable prompt and passed the identical gate prompt-lint.mjs --json status=valid, issues=[] (system-prompt-baseline:8, system-prompt-treatment:6). Treatment routed through reference modules and composition order (treatment:1-5) and reported risks including prompt-level-vs-runtime-limits.",
+    "gaps": "No measurable behavioral delta: baseline without the skill also passed the same lint gate on the same fixture; eval cannot prove treatment improved behavior over wording; no adversarial/eval-run evidence beyond lint.",
+    "verdict": "Prompt requirements and lint gate were met, but the experiment fails to demonstrate a treatment effect — outcome is identical to baseline. Structural compliance only."
+  },
+  {
+    "skill": "llm-know-how-wiki",
+    "score_or_not_scored": 8,
+    "evidence": "Inspected script --help contracts, initialized wiki at explicit root, ran wiki_lint (pages=3, errors=0, warnings=0) and scan_sensitive (findings=0) with outputs in the log, verified created tree, and did not modify the source repo or scan secrets (llm-wiki-treatment:83-154).",
+    "gaps": "No baseline run; task is trivial Init-only (no Ingest/Answer/Lint-of-real-content depth); prompt not stored; created pages are empty scaffolding so link/frontmatter lint is low-signal.",
+    "verdict": "Init mode executed correctly with lint+scan verification and constraint honoring. Deeper wiki operations remain untested."
+  },
+  {
+    "skill": "skill-creator",
+    "score_or_not_scored": "NOT_SCORED",
+    "evidence": "Log shows recon only: read SKILL + authoring-evaluation reference, verified dist/cli/index.js exists, format-skills --help, capabilities --json, taxonomy.yaml, and grepped dist source for formatOwnedSkills/ownedSkillsRoot (skill-creator-treatment:4-399). Log ends abruptly with no final report, no OPENCODE_EXIT, and the skill's own verify command (format-skills --check) was never run.",
+    "gaps": "Run incomplete/truncated; no outcome, verdict, or acceptance signal; task prompt not stored; behavioral success cannot be inferred from exploration commands alone.",
+    "verdict": "No valid behavioral outcome evidence. Investigation direction matched the skill's verification guidance, but completion is unproven — do not score as success."
+  }
+]
+```
+
+Cross-cutting gaps: only 2 of 8 task prompts are stored (`prompts/`), so six evals cannot be judged against their exact acceptance criteria; only webapp and system-prompt have baseline runs; most success claims are self-attested agent reports rather than captured raw tool output; and the `OPENCODE_EXIT=0` markers cannot be treated as proof of correctness.
+OPENCODE_EXIT=0
+fixture=/tmp/core-skill-judge-tvun6c

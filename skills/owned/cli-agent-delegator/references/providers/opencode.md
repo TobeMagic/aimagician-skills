@@ -160,7 +160,7 @@ Use this route:
 3. The controller declares zero or more fallback models in descending preference. Models must be unique, active, free, text-capable, and tool-capable.
 4. The runtime appends `agnes/agnes-2.0-flash` exactly once as the final fallback when available. Agnes remains the unlimited safety fallback, not a mandatory primary or second choice.
 5. A usage/quota/rate-limit event invalidates the model's declared quota scope. Under policy `user-policy-v1`, all `opencode/*` Zen models share `shared:opencode`; every other provider uses `model:<full-id>`; Agnes uses `unlimited:agnes`. These scopes are user-asserted policy metadata, not provider-discovered facts.
-6. A model-unavailable event invalidates only that model. Authentication invalidates the normalized provider. Network errors retry the same model three times, then stop. Permission, command-syntax, generic worker, and worker-quality failures stop without fallback.
+6. A model-unavailable event invalidates only that model. Authentication invalidates the normalized provider. Network errors retry the same model three times, then stop. Permission, command-syntax, generic worker, worker-quality, and controller-cancellation failures stop without fallback.
 7. If Agnes reports a rate limit, keep retrying with progress events until success or cancellation. Never switch models merely because an active run is slow or temporarily quiet.
 8. `vision-analysis` acquires pixels through its authorized Agnes API backend and returns sanitized text evidence. The controller then chooses the text reasoning model using the same policy.
 9. If no suitable free model or verified visual backend is usable, return `NEEDS_CONTEXT` or `BLOCKED`; never silently select a paid or unknown model.
@@ -213,7 +213,7 @@ Rules:
 1. While the process is alive and events continue, keep waiting until it exits naturally.
 2. A quiet interval is not failure. Poll process and session health and remain attached.
 3. Confirm stale state only when neither process/provider health nor session/event state is advancing. Record the last event and the evidence used to classify it.
-4. Stop on process exit, clear CLI error, provider rejection, permission/config failure, user cancellation, or confirmed stale state. A terminal quota event may stop the failed process immediately; fallback still waits for process exit. An Agnes rate limit produces retry events instead of a false completion.
+4. Stop on process exit, clear CLI error, provider rejection, permission/config failure, user cancellation, or confirmed stale state. On controller cancellation, the owned runtime terminates the active worker and the entire model chain reports `CANCELLED`; it must not start any fallback. A terminal quota event may stop the failed process immediately; fallback still waits for process exit. An Agnes rate limit produces retry events instead of a false completion.
 5. Never start the fallback model while the original process is still alive.
 6. After an accepted transition event, preserve the error and start the next non-invalidated declared model using the exact same prompt and task contract; do not repeat preflight probes. Continue indefinitely only for Agnes rate-limit events.
 7. Do not fabricate a final result when a run fails or is stopped.
@@ -247,6 +247,7 @@ If the installed version uses `opencode session` instead of `session list`, adap
 - **Authentication:** invalidate the normalized provider and continue through the declared chain.
 - **Network:** retry the same model three times, then stop and preserve the classification.
 - **Permission, command syntax, generic provider, or worker quality:** stop; do not convert the failure into a model fallback.
+- **Controller cancellation:** terminate the active child, report `CANCELLED`, and do not advance to another model.
 - **Task contract:** missing skill, source, decision, scope, or write path. Return `NEEDS_CONTEXT`.
 - **Confirmed stale:** process/session no longer advances without a terminal result. Report last activity and health evidence; retry only after the original process has ended or been explicitly stopped.
 - **Worker result quality:** incomplete or unsupported report. Use one narrower follow-up prompt; do not rerun the same vague request.

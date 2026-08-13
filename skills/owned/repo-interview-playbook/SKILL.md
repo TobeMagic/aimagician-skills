@@ -1,14 +1,6 @@
 ---
 name: repo-interview-playbook
-description: >
-  Discuss and generate evidence-backed backend interview playbooks, 八股文, project
-  stories, technical highlight maps, question banks, and resume bullets from a
-  real repository plus a project-local LLM-know-how-wiki. Use this skill
-  whenever the user asks to prepare interviews, 简历, 项目介绍, 项目亮点, Java 后端八股文, AI
-  Agent 后端面试, "根据 repo 生成面试题", or wants to turn work repositories into next-job
-  interview material. Default to an interactive discuss-first workflow: evidence
-  scan, candidate highlights, one-highlight-at-a-time polishing, and only write
-  wiki files after explicit confirmation.
+description: Use when turning a real repository and project-local wiki into evidence-backed interview stories, technical highlights, question banks, and truthful resume bullets. Do not use for generic interview trivia, fabricated metrics, or filing unconfirmed content into a wiki.
 metadata:
   related_skills:
     - llm-know-how-wiki
@@ -26,11 +18,14 @@ tags:
   - interview
   - evidence
   - repo
+  - on-demand
 ---
 
 # Repo Interview Playbook
 
 Use this skill to turn real engineering work into interview-ready material. The output should be practical: what to say, what code proves it, what interviewers will ask next, and which basic 八股文 each project highlight maps to.
+
+This is an on-demand career artifact workflow. Do not load it for general repository exploration, technical planning, or normal documentation.
 
 This is not a generic "Java 100 questions" generator. Always start from repository and wiki evidence.
 
@@ -304,6 +299,30 @@ Before filing output:
 - Metric/scale/latency/recall/reliability claims are either source-backed, user-confirmed, or phrased as safe boundaries.
 - Sensitive values are not copied into the playbook.
 - If writing into LLM wiki, update `wiki/index.md` and append `wiki/log.md`.
+
+## Evidence Checkpoints
+
+### 1. Select One Defensible Highlight
+
+Start from a bounded evidence scan, candidate highlights, ownership gaps, and one recommended story. Do not draft a complete playbook before the user confirms the strongest highlight or equivalent autonomous scope.
+
+### 2. Separate Evidence From Coaching
+
+Label source-backed implementation facts, reasonable inference, user-confirmed impact, and safe answer boundaries. A dependency or repository pattern is not automatically the user's ownership claim.
+
+### 3. File Only Confirmed Material
+
+Before wiki writes, reconcile highlight pages, question bank, evidence map, and resume bullets against the same claims.
+
+**CHECKPOINT:** Do not publish a resume claim, metric, scale statement, or wiki page while the source, ownership, or filing approval remains unresolved.
+
+## Failure Handling
+
+| Trigger | First response | Fallback |
+|---|---|---|
+| Repository/wiki evidence is absent, stale, or contradictory | Report the evidence gap and ask for the smallest missing context | Produce only a conservative discussion outline with explicit unknowns |
+| User requests fabricated metrics, ownership, or production scale | Refuse the unsupported claim and explain the evidence boundary | Offer a truthful capability, tradeoff, or interview-answer framing |
+| Highlight selection or filing authorization is missing | Stop before broad drafting or writes | Return candidate options and wait for the confirmed highlight or explicit autonomous scope |
 
 ## Common Mistakes
 

@@ -1,17 +1,13 @@
 ---
 name: skill-creator
-description: Use when adding a new SKILL.md, consolidating external skills into owned skills, editing skill triggers/workflows, or updating taxonomy/category frontmatter.
+description: Maintainer-only. Use when adding or consolidating owned Skills, editing Skill triggers/workflows, or updating taxonomy/category frontmatter. Do not use for ordinary application development, repository exploration, or one-off prompting.
 category: build
 subcategory: skills
 tags:
   - skills
   - authoring
   - taxonomy
-metadata:
-  merged_from:
-    - anthropic-skill-creator
-    - writing-skills
-    - superpowers-skill-authoring
+  - maintainer-only
 compatibility:
   tools: [bash]
   requires: Skill goal, target users, and a testable trigger/workflow
@@ -21,11 +17,7 @@ compatibility:
 
 Use this skill to keep owned skills small, triggered correctly, and easy to manage through Skillbird.
 
-## Source Decisions
-
-- Claude's official `skill-creator` provides the authoring loop: clarify intent, draft, test with and without the skill, evaluate, inspect, and iterate.
-- Superpowers `writing-skills` provides skill TDD: prove baseline failure before relying on the new instructions.
-- Skillbird adds repository ownership: every shipped owned skill must have category metadata and formatter coverage.
+This is not a default engineering companion. Load it only when the delivered artifact is an owned Skill or Skillbird taxonomy change.
 
 ## Skill Shape
 
@@ -57,7 +49,7 @@ Frontmatter rules:
    - Use one of the six categories: `build`, `research`, `design`, `documents`, `operate`, `strategy`.
    - Use lowercase slug tags.
 5. Verify.
-   - Run `skillbird format-skills --check`.
+   - From the owner repository root, run `node dist/cli/index.js format-skills --check` (or the installed `skillbird format-skills --check`). It validates that owner repository's `skills/owned` tree; it is not a generic formatter for an arbitrary temporary directory.
    - Run catalog/manager tests when install behavior changes.
 
 ## Skill TDD And Eval Loop
@@ -80,6 +72,26 @@ Treat skill authoring like test-driven development for process documentation:
    - In an owner repository, store manual evals at `quality/skill-evals/<skill-id>/evals.json`; otherwise use an external harness or phase validation note with prompt, expected behavior, observed behavior, and pass/fail result. Installed runtime packages must not depend on eval files.
 6. Iterate only on observed failures.
    - Tighten descriptions, add guardrails, or move heavy material into references.
+
+## Authoring Checkpoints
+
+### 1. Lock The Public Contract
+
+Record the outcome, trigger and non-trigger prompts, sibling boundary, runtime scope, and one observable acceptance signal before editing a Skill.
+
+### 2. Prove The Treatment
+
+Keep the model, task, tools, repository state, and budget comparable; reject a treatment that improves wording but not a predefined observable behavior.
+
+### 3. Release Only A Pure Package
+
+Verify referenced paths, taxonomy, runtime/source neutrality, and the external quality record before installing or publishing.
+
+**CHECKPOINT:** A Skill is not ready when baseline/treatment evidence, a negative scenario, or a package-purity check is missing.
+
+**CHECKPOINT:** Confirm every referenced path resolves and every public trigger has a sibling or non-trigger boundary before static scoring or installation.
+
+**CHECKPOINT:** If an evaluator cannot compare equivalent prompts, model, tools, repository state, and budget, mark the experiment invalid instead of assigning an effectiveness score.
 
 ## Progressive Disclosure
 
@@ -106,6 +118,12 @@ Keep `SKILL.md` focused on the decision and workflow the agent must follow now. 
 
 ## Failure Handling And Checkpoint
 
+| Trigger | First response | Fallback |
+|---|---|---|
+| Trigger overlaps a sibling or the target outcome is ambiguous | Narrow the public description and compare the sibling routes | Discuss merge versus routing before creating another public Skill identity |
+| A reference, test, or runtime-purity check fails | Repair or remove the owning route and rerun the check | Keep the candidate uninstalled and record the unresolved evidence gap externally |
+| Treatment changes prose without improving controlled behavior | Reject the change and return to the failed pressure scenario | Preserve the baseline and seek a smaller executable rule rather than adding bulk content |
+
 - Trigger overlaps a sibling Skill: narrow the description or merge the capability before adding a new public identity.
 - Referenced file is missing: fail the package check; do not leave a dead progressive-disclosure route.
 - Treatment improves prose but not behavior: reject it and revise against the failed pressure scenario.
@@ -124,3 +142,9 @@ When changing skills, report:
 - baseline or regression evidence used;
 - with-skill result or automated test added;
 - verification command and result.
+
+Read [authoring evaluation contract](references/authoring-evaluation.md) when designing or judging a controlled Skill experiment.
+
+```json
+{"prompt":"<fixed pressure scenario>","expected":["<observable assertion>"],"forbidden":["<regression>"]}
+```

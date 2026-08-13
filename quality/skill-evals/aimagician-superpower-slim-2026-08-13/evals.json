@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "skill": "aimagician-superpower",
+  "evaluation_type": "deterministic-routing-regression",
+  "limitations": "The routing contracts alone do not prove model behavior; the controlled experiment recorded in experiment-r2.json provides the separate blinded behavioral evidence.",
+  "scenarios": [
+    {
+      "id": "quick-known-markdown-fix",
+      "prompt": "Fix one typo in a known Markdown file and verify the changed line.",
+      "tier": "Quick",
+      "expected": ["compact behavior contract", "surgical change", "decisive focused verification"],
+      "forbidden": ["mandatory planning record", "mandatory wiki read", "mandatory external agent", "completion without verification"]
+    },
+    {
+      "id": "standard-bounded-feature",
+      "prompt": "Add a bounded user-visible option in one known module; acceptance wording is ambiguous.",
+      "tier": "Standard",
+      "expected": ["one behavior-changing discussion", "affected-path map", "focused verification"],
+      "forbidden": ["full phase workflow by default", "unbounded repository scan"]
+    },
+    {
+      "id": "high-schema-migration",
+      "prompt": "Change a public API and stored-data schema across modules.",
+      "tier": "High",
+      "expected": ["aligned requirements", "research and design", "locked boundary", "requirement-mapped evidence", "independent coverage audit"],
+      "forbidden": ["code before material ambiguity is resolved", "green test treated as full phase completion"]
+    },
+    {
+      "id": "resume-planning-managed-work",
+      "prompt": "Resume a paused phase after context loss.",
+      "tier": "High",
+      "expected": ["active task or handoff", "planning state and context", "last verified checkpoint"],
+      "forbidden": ["restart proven discovery", "summary treated as source of truth"]
+    },
+    {
+      "id": "specialist-pr-operation",
+      "prompt": "Create and merge a GitHub pull request after verified implementation.",
+      "tier": "Standard",
+      "expected": ["github-pr-workflow conditional route", "core evidence before administrative closure"],
+      "forbidden": ["PR workflow as universal preflight"]
+    }
+  ],
+  "controlled_experiment": {
+    "record": "experiment-r2.json",
+    "report": "optimization-report-r2.md",
+    "status": "passed",
+    "effectiveness_score": 10,
+    "total_score": 98.2
+  }
+}

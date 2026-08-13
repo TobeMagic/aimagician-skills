@@ -17,6 +17,7 @@ tags:
   - papers
   - literature
   - experiments
+  - on-demand
 ---
 
 # Academic Paper Workflow
@@ -28,6 +29,8 @@ paper goal -> field map -> idea selection -> method synthesis -> contribution-ev
 ```
 
 The workflow is about publishable papers, not career planning. It supports professional research design by default and a resource-constrained strategy mode when time, budget, data, or venue requirements are tight. Speed, venue level, and evidence depth are strategy tradeoffs; they are never permission to fabricate, hide failures, copy text, manipulate baselines, use unverified third-party manuscript services, or mislead reviewers.
+
+This is an on-demand academic workflow. Do not load it for ordinary repository research, product planning, or implementation work.
 
 ## Discuss-Driven Rule
 
@@ -118,6 +121,37 @@ If urgent, assume: public data, reproducible baseline, narrow claims, official v
 8. On reviews, triage issues before drafting responses.
 9. For thesis work, integrate existing paper outputs into a thesis structure and formatting checklist without turning this skill into career planning.
 10. Keep integrity controls active throughout.
+
+## Research Checkpoints
+
+### 1. Lock The Publishable Claim
+
+Confirm the target paper goal, hard constraints, available assets, field map, evidence bottleneck, and the next decision that needs discussion.
+
+### 2. Bind Claim To Evidence
+
+Map each contribution, baseline choice, experiment, limitation, and venue assertion to a reproducible source or explicit unknown before manuscript polishing.
+
+### 3. Verify Before Submission
+
+Check current author guidance, ethics/AI/data/code statements, formatting, duplicate-submission constraints, and the response-to-review evidence map.
+
+**CHECKPOINT:** Do not advance from a plausible idea to method, venue, submission, or rebuttal language while the supporting evidence, limitation, or policy requirement is unknown.
+
+## Failure Handling
+
+| Trigger | First response | Fallback |
+|---|---|---|
+| Paper objective, venue constraint, or available asset is ambiguous | Ask the smallest decision-changing question and state conservative defaults | Produce a route comparison rather than a false-ready manuscript plan |
+| Literature, baseline, result, or novelty evidence is missing or contradictory | Separate established evidence from hypothesis and log the gap | Narrow the claim, plan the missing experiment, or defer venue selection |
+| Author policy, ethics, reviewer request, or submission condition cannot be verified | Stop the affected submission or response step | Return an explicit verification checklist and mark the status incomplete |
+
+## Integrity Guardrails
+
+- Do not invent results, datasets, citations, reviewer requirements, or venue policies.
+- Do not suppress negative results, limitations, failed baselines, or uncertainty that changes the claim.
+- Do not copy text, misrepresent authorship, manipulate comparisons, or use unverified third-party submission services.
+- Do not treat a polished outline as evidence that an experiment, contribution, or venue fit is complete.
 
 ## Final Response Format
 

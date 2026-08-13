@@ -1,5 +1,33 @@
 # Request Ledger
 
+## USR-20260813-002: Lightweight adaptive engineering control plane
+
+**Status:** Accepted
+**Source:** User request to use the Darwin Skill for dynamic optimization
+
+### Accepted Requirements
+
+- **REQ-CONTROL-001:** Keep `aimagician-superpower` as a concise engineering
+  control plane. Its default context must contain only task classification,
+  source-of-truth recovery, risk-scaled delivery, conditional routing, and
+  honest completion conditions.
+- **REQ-CONTROL-002:** Preserve every existing specialized engineering
+  capability through progressive disclosure; do not delete a capability merely
+  because it does not belong in the default prompt.
+- **REQ-CONTROL-003:** `Quick` work must not force planning, wiki, worktree,
+  external-worker, or independent-audit steps. `High`, phase, milestone, and
+  deployable work must retain requirement-to-evidence traceability and closure
+  safeguards.
+- **REQ-CONTROL-004:** Run at least two Darwin iterations, keep deterministic
+  routing regression evidence outside the installable Skill, and never report
+  a static score as a controlled model-effectiveness score.
+
+### Explicit Non-goals
+
+- Modifying `cli-agent-delegator`, OpenCode runtime behavior, or model routing.
+- Deleting capability modules, changing external integrations, or completing
+  the separate `USR-20260813-001` 19-Skill optimization evaluation.
+
 ## USR-20260728-001: Agent-first Skillbird and completion audit
 
 **Status:** Accepted
@@ -599,3 +627,52 @@ valuable history.
 - Window-PPTX behavior or private asset changes.
 - Reintroducing third-party installers or Skill-local evaluation corpora.
 - Deleting historical phase, audit, archive, or user-owned worktree data.
+
+## USR-20260813-001: Measured capability upgrade for owned Skills
+
+**Status:** Accepted
+**Source:** User instruction on 2026-08-13 after reviewing the Darwin baseline
+
+### Original Request
+
+Raise the selected owned Skills to a credible 90+ total Darwin score through
+measured capability improvement. Implement the previously proposed first and
+second batches plus `github-readme-highstar` and `interface-design`; do not
+modify `docx`, `pdf`, `xlsx`, or `window-pptx`.
+
+### Accepted Decisions
+
+- Treat a 90+ claim as `static weighted score >= 70` plus controlled real-task
+  effectiveness `>= 9/10`, no runtime/source-neutrality blocker, and no
+  unresolved Blocker or Important review finding. Static-only scores are not
+  final scores.
+- Upgrade only these 19 Skills: `aimagician-superpower`,
+  `cli-agent-delegator`, `agent-workstream-orchestrator`, `webapp-testing`,
+  `github-pr-workflow`, `composio-tool-router`, `vision-analysis`,
+  `system-prompt-engineering`, `skill-creator`, `llm-know-how-wiki`,
+  `gcloud-ops-workflow`, `deep-research-system`,
+  `opensource-architecture-research`, `academic-paper-workflow`,
+  `repo-interview-playbook`, `knowledge-distillation`,
+  `perspective-distillation`, `github-readme-highstar`, and
+  `interface-design`.
+- Keep the Darwin protocol runtime-neutral: tests and optimization reports live
+  under the repository quality surface, never inside installable Skill folders.
+- Preserve the active Phase 49 scope, historical evidence, external-source
+  exclusion, and the user's dirty Window-PPTX worktree.
+
+### Derived Requirements
+
+- SKILL-90-CORE-01
+- SKILL-90-RESEARCH-01
+- SKILL-90-DESIGN-01
+- SKILL-90-EVAL-01
+- SKILL-90-PURITY-01
+- SKILL-90-VERIFY-01
+
+### Exclusions
+
+- Any change to `window-pptx`, `docx`, `pdf`, or `xlsx`.
+- Decorative prose or score-targeting changes that do not improve controlled
+  behavior.
+- Skill-local `evals/`, third-party installer/update hooks, source branding,
+  secrets, or destructive cleanup.

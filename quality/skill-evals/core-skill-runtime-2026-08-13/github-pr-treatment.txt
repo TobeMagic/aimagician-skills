@@ -1,0 +1,34 @@
+[0m
+> build · deepseek-v4-flash-free
+[0m
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/github-pr-workflow/SKILL.md
+[0m
+[0m$ [0mls -d /mnt/d/growth_up_youth/repo/skills-master-sync 2>&1; gh --version 2>&1 | head -2
+/mnt/d/growth_up_youth/repo/skills-master-sync
+gh version 2.91.0 (2026-04-22)
+https://github.com/cli/cli/releases/tag/v2.91.0
+[0m
+[0m$ [0mgh repo view --json name,defaultBranchRef 2>&1
+{"defaultBranchRef":{"name":"master"},"name":"aimagician-skills"}
+[0m
+Default branch resolved: `master`. Now the two protection probes (branch-protection REST + repository rulesets REST), scoped only to that repo/branch.
+[0m$ [0mR="$(gh repo view --json nameWithOwner -q .nameWithOwner)"; gh api "repos/$R/branches/master/protection" 2>&1
+{"message":"Branch not protected","documentation_url":"https://docs.github.com/rest/branches/branch-protection#get-branch-protection","status":"404"}gh: Branch not protected (HTTP 404)
+[0m
+[0m$ [0mR="$(gh repo view --json nameWithOwner -q .nameWithOwner)"; gh api "repos/$R/rulesets" 2>&1
+[]
+[0m
+## PR Readiness Evidence — `aimagician-skills`
+
+**Verified base/protection facts**
+- Resolved default branch: `master` (via `gh repo view --json defaultBranchRef`)
+- Branch-protection REST (`GET .../branches/master/protection`): HTTP 404 → branch **not protected** (verified absent, probe stopped per ruleset)
+- Repository rulesets REST (`GET .../rulesets`): `[]` → **no rulesets** (verified)
+
+**Unavailable evidence**
+- None. All three target-scoped queries returned definitive states.
+
+**Smallest next step**
+No protection gates to satisfy at the API level. Smallest next step: target a future PR base at `master` and compile the local verification evidence for that change; ask a user/maintainer only if project docs suggest a non-default integration branch.
+OPENCODE_EXIT=0
+fixture=/tmp/core-github-pr-treatment-r3-XkeBF4

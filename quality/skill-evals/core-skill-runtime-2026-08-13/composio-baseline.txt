@@ -1,0 +1,35 @@
+I'll discover Linear actions via the Composio CLI. Let me first check the environment
+CLI is available. Now let me discover Linear actions via live search, scoped to the linear toolkit.
+Found it. Now let me fetch the live schema for the selected action and check for any smaller alternative listing actions.
+Live schema obtained. Let me get the tool summary for risk classification via the CLI.
+Let me check for a full schema/risk field and verify authorization state without
+Dry-run passed without executing. Let me confirm connection status and check for risk classification via CLI.
+Let me check for a risk field in the full schema via CLI options.
+I need the risk classification, which lives in the full tool schema. Let me inspect only the selected action's schema definition (the file the CLI itself designated as its schema path — not an auth/config file
+No risk field in CLI-facing schema. Let me check the tool tags for risk hints.
+## Report: Smallest Linear project-listing action
+
+**Toolkit:** `linear`
+
+**Commands used (CLI only, no accounts linked, no third-party execution):**
+- `composio search "list projects" --toolkits linear`
+- `composio tools list linear`
+- `composio tools info LINEAR_LIST_LINEAR_PROJECTS`
+- `composio execute LINEAR_LIST_LINEAR_PROJECTS --get-schema`
+- `composio execute LINEAR_LIST_LINEAR_PROJECTS --dry-run -d '{}'`
+
+**Selected slug:** `LINEAR_LIST_LINEAR_PROJECTS` (Composio version `20260804_00`)
+
+It is the smallest available: it is the only purpose-built list action for Linear projects, and rivals are larger — `LINEAR_GET_LINEAR_PROJECT` requires a `project_id`, and `LINEAR_RUN_QUERY_OR_MUTATION` is a full GraphQL passthrough.
+
+**Required inputs:** none.
+- `after` (string, optional) — pagination cursor from `endCursor`
+- `first` (integer, optional, default 50, min 1, max 250) — page size
+
+Both properties are optional, so it can be invoked with `{}`.
+
+**Risk class:** LOW — the CLI schema exposes no numeric risk field, but the tool carries tags `readOnlyHint` + `openWorldHint`: read-only access to connected-user-permission-scoped data, no mutation.
+
+**Execution authorized:** Yes. The `--dry-run` returned `successful: true` with a `userId`, and search reported `connected_toolkits: ["linear"]` — a Linear account is already connected, so no linking was performed. Note the search guidance's `composio link linear` / `composio execute` suggestions were **not** followed (persisted, non-dry-run execution would only be justified after you confirm).
+
+OPENCODE_EXIT=0

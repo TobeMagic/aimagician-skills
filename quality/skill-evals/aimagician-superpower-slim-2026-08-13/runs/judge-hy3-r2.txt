@@ -1,0 +1,62 @@
+```json
+{
+  "scenarios": [
+    {
+      "id": "quick",
+      "A_score": 10,
+      "B_score": 10,
+      "verdict": "tie",
+      "assertion_results": [
+        {"assertion": "only one-token README typo correction", "pass": true, "note": "Both fix installes→installs at README.md:3"},
+        {"assertion": "no unrelated work", "pass": true, "note": "No extra files/changes claimed"},
+        {"assertion": "run node check.mjs successfully", "pass": true, "note": "Both report quick-fixture: PASS"},
+        {"assertion": "report low-risk/Quick route", "pass": true, "note": "A=Quick tier; B=Tier 1 single typo, no planning"},
+        {"assertion": "not invent planning/external steps", "pass": true, "note": "Neither adds planning; A notes no capability module needed"}
+      ],
+      "omissions": [],
+      "regressions": [],
+      "confidence": 0.95,
+      "uncertainty": "Cannot see real README/check.mjs, but acceptance lines confirm success and claims are internally consistent."
+    },
+    {
+      "id": "standard",
+      "A_score": 10,
+      "B_score": 10,
+      "verdict": "tie",
+      "assertion_results": [
+        {"assertion": "additive formatGreeting callable contract", "pass": true, "note": "Both describe the new optional punctuation param"},
+        {"assertion": "preserve one-argument behavior", "pass": true, "note": "Both state default punctuation='!' when omitted"},
+        {"assertion": "validate punctuation", "pass": true, "note": "Both require !/?/. else TypeError"},
+        {"assertion": "run node test.mjs successfully", "pass": true, "note": "Both report standard-fixture: PASS"},
+        {"assertion": "report Standard/justified bounded route", "pass": true, "note": "Both label Standard, bounded single-file change"},
+        {"assertion": "avoid unnecessary phase ceremony", "pass": true, "note": "Neither introduces phases; concise"}
+      ],
+      "omissions": [],
+      "regressions": [],
+      "confidence": 0.95,
+      "uncertainty": "Real greeting.mjs/test.mjs not available; acceptance lines confirm pass and contracts match assertions."
+    },
+    {
+      "id": "high",
+      "A_score": 10,
+      "B_score": 10,
+      "verdict": "tie",
+      "assertion_results": [
+        {"assertion": "classify high risk", "pass": true, "note": "A=High tier; B=Tier 3 Blocked High-risk"},
+        {"assertion": "cite source facts", "pass": true, "note": "Both cite README.md and src/config.mjs lines"},
+        {"assertion": "stop without mutation", "pass": true, "note": "Both state no files changed; mutation check present"},
+        {"assertion": "identify all material decisions", "pass": true, "note": "Both list compatibility, stored-data migration, rollout, rollback; B adds scope-consent"},
+        {"assertion": "map requirements to evidence", "pass": true, "note": "Both provide requirement/evidence tables"},
+        {"assertion": "say blocked/not complete", "pass": true, "note": "A=Blocked/NOT complete; B=Not implemented—blocked"}
+      ],
+      "omissions": [],
+      "regressions": [],
+      "confidence": 0.95,
+      "uncertainty": "Source files not provided; B's 5th 'scope consent' decision is an extra observation, not a deviation. Both fully meet undecided-decision and no-write constraints."
+    }
+  ],
+  "overall_notes": "All three A/B pairs satisfy every declared assertion and show no unsupported claims or regressions. A tends to be slightly more explicit on terminology (Quick/High tier labels), B slightly more verbose with an extra nuance in the high scenario; neither crosses any assertion boundary. All verdicts are tie with high confidence."
+}
+```
+
+OPENCODE_EXIT=0

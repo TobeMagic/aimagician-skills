@@ -1,0 +1,20 @@
+Tier analysis: this is a bounded, known-module feature with a fully specified contract and acceptance command — `Quick`/`Standard` route. Per the Skill, I load only the capability reference needed for the next action (implementation): the "Build and change"
+The next action is implementing a small feature, so I read the smallest applicable module under "Build and change": the feature playbook.
+Contract locked (Quick tier, fully-specified bounded change). Tests already pin the new behavior. Implementing the narrowest change:
+Now the acceptance command
+Done.
+
+**Task tier:** Quick (fully-specified, bounded change in a known module; test fixture already pinned the contract).
+
+**Behavior contract:** `formatGreeting(name[, { punctuation }])` — `name` must be a non-empty string; `punctuation` (default `"!"`, preserves one-arg behavior) must be exactly one of `!`, `?`, `.`, else `TypeError`; returns `Hello, <trimmed name><punctuation>`.
+
+**Changed files:** `src/greeting.mjs` only (test.mjs already covered the new cases).
+
+**Verification:** `node test.mjs` → `standard-fixture: PASS` (all 7 assertions passed, including invalid punctuation cases).
+
+**Status:** Complete.
+
+OPENCODE_EXIT=0
+
+--- acceptance ---
+standard-fixture: PASS

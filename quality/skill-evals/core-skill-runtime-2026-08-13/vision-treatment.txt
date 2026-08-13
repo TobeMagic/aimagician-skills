@@ -1,0 +1,83 @@
+[0m
+> build · deepseek-v4-flash-free
+[0m
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/vision-analysis/SKILL.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/vision-analysis/references/agnes-api.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/vision-analysis/scripts/analyze.mjs
+[0m
+[0m$ [0mls -la "/mnt/d/growth_up_youth/repo/skills-master-sync/docs/assets/skillbird-readme-hero.webp" && node --version && test -n "$AGNES_API_KEY" && echo "AGNES_API_KEY present" || echo "AGNES_API_KEY MISSING"
+-rwxrwxrwx 1 aimagician aimagician 51278 Aug 12 21:59 /mnt/d/growth_up_youth/repo/skills-master-sync/docs/assets/skillbird-readme-hero.webp
+v24.18.1
+AGNES_API_KEY present
+[0m
+[0m← [0mWrite /tmp/opencode/skillbird-hero-visual-review-prompt.md
+Wrote file successfully.
+[0m
+[0m$ [0mnode scripts/analyze.mjs --image "/mnt/d/growth_up_youth/repo/skills-master-sync/docs/assets/skillbird-readme-hero.webp" --prompt-file "/tmp/opencode/skillbird-hero-visual-review-prompt.md" --allow-external-upload --json 2>"/tmp/opencode/skillbird-hero-stderr.log"
+{
+  "status": "success",
+  "provider": "agnes",
+  "model": "agnes-2.0-flash",
+  "endpoint": "https://apihub.agnes-ai.com",
+  "inputs": [
+    {
+      "kind": "local",
+      "name": "skillbird-readme-hero.webp",
+      "mime": "image/webp",
+      "bytes": 51278,
+      "sha256": "860d99ece02e95ad0df8776a6568779f41977eebc6ded1dd2d3742119e652fd6"
+    }
+  ],
+  "attempts": {
+    "total": 1,
+    "rateLimitEvents": 0,
+    "transientRetries": 0
+  },
+  "analysis": "## 1. VISUAL OBSERVATIONS\n\n- **Background:** Light cream/off-white canvas. Subtle dot-grid patterns visible in the extreme top-left and bottom-right corners.\n- **Left panel:** A dark vertical rectangular panel with rounded corners. Behind it, two staggered card edges are visible (one cream, one orange), suggesting a stacked/layered composition.\n- **Left panel sidebar:** Four vertically stacked icons: (1) orange cube/package, (2) yellow folder, (3) cream-colored document/page with horizontal lines, (4) teal code brackets `</>`.\n- **Left panel main area:** Five horizontal card rows, each containing a colored icon on the left and three gray horizontal placeholder bars on the right. From top to bottom, the icons are: blue (interconnected nodes/puzzle shape), yellow (crossed wrench and screwdriver), red (branching/flow structure), teal (document), orange (database cylinder). Each card also has a small colored dot on the far right.\n- **Central flow connectors:** Three dashed colored lines (blue, yellow, red) extend rightward from the left panel. Each line passes through a small circular node containing a white double-arrow refresh/sync icon.\n- **Robot/AI icons:** Three rounded-square icons at the end of each dashed line. Top is blue, middle is yellow, bottom is red. Each contains a minimalist robot face (two dot eyes, one horizontal mouth line).\n- **Right-side windows:** Three dark rectangular application windows stacked vertically. Each has macOS-style traffic light dots (red, yellow, green) in the top-left corner.\n  - **Top window:** File tree with yellow folder icons, gray text placeholder bars, and a right sidebar with colored dots.\n  - **Middle window:** Similar layout but the right sidebar shows checkmark icons.\n  - **Bottom window:** Layout similar to the top window.\n- **Shadows:** All major elements cast soft, diffuse drop shadows creating a floating/layered depth effect.\n- **No readable text is present anywhere in the image.** All textual content is represented by abstract gray bars.\n\n---\n\n## 2. PRODUCT/UI CLAIMS\n\n| Claim | Status |\n|-------|--------|\n| The asset depicts a workflow or pipeline diagram with parallel processing channels | [OBSERVED] |\n| The software involves AI or automation agents (robot icons) | [INFERRED] |\n| The software relates to development or coding workflows (code brackets, file trees, checklists) | [INFERRED] |\n| The product manages or orchestrates multiple tasks/processes simultaneously | [INFERRED] |\n| The product is called \"Skillbird\" | [INFERRED] — name is not visible in the image; derived solely from user prompt |\n| The illustration represents an actual UI of the product | [INFERRED] — windows are stylized mockups with placeholder content, not screenshot-accurate |\n| The product supports file management, database operations, and task automation | [INFERRED] — icons suggest these domains but no labels confirm them |\n\n---\n\n## 3. UNCERTAINTY\n\n- **Zero legible text:** No words, labels, or brand names are visible. Any claim about specific features, pricing, version numbers, or product names cannot be verified from pixels alone.\n- **Icon semantics are ambiguous:** The five card icons (connected nodes, crossed tools, branching structure, document, database) suggest categories but their exact meaning cannot be confirmed without accompanying text or labels.\n- **Window content is abstract:** The file trees and checklist items in the right-side windows use generic placeholder bars and dots. It is impossible to determine what files, code, or tasks are being displayed.\n- **Robot face details are minimal:** The facial features on the three robot icons are abstract dots and lines; no additional detail is rendered at this resolution.\n- **Missing context:** Whether the left panel represents a dashboard, a task list, a configuration screen, or an input queue cannot be determined from the illustration alone.\n- **Independent viewer should re-check:** Whether any subtle text, watermarks, or micro-labels exist at higher resolution or in the original file source.\n\n---\n\n## 4. DOCUMENTATION-QUALITY SUMMARY\n\nThis asset functions as a competent, on-trend developer-tooling hero illustration. Its visual strengths include a clean compositional flow (left-to-right pipeline), a cohesive and distinguishable color-coded channel system (blue, yellow, red), and recognizable UI metaphors (macOS windows, code brackets, file trees, checkmarks) that immediately signal \"software for developers.\" The stacked-card depth and soft shadows give it a polished, modern aesthetic appropriate for a README. However, the complete absence of any readable text or specific UI labels is a significant limitation: the illustration communicates a *general* concept of automated workflow orchestration but cannot convey what Skillbird actually does, its unique value proposition, or any concrete feature. As a standalone hero asset, it risks being visually appealing but semantically empty — viewers would need to rely entirely on surrounding documentation to derive meaning.",
+  "usage": {
+    "completion_tokens": 2792,
+    "prompt_tokens": 1598,
+    "total_tokens": 4390,
+    "completion_tokens_details": {
+      "reasoning_tokens": 1722,
+      "text_tokens": 1070
+    },
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "image_tokens": 1008
+    }
+  }
+}
+[0m
+## Sanitized Visual Evidence Report
+
+**Objective & input:** Documentation-quality evaluation of `skillbird-readme-hero.webp` (WebP, ~51.3 KB, SHA-256 `860d99ec…e652fd6`) — a README hero asset. External upload to the approved vision backend was explicitly authorized for this single public image; the approved script ran with `--allow-external-upload`. No files were modified; no absolute paths, image bytes, credentials, or raw request bodies are exposed here.
+
+**Backend/model/retries:** Agnes (`agnes-2.0-flash`) via `https://apihub.agnes-ai.com`; 1 attempt, 0 rate-limit events, 0 transient retries.
+
+### 1. Visual observations (pixel-level)
+- Light cream/off-white canvas; subtle dot-grid in top-left and bottom-right corners.
+- Left: dark rounded rectangular panel with two staggered card edges behind it (cream, orange).
+- Left sidebar: four stacked icons — orange cube/package, yellow folder, cream document with lines, teal code brackets `</>`.
+- Left main area: five horizontal card rows (icon + three gray placeholder bars + right dot): blue nodes/puzzle, yellow crossed tools, red branching flow, teal document, orange database cylinder.
+- Three dashed colored connectors (blue, yellow, red) extend right from the panel, each through a small circular node with a white double-arrow refresh/sync icon.
+- Three rounded-square robot-face icons (blue, yellow, red) — two dot eyes + one horizontal mouth line.
+- Right: three stacked dark application windows with macOS-style traffic-light dots; top/bottom show file trees + colored-dot sidebars, middle shows checkmark sidebars.
+- Soft diffuse drop shadows throughout. **No readable text anywhere** — all text is abstract gray bars.
+
+### 2. Observations vs. inferences
+- [OBSERVED] Workflow/pipeline diagram with parallel colored channels.
+- [INFERRED] AI/automation agents (robot icons); developer/coding theme (code brackets, file trees, checklists); multi-task orchestration; stylized mockups rather than accurate product screenshots; file/DB/task management (icon semantics).
+- [INFERRED, weak] Product name "Skillbird" — **not visible in the image**; derived solely from the request context.
+
+### 3. Uncertainty
+- No legible text/labels/brand; feature names, pricing, version, and value proposition are unverifiable from pixels.
+- Icon semantics and window contents are abstract placeholders — exact meaning unconfirmable.
+- Independent viewer should re-check at higher resolution for subtle text, watermarks, or micro-labels.
+
+### 4. Documentation-quality summary
+Polished, modern developer-tooling hero: clean left-to-right flow, strong color-coded channel system, recognizable UI metaphors. Risk: semantically empty as a standalone asset (no readable text), so it signals general "automated workflow orchestration" but cannot convey what Skillbird does — it needs surrounding docs to carry meaning.
+
+**Spot-checks:** No second independent viewer was available in this environment; all completion-critical claims (notably "no readable text," layout regions, icon set) rest on this single model report and should be re-verified against the source asset if used for an irreversible decision. This report was not passed into a later OpenCode reasoning/audit task.
+OPENCODE_EXIT=0
+fixture=/tmp/core-vision-treatment-jwqpjD

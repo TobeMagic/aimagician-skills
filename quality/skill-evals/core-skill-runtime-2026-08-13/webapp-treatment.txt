@@ -1,0 +1,15 @@
+Now let me inspect the fixture app
+Python Playwright is available. Let me verify its version and browser installs.
+Playwright + Chromium are ready. Let me check the computed accessible role of the counter paragraph to pick a robust semantic selector
+Paragraph name-matching is unreliable here, but role `paragraph` works. Now let me write the re-runnable probe and start the loop
+Now stop the server
+Probe passed. Report:
+
+- **URL tested:** `http://127.0.0.1:8123/index.html` (loopback, `python3 -m http.server`, bound to 127.0.0.1, stopped after run)
+- **Command:** `python3 -m http.server 8123 --bind 127.0.0.1 --directory /tmp/core-web-treatment-ZooKoK` then `python3 /tmp/counter_probe.py http://127.0.0.1:8123`
+- **Result:** **PASS** — count visible starts at `0` and reads `2` after two `Increment` clicks, at both desktop (1280×720) and mobile (390×844). Rollback to count `0` was already proven by pre-test checks in each viewport.
+- **Console/network:** 0 console errors, 0 uncaught page errors, 0 failed requests (probe fails if any occur).
+- **Probe path:** `/tmp/counter_probe.py` (re-runnable; takes base URL as optional argv; uses `get_by_role`/`expect` semantic selectors — `button "Increment"`, `heading "Counter"`, live-region paragraph).
+- Server verified stopped; server log at `/tmp/counter_server.log`.
+
+OPENCODE_EXIT=0

@@ -1,0 +1,156 @@
+[0m
+> build · deepseek-v4-flash-free
+[0m
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/llm-know-how-wiki/SKILL.md
+[0m→ [0mSkill "llm-know-how-wiki"
+[0m
+[0m$ [0mpwd && ls -la
+/tmp/core-wiki-treatment-obdELo
+total 0
+drwx------    2 aimagician aimagician    40 Aug 13 20:06 .
+drwxrwxrwt 1145 root       root       28520 Aug 13 20:06 ..
+[0m
+[0m$ [0mls -la /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/llm-know-how-wiki/ && ls -la /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/llm-know-how-wiki/scripts/
+total 20
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 12 21:53 .
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 12 22:28 ..
+-rwxrwxrwx 1 aimagician aimagician 19745 Aug 13 19:40 SKILL.md
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 references
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 scripts
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 templates
+total 100
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 .
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 12 21:53 ..
+-rwxrwxrwx 1 aimagician aimagician  9026 Aug  3 18:43 archive_log.py
+-rwxrwxrwx 1 aimagician aimagician 13603 Aug  3 18:43 external_reference_repos.py
+-rwxrwxrwx 1 aimagician aimagician  4298 Aug  3 18:43 init_wiki.py
+-rwxrwxrwx 1 aimagician aimagician  5009 Aug  3 18:43 record_activity.py
+-rwxrwxrwx 1 aimagician aimagician 12898 Aug  3 18:43 refresh_repos.py
+-rwxrwxrwx 1 aimagician aimagician  6657 Aug  3 18:43 scan_sensitive.py
+-rwxrwxrwx 1 aimagician aimagician 19816 Aug  3 18:43 secret_inventory.py
+-rwxrwxrwx 1 aimagician aimagician  8985 Aug  3 18:43 wiki_lint.py
+[0m
+Now let me explore the current directory and the skill
+Let me inspect the scripts' CLI to understand the positional root argument and verify the domain flag.
+[0m$ [0mpython /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/llm-know-how-wiki/scripts/init_wiki.py --help 2>&1; echo "---LK---"; python /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/llm-know-how-wiki/scripts/wiki_lint.py --help 2>&1; echo "---SC---"; python /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/llm-know-how-wiki/scripts/scan_sensitive.py --help 2>&1
+usage: init_wiki.py [-h] [--domain DOMAIN] [--no-create] [--print-root] [path]
+
+Initialize or locate a project-local LLM-know-how-wiki.
+
+positional arguments:
+  path             Explicit wiki root path
+
+options:
+  -h, --help       show this help message and exit
+  --domain DOMAIN  Short wiki domain description
+  --no-create      Only locate an existing wiki
+  --print-root     Print only the resolved wiki root
+---LK---
+usage: wiki_lint.py [-h] [--stale-days STALE_DAYS] [--large-lines LARGE_LINES]
+                    [--write-report]
+                    [path]
+
+Lint an LLM-know-how-wiki for structure, links, index coverage, and freshness.
+
+positional arguments:
+  path                  Wiki root path
+
+options:
+  -h, --help            show this help message and exit
+  --stale-days STALE_DAYS
+  --large-lines LARGE_LINES
+  --write-report
+---SC---
+usage: scan_sensitive.py [-h] [--json] [--include-external-reference-repos]
+                         [--include-vault]
+                         [path]
+
+Scan an LLM-know-how-wiki for obvious secret-looking strings.
+
+positional arguments:
+  path                  Wiki root path
+
+options:
+  -h, --help            show this help message and exit
+  --json                Emit JSON
+  --include-external-reference-repos
+                        Also scan third-party repositories under
+                        external_reference_repos/open_source
+  --include-vault       Also scan controlled local vault files under secrets/.
+                        Default omits them.
+[0m
+All three scripts accept a positional wiki-root `path`. Now initializing the wiki under the current evaluation directory for the "release engineering"
+[0m$ [0mpython /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/llm-know-how-wiki/scripts/init_wiki.py /tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki --domain "release engineering" 2>&1
+wiki_root=/tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki
+created:
+  - raw/
+  - raw/repo_snapshots/
+  - raw/external_reference_repos/
+  - raw/gcloud_inventory/
+  - raw/workflow_activity/
+  - raw/secret_inventory/
+  - raw/imports/
+  - external_reference_repos/
+  - external_reference_repos/open_source/
+  - secrets/
+  - wiki/
+  - wiki/service/
+  - wiki/architecture/
+  - wiki/api/
+  - wiki/project/
+  - wiki/reference/
+  - wiki/runbook/
+  - wiki/decision/
+  - wiki/digest/
+  - README.md
+  - SCHEMA.md
+  - external_reference_repos/README.md
+  - secrets/.gitignore
+  - secrets/registry.yaml
+  - wiki/index.md
+  - wiki/log.md
+  - wiki/overview.md
+reused:
+[0m
+[0m$ [0mpython /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/llm-know-how-wiki/scripts/wiki_lint.py /tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki 2>&1
+wiki_root=/tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki
+pages=3
+errors=0
+warnings=0
+[0m
+Wiki created. Now running lint and sensitive scan with the documented positional root argument.
+[0m$ [0mpython /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/llm-know-how-wiki/scripts/scan_sensitive.py /tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki 2>&1
+wiki_root=/tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki
+findings=0
+[0m
+Both checks pass cleanly. Let me verify the created structure briefly
+[0m$ [0mfind /tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki -type f | sort
+/tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki/README.md
+/tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki/SCHEMA.md
+/tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki/external_reference_repos/README.md
+/tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki/secrets/.gitignore
+/tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki/secrets/registry.yaml
+/tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki/wiki/index.md
+/tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki/wiki/log.md
+/tmp/core-wiki-treatment-obdELo/LLM-know-how-wiki/wiki/overview.md
+[0m
+## Result
+
+Initialized and validated a project-local `LLM-know-how-wiki` in the current evaluation directory for domain **release engineering**.
+
+**Commands (generic form):**
+```
+python <skill>/scripts/init_wiki.py <wiki-root> --domain "release engineering"
+python <skill>/scripts/wiki_lint.py <wiki-root>
+python <skill>/scripts/scan_sensitive.py <wiki-root>
+```
+
+**Created:** `README.md`, `SCHEMA.md`, `wiki/{index,log,overview}.md`, `raw/` (+ subdirs), `external_reference_repos/`, `secrets/{.gitignore,registry.yaml}`.
+
+**Validation results:**
+- `wiki_lint.py`: `pages=3, errors=0, warnings=0`
+- `scan_sensitive.py`: `findings=0`
+
+**Constraints honored:** no external source ingested; no environment/secret scanning; `<wiki-root>` was created under the evaluation dir only and the tracked skill/source repository was not modified (read-only use of its `SKILL.md` and scripts).
+OPENCODE_EXIT=0
+fixture=/tmp/core-wiki-treatment-obdELo

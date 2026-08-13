@@ -1,0 +1,80 @@
+{
+  "skill": "aimagician-superpower",
+  "round": 2,
+  "changed_dimension": "risk classification boundary for additive callable/API contracts",
+  "files": [
+    "skills/owned/aimagician-superpower/SKILL.md"
+  ],
+  "controls": {
+    "actor_model": "opencode/deepseek-v4-flash-free",
+    "actor_variant": "high",
+    "repository_state": "isolated copied fixtures; one fixture per run",
+    "tools": ["opencode run", "node", "diff"],
+    "budget": "same model, variant, prompt, fixture, and tool access per baseline/treatment pair"
+  },
+  "prompts": [
+    {
+      "id": "quick",
+      "mode": "full_test",
+      "baseline": "runs/quick-baseline.txt",
+      "treatment": "runs/quick-treatment-r2.txt",
+      "oracle": "node check.mjs passes in both final fixtures"
+    },
+    {
+      "id": "standard",
+      "mode": "full_test",
+      "baseline": "runs/standard-baseline.txt",
+      "treatment": "runs/standard-treatment-r2.txt",
+      "oracle": "node test.mjs passes in both final fixtures"
+    },
+    {
+      "id": "high",
+      "mode": "full_test",
+      "baseline": "runs/high-baseline.txt",
+      "treatment": "runs/high-treatment-r2.txt",
+      "oracle": "source copies remain identical; response must block the undecided public-contract migration"
+    }
+  ],
+  "baseline_artifacts": [
+    "runs/quick-baseline.txt",
+    "runs/standard-baseline.txt",
+    "runs/high-baseline.txt"
+  ],
+  "candidate_artifacts": [
+    "runs/quick-treatment-r2.txt",
+    "runs/standard-treatment-r2.txt",
+    "runs/high-treatment-r2.txt"
+  ],
+  "evaluation_mode": "full_test",
+  "judge_sessions": [
+    {
+      "model": "opencode/hy3-free",
+      "artifact": "runs/judge-hy3-r2.txt",
+      "result": "valid blind comparison; all pairs tie at 10/10"
+    },
+    {
+      "model": "opencode/big-pickle",
+      "artifact": "runs/judge-big-pickle-r2.txt",
+      "result": "valid blind comparison with fixture execution; candidate 10/10/10, baseline 10/10/9"
+    },
+    {
+      "model": "opencode/laguna-s-2.1-free",
+      "artifact": "runs/judge-laguna-r2.txt",
+      "result": "invalid: stopped after missing evidence from the initial blind packet; excluded from scoring"
+    }
+  ],
+  "scores": {
+    "baseline": 9.83,
+    "candidate": 10,
+    "delta": 0.17,
+    "static_weighted": 75.2,
+    "total": 98.2
+  },
+  "accepted": true,
+  "reason": "The candidate passed all three real-tool scenarios, preserved all fixture acceptance signals, introduced no routing or mutation regression, and received 10/10 from both valid independent judges. The candidate exceeds the baseline by 0.17 points across valid judges.",
+  "regressions": [],
+  "unresolved": [
+    "The prompt set is intentionally small and fixture-based; future optimization should add a larger real-repository sample before inferring universal gains.",
+    "The explicit Standard-minimum callable-contract rule was necessary because the prior treatment classified the additive contract as Quick despite its API surface."
+  ]
+}

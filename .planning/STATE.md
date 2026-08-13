@@ -5,9 +5,9 @@ milestone_name: Window-PPTX Physical Template Assembly
 current_phase: 49
 current_phase_name: Physical Template Assembly and Work-Report Acceptance
 status: in_progress
-stopped_at: v6.1 Phase 49 evidence is accepted; controlled off-phase repository maintenance `USR-20260812-001` completed on pushed master `2169c88`; return to the Phase 49 workflow completion gate
-last_updated: "2026-08-12T22:45:00+08:00"
-last_activity: 2026-08-12
+stopped_at: v6.1 Phase 49 evidence is accepted; controlled off-phase Skill capability optimization `USR-20260813-001` is in progress; preserve Phase 49 scope and return to its workflow completion gate
+last_updated: "2026-08-13T10:30:00+08:00"
+last_activity: 2026-08-13
 progress:
   total_phases: 51
   completed_phases: 46
@@ -26,7 +26,7 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v6.1 Phase 49 evidence is accepted. The controlled off-phase repository-maintenance task `USR-20260812-001` completed on pushed master `2169c88` without changing Window-PPTX behavior; return to the Phase 49 workflow completion gate.
+**Current focus:** v6.1 Phase 49 evidence is accepted. A controlled off-phase Skill capability optimization task `USR-20260813-001` is upgrading 19 selected owned Skills through static and behavioral Darwin evidence, without changing Window-PPTX behavior, `docx`, `pdf`, or `xlsx`; return to the Phase 49 workflow completion gate after closure.
 Its certified physical-page assembly passed clean-room generation, recursive
 OPC/editability QA, three independent blind reviews, fresh premerge approval,
 source/Codex/OpenCode install parity, and a fresh pushed-master completion

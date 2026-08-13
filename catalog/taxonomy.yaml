@@ -21,7 +21,7 @@ skills:
   aimagician-superpower:
     group: build
     subgroup: workflow
-    tags: [workflow, sdd, planning, research, multi-agent, execution, verification, audit]
+    tags: [workflow, engineering, planning, delivery, sdd, research, multi-agent, execution, verification, audit]
     recommendedScopes: [global]
     description: "Risk-scaled engineering workflow for specification, codebase exploration, design, vertical delivery, debugging, review, verification, audit, and handoff."
   code-guidelines:
@@ -57,7 +57,7 @@ skills:
   skill-creator:
     group: build
     subgroup: skills
-    tags: [skills, authoring, taxonomy]
+    tags: [skills, authoring, taxonomy, maintainer-only]
     recommendedScopes: [global]
   system-prompt-engineering:
     group: build
@@ -68,7 +68,7 @@ skills:
   skill-optimizer:
     group: build
     subgroup: skills
-    tags: [skills, optimization, evaluation, quality, runtime-neutral]
+    tags: [skills, optimization, evaluation, quality, runtime-neutral, maintainer-only]
     recommendedScopes: [global]
     description: "Validation-gated Skill auditing and improvement with controlled behavioral tests, independent review, and no Git mutation by default."
   writing-skills:
@@ -105,7 +105,7 @@ skills:
   academic-paper-workflow:
     group: research
     subgroup: academic
-    tags: [papers, literature, experiments]
+    tags: [papers, literature, experiments, on-demand]
     recommendedScopes: [project]
   vision-analysis:
     group: research
@@ -138,7 +138,7 @@ skills:
   repo-interview-playbook:
     group: research
     subgroup: repo-analysis
-    tags: [interview, evidence, repo]
+    tags: [interview, evidence, repo, on-demand]
     recommendedScopes: [project]
   knowledge-distillation:
     group: research
@@ -149,7 +149,7 @@ skills:
   perspective-distillation:
     group: research
     subgroup: perspective-distillation
-    tags: [perspective, research, knowledge-distillation, skill-generation, multi-agent]
+    tags: [perspective, research, knowledge-distillation, skill-generation, multi-agent, on-demand]
     recommendedScopes: [project]
     description: "Build evidence-backed person or topic perspective Skills with ethical boundaries, six-stream research, cognitive synthesis, and independent validation."
 
@@ -266,7 +266,7 @@ skills:
   gcloud-ops-workflow:
     group: operate
     subgroup: cloud
-    tags: [gcloud, cloud-run, gke]
+    tags: [gcloud, cloud-run, gke, environment-specific]
     recommendedScopes: [global]
   gsd:
     group: operate

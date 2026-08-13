@@ -57,6 +57,7 @@ describe("expert engineering capability architecture", () => {
 
   it("exposes progressive engineering modules, durable artifacts, and behavior scenarios", async () => {
     const skill = await readFile(join(engineeringRoot, "SKILL.md"), "utf8");
+    const capabilityIndex = await readFile(join(engineeringRoot, "references", "capabilities", "index.md"), "utf8");
     const modulePaths = [
       "references/capabilities/engineering-exploration.md",
       "references/capabilities/prototyping-and-progressive-discovery.md",
@@ -73,8 +74,12 @@ describe("expert engineering capability architecture", () => {
       "assets/templates/progressive-discovery-map.md"
     ];
 
-    for (const path of [...modulePaths, ...templatePaths]) {
-      expect(skill).toContain(path);
+    expect(skill).toContain("capability index");
+    for (const path of modulePaths) {
+      expect(capabilityIndex).toContain(path.replace("references/capabilities/", ""));
+      expect((await readFile(join(engineeringRoot, path), "utf8")).trim().length).toBeGreaterThan(200);
+    }
+    for (const path of templatePaths) {
       expect((await readFile(join(engineeringRoot, path), "utf8")).trim().length).toBeGreaterThan(200);
     }
 

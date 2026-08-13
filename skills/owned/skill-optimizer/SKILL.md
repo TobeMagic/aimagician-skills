@@ -1,6 +1,6 @@
 ---
 name: skill-optimizer
-description: Use when auditing, scoring, testing, or improving an existing Agent Skill. Trigger for "optimize this skill", "skill review", "skill quality audit", "skill score", "优化 skill", "达尔文", or requests to prove that a Skill improves agent behavior. Do not use to create a new Skill from source material or to review ordinary application code.
+description: Maintainer-only. Use when auditing, scoring, testing, or improving an existing Agent Skill, including "optimize this skill", "skill review", "skill quality audit", "skill score", "优化 skill", or "达尔文". Do not use to create a new Skill from source material, review ordinary application code, or score a normal delivery.
 category: build
 subcategory: skills
 tags:
@@ -9,6 +9,7 @@ tags:
   - evaluation
   - quality
   - runtime-neutral
+  - maintainer-only
 metadata:
   capability_modules:
     - references/rubric.md
@@ -27,6 +28,8 @@ compatibility:
 # Skill Optimizer
 
 Improve an existing Skill through measured behavior changes, not prose expansion. Structural quality is a diagnostic signal; the deciding evidence is whether representative tasks become more correct, complete, efficient, and safely routed.
+
+Do not load this during ordinary engineering, research, or design work. It is a maintenance workflow for the Skill system itself.
 
 ## Boundary
 

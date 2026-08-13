@@ -6,9 +6,10 @@ const ownedSkillsRoot = join(process.cwd(), "skills", "owned");
 const docsRoot = join(process.cwd(), "docs");
 
 describe("consolidated owned skill content", () => {
-  it("keeps aimagician-superpower source-neutral while exposing the complete workflow router", async () => {
+  it("keeps aimagician-superpower source-neutral with a lightweight router and complete progressive disclosure", async () => {
     const skillRoot = join(ownedSkillsRoot, "aimagician-superpower");
     const skill = await readOwnedSkill("aimagician-superpower");
+    const capabilityIndex = await readFile(join(skillRoot, "references", "capabilities", "index.md"), "utf8");
     const modulePaths = [
       "references/capabilities/intake-and-boundary.md",
       "references/capabilities/state-and-continuity.md",
@@ -40,26 +41,17 @@ describe("consolidated owned skill content", () => {
       expect(runtimeContent).not.toContain(forbidden);
     }
 
-    expect(skill).toContain("Goal-First Triage");
-    expect(skill).toContain("Adaptive Start And Resume Gate");
-    expect(skill).toContain("Task Contract Instead Of Universal Goal Lock");
-    expect(skill).toContain("Read this `SKILL.md` again");
-    expect(skill).toContain("project knowledge base");
-    expect(skill).toContain("Default Delivery Path");
-    expect(skill).toContain("Discuss Baseline Requirements");
-    expect(skill).toContain("Research And Brainstorm");
-    expect(skill).toContain("Re-Discuss And Lock");
-    expect(skill).toContain("Plan And Review");
-    expect(skill).toContain("Execute And Checkpoint");
-    expect(skill).toContain("Verify And UAT");
-    expect(skill).toContain("Handoff And Complete");
-    expect(skill).toContain("Never present a partial implementation as complete");
+    expect(skill.split("\n").length).toBeLessThanOrEqual(180);
+    expect(skill).toContain("Classify Before Acting");
+    expect(skill).toContain("Recover Only the Context That Matters");
+    expect(skill).toContain("Quick and Standard");
+    expect(skill).toContain("Requirement Evidence Map");
+    expect(skill).toContain("Failure Handling and Escalation");
+    expect(skill).toContain("conditional routes, never default preflight");
     expect(skill).toContain("scripts/workflow.mjs");
-    expect(skill).toMatch(/preferred_companions:[\s\S]*?- skill-creator[\s\S]*?compatibility:/);
-    expect(skill).toContain("`execute` additionally requires alignment plus completed research, discussion, context, and accepted plans");
-    expect(skill).toContain("`align` proves the selected work matches the active milestone, phase, literal roadmap goal");
+    expect(skill).not.toContain("preferred_companions:");
 
-    for (const modulePath of modulePaths) expect(skill).toContain(modulePath);
+    for (const modulePath of modulePaths) expect(capabilityIndex).toContain(modulePath.replace("references/capabilities/", ""));
     expect(modules.join("\n")).toContain("ambiguity = 1 -");
     expect(modules.join("\n")).toContain("Specification reviewer");
     expect(modules.join("\n")).toContain("Condition-Based Waiting");
@@ -115,9 +107,10 @@ describe("consolidated owned skill content", () => {
     const operationsTask = await readFile(join(skillRoot, "references", "task-types", "bounded-operations-and-execution.md"), "utf8");
     const reviewTask = await readFile(join(skillRoot, "references", "task-types", "independent-review-and-audit.md"), "utf8");
 
-    expect(skill).toContain("Delegation-First Trigger Gate");
-    expect(skill).toContain("Do not let the main Agent silently perform mechanical work");
-    expect(skill).toContain("Default Short-Task Gate");
+    expect(skill).toContain("Dispatch Trigger Gate");
+    expect(skill).toContain("wording alone is not sufficient");
+    expect(skill).toContain("Bounded-Operation Gate");
+    expect(skill).toContain("does not impose tool-level access control");
     expect(skill).toContain("strict-read-only");
     expect(skill).toContain("read-and-run");
     expect(skill).toContain("bounded-write");
@@ -158,6 +151,16 @@ describe("consolidated owned skill content", () => {
     expect(pr).toContain("actual merge protections");
     expect(pr).toContain("optional Linear status/comment/closure");
     expect(pr).toContain("as a reason to delay a verified PR");
+    expect(pr).toContain("Do not run `gh auth status` as routine PR evidence");
+    expect(pr).toContain("Do not guess GraphQL schema types");
+  });
+
+  it("keeps cloud target binding explicit and uses the real Cloud SQL restore command", async () => {
+    const cloud = await readOwnedSkill("gcloud-ops-workflow");
+    const cloudSql = await readFile(join(ownedSkillsRoot, "gcloud-ops-workflow", "references", "cloud-sql.md"), "utf8");
+    expect(cloud).toContain("Do not use `gcloud config` or `gcloud auth list` to infer a target");
+    expect(cloudSql).toContain("gcloud sql backups restore <backup-id-or-name>");
+    expect(cloudSql).toContain("Do not invent a `gcloud sql restore-backup` command");
   });
 
   it("keeps the skill-authoring evaluation loop in skill-creator", async () => {

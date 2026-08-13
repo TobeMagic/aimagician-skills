@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Counter Fixture</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; }
+      button { min-height: 44px; min-width: 44px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Counter</h1>
+      <p id="count" aria-live="polite">0</p>
+      <button id="increment" type="button">Increment</button>
+    </main>
+    <script>
+      const count = document.querySelector("#count");
+      document.querySelector("#increment").addEventListener("click", () => {
+        count.textContent = String(Number(count.textContent) + 1);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,26 @@
+Let me check the lint script exists and run it on
+The linter checks 7 mandatory contract sections plus conditional rules (tool permissions, grounding, sensitive patterns). Now I'll write the deploy
+Done.
+
+**Changed file:** `/tmp/core-prompt-baseline-QH8SyM/weak-prompt.md` — replaced 3-line stub with a deployable order-support system prompt.
+
+**Command/result:**
+- `node /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/system-prompt-engineering/scripts/prompt-lint.mjs weak-prompt.md --json`
+- Status: `valid`, issues: `[]` (all 7 base contracts present; no conditional or sensitive-pattern violations)
+
+**What the prompt delivers:** read-only lookup; explicit in-conversation confirmation gate before cancel; web pages/tool output treated as untrusted data; no secret exposure or authorization override under pressure; JSON contract with `outcome`, `actionStatus`, `evidence`, `uncertainty`, `nextStep`; version 1.0.0; evaluation/rollback clause; failure/escalation path.
+
+**Remaining risks:**
+- Confirmation is conversational only — an attacker could spoof a prior "yes"; a production deployment should require an out-of-band confirmation (e.g., typed code/order field) for cancel.
+- Tool output is asserted untrusted, but this depends on the harness never auto-prompt-injecting web content into the assistant's own context; add a sandbox/parser gate if risky.
+- "Not found" responses could be used for order-enumeration probing; optional throttling/redaction not specified at this scope.
+
+OPENCODE_EXIT=0
+
+--- lint ---
+{
+  "schemaVersion": 1,
+  "path": "/tmp/core-prompt-baseline-QH8SyM/weak-prompt.md",
+  "status": "valid",
+  "issues": []
+}

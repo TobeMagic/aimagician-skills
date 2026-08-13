@@ -1,0 +1,4 @@
+Playwright is available. Let me verify browsers are installed and create the probe.
+Browsers installed. Now I'll create a re-runnable standalone probe under /tmp. Let me check how the Playwright library
+
+BASELINE_TERMINATED: unbounded filesystem discovery; no browser probe or acceptance evidence.

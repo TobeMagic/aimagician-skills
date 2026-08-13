@@ -9,6 +9,7 @@ tags:
   - knowledge-distillation
   - skill-generation
   - multi-agent
+  - on-demand
 metadata:
   capability_modules:
     - references/research-and-synthesis.md
@@ -27,6 +28,8 @@ compatibility:
 # Perspective Distillation
 
 Build a runnable perspective from evidence about how a person or school of thought frames problems, makes decisions, communicates, changes position, and exposes uncertainty. The result must be a transparent model, not a claim to reproduce the actual person.
+
+This is an on-demand synthesis workflow. Do not load it for ordinary technical research, product decisions, or implementation unless the requested artifact is a reusable evidence-backed perspective.
 
 ## Boundary And Ethics
 
@@ -158,6 +161,8 @@ After validation passes, run two fresh, read-only reviews when agent delegation 
 2. an evidence-fidelity reviewer checks model-to-evidence links, unsupported certainty, contradictions, and weak coverage.
 
 Neither reviewer edits files. Reconcile their proposals against the evidence package, accept only changes that preserve or improve the validation matrix, then rerun affected tests. If delegation is unavailable, run the same two review contracts sequentially and label the review as non-independent.
+
+**CHECKPOINT:** Before delivery, reconcile evidence cutoff, source coverage, contradictions, private-person permission boundary, validation results, and unresolved uncertainty; a fluent voice is not proof of a valid perspective model.
 
 ## Failure Handling
 

@@ -122,6 +122,8 @@ node scripts/validate-distillation.mjs --root <distillation-root> --format json
 
 Install or sync generated Skills only through the repository's owned-skill manager and only when the user requests installation.
 
+**CHECKPOINT:** Before delivery, reconcile the source manifest, accepted/rejected candidate evidence, generated-skill routing, pressure-test result, and every unresolved source gap; a readable synthesis alone is not an executable Skill system.
+
 ## Failure Handling
 
 | Trigger | First response | Fallback |

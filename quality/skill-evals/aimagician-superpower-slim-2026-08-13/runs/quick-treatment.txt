@@ -1,0 +1,13 @@
+Tier: **Quick** (known, reversible, isolated, low-risk fix). Applying the
+Task tier: **Quick** (known, reversible, isolated, low-risk).
+
+Changed files: `README.md:3` — typo `installes` → `installs`.
+
+Verification: `node check.mjs` → `quick-fixture: PASS`
+
+Completion status: **Complete**. Only the requested correction was made; no unrelated files touched.
+
+OPENCODE_EXIT=0
+
+--- acceptance ---
+quick-fixture: PASS

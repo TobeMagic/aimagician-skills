@@ -1,0 +1,399 @@
+[0m
+> build · deepseek-v4-flash-free
+[0m
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/skill-creator/SKILL.md
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/skill-creator/references/authoring-evaluation.md
+[0m
+[0m$ [0mpwd && ls -la && ls -la /mnt/d/growth_up_youth/repo/skills-master-sync/ && ls /mnt/d/growth_up_youth/repo/skills-master-sync/dist/cli/index.js 2>/dev/null && ls /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/
+/tmp/core-skillcreator-treatment-EaZZF7
+total 0
+drwx------    2 aimagician aimagician    40 Aug 13 20:02 .
+drwxrwxrwt 1141 root       root       28380 Aug 13 20:02 ..
+total 84
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 13 18:46 .
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 13 06:01 ..
+-rwxrwxrwx 1 aimagician aimagician    77 Aug  3 18:43 .git
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 .github
+-rwxrwxrwx 1 aimagician aimagician   489 Aug 12 22:01 .gitignore
+-rwxrwxrwx 1 aimagician aimagician    25 Aug  3 18:43 .npmignore
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 13 11:45 .planning
+-rwxrwxrwx 1 aimagician aimagician  1067 Aug  3 18:43 LICENSE
+-rwxrwxrwx 1 aimagician aimagician 22527 Aug 13 17:22 README.md
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 12 21:53 catalog
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 13 18:46 dist
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 12 22:01 docs
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 12 22:07 node_modules
+-rwxrwxrwx 1 aimagician aimagician 51202 Aug  3 18:43 package-lock.json
+-rwxrwxrwx 1 aimagician aimagician  1224 Aug  3 18:43 package.json
+drwxrwxrwx 1 aimagician aimagician  4096 Aug 12 21:53 quality
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 scripts
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 skills
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 src
+drwxrwxrwx 1 aimagician aimagician  4096 Aug  3 18:43 tests
+-rwxrwxrwx 1 aimagician aimagician   414 Aug  3 18:43 tsconfig.json
+-rwxrwxrwx 1 aimagician aimagician   156 Aug  3 18:43 vitest.config.ts
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/cli/index.js
+academic-paper-workflow
+agent-workstream-orchestrator
+aimagician-superpower
+cli-agent-delegator
+composio-tool-router
+deep-research-system
+docx
+gcloud-ops-workflow
+github-pr-workflow
+github-readme-highstar
+interface-design
+knowledge-distillation
+llm-know-how-wiki
+opensource-architecture-research
+pdf
+perspective-distillation
+repo-interview-playbook
+skill-creator
+skill-optimizer
+system-prompt-engineering
+vision-analysis
+webapp-testing
+window-pptx
+xlsx
+[0m
+[0m$ [0mhead -30 /mnt/d/growth_up_youth/repo/skills-master-sync/skills/owned/skill-optimizer/SKILL.md && echo "-----CATALOG-----" && ls /mnt/d/growth_up_youth/repo/skills-master-sync/catalog/ && echo "-----CATALOG TREE-----" && find /mnt/d/growth_up_youth/repo/skills-master-sync/catalog -maxdepth 2 -type f | head -20
+---
+name: skill-optimizer
+description: Maintainer-only. Use when auditing, scoring, testing, or improving an existing Agent Skill, including "optimize this skill", "skill review", "skill quality audit", "skill score", "优化 skill", or "达尔文". Do not use to create a new Skill from source material, review ordinary application code, or score a normal delivery.
+category: build
+subcategory: skills
+tags:
+  - skills
+  - optimization
+  - evaluation
+  - quality
+  - runtime-neutral
+  - maintainer-only
+metadata:
+  capability_modules:
+    - references/rubric.md
+    - references/experiment-protocol.md
+    - references/runtime-neutrality.md
+    - assets/templates/experiment-record.json
+    - assets/templates/judge-contract.md
+  preferred_companions:
+    - skill-creator
+    - cli-agent-delegator
+compatibility:
+  tools: [bash, file, agent]
+  requires: One or more existing Skill directories and representative user prompts
+---
+
+# Skill Optimizer
+
+Improve an existing Skill through measured behavior changes, not prose expansion. Structural quality is a diagnostic signal; the deciding evidence is whether representative tasks become more correct, complete, efficient, and safely routed.
+-----CATALOG-----
+plugins
+skills
+taxonomy.yaml
+-----CATALOG TREE-----
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/plugins/.gitkeep
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/skills/.gitkeep
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/skills/awesome-claude-skills.yaml
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/skills/claude-official.yaml
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/skills/feishu-lark-sources.yaml
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/skills/gsd.yaml
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/skills/obra-superpowers.yaml
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/skills/playwright-skill.yaml
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/skills/slavingia-skills.yaml
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/skills/ui-skills.yaml
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/skills/ui-ux-pro-max-skill.yaml
+/mnt/d/growth_up_youth/repo/skills-master-sync/catalog/taxonomy.yaml
+[0m
+[0m$ [0mnode /mnt/d/growth_up_youth/repo/skills-master-sync/dist/cli/index.js format-skills --help 2>&1 | head -50; echo "====TAXONOMY===="; head -80 /mnt/d/growth_up_youth/repo/skills-master-sync/catalog/taxonomy.yaml
+Usage: skillbird <command> [--target <codex|claude|opencode|gemini|hermes|cursor|copilot>] [--json|--agent]
+
+Commands:
+  tui           Open the skill manager dashboard (default command)
+  capabilities  Describe commands, targets, scopes, mutation gates, and exit codes
+  search        Search local packaged skills
+  install       Install selected skills, or preview with --dry-run (requires --scope)
+  uninstall     Uninstall managed skills only (requires --scope)
+  reset         Clear one target scope and reinstall all active skills
+  format-skills Check or write owned skill category frontmatter
+  bootstrap     Run the legacy all-selected bootstrap workflow
+  list          Show detected assets per target and scope
+  inspect       Show detailed target inspection output
+  doctor        Verify managed installs against live target homes
+
+Options:
+  --targets     Comma-separated targets to include
+  --target      Single target override (repeatable)
+  --scope       Scope for manager commands: global or project; reset also supports all
+  --project     Project directory for project scope (default: current directory)
+  --home        Override the effective home directory (default: current ~/)
+  --category    Search/install skills by category slug
+  --subcategory Search/install skills by subcategory slug
+  --tag, --tags Search/install skills by tag slug (comma-separated accepted)
+  --check       format-skills check mode (default)
+  --write       format-skills write mode
+  --install-all Reset-only flag: reinstall every active skill after clearing
+  --yes, -y     Confirm an Agent-mode write, or confirm reset in human mode
+  --include-archived  Show or install archived owned skills
+  --dry-run     Print bootstrap/install/reset intent without applying changes
+  --clean       Rebuild target skill/plugin dirs; preserve Codex .system skills (bootstrap only)
+  --json        Render machine-readable output
+  --agent       Stable JSON, no interaction, writes preview unless --yes is present
+  -h, --help    Show command help
+====TAXONOMY====
+groups:
+  - id: build
+    label: Build
+    description: Code execution, planning, debugging, testing, review, skill authoring, and tool building.
+  - id: research
+    label: Research
+    description: Literature, open-source, architecture, evidence gathering, and synthesis workflows.
+  - id: design
+    label: Design
+    description: HTML visual design, prototypes, UI/UX, dashboards, data visualization, browser presentations, brand systems, accessibility, motion, and image generation.
+  - id: documents
+    label: Documents
+    description: README, Word, PDF, PowerPoint, spreadsheet, and document automation workflows.
+  - id: operate
+    label: Operate
+    description: GitHub, Linear, cloud, worktree, release, and project operations.
+  - id: strategy
+    label: Strategy
+    description: Business, product, pricing, customer, growth, community, and ideation workflows.
+skills:
+  aimagician-superpower:
+    group: build
+    subgroup: workflow
+    tags: [workflow, sdd, planning, research, multi-agent, execution, verification, audit]
+    recommendedScopes: [global]
+    description: "Risk-scaled engineering workflow for specification, codebase exploration, design, vertical delivery, debugging, review, verification, audit, and handoff."
+  code-guidelines:
+    group: build
+    subgroup: quality
+    tags: [coding, quality, verification]
+    recommendedScopes: [global]
+  test-driven-development:
+    group: build
+    subgroup: quality
+    tags: [tests, tdd]
+    recommendedScopes: [global]
+  systematic-debugging:
+    group: build
+    subgroup: debugging
+    tags: [debugging, investigation]
+    recommendedScopes: [global]
+  verification-before-completion:
+    group: build
+    subgroup: quality
+    tags: [verification, tests]
+    recommendedScopes: [global]
+  playwright-skill:
+    group: build
+    subgroup: browser-testing
+    tags: [playwright, browser]
+    recommendedScopes: [project]
+  webapp-testing:
+    group: build
+    subgroup: browser-testing
+    tags: [playwright, webapp, verification]
+    recommendedScopes: [project]
+  skill-creator:
+    group: build
+    subgroup: skills
+    tags: [skills, authoring, taxonomy, maintainer-only]
+    recommendedScopes: [global]
+  system-prompt-engineering:
+    group: build
+    subgroup: prompt-engineering
+    tags: [system-prompt, prompt-engineering, agents, tools, safety, memory, evaluation]
+    recommendedScopes: [global]
+    description: "Design, review, evaluate, version, and safely operate system prompts and agent instruction contracts through progressive capability modules."
+  skill-optimizer:
+    group: build
+    subgroup: skills
+    tags: [skills, optimization, evaluation, quality, runtime-neutral, maintainer-only]
+    recommendedScopes: [global]
+    description: "Validation-gated Skill auditing and improvement with controlled behavioral tests, independent review, and no Git mutation by default."
+  writing-skills:
+    group: build
+    subgroup: skills
+    tags: [skills, authoring]
+    recommendedScopes: [global]
+  brainstorming:
+    group: build
+[0m
+[0m$ [0mnode /mnt/d/growth_up_youth/repo/skills-master-sync/dist/cli/index.js capabilities --json 2>&1 | head -80
+{
+  "command": "capabilities",
+  "targets": [
+    "codex",
+    "claude",
+    "opencode",
+    "gemini",
+    "hermes",
+    "cursor",
+    "copilot"
+  ],
+  "scopes": [
+    "global",
+    "project"
+  ],
+  "resetScopes": [
+    "global",
+    "project",
+    "all"
+  ],
+  "commands": [
+    {
+      "name": "capabilities",
+      "kind": "read",
+      "confirmationRequired": false,
+      "description": "Describe the stable Agent CLI contract."
+    },
+    {
+      "name": "search",
+      "kind": "read",
+      "confirmationRequired": false,
+      "description": "Search packaged skills by query or taxonomy."
+    },
+    {
+      "name": "list",
+      "kind": "read",
+      "confirmationRequired": false,
+      "description": "List detected assets for selected targets and scope."
+    },
+    {
+      "name": "inspect",
+      "kind": "read",
+      "confirmationRequired": false,
+      "description": "Return detailed installation state."
+    },
+    {
+      "name": "doctor",
+      "kind": "read",
+      "confirmationRequired": false,
+      "description": "Validate managed installs; unhealthy state exits 1."
+    },
+    {
+      "name": "bootstrap",
+      "kind": "write",
+      "confirmationRequired": true,
+      "description": "Synchronize the complete selected target set."
+    },
+    {
+      "name": "install",
+      "kind": "write",
+      "confirmationRequired": true,
+      "description": "Install selected or taxonomy-filtered skills."
+    },
+    {
+      "name": "uninstall",
+      "kind": "write",
+      "confirmationRequired": true,
+      "description": "Remove only managed skill installs."
+    },
+    {
+      "name": "reset",
+      "kind": "write",
+      "confirmationRequired": true,
+      "description": "Clear and reinstall an explicitly selected target scope."
+    },
+    {
+      "name": "format-skills",
+      "kind": "write",
+      "confirmationRequired": true,
+      "description": "Check or repair owned skill taxonomy frontmatter."
+[0m
+[0m$ [0mnode -e "const s=require('/mnt/d/growth_up_youth/repo/skills-master-sync/dist/cli/index.js')" 2>/dev/null; grep -o "formatSkills[^}]\{0,200\}" /mnt/d/growth_up_youth/repo/skills-master-sync/dist/cli/index.js | head -5; echo "==="; grep -n "format-skills\|formatSkills\|category\|subcategory" /mnt/d/growth_up_youth/repo/skills-master-sync/dist/cli/index.js | head -30
+===
+112:                category: parsed.category,
+113:                subcategory: parsed.subcategory,
+139:                category: parsed.category,
+140:                subcategory: parsed.subcategory,
+247:        if (parsed.command === "format-skills") {
+429:        "  format-skills Check or write owned skill category frontmatter",
+441:        "  --category    Search/install skills by category slug",
+442:        "  --subcategory Search/install skills by subcategory slug",
+444:        "  --check       format-skills check mode (default)",
+445:        "  --write       format-skills write mode",
+528:        "Skillbird format-skills",
+536:                : `${record.category ?? "uncategorized"}${record.subcategory ? `/${record.subcategory}` : ""}`;
+[0m
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/dist/cli/index.js[90m [offset=240, limit=120][0m
+[0m
+[0m$ [0mgrep -rn "function formatOwnedSkills\|formatOwnedSkills" /mnt/d/growth_up_youth/repo/skills-master-sync/dist/ | head; echo ===; find /mnt/d/growth_up_youth/repo/skills-master-sync/dist -name "*format*" -o -name "*skill*format*" | head
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/cli/index.js:249:            const result = await (0, skill_format_1.formatOwnedSkills)({ mode: previewRequested ? "check" : parsed.mode });
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.d.ts:20:export declare function formatOwnedSkills(options: FormatOwnedSkillsOptions): Promise<FormatOwnedSkillsResult>;
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.js:6:exports.formatOwnedSkills = formatOwnedSkills;
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.js:13:async function formatOwnedSkills(options) {
+===
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.d.ts
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.js
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.js.map
+[0m
+[0m→ [0mRead /mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.js
+[0m
+[0m$ [0mgrep -n "ownedSkillsRoot\|taxonomyPath\|ta income" /mnt/d/growth_up_youth/repo/skills-master-sync/dist/shared/paths.js | head; echo ===; cat /mnt/d/growth_up_youth/repo/skills-master-sync/dist/shared/paths.js 2>/dev/null | head -60
+3:exports.repositoryRoots = exports.fixturesRoot = exports.testsRoot = exports.pluginsCatalogRoot = exports.skillsCatalogRoot = exports.catalogRoot = exports.archivedSkillsRoot = exports.ownedSkillsRoot = exports.skillsRoot = exports.repositoryRoot = void 0;
+8:exports.ownedSkillsRoot = (0, node_path_1.join)(exports.skillsRoot, "owned");
+18:    ownedSkillsRoot: exports.ownedSkillsRoot,
+===
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.repositoryRoots = exports.fixturesRoot = exports.testsRoot = exports.pluginsCatalogRoot = exports.skillsCatalogRoot = exports.catalogRoot = exports.archivedSkillsRoot = exports.ownedSkillsRoot = exports.skillsRoot = exports.repositoryRoot = void 0;
+exports.toRepositoryPath = toRepositoryPath;
+const node_path_1 = require("node:path");
+exports.repositoryRoot = (0, node_path_1.normalize)((0, node_path_1.join)(__dirname, "..", ".."));
+exports.skillsRoot = (0, node_path_1.join)(exports.repositoryRoot, "skills");
+exports.ownedSkillsRoot = (0, node_path_1.join)(exports.skillsRoot, "owned");
+exports.archivedSkillsRoot = (0, node_path_1.join)(exports.skillsRoot, "archived");
+exports.catalogRoot = (0, node_path_1.join)(exports.repositoryRoot, "catalog");
+exports.skillsCatalogRoot = (0, node_path_1.join)(exports.catalogRoot, "skills");
+exports.pluginsCatalogRoot = (0, node_path_1.join)(exports.catalogRoot, "plugins");
+exports.testsRoot = (0, node_path_1.join)(exports.repositoryRoot, "tests");
+exports.fixturesRoot = (0, node_path_1.join)(exports.testsRoot, "fixtures");
+exports.repositoryRoots = {
+    repositoryRoot: exports.repositoryRoot,
+    skillsRoot: exports.skillsRoot,
+    ownedSkillsRoot: exports.ownedSkillsRoot,
+    archivedSkillsRoot: exports.archivedSkillsRoot,
+    catalogRoot: exports.catalogRoot,
+    skillsCatalogRoot: exports.skillsCatalogRoot,
+    pluginsCatalogRoot: exports.pluginsCatalogRoot,
+    testsRoot: exports.testsRoot,
+    fixturesRoot: exports.fixturesRoot
+};
+function toRepositoryPath(...segments) {
+    return (0, node_path_1.join)(exports.repositoryRoot, ...segments);
+}
+//# sourceMappingURL=paths.js.map
+[0m
+[0m$ [0mawk '/^  operate:/,/^  strategy:/' /mnt/d/growth_up_youth/repo/skills-master-sync/catalog/taxonomy.yaml | head -50; echo ===SUBGROUPS===; grep -n "subgroups\|subgroup" /mnt/d/growth_up_youth/repo/skills-master-sync/catalog/taxonomy.yaml | head -20
+===SUBGROUPS===
+23:    subgroup: workflow
+29:    subgroup: quality
+34:    subgroup: quality
+39:    subgroup: debugging
+44:    subgroup: quality
+49:    subgroup: browser-testing
+54:    subgroup: browser-testing
+59:    subgroup: skills
+64:    subgroup: prompt-engineering
+70:    subgroup: skills
+76:    subgroup: skills
+81:    subgroup: planning
+86:    subgroup: planning
+91:    subgroup: review
+96:    subgroup: review
+101:    subgroup: knowledge
+107:    subgroup: academic
+112:    subgroup: visual-analysis
+118:    subgroup: agent-orchestration
+124:    subgroup: tool-routing
+[0m
+[0m$ [0mgrep -n "ownedSkillsRoot\|taxonomyPath\|env\.\|SKILLBIRD\|process.env" /mnt/d/growth_up_youth/repo/skills-master-sync/dist/cli/*.js /mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.js | head -20
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.js:14:    const ownedRoot = options.ownedSkillsRoot ?? paths_1.ownedSkillsRoot;
+/mnt/d/growth_up_youth/repo/skills-master-sync/dist/manager/skill-format.js:15:    const taxonomy = await (0, taxonomy_1.loadTaxonomy)(options.taxonomyPath);
+[0m

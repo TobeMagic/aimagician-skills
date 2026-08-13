@@ -1,0 +1,30 @@
+Per the skill, I'll verify the CLI and its command syntax first.
+CLI verified. Now service-scoped discovery for Linear project-listing actions
+Candidate identified: `LINEAR_LIST_LINEAR_PROJECTS`. Inspecting only
+## Composio Tool Report — List Linear Projects
+
+**Toolkit / intent:** `linear` · discover the smallest read-only action for listing Linear projects.
+
+**Commands run:**
+```
+composio --version                                   → 0.2.28
+composio tools list --help                            → syntax verified
+composio tools list linear --query "project" --limit 30   → candidates
+composio tools list linear --query "list" --limit 30      → candidates
+composio tools info LINEAR_LIST_LINEAR_PROJECTS
+composio execute LINEAR_LIST_LINEAR_PROJECTS --get-schema
+```
+
+**Candidate tools considered:** `LINEAR_LIST_LINEAR_PROJECTS` (list, readOnlyHint), `LINEAR_GET_LINEAR_PROJECT` (single project, needs UUID), `LINEAR_RUN_QUERY_OR_MUTATION` (raw GraphQL, overkill). The generic GraphQL runner and deprecated alternatives were rejected as larger/riskier.
+
+**Selected slug:** `LINEAR_LIST_LINEAR_PROJECTS` ("List linear projects", v20260804_00) — the smallest dedicated, read-only action matching the intent.
+
+**Required inputs:** none required. Optional only: `after` (pagination cursor, string) and `first` (page size, default 50, max 250). Returns flat array of `{id, name}` plus `page_info`.
+
+**Risk class:** read-only (`readOnlyHint`, `openWorldHint`). No mutation, no duplicate-send concern.
+
+**Execution authorization:** not executed. User instruction forbade third-party execution and account linking. Auth state was deliberately not checked (`whoami`/link flows and `~/.composio/` files untouched) — connection status is therefore unknown; a `composio whoami` + possible `composio link linear` would be required before real execution.
+
+**Residual notes:** results are permission-scoped; paginate on `page_info.hasNextPage`/`endCursor`; project names are non-unique — confirm `project_id` before any downstream use.
+
+OPENCODE_EXIT=0
