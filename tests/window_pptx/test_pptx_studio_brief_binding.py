@@ -94,6 +94,36 @@ def test_outline_binding_resolves_opaque_component_group_members() -> None:
     ]
 
 
+def test_auto_slot_allocation_does_not_activate_nonrequired_component_group() -> None:
+    """A decorative group is only all-or-nothing when the outline chose it."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "component_contract": [
+            {"component_key": "title.01"},
+            {"component_key": "label.01"},
+            {"component_key": "label.02"},
+        ],
+        "component_groups": [{
+            "component_group": "group.01",
+            "component_keys": ["label.01", "label.02"],
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label-1", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-label-2", "component_key": "label.02", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "年度工作汇报", "semantic_role": "title"},
+        {"value": "某市中心医院", "semantic_role": "label"},
+    ]}]}, preflight=preflight)
+    assert len(result["bindings"]) == 2
+
+
 def test_outline_binding_rejects_partial_native_component_group() -> None:
     preflight = {"status": "PASS", "slides": [{
         "slide_id": "s01",

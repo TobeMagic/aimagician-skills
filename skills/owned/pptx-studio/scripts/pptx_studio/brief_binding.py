@@ -237,6 +237,23 @@ def _require_complete_component_groups(
         for item in published
         if isinstance(item, Mapping) and isinstance(item.get("component_key"), str)
     } if isinstance(published, list) else set()
+    # A component is an explicit authoring decision only when the outline
+    # names its group or its exact key.  Automatic ordinary-slot allocation
+    # may land a cover caption on a member of a decorative, non-required
+    # group; that must not silently turn one ordinary fact into a demand to
+    # invent the other members of that component.  Explicit group/key use
+    # still has the original all-or-nothing semantics below.
+    explicitly_requested_groups = {
+        item.get("component_group")
+        for item in prepared
+        if isinstance(item.get("component_group"), str)
+    }
+    explicitly_requested_keys = {
+        item.get("component_key")
+        for item in prepared
+        if isinstance(item.get("component_key"), str)
+        and isinstance(item.get("component_target"), str)
+    }
     selected = {
         item.get("component_key")
         for item in prepared
@@ -258,7 +275,14 @@ def _require_complete_component_groups(
         ):
             raise BriefBindingError("OUTLINE_COMPONENT_GROUP_INVALID")
         chosen = [key for key in keys if key in selected]
-        if chosen and len(chosen) != len(keys):
+        explicitly_selected = (
+            # Before allocation, group-targeted facts have no native key yet;
+            # after allocation they retain the group alias and gain one.  Do
+            # not reject that legitimate intermediate state.
+            (group_id in explicitly_requested_groups and bool(chosen))
+            or bool(set(keys).intersection(explicitly_requested_keys))
+        )
+        if explicitly_selected and len(chosen) != len(keys):
             missing = [key for key in keys if key not in selected]
             raise BriefBindingError(
                 "OUTLINE_COMPONENT_GROUP_INCOMPLETE"
@@ -446,6 +470,7 @@ def compile_outline_bindings(
                 "source_fact_id": output_fact_id,
                 "required": _compact_len(value),
                 "component_key": component_key,
+                "component_target": component_key,
                 "component_group": component_group,
             })
 
