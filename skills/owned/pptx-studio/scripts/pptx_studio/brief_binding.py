@@ -304,7 +304,7 @@ def _require_component_group_coverage(
     excluded because their groups can represent ornamental network nodes.
     """
 
-    if preflight_slide.get("role") not in {"dashboard", "multi-item"}:
+    if preflight_slide.get("role") in {"cover", "contents", "section", "closing", "data", "table"}:
         return
     group_map = _published_component_groups(preflight_slide)
     if not group_map:
@@ -318,7 +318,11 @@ def _require_component_group_coverage(
         group_id for group_id, keys in group_map.items()
         if keys.intersection(selected_keys)
     ]
-    required = ceil(len(group_map) * 0.5)
+    # A compact relationship page with only two or three declared visual
+    # units has no spare card: leaving one empty is conspicuous. Larger
+    # dashboards can retain deliberate breathing room, but must still express
+    # at least half of their certified units with client-grounded content.
+    required = len(group_map) if len(group_map) <= 3 else ceil(len(group_map) * 0.5)
     if len(selected_groups) < required:
         raise BriefBindingError(
             "OUTLINE_COMPONENT_GROUP_COVERAGE_INSUFFICIENT"
