@@ -61,6 +61,7 @@ def _structural_coverage_requirements(
         if declared_role in {
             "timeline", "roadmap", "process", "flow", "team", "map",
             "business-model", "product", "quote", "partners", "case-study",
+            "clinical-network",
         }:
             return {}
         governed = slide.get("governed_content_contract")

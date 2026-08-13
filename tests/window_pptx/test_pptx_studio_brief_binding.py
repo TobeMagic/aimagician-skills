@@ -159,6 +159,27 @@ def test_outline_binding_does_not_fill_specialist_roadmap_ornaments() -> None:
     assert len(result["bindings"]) == 3
 
 
+def test_outline_binding_does_not_invent_clinical_network_chips() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "clinical-network",
+        "content_contract": {"title": 1, "label": 16, "metric": 1, "body": 0},
+        "governed_content_contract": {"requires_structured_data": False},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12, "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-chip", "native_capacity": 6, "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-metric", "native_capacity": 6, "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "临床协同", "semantic_role": "title"},
+            {"value": "覆盖", "semantic_role": "label"},
+            {"value": "18", "semantic_role": "metric"},
+        ],
+    }]}, preflight=preflight)
+    assert len(result["bindings"]) == 3
+
+
 def test_outline_binding_defers_rich_governed_page_to_data_contract() -> None:
     preflight = {"status": "PASS", "slides": [{
         "slide_id": "s01",
