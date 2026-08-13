@@ -122,3 +122,37 @@ def test_outline_binding_places_a_long_summary_label_in_body_only_as_last_resort
     ]}]}, preflight=preflight)
 
     assert result["bindings"][0]["region_id"] == "r-body"
+
+
+def _fact_store() -> dict[str, object]:
+    return {
+        "schema_version": "1.0",
+        "facts": [
+            {"id": "report-title", "text": "年度财务运营报告", "status": "active"},
+            {"id": "budget-rate", "text": "96.9%", "status": "active"},
+        ],
+    }
+
+
+def test_locked_fact_outline_resolves_only_ledger_values() -> None:
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"fact_id": "report-title", "semantic_role": "title"},
+        {"fact_id": "budget-rate", "semantic_role": "metric"},
+    ]}]}, preflight=_preflight(), fact_store=_fact_store())
+
+    assert result["facts"] == [
+        {"fact_id": "report-title", "value": "年度财务运营报告"},
+        {"fact_id": "budget-rate", "value": "96.9%"},
+    ]
+
+
+@pytest.mark.parametrize(
+    "outline,error",
+    [
+        ({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [{"value": "自行新增", "semantic_role": "title"}]}]}, "LOCKED_FACT_REFERENCE_REQUIRED"),
+        ({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [{"fact_id": "unknown", "semantic_role": "title"}]}]}, "LOCKED_FACT_UNKNOWN"),
+    ],
+)
+def test_locked_fact_outline_rejects_free_or_unknown_values(outline: dict[str, object], error: str) -> None:
+    with pytest.raises(BriefBindingError, match=error):
+        compile_outline_bindings(outline, preflight=_preflight(), fact_store=_fact_store())

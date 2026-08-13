@@ -125,6 +125,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--composition-plan", type=Path)
     parser.add_argument("--preflight-output", type=Path)
     parser.add_argument("--content-outline", type=Path, help="semantic client facts ordered per selected slide")
+    parser.add_argument("--fact-store", type=Path, help="locked client fact ledger; makes outlines reference fact_id only")
     parser.add_argument("--structured-data", type=Path, help="semantic governed chart/table data: an object with only structured_data")
     parser.add_argument("--adaptation-input", type=Path)
     parser.add_argument("--adaptation-output", type=Path)
@@ -280,7 +281,9 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
         if args.content_outline is None or args.preflight_output is None or args.adaptation_output is None:
             raise ValueError("OUTLINE_BINDING_ARGUMENT_REQUIRED")
         result = compile_outline_bindings(
-            _read_json(args.content_outline), preflight=_read_json(args.preflight_output),
+            _read_json(args.content_outline),
+            preflight=_read_json(args.preflight_output),
+            fact_store=_read_json(args.fact_store) if args.fact_store is not None else None,
         )
         if args.structured_data is not None:
             structured_payload = _read_json(args.structured_data)

@@ -20,6 +20,7 @@ class BriefBindingError(ValueError):
 _OUTLINE_FIELDS = frozenset({"schema_version", "slides"})
 _SLIDE_FIELDS = frozenset({"slide_id", "facts"})
 _FACT_FIELDS = frozenset({"value", "semantic_role"})
+_LOCKED_FACT_FIELDS = frozenset({"fact_id", "semantic_role"})
 _SEMANTIC_ROLES = frozenset({"title", "label", "metric", "body", "any"})
 # A long, source-grounded conclusion is frequently supplied by an agent as a
 # ``label`` because it names a visual value (for example ``总支出…万元``).
@@ -133,7 +134,36 @@ def _remaining_capacity_summary(regions: list[dict[str, Any]]) -> str:
     ) or "none"
 
 
-def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[str, Any]) -> dict[str, Any]:
+def _locked_fact_values(fact_store: Mapping[str, Any]) -> dict[str, str]:
+    """Return the active immutable client-copy ledger for a governed run."""
+
+    facts = fact_store.get("facts")
+    if fact_store.get("schema_version") != "1.0" or not isinstance(facts, list):
+        raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
+    values: dict[str, str] = {}
+    for item in facts:
+        if not isinstance(item, Mapping):
+            raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
+        identifier, text = item.get("id"), item.get("text")
+        if (
+            not isinstance(identifier, str)
+            or not identifier
+            or not isinstance(text, str)
+            or not text
+            or item.get("status") == "superseded"
+            or identifier in values
+        ):
+            raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
+        values[identifier] = text
+    if not values:
+        raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
+    return values
+
+
+def compile_outline_bindings(
+    outline: Mapping[str, Any], *, preflight: Mapping[str, Any],
+    fact_store: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """Return a strict v1 adaptation request from a semantic outline.
 
     Facts are allocated greedily to the smallest fitting unused region.  An
@@ -147,9 +177,11 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
     if set(outline) != _OUTLINE_FIELDS or outline.get("schema_version") != "1.0" or not isinstance(outline.get("slides"), list):
         raise BriefBindingError("OUTLINE_SCHEMA_INVALID")
     regions_by_slide = _preflight_regions(preflight)
+    locked_facts = _locked_fact_values(fact_store) if fact_store is not None else None
     facts: list[dict[str, str]] = []
     bindings: list[dict[str, Any]] = []
     seen_slides: set[str] = set()
+    seen_locked_fact_ids: set[str] = set()
     for slide in outline["slides"]:
         if not isinstance(slide, Mapping) or set(slide) != _SLIDE_FIELDS or not isinstance(slide.get("slide_id"), str) or not isinstance(slide.get("facts"), list):
             raise BriefBindingError("OUTLINE_SLIDE_INVALID")
@@ -160,15 +192,31 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
         available = list(regions_by_slide[slide_id])
         prepared: list[dict[str, Any]] = []
         for ordinal, item in enumerate(slide["facts"], start=1):
-            if not isinstance(item, Mapping) or set(item) != _FACT_FIELDS or not isinstance(item.get("value"), str) or not isinstance(item.get("semantic_role"), str):
+            if not isinstance(item, Mapping) or not isinstance(item.get("semantic_role"), str):
                 raise BriefBindingError("OUTLINE_FACT_INVALID")
-            value, requested_role = item["value"], item["semantic_role"]
+            if locked_facts is None:
+                if set(item) != _FACT_FIELDS or not isinstance(item.get("value"), str):
+                    raise BriefBindingError("OUTLINE_FACT_INVALID")
+                value = item["value"]
+                output_fact_id = f"{slide_id}-f{ordinal:02d}"
+            else:
+                if set(item) != _LOCKED_FACT_FIELDS or not isinstance(item.get("fact_id"), str):
+                    raise BriefBindingError("LOCKED_FACT_REFERENCE_REQUIRED")
+                output_fact_id = item["fact_id"]
+                value = locked_facts.get(output_fact_id)
+                if value is None:
+                    raise BriefBindingError(f"LOCKED_FACT_UNKNOWN:fact_id={output_fact_id}")
+                if output_fact_id in seen_locked_fact_ids:
+                    raise BriefBindingError(f"LOCKED_FACT_REUSED:fact_id={output_fact_id}")
+                seen_locked_fact_ids.add(output_fact_id)
+            requested_role = item["semantic_role"]
             if not value or requested_role not in _SEMANTIC_ROLES:
                 raise BriefBindingError("OUTLINE_FACT_INVALID")
             prepared.append({
                 "ordinal": ordinal,
                 "value": value,
                 "requested_role": requested_role,
+                "source_fact_id": output_fact_id,
                 "required": _compact_len(value),
             })
 
@@ -231,6 +279,7 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
             available.remove(chosen)
             allocated[ordinal] = {
                 "value": value,
+                "source_fact_id": item["source_fact_id"],
                 "region_id": chosen["region_id"],
                 "operation": (
                     "replace_fragment_text" if chosen["fragment_group"]
@@ -241,7 +290,7 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
         for item in prepared:
             ordinal = int(item["ordinal"])
             binding = allocated[ordinal]
-            fact_id = f"{slide_id}-f{ordinal:02d}"
+            fact_id = str(binding["source_fact_id"])
             facts.append({"fact_id": fact_id, "value": binding["value"]})
             bindings.append({
                 "slide_id": slide_id,
