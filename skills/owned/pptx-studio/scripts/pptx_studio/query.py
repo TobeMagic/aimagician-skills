@@ -84,12 +84,22 @@ _ROLE_SEMANTIC_HINTS: dict[str, frozenset[str]] = {
     # rather than the generic product role. Preserve their information grammar
     # so a report can retrieve a governed source instead of approximating a
     # chart with unrelated card templates.
-    "data": frozenset({"chart", "data-summary", "financial-overview", "infographic", "table", "data visualization", "data_visualization"}),
+    "data": frozenset({
+        "chart", "data-summary", "financial-overview", "infographic", "table",
+        "data visualization", "data_visualization", "financial data",
+        "quantitative analysis", "investment allocation", "budget breakdown",
+        "government spending", "public finance",
+    }),
     "comparison": frozenset({"comparison", "chart", "table", "budget comparison", "year-over-year comparison", "cost_breakdown", "budget_analysis"}),
     "roadmap": frozenset({"roadmap", "work plan", "future planning", "strategy"}),
     "process": frozenset({"process", "flow", "workflow", "roadmap", "flowchart"}),
     "timeline": frozenset({"timeline", "milestone", "milestones", "schedule", "annual_work_plan"}),
     "team": frozenset({"team", "team introduction", "team_introduction", "profile cards", "profile_cards"}),
+    # A clinical-operating-coverage page is neither a generic flowchart nor a
+    # generic comparison.  It may use a department-network composition only
+    # when the client message is explicitly about clinical coordination,
+    # coverage or multi-department collaboration.
+    "clinical-network": frozenset({"clinical departments", "department listing", "multi-department coverage", "medical team", "hospital operations"}),
 }
 
 # These observations describe an irreducible visual grammar, not merely a
@@ -100,7 +110,7 @@ _IRREDUCIBLE_SUBJECTS: dict[str, frozenset[str]] = {
     "department-network": frozenset({"clinical departments", "department listing", "multi-department coverage"}),
     "team-network": frozenset({"medical team", "team introduction", "team"}),
 }
-_NETWORK_ONLY_ROLES = frozenset({"team", "business-model"})
+_NETWORK_ONLY_ROLES = frozenset({"team", "business-model", "clinical-network"})
 
 # A complete-work anchor is a quality commitment, not merely a convenient
 # source of many pages. The portable render fingerprint is only a coarse

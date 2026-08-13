@@ -279,6 +279,17 @@ def compile_composition(
             raise CompositionError("STYLE_SIGNATURE_NOT_ALLOWED")
         if not same_certified_theme_family and not _style_profiles_compatible(anchor_profile, style_profile(page, observations)):
             raise CompositionError("STYLE_FALLBACK_INCOMPATIBLE")
+        if not same_certified_theme_family:
+            # A matching coarse style signature is not enough authority to
+            # pull a visibly weak one-page template into a high-quality
+            # complete-work deck.  The library's render quality is a
+            # conservative prefilter (not a substitute for blind review), so
+            # use it only to reject a cross-package fallback that is below
+            # the certified complete-work eligibility floor.
+            render = page.get("render")
+            quality = render.get("visual_quality") if isinstance(render, Mapping) else None
+            if not isinstance(quality, (int, float)) or float(quality) < 0.80:
+                raise CompositionError("STYLE_FALLBACK_VISUAL_QUALITY_INSUFFICIENT")
         # Source order and a shared master establish visual continuity; they
         # never establish semantic equivalence.  Enforce the certified
         # category/vision role mapping for every strategy, including exact

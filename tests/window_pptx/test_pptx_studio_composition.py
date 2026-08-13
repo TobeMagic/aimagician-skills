@@ -24,7 +24,10 @@ def _page(letter: str, number: int, category: str, *, style: list[str] | None = 
         "package_sha256": letter * 64,
         "slide_number": number,
         "category": category,
-        "render": {"image_sha256": chr(ord(letter) + 1) * 64},
+        "render": {
+            "image_sha256": chr(ord(letter) + 1) * 64,
+            "visual_quality": 0.90,
+        },
         "component_eligible": True,
         "shapes": [
             {"shape_id": "2", "kind": "text", "max_chars": 30},
@@ -144,6 +147,7 @@ def test_composition_rejects_department_network_as_financial_card_page() -> None
         ("data", ["chart", "data-summary"], ["financial report", "data visualization"]),
         ("comparison", ["table", "chart"], ["budget comparison", "year-over-year comparison"]),
         ("roadmap", ["section"], ["future planning", "strategy"]),
+        ("clinical-network", ["team"], ["clinical departments", "multi-department coverage"]),
     ],
 )
 def test_composition_accepts_certified_data_comparison_and_roadmap_grammars(role: str, suggested: list[str], tags: list[str]) -> None:
@@ -256,6 +260,24 @@ def test_page_assembly_allows_dark_cool_professional_cadence_page() -> None:
     # The cool dark process page provides controlled rhythm within the same
     # blue professional system; red/green/warm pages remain rejected above.
     assert compile_composition(catalog, observations=observations, request=request)["status"] == "PASS"
+
+
+def test_page_assembly_rejects_low_quality_cross_deck_fallback() -> None:
+    catalog, observations, signatures = _fixture()
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"]["visual_style"] = ["corporate", "blue"]  # type: ignore[index]
+    observations["page_cccccccccccccccccccccccc_001"]["observation"]["visual_style"] = ["technology", "dark", "blue"]  # type: ignore[index]
+    catalog["pages"][2]["render"]["visual_quality"] = 0.79  # type: ignore[index]
+    signatures = {str(page["page_id"]): style_signature(page, observations) for page in catalog["pages"]}  # type: ignore[index]
+    request = _request(signatures, strategy="page_assembly")
+    _select_other_deck(request, signatures)
+    request["slides"][1].update({  # type: ignore[index]
+        "role": "process",
+        "candidate_ids": ["page_cccccccccccccccccccccccc_001"],
+        "selected_candidate_id": "page_cccccccccccccccccccccccc_001",
+    })
+
+    with pytest.raises(CompositionError, match="STYLE_FALLBACK_VISUAL_QUALITY_INSUFFICIENT"):
+        compile_composition(catalog, observations=observations, request=request)
 
 
 def test_exact_certified_deck_is_a_theme_family_despite_page_level_vision_labels() -> None:

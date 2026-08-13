@@ -59,6 +59,11 @@ For each slide retrieve a role- and capacity-safe candidate:
   several labels.  When the certified source has a governed chart/table data
   contract, use that native data surface and provide its complete client data;
   do not flatten it into text cards.
+- clinical-department coverage, clinical-operation coordination or a
+  multi-department work interface uses `clinical-network`; never call it a
+  generic process, comparison or data page. This specialised role can use a
+  certified department-network composition only when the locked message is
+  genuinely about those relationships.
 - people, awards, map, business model, product, quote and partners use their
   specialist categories.
 
@@ -129,7 +134,8 @@ only returned `candidate_id` values in the composition request. The role
 vocabulary includes `cover`, `contents`, `section`, `closing`, `one-item`,
 `two-item` through `six-item`, `multi-item`, `team`, `timeline`, `process`,
 `business-model`, `comparison`, `matrix`, `roadmap`, `dashboard`, `data`,
-`table`, `product`, `quote`, `partners`, `case-study` and `map`.  Select the
+`table`, `clinical-network`, `product`, `quote`, `partners`, `case-study` and
+`map`. Select the
 role from the client message's information grammar before selecting a page:
 data, comparison, table and dashboard have dedicated native surfaces and must
 not be relabelled as multi-item.
@@ -186,6 +192,13 @@ natural-language direction. The exact
 ```json
 {"anchor_page_id":"page_<24-lowercase-hex>_001","allowed_style_signatures":["style_<24-lowercase-hex>"],"suitability":"institutional-finance"}
 ```
+
+A cross-package fallback must also have a certified portable
+`visual_quality` of at least `0.80` in its query result. A matching style
+signature alone never permits a visibly weak page to enter a reference-grade
+deck. If no such fallback exists, reframe the message with a compatible
+anchor-family page or split the narrative; do not use a low-quality template
+to satisfy capacity.
 
 Before locking an anchor family, perform a one-slide `compose` + `preflight`
 probe for the shortlisted cover. It must expose one native title/body slot

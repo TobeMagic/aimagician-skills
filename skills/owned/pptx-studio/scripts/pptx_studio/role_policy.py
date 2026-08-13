@@ -31,6 +31,7 @@ MIN_DISTINCT_CLIENT_FACTS_BY_ROLE: dict[str, int] = {
     "six-item": 7,
     "multi-item": 6,
     "team": 4,
+    "clinical-network": 5,
     "awards": 4,
     "timeline": 5,
     "process": 5,
