@@ -9,6 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"))
 
 from pptx_studio.brief_binding import BriefBindingError, compile_outline_bindings, validate_fact_store  # noqa: E402
+from window_pptx.page_template_library import _slot_capacity  # noqa: E402
 
 
 def _preflight() -> dict[str, object]:
@@ -27,6 +28,16 @@ def test_outline_binding_uses_native_capacity_and_semantic_role() -> None:
     ]}]}, preflight=_preflight())
     assert [item["region_id"] for item in result["bindings"]] == ["r-title", "r-metric", "r-body"]
     assert [item["fact_id"] for item in result["facts"]] == ["s01-f01", "s01-f02", "s01-f03"]
+
+
+def test_distributed_source_lockup_preserves_its_verified_spacing_capacity() -> None:
+    """A source-proven wide lockup must not lose capacity to space stripping."""
+
+    assert _slot_capacity(
+        text="深入                       临床科室",
+        semantic_role="label", bbox={"x": 100, "y": 700, "w": 180, "h": 30},
+        font_size_pt=18.0,
+    ) >= len("深入                       临床科室")
 
 
 def test_outline_binding_honors_published_component_key() -> None:
@@ -129,6 +140,50 @@ def test_outline_binding_preserves_published_order_for_same_role_group_members()
     assert [item["component_key"] for item in result["bindings"]] == [
         "title.01", "label.01", "label.02", "metric.01",
     ]
+
+
+def test_outline_binding_uses_named_component_fields_not_model_order() -> None:
+    """Named card fields make same-role members safe for weak-model outlines."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "component_contract": [
+            {"component_key": "title.01"}, {"component_key": "label.01"},
+            {"component_key": "label.02"}, {"component_key": "metric.01"},
+        ],
+        "component_groups": [{
+            "component_group": "project-card.01",
+            "component_keys": ["label.01", "label.02", "metric.01"],
+            "component_fields": ["project_name", "funding_type", "amount"],
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-project", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-funding", "component_key": "label.02", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-amount", "component_key": "metric.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "1500", "semantic_role": "metric", "component_group": "project-card.01", "component_field": "amount"},
+        {"value": "感染楼", "semantic_role": "label", "component_group": "project-card.01", "component_field": "project_name"},
+        {"value": "财政资金", "semantic_role": "label", "component_group": "project-card.01", "component_field": "funding_type"},
+    ]}]}, preflight=preflight)
+    assert [item["component_key"] for item in result["bindings"]] == [
+        "title.01", "metric.01", "label.01", "label.02",
+    ]
+
+    with pytest.raises(BriefBindingError, match="OUTLINE_COMPONENT_FIELD_REQUIRED"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+            {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+            {"value": "感染楼", "semantic_role": "label", "component_group": "project-card.01"},
+            {"value": "财政资金", "semantic_role": "label", "component_group": "project-card.01"},
+            {"value": "1500", "semantic_role": "metric", "component_group": "project-card.01"},
+        ]}]}, preflight=preflight)
 
 
 def test_auto_slot_allocation_does_not_activate_nonrequired_component_group() -> None:

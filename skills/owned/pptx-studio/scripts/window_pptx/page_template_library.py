@@ -1670,6 +1670,15 @@ def _slot_capacity(
     font_size_pt: float | None,
 ) -> int:
     source_chars = max(1, len(_without_slot_whitespace(text)))
+    # A few certified editorial/network templates deliberately use a single
+    # native text box as a distributed lockup, with a long internal whitespace
+    # run separating left and right semantic tokens around a hero metric.  The
+    # whitespace is part of the source layout grammar, not accidental copy.
+    # Preserve its proven source capacity so a fact store can safely retain a
+    # similarly compact distributed phrase without being rejected by a
+    # geometry heuristic that intentionally ignores ordinary spaces.
+    if re.search(r"\s{3,}", text):
+        source_chars = max(source_chars, len(text))
     if semantic_role == "metric":
         return max(source_chars, 16)
     font = font_size_pt or 18.0

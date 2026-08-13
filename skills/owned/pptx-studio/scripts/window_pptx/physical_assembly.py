@@ -380,6 +380,9 @@ class AssemblyTargetSlide:
     title: str
     headline: str
     text_binding_specs: Mapping[str, TextBindingSpec] = field(default_factory=dict)
+    # Optional certified overrides for a tiny set of source-specific metric
+    # lockups.  They remain private to the adapter and are never agent input.
+    text_binding_font_scales: Mapping[str, int] = field(default_factory=dict)
     governed_content_binding_specs: Mapping[str, TextBindingSpec] = field(
         default_factory=dict
     )
@@ -2162,10 +2165,11 @@ def _normalise_shape_fit_policy(
     fit_tag = {
         "no-autofit": "noAutofit",
         "shrink-to-fit": "normAutofit",
+        "safe-shrink-to-fit": "normAutofit",
     }.get(fit_policy)
     if fit_tag is None:
         raise PhysicalAssemblyError(f"binding fit_policy is invalid: {slot_id}")
-    if fit_policy == "shrink-to-fit":
+    if fit_policy in {"shrink-to-fit", "safe-shrink-to-fit"}:
         if type(font_scale) is not int or not 10_000 <= font_scale <= 100_000:
             raise PhysicalAssemblyError(
                 f"shrink-to-fit scale is invalid: {slot_id}"
@@ -2217,6 +2221,7 @@ def _adapt_slide_text(
     allowed_slots: Iterable[str] | None = None,
     allowed_clear_alias_slots: Iterable[str] | None = None,
     fit_policies: Mapping[str, str] | None = None,
+    font_scales: Mapping[str, int] | None = None,
 ) -> bytes:
     """Apply declared bindings and fail closed on stale or invented slots."""
 
@@ -2224,11 +2229,18 @@ def _adapt_slide_text(
     allowed = set(allowed_slots or ())
     allowed_clear_aliases = set(allowed_clear_alias_slots or ())
     policies = dict(fit_policies or {})
+    scales = dict(font_scales or {})
     extra_policy_slots = set(policies) - set(bindings)
     if extra_policy_slots:
         raise PhysicalAssemblyError(
             "fit_policy targets an unbound slot: "
             + ",".join(sorted(extra_policy_slots))
+        )
+    extra_scale_slots = set(scales) - set(bindings)
+    if extra_scale_slots:
+        raise PhysicalAssemblyError(
+            "font_scale targets an unbound slot: "
+            + ",".join(sorted(extra_scale_slots))
         )
     for slot_id, replacement in bindings.items():
         if not slot_id.startswith("shape_"):
@@ -2262,21 +2274,30 @@ def _adapt_slide_text(
         fit_policy = policies.get(slot_id, "preserve")
         if fit_policy not in TEXT_FIT_POLICIES:
             raise PhysicalAssemblyError(f"binding fit_policy is invalid: {slot_id}")
-        if fit_policy in {"no-autofit", "shrink-to-fit"}:
+        if fit_policy in {"no-autofit", "shrink-to-fit", "safe-shrink-to-fit"}:
             source_chars = len("".join(source_text.split()))
             replacement_chars = len("".join(replacement.split()))
-            font_scale = (
+            font_scale = scales.get(slot_id)
+            if font_scale is not None and (
+                type(font_scale) is not int or not 10_000 <= font_scale <= 100_000
+            ):
+                raise PhysicalAssemblyError(f"font_scale is invalid: {slot_id}")
+            font_scale = font_scale if font_scale is not None else (
                 max(
-                    40_000,
+                    # A paired number/unit lockup is frequently seeded with
+                    # a one-character example.  Its replacement may need a
+                    # decimal but must retain a visually compatible weight;
+                    # do not collapse it to the generic 40% emergency floor.
+                    55_000 if fit_policy == "safe-shrink-to-fit" else 40_000,
                     min(
                         100_000,
                         round(source_chars / replacement_chars * 100_000),
                     ),
                 )
-                if fit_policy == "shrink-to-fit" and replacement_chars > 0
+                if fit_policy in {"shrink-to-fit", "safe-shrink-to-fit"} and replacement_chars > 0
                 else None
             )
-            if fit_policy == "shrink-to-fit" and font_scale is not None:
+            if fit_policy in {"shrink-to-fit", "safe-shrink-to-fit"} and font_scale is not None:
                 new_segment = _scale_shape_text_runs(
                     new_segment,
                     slot_id=slot_id,
@@ -2836,7 +2857,7 @@ TEXT_RENDER_MODES = frozenset(
 )
 TEXT_RENDER_FIELDS = frozenset({"text", "value", "value_unit"})
 TEXT_RENDER_SEPARATORS = frozenset({"", " ", "\n", " / ", " · ", "：", ": "})
-TEXT_FIT_POLICIES = frozenset({"preserve", "no-autofit", "shrink-to-fit"})
+TEXT_FIT_POLICIES = frozenset({"preserve", "no-autofit", "shrink-to-fit", "safe-shrink-to-fit"})
 ASSET_FIT_MODES = frozenset({"cover"})
 
 
@@ -4084,7 +4105,17 @@ def _prepare_governed_content_replacements(
                 connective_copy=connective_copy,
                 slot_id=f"{slide.ordinal}:{slot_id}",
             )
-            replacement = _native_embedded_rendering(source_text, spec.replacement)
+            # A table cell is already the customer-visible display surface.
+            # Unlike chart caches and workbook cells, it has no numeric domain
+            # to normalize: preserving commas, fixed precision and a minus sign
+            # is necessary for finance-report legibility and source-template
+            # parity.  Keep numeric normalization for embedded chart/workbook
+            # values, where OOXML genuinely requires it.
+            replacement = (
+                spec.replacement
+                if str(record.get("kind", "")) == "table-cell"
+                else _native_embedded_rendering(source_text, spec.replacement)
+            )
             fact_refs = spec.fact_refs
             mode = f"explicit-{mode}"
         else:
@@ -7063,6 +7094,7 @@ def assemble_physical_deck(
                     slot_id: spec.fit_policy
                     for slot_id, spec in slide.text_binding_specs.items()
                 },
+                font_scales=slide.text_binding_font_scales,
             )
             relationship_overrides, cover_crops, asset_evidence = _prepare_asset_replacements(
                 slide,

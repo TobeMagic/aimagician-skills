@@ -149,6 +149,35 @@ def test_shrink_to_fit_mutates_only_target_body_policy_and_text() -> None:
     assert actual.count(b"<a:spAutoFit/>") == 1
 
 
+def test_safe_shrink_to_fit_retains_paired_metric_weight() -> None:
+    source = _fit_policy_slide_xml()
+
+    actual = _adapt_slide_text(
+        source,
+        {"shape_2": "New value"},
+        allowed_slots=("shape_2", "shape_3"),
+        fit_policies={"shape_2": "safe-shrink-to-fit"},
+    )
+
+    assert b'<a:normAutofit fontScale="55000" lnSpcReduction="20000"/>' in actual
+    assert b'<a:rPr sz="990"/>' in actual
+
+
+def test_safe_shrink_accepts_certified_font_scale_override() -> None:
+    source = _fit_policy_slide_xml()
+
+    actual = _adapt_slide_text(
+        source,
+        {"shape_2": "1.5"},
+        allowed_slots=("shape_2", "shape_3"),
+        fit_policies={"shape_2": "safe-shrink-to-fit"},
+        font_scales={"shape_2": 40_000},
+    )
+
+    assert b'<a:normAutofit fontScale="40000" lnSpcReduction="20000"/>' in actual
+    assert b'<a:rPr sz="800"/>' in actual
+
+
 def test_shrink_to_fit_allows_layout_inherited_font_size() -> None:
     source = _fit_policy_slide_xml().replace(b'<a:rPr sz="1800"/>', b"", 1)
 
@@ -1067,6 +1096,45 @@ def test_governed_mutations_are_isolated_when_one_source_page_is_reused(
     assert {"East", "West", "Operating margin", "303", "404"}.issubset(
         _effective_worksheet_values(second_mutation[workbook_part])
     )
+
+
+def test_governed_table_cell_preserves_client_display_format(tmp_path: Path) -> None:
+    """Visible financial-table text must not lose editorial number formatting."""
+
+    source = tmp_path / "formatted-table-source.pptx"
+    _governed_chart_table_source(source)
+    template = _template_for_slide(source, 1)
+    replacements = {
+        "A": "North",
+        "B": "South",
+        "Revenue": "Net income",
+        "1": "101",
+        "2": "1,106.00",
+        "Metric": "Measure",
+        "Value": "Result",
+    }
+    fact_path, _, _, _, _, _, fact_refs = _governed_authority_files(
+        tmp_path, tuple(replacements.values()),
+    )
+    slide = AssemblyTargetSlide(
+        1,
+        template,
+        {},
+        "content",
+        "Formatted",
+        "Formatted",
+        governed_content_binding_specs=_governed_replacement_specs(
+            template, replacements, fact_refs,
+        ),
+    )
+
+    mutation, _ = _prepare_governed_content_replacements(
+        slide, _build_source_graph(source), load_fact_store(fact_path), {},
+    )
+    slide_part = next(name for name in mutation if name.endswith("slides/slide1.xml"))
+    chart_part = next(name for name in mutation if "/charts/" in name)
+    assert b">1,106.00<" in mutation[slide_part]
+    assert b">1106<" in mutation[chart_part]
 
 
 def test_legacy_assembly_still_sanitizes_every_reachable_xlsx(tmp_path: Path) -> None:

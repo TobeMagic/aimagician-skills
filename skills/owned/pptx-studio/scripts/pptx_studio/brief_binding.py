@@ -20,8 +20,8 @@ class BriefBindingError(ValueError):
 
 _OUTLINE_FIELDS = frozenset({"schema_version", "slides"})
 _SLIDE_FIELDS = frozenset({"slide_id", "facts"})
-_FACT_FIELDS = frozenset({"value", "semantic_role", "component_key", "component_group"})
-_LOCKED_FACT_FIELDS = frozenset({"fact_id", "semantic_role", "component_key", "component_group"})
+_FACT_FIELDS = frozenset({"value", "semantic_role", "component_key", "component_group", "component_field"})
+_LOCKED_FACT_FIELDS = frozenset({"fact_id", "semantic_role", "component_key", "component_group", "component_field"})
 _SEMANTIC_ROLES = frozenset({"title", "label", "metric", "body", "any"})
 # A long, source-grounded conclusion is frequently supplied by an agent as a
 # ``label`` because it names a visual value (for example ``总支出…万元``).
@@ -305,11 +305,18 @@ def _published_component_groups(preflight_slide: Mapping[str, Any]) -> dict[str,
         if not isinstance(group, Mapping):
             raise BriefBindingError("OUTLINE_COMPONENT_GROUP_INVALID")
         group_id, keys = group.get("component_group"), group.get("component_keys")
+        fields = group.get("component_fields")
         if (
             not isinstance(group_id, str) or not group_id
             or not isinstance(keys, list) or len(keys) < 2
             or any(not isinstance(key, str) or not key for key in keys)
             or len(set(keys)) != len(keys) or group_id in result
+            or (fields is not None and (
+                not isinstance(fields, list)
+                or len(fields) != len(keys)
+                or any(not isinstance(field, str) or not field for field in fields)
+                or len(set(fields)) != len(fields)
+            ))
         ):
             raise BriefBindingError("OUTLINE_COMPONENT_GROUP_INVALID")
         result[group_id] = set(keys)
@@ -424,12 +431,17 @@ def compile_outline_bindings(
                 raise BriefBindingError("OUTLINE_FACT_INVALID")
             component_key = item.get("component_key")
             component_group = item.get("component_group")
+            component_field = item.get("component_field")
             if component_key is not None and not isinstance(component_key, str):
                 raise BriefBindingError("OUTLINE_COMPONENT_INVALID")
             if component_group is not None and not isinstance(component_group, str):
                 raise BriefBindingError("OUTLINE_COMPONENT_INVALID")
+            if component_field is not None and not isinstance(component_field, str):
+                raise BriefBindingError("OUTLINE_COMPONENT_INVALID")
             if component_key is not None and component_group is not None:
                 raise BriefBindingError("OUTLINE_COMPONENT_TARGET_AMBIGUOUS")
+            if component_field is not None and component_group is None:
+                raise BriefBindingError("OUTLINE_COMPONENT_FIELD_REQUIRES_GROUP")
             if locked_facts is None:
                 if (
                     not {"value", "semantic_role"}.issubset(item)
@@ -472,6 +484,7 @@ def compile_outline_bindings(
                 "component_key": component_key,
                 "component_target": component_key,
                 "component_group": component_group,
+                "component_field": component_field,
             })
 
         preflight_slide = next(
@@ -494,7 +507,11 @@ def compile_outline_bindings(
         # shape identifier or coordinate.
         raw_component_groups = preflight_slide.get("component_groups")
         ordered_component_groups = {
-            str(group["component_group"]): list(group["component_keys"])
+            str(group["component_group"]): {
+                "keys": list(group["component_keys"]),
+                "fields": list(group["component_fields"])
+                if isinstance(group.get("component_fields"), list) else None,
+            }
             for group in (raw_component_groups if isinstance(raw_component_groups, list) else [])
             if isinstance(group, Mapping)
             and isinstance(group.get("component_group"), str)
@@ -507,7 +524,9 @@ def compile_outline_bindings(
                     f"OUTLINE_COMPONENT_GROUP_UNKNOWN:slide_id={slide_id}:group={group}"
                 )
         _require_complete_component_groups(preflight_slide, prepared)
-        for group_id, keys in ordered_component_groups.items():
+        for group_id, group_contract in ordered_component_groups.items():
+            keys = group_contract["keys"]
+            fields = group_contract["fields"]
             group_items = [item for item in prepared if item["component_group"] == group_id]
             if not group_items:
                 continue
@@ -516,8 +535,28 @@ def compile_outline_bindings(
                     "OUTLINE_COMPONENT_GROUP_MEMBER_COUNT_INVALID"
                     f":slide_id={slide_id}:group={group_id}"
                 )
-            for group_item, component_key in zip(group_items, keys):
-                group_item["resolved_group_component_key"] = component_key
+            if fields is None:
+                # Legacy annotations did not have named fields. Retain their
+                # published visual sequence for backwards compatibility.
+                for group_item, component_key in zip(group_items, keys):
+                    group_item["resolved_group_component_key"] = component_key
+            else:
+                field_to_key = dict(zip(fields, keys, strict=True))
+                supplied_fields = [item.get("component_field") for item in group_items]
+                if any(not isinstance(field, str) or not field for field in supplied_fields):
+                    raise BriefBindingError(
+                        "OUTLINE_COMPONENT_FIELD_REQUIRED"
+                        f":slide_id={slide_id}:group={group_id}"
+                    )
+                if set(supplied_fields) != set(fields) or len(set(supplied_fields)) != len(supplied_fields):
+                    raise BriefBindingError(
+                        "OUTLINE_COMPONENT_FIELD_COVERAGE_INVALID"
+                        f":slide_id={slide_id}:group={group_id}"
+                    )
+                for group_item in group_items:
+                    group_item["resolved_group_component_key"] = field_to_key[
+                        str(group_item["component_field"])
+                    ]
         coverage = _structural_coverage_requirements(preflight, slide_id=slide_id)
         # A visible, certified title surface is a mandatory part of the page
         # grammar.  Without this gate a weak agent can label its headline as

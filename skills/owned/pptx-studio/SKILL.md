@@ -288,10 +288,13 @@ The binder selects the smallest fitting unused native surface deterministically.
 Use an optional `component_key` only when the narrative deliberately needs a
 specific published surface (for example a hero metric), never as routine slot
 guesswork.
-For a certified linked unit, use
-`{"fact_id":"locked-client-fact-id","semantic_role":"label|metric|body","component_group":"project-card.01"}`;
-the binder resolves the compatible native member. Never put both target fields
-on one fact.
+For a certified linked unit whose published group includes `component_fields`, use
+`{"fact_id":"locked-client-fact-id","semantic_role":"label|metric|body","component_group":"project-card.01","component_field":"project_name"}`;
+the binder resolves the named compatible native member. This is the safe
+default for any multi-text card: it prevents a same-role descriptor, amount or
+unit from being swapped merely because both fit. For an older group without
+published fields, supply facts in the returned visual member order. Never put
+both target fields on one fact.
 
 The fact store is strict. Do not invent a shortened variant: this is the
 minimum valid shape (extend it with more facts only):
@@ -385,8 +388,9 @@ network leave most relationship nodes empty. Either ground enough cards in
 approved facts or choose a lower-cardinality certified page.
 
 This is the central weak-model guardrail: the agent decides only which
-approved client fact belongs to which semantic component; the runtime owns the
-template geometry and all PowerPoint mechanics.
+approved client fact belongs to which published semantic field; the runtime
+owns the template geometry and all PowerPoint mechanics. A field name is a
+safe content contract, not a shape ID, coordinate or template text.
 
 The preflight also reports a value-free `content_contract` per selected page:
 the number of certified title, label, metric and body slots that can accept

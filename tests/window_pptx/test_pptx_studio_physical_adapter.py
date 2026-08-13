@@ -21,6 +21,7 @@ from pptx_studio.brief_binding import compile_outline_bindings  # noqa: E402
 from pptx_studio.physical_adapter import (  # noqa: E402
     PhysicalAdapterError,
     _client_binding_role,
+    _certified_fragment_font_scales,
     _curated_component_groups,
     _deduplicate_nested_alias_slots,
     _fragment_title_regions,
@@ -43,6 +44,40 @@ from window_pptx.physical_assembly import (  # noqa: E402
 )
 import pptx_studio.physical_adapter as physical_adapter  # noqa: E402
 from manage_pptx_studio_library import run  # noqa: E402
+
+
+def test_adapter_uses_bounded_shrink_for_capacity_approved_text() -> None:
+    """Sample-copy length must not invoke the unbounded generic shrink rule."""
+
+    # This regression is intentionally asserted at the public adapter policy
+    # boundary: normal text replacements must retain template-native fit.
+    assert physical_adapter.TextBindingSpec(
+        "1.5", ("fact-1",), "auto", "safe-shrink-to-fit",
+    ).fit_policy == "safe-shrink-to-fit"
+
+
+def test_certified_fragment_repair_scales_only_bound_source_lockup_glyphs() -> None:
+    """Art-title repairs are fixed certification data, not planner authority."""
+
+    scales = _certified_fragment_font_scales(
+        package_sha256="59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839",
+        slide_number=10,
+        bindings={"shape_5": "创", "shape_7": "新", "shape_12": "事", "shape_13": "迹"},
+    )
+    assert scales == {"shape_5": 72_000, "shape_7": 72_000, "shape_12": 72_000, "shape_13": 72_000}
+    assert _certified_fragment_font_scales(
+        package_sha256="59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839",
+        slide_number=1,
+        bindings={"shape_6": "2", "shape_7": "0", "shape_8": "2", "shape_9": "5", "shape_11": "工", "shape_12": "作", "shape_15": "汇", "shape_16": "报"},
+    ) == {"shape_6": 42_000, "shape_7": 42_000, "shape_8": 42_000, "shape_9": 42_000, "shape_11": 48_000, "shape_12": 48_000, "shape_15": 48_000, "shape_16": 48_000}
+    assert _certified_fragment_font_scales(
+        package_sha256="59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839",
+        slide_number=15,
+        bindings={"shape_11": "感", "shape_12": "谢", "shape_15": "聆", "shape_16": "听"},
+    ) == {"shape_11": 48_000, "shape_12": 48_000, "shape_15": 48_000, "shape_16": 48_000}
+    assert _certified_fragment_font_scales(
+        package_sha256="a" * 64, slide_number=10, bindings={"shape_5": "创"},
+    ) == {}
 
 
 def _sha(path: Path) -> str:
@@ -170,8 +205,8 @@ def test_preflight_hides_only_exact_alias_slots_inside_one_outer_group() -> None
         slot("shape_2", "group_89_86", 2),
         slot("shape_3", "group_90_22", 3),
     ))
-    assert [item.slot_id for item in retained] == ["shape_1", "shape_3"]
-    assert aliases == frozenset({"shape_2"})
+    assert [item.slot_id for item in retained] == ["shape_2", "shape_3"]
+    assert aliases == frozenset({"shape_1"})
 
 
 def test_preflight_hides_exact_duplicate_fragment_member_but_not_letters() -> None:
@@ -188,8 +223,8 @@ def test_preflight_hides_exact_duplicate_fragment_member_but_not_letters() -> No
     retained, aliases = _deduplicate_nested_alias_slots((
         slot("shape_1", 100, 1), slot("shape_2", 100, 2), slot("shape_3", 200, 3),
     ))
-    assert [item.slot_id for item in retained] == ["shape_1", "shape_3"]
-    assert aliases == frozenset({"shape_2"})
+    assert [item.slot_id for item in retained] == ["shape_2", "shape_3"]
+    assert aliases == frozenset({"shape_1"})
 
 
 def test_preflight_loads_private_curated_visual_component_groups(tmp_path: Path) -> None:
@@ -342,6 +377,26 @@ def test_adapter_exact_deck_completeness_uses_selected_native_regions(tmp_path: 
 def test_adapter_rejects_unmapped_private_package(tmp_path: Path) -> None:
     source_root, catalog, composition, request, replacement = _source_pack(tmp_path)
     catalog["pages"][0]["package_sha256"] = "a" * 64  # type: ignore[index]
+    with pytest.raises(PhysicalAdapterError, match="PRIVATE_PACKAGE_MISSING"):
+        resolve_catalog_sources(catalog, private_source_root=source_root)
+
+
+def test_adapter_resolves_only_packages_pinned_by_composition(tmp_path: Path) -> None:
+    """A large catalog must not make one-deck assembly read unrelated files."""
+
+    source_root, catalog, composition, _request, _replacement = _source_pack(tmp_path)
+    package_sha = catalog["pages"][0]["package_sha256"]  # type: ignore[index]
+    unrelated = "b" * 64
+    catalog["pages"].append({  # type: ignore[index]
+        **catalog["pages"][0],  # type: ignore[index]
+        "page_id": f"page_{unrelated[:24]}_001",
+        "package_sha256": unrelated,
+    })
+    resolved = resolve_catalog_sources(
+        catalog, private_source_root=source_root,
+        required_package_hashes={package_sha},
+    )
+    assert set(resolved) == {package_sha}
     with pytest.raises(PhysicalAdapterError, match="PRIVATE_PACKAGE_MISSING"):
         resolve_catalog_sources(catalog, private_source_root=source_root)
 

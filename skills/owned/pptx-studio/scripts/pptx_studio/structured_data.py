@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 
@@ -28,14 +29,21 @@ class StructuredField:
     # model safely choose a compact display format before it writes a request,
     # while source shape IDs and geometry remain private.
     max_chars: tuple[int, ...]
+    # Pie/donut surfaces are a complete composition, not unrelated labels.
+    # Requiring the total closes a frequent weak-model failure mode before a
+    # misleading but technically renderable chart reaches the PPTX stage.
+    sum_to_100: bool = False
 
     def public_dict(self) -> dict[str, Any]:
-        return {
+        result = {
             "name": self.name,
             "kind": self.kind,
             "count": self.count,
             "max_chars": list(self.max_chars),
         }
+        if self.sum_to_100:
+            result["sum_to_100"] = True
+        return result
 
 
 @dataclass(frozen=True)
@@ -76,7 +84,7 @@ _CONTRACTS: tuple[StructuredDataContract, ...] = (
         fields=(
             StructuredField("series_label", "text", 1, (8,)),
             StructuredField("categories", "text", 5, (5, 6, 5, 5, 5)),
-            StructuredField("ratios", "percentage", 5, (5, 5, 4, 4, 4)),
+            StructuredField("ratios", "percentage", 5, (5, 5, 4, 4, 4), sum_to_100=True),
             StructuredField("amounts", "number", 5, (10, 8, 10, 10, 8)),
         ),
         governed_targets={
@@ -108,10 +116,10 @@ _CONTRACTS: tuple[StructuredDataContract, ...] = (
             StructuredField("trend_amounts", "number", 3, (12, 12, 12)),
             StructuredField("prior_share_series_label", "text", 1, (8,)),
             StructuredField("prior_share_categories", "text", 4, (7, 7, 7, 7)),
-            StructuredField("prior_share_ratios", "percentage", 4, (6, 6, 6, 6)),
+            StructuredField("prior_share_ratios", "percentage", 4, (6, 6, 6, 6), sum_to_100=True),
             StructuredField("current_share_series_label", "text", 1, (8,)),
             StructuredField("current_share_categories", "text", 4, (7, 7, 7, 7)),
-            StructuredField("current_share_ratios", "percentage", 4, (6, 6, 6, 6)),
+            StructuredField("current_share_ratios", "percentage", 4, (6, 6, 6, 6), sum_to_100=True),
             StructuredField("comparison_labels", "text", 2, (9, 9)),
             StructuredField("headline_amounts", "number", 3, (16, 16, 16)),
             StructuredField("headline_metric_labels", "text", 2, (8, 5)),
@@ -156,12 +164,18 @@ _CONTRACTS: tuple[StructuredDataContract, ...] = (
             StructuredField("previous_year_label", "text", 1, (5,)),
             StructuredField("delta_amount_label", "text", 1, (5,)),
             StructuredField("delta_rate_label", "text", 1, (5,)),
-            StructuredField("current_values", "number", 5, (12, 12, 12, 12, 12)),
-            StructuredField("previous_values", "number", 5, (12, 12, 12, 12, 12)),
-            StructuredField("delta_values", "number", 5, (12, 12, 12, 12, 12)),
+            # These are editorially formatted table cells, not arithmetic inputs.
+            # Preserve the supplied separators and decimal precision so a template
+            # page does not silently downgrade a financial-report table to mixed
+            # precision or unreadable raw figures.
+            StructuredField("current_values", "text", 5, (12, 12, 12, 12, 12)),
+            StructuredField("previous_values", "text", 5, (12, 12, 12, 12, 12)),
+            StructuredField("delta_values", "text", 5, (12, 12, 12, 12, 12)),
             StructuredField("delta_rates", "percentage", 5, (7, 7, 7, 7, 7)),
             StructuredField("summary_labels", "text", 2, (5, 7)),
-            StructuredField("summary_amounts", "number", 3, (16, 16, 16)),
+            # The source layout includes the unit in each headline amount.  Keep
+            # the complete display lockup together instead of stripping its unit.
+            StructuredField("summary_amounts", "text", 3, (16, 16, 16)),
             StructuredField("expense_labels", "text", 5, (7, 7, 7, 7, 7)),
         ),
         governed_targets={
@@ -218,6 +232,19 @@ def validate_values(contract: StructuredDataContract, values: Mapping[str, Any])
             raise StructuredDataError(f"STRUCTURED_DATA_VALUE_INVALID:{name}")
         if any(len(value) > limit for value, limit in zip(sequence, field.max_chars, strict=True)):
             raise StructuredDataError(f"STRUCTURED_DATA_VALUE_CAPACITY_EXCEEDED:{name}")
+        if field.sum_to_100:
+            try:
+                percentages = tuple(
+                    Decimal(value[:-1])
+                    for value in sequence
+                    if value.endswith("%")
+                )
+            except InvalidOperation as error:
+                raise StructuredDataError(f"STRUCTURED_DATA_PERCENT_FORMAT_INVALID:{name}") from error
+            if len(percentages) != field.count:
+                raise StructuredDataError(f"STRUCTURED_DATA_PERCENT_FORMAT_INVALID:{name}")
+            if sum(percentages) != Decimal("100"):
+                raise StructuredDataError(f"STRUCTURED_DATA_PERCENT_TOTAL_INVALID:{name}")
         result[name] = tuple(sequence)
     return result
 

@@ -69,6 +69,7 @@ _TEMPLATE_BRAND_RE = re.compile(
 
 _CLIENT_TITLE_RE = re.compile(r"(?:年度|年终|工作汇报|工作总结|财务决算|工作思路|收入情况|支出情况|经济指标|项目及)")
 _NUMERIC_VALUE_RE = re.compile(r"[0-9０-９][0-9０-９,，.．%％]*\s*(?:万|亿|元|人|次|项|个|家|年|月|日|%|％)?")
+_CERTIFIED_WORK_REPORT_SHA = "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839"
 
 
 def _client_binding_role(slot: SlotRecord) -> str:
@@ -251,8 +252,9 @@ def _safe_private_root(value: Path | str) -> Path:
 
 def resolve_catalog_sources(
     catalog: Mapping[str, Any], *, private_source_root: Path | str,
+    required_package_hashes: set[str] | None = None,
 ) -> dict[str, Path]:
-    """Resolve the catalog's immutable package hashes below one private root.
+    """Resolve required immutable package hashes below one private root.
 
     The traversal is deliberately limited to the catalog's active categories.
     This makes template discovery impossible in a clean client requirement
@@ -265,15 +267,25 @@ def resolve_catalog_sources(
     pages = catalog.get("pages")
     if not isinstance(active, list) or not active or not isinstance(pages, list):
         raise PhysicalAdapterError("CATALOG_SCHEMA_INVALID")
-    wanted = {
+    catalog_hashes = {
         str(page.get("package_sha256"))
         for page in pages
         if isinstance(page, Mapping)
         and isinstance(page.get("package_sha256"), str)
         and len(str(page["package_sha256"])) == 64
     }
-    if not wanted:
+    if not catalog_hashes:
         raise PhysicalAdapterError("CATALOG_PACKAGES_EMPTY")
+    if required_package_hashes is None:
+        wanted = catalog_hashes
+    elif (
+        not required_package_hashes
+        or any(not isinstance(item, str) or len(item) != 64 for item in required_package_hashes)
+        or not required_package_hashes.issubset(catalog_hashes)
+    ):
+        raise PhysicalAdapterError("CATALOG_REQUIRED_PACKAGES_INVALID")
+    else:
+        wanted = required_package_hashes
     found: dict[str, Path] = {}
     for category in active:
         if not isinstance(category, str) or not category:
@@ -295,6 +307,29 @@ def resolve_catalog_sources(
     if missing:
         raise PhysicalAdapterError("PRIVATE_PACKAGE_MISSING")
     return found
+
+
+def _selected_package_hashes(composition_plan: Mapping[str, Any]) -> set[str]:
+    """Return the only private packages a locked composition may read.
+
+    A compiled plan already pins each selected source page to one immutable
+    package SHA.  Scanning every catalog package during preflight/assembly is
+    needless I/O, slows a normal client run on network-mounted libraries and
+    expands the private-byte surface beyond the authorised deck.  This helper
+    makes the plan's source closure the sole read scope.
+    """
+
+    slides = composition_plan.get("slides")
+    if not isinstance(slides, list) or not slides:
+        raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
+    hashes: set[str] = set()
+    for selected in slides:
+        source = selected.get("source") if isinstance(selected, Mapping) else None
+        package_sha = source.get("package_sha256") if isinstance(source, Mapping) else None
+        if not isinstance(package_sha, str) or re.fullmatch(r"[0-9a-f]{64}", package_sha) is None:
+            raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
+        hashes.add(package_sha)
+    return hashes
 
 
 def _slot_graph(slots: Sequence[SlotRecord]) -> dict[str, Any]:
@@ -343,6 +378,69 @@ def _source_fact(value: str) -> tuple[str, dict[str, Any]]:
         "source_id": "template-source",
         "locator": "private-template",
         "required": False,
+    }
+
+
+def _certified_metric_font_scales(
+    *, package_sha256: str, slide_number: int, bindings: Mapping[str, str],
+) -> dict[str, int]:
+    """Return private visual safeguards for certified paired metric/unit slots.
+
+    The page itself declares the only allowable source and field.  This lets a
+    decimal value retain a readable emphasis beside its fixed-position unit
+    without exposing geometry or allowing agent-authored typography.
+    """
+
+    if package_sha256 != _CERTIFIED_WORK_REPORT_SHA or slide_number != 8:
+        return {}
+    # The narrow external-card value frame is intentionally much smaller than
+    # its peer cards; 40% keeps a decimal numeral on one baseline while the
+    # adjacent native "亿元" keeps the template's intended unit hierarchy.
+    return {"shape_40": 40_000} if bindings.get("shape_40") else {}
+
+
+def _certified_fragment_font_scales(
+    *, package_sha256: str, slide_number: int, bindings: Mapping[str, str],
+) -> dict[str, int]:
+    """Apply a safe, source-specific font scale to fragile display glyphs.
+
+    Some certified Chinese art-title fonts have oversized left-bearing outlines
+    in LibreOffice/PowerPoint-compatible rendering. Keeping every other
+    source property but applying the source-certified scale to every glyph in
+    a lockup preserves its composition while avoiding accidental glyph
+    collisions. This is an internal repair rule keyed only by the certified
+    package/slide, never model authority.
+    """
+
+    if package_sha256 != _CERTIFIED_WORK_REPORT_SHA:
+        return {}
+    scales_by_slide = {
+        # The cover's lower display line is assembled from six independently
+        # positioned glyphs.  Its original Chinese font has an unusually wide
+        # right bearing in portable renderers; a bounded certified scale keeps
+        # a four-character client title inside the last native glyph frame.
+        1: {
+            "shape_6": 42_000, "shape_7": 42_000, "shape_8": 42_000,
+            "shape_9": 42_000, "shape_10": 42_000,
+            "shape_11": 48_000, "shape_12": 48_000, "shape_15": 48_000,
+            "shape_16": 48_000, "shape_13": 48_000, "shape_14": 48_000,
+        },
+        # Section dividers use deliberately oversized individual glyphs.  A
+        # bounded scale is necessary for portable renderers to retain the
+        # intended negative space between the characters.
+        3: {"shape_5": 72_000, "shape_7": 72_000, "shape_12": 72_000, "shape_13": 72_000},
+        4: {"shape_5": 72_000, "shape_7": 72_000, "shape_12": 72_000, "shape_13": 72_000},
+        10: {"shape_5": 72_000, "shape_7": 72_000, "shape_12": 72_000, "shape_13": 72_000},
+        13: {"shape_5": 72_000, "shape_7": 72_000, "shape_12": 72_000},
+        # Closing-page calligraphy uses four independently positioned glyphs;
+        # portable renderers need a slightly tighter certified size so the
+        # final glyph does not collide with its neighbour.
+        15: {"shape_11": 48_000, "shape_12": 48_000, "shape_15": 48_000, "shape_16": 48_000},
+    }
+    return {
+        slot_id: scale
+        for slot_id, scale in scales_by_slide.get(slide_number, {}).items()
+        if bindings.get(slot_id)
     }
 
 
@@ -405,26 +503,27 @@ def _deduplicate_nested_alias_slots(
     the same local position inside the *same outer group*.  They are visual
     aliases (usually an effect layer), not two client-copy fields.  Publishing
     both lets an author bind two different facts to coincident text boxes and
-    creates an avoidable collision in the output.
+    creates an avoidable collision in the output.  The visually painted
+    foreground is normally later in drawing order, so it wins over its
+    same-position shadow/effect peer.
 
     This is deliberately much narrower than a geometry de-duplication rule:
     sibling cards in separate groups can legitimately share their local
     coordinates, so they are never collapsed.  We only suppress an exact
     role-and-bounds duplicate where both shapes share the same outer group.
-    The first reading-order surface remains the sole editable component; the
+    The final reading-order surface remains the sole editable component; the
     adapter clears the suppressed source copy as ordinary unbound template
     content during materialisation.
     """
 
-    retained: list[SlotRecord] = []
+    ordered = sorted(slots, key=lambda item: item.reading_order)
+    winner_by_key: dict[tuple[str, str, int, int, int, int], SlotRecord] = {}
     aliases: set[str] = set()
-    seen: set[tuple[str, str, int, int, int, int]] = set()
-    for slot in sorted(slots, key=lambda item: item.reading_order):
+    for slot in ordered:
         group_id = slot.group_id
         if not isinstance(group_id, str) or not (
             group_id.startswith("group_") or group_id.startswith("fragment_")
         ):
-            retained.append(slot)
             continue
         # ``group_89_22`` and ``group_89_86`` are children of the same outer
         # composite; ``group_15`` and ``group_26`` are independent cards.
@@ -438,11 +537,21 @@ def _deduplicate_nested_alias_slots(
             slot.semantic_role,
             int(box["x"]), int(box["y"]), int(box["w"]), int(box["h"]),
         )
-        if key in seen:
-            aliases.add(slot.slot_id)
-            continue
-        seen.add(key)
-        retained.append(slot)
+        previous = winner_by_key.get(key)
+        if previous is not None:
+            aliases.add(previous.slot_id)
+        winner_by_key[key] = slot
+    retained = [
+        slot for slot in ordered
+        if (
+            not isinstance(slot.group_id, str)
+            or not (slot.group_id.startswith("group_") or slot.group_id.startswith("fragment_"))
+            or winner_by_key.get((
+                slot.group_id.split("_", 2)[1], slot.semantic_role,
+                int(slot.bbox["x"]), int(slot.bbox["y"]), int(slot.bbox["w"]), int(slot.bbox["h"]),
+            )) is slot
+        )
+    ]
     return tuple(retained), frozenset(aliases)
 
 
@@ -509,12 +618,19 @@ def _curated_component_groups(
         group_key, intent, shape_ids = (
             entry.get("component_group"), entry.get("component_intent"), entry.get("shape_ids"),
         )
+        component_fields = entry.get("component_fields")
         required = entry.get("required", False)
         if (
             not isinstance(group_key, str) or not group_key
             or not isinstance(intent, str) or not intent
             or not isinstance(shape_ids, list) or len(shape_ids) < 2
             or not isinstance(required, bool)
+            or (component_fields is not None and (
+                not isinstance(component_fields, list)
+                or len(component_fields) != len(shape_ids)
+                or any(not isinstance(field, str) or not field for field in component_fields)
+                or len(set(component_fields)) != len(component_fields)
+            ))
         ):
             raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_INVALID")
         component_keys: list[str] = []
@@ -534,6 +650,7 @@ def _curated_component_groups(
             "component_keys": component_keys,
             "component_intent": intent,
             "required": required,
+            **({"component_fields": list(component_fields)} if component_fields is not None else {}),
         })
     if len({item["component_group"] for item in result}) != len(result):
         raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_INVALID")
@@ -558,7 +675,10 @@ def preflight_native_slots(
     if composition_plan.get("schema_version") != "1.0" or composition_plan.get("status") != "PASS":
         raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
     page_by_id, region_by_id = _page_lookup(catalog)
-    source_paths = resolve_catalog_sources(catalog, private_source_root=private_source_root)
+    source_paths = resolve_catalog_sources(
+        catalog, private_source_root=private_source_root,
+        required_package_hashes=_selected_package_hashes(composition_plan),
+    )
     context = AssemblyImportContext()
     slides: list[dict[str, Any]] = []
     seen_slide_ids: set[str] = set()
@@ -801,8 +921,11 @@ def preflight_native_slots(
             ):
                 raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_GROUP_COLLISION")
             for group in curated_groups:
-                for component_key in group["component_keys"]:
+                fields = group.get("component_fields")
+                for member_index, component_key in enumerate(group["component_keys"]):
                     by_key[component_key]["component_group"] = group["component_group"]
+                    if isinstance(fields, list):
+                        by_key[component_key]["component_field"] = fields[member_index]
             component_groups.extend(curated_groups)
         slides.append({
             "slide_id": slide_id,
@@ -959,7 +1082,10 @@ def compile_physical_adapter(
         raise PhysicalAdapterError("WORKSPACE_INVALID")
     stage.mkdir(parents=True, exist_ok=True)
     page_by_id, region_by_id = _page_lookup(catalog)
-    source_paths = resolve_catalog_sources(catalog, private_source_root=private_source_root)
+    source_paths = resolve_catalog_sources(
+        catalog, private_source_root=private_source_root,
+        required_package_hashes=_selected_package_hashes(composition_plan),
+    )
     request_facts = _request_facts(adaptation_request)
     structured_requests = _structured_data_requests(adaptation_request)
     operations_by_slide: dict[str, list[Mapping[str, Any]]] = {}
@@ -1131,7 +1257,12 @@ def compile_physical_adapter(
                             f":requested_chars={requested_chars}:native_capacity={slot.max_chars}"
                         )
                     bindings[slot_id] = value
-                    specs[slot_id] = TextBindingSpec(value, (physical_fact_id,), "auto", "shrink-to-fit")
+                    # Native capacity was already checked above.  Use the
+                    # bounded variant for ordinary replacements: sample copy
+                    # such as ``1`` may become ``1.5``, but it must not fall
+                    # to the generic 40% emergency font scale and detach from
+                    # its adjacent unit lockup.
+                    specs[slot_id] = TextBindingSpec(value, (physical_fact_id,), "auto", "safe-shrink-to-fit")
                     slide_lineage["text_bindings"].append({"region_id": region["region_id"], "shape_id": slot_id, "fact_id": fact_ref, "replacement_sha256": _sha256_bytes(value.encode("utf-8"))})
             elif operation_kind == "replace_fragment_text":
                 fragment = fragment_regions.get(str(operation.get("region_id")))
@@ -1164,7 +1295,7 @@ def compile_physical_adapter(
                         replacement,
                         fragment_fact_refs,
                         "auto" if replacement else "clear",
-                        "shrink-to-fit" if replacement else "preserve",
+                        "safe-shrink-to-fit" if replacement else "preserve",
                     )
                     shape_ids.append(slot.slot_id)
                 slide_lineage.setdefault("fragment_title_bindings", []).append({
@@ -1298,6 +1429,15 @@ def compile_physical_adapter(
             title="",
             headline="",
             text_binding_specs=specs,
+            text_binding_font_scales=_certified_metric_font_scales(
+                package_sha256=package_sha,
+                slide_number=int(slide_number),
+                bindings=bindings,
+            ) | _certified_fragment_font_scales(
+                package_sha256=package_sha,
+                slide_number=int(slide_number),
+                bindings=bindings,
+            ),
             governed_content_binding_specs=governed_specs,
             asset_binding_specs=asset_specs,
         ))
