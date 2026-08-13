@@ -122,6 +122,21 @@ def test_exact_deck_rejects_role_mismatch_inside_ordered_work() -> None:
         compile_composition(catalog, observations=observations, request=request)
 
 
+def test_composition_rejects_department_network_as_financial_card_page() -> None:
+    catalog, observations, signatures = _fixture()
+    request = _request(signatures)
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_002"]["observation"].update({  # type: ignore[index]
+        "suggested_roles": ["multi-item", "team"],
+        "semantic_tags": ["clinical departments", "department listing", "medical team"],
+    })
+    # ``title`` keeps the fixture's two-region floor, so this reaches the
+    # irreducible-subject gate rather than a generic capacity failure.
+    request["slides"][1]["role"] = "title"  # type: ignore[index]
+
+    with pytest.raises(CompositionError, match="ROLE_INCOMPATIBLE"):
+        compile_composition(catalog, observations=observations, request=request)
+
+
 def test_family_assembly_rejects_source_outside_anchor_work() -> None:
     catalog, observations, signatures = _fixture()
     # Make the external source visually compatible, so this exercise reaches

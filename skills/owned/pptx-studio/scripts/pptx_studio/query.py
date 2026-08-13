@@ -85,6 +85,16 @@ _ROLE_SEMANTIC_HINTS: dict[str, frozenset[str]] = {
     "team": frozenset({"team", "team introduction", "team_introduction", "profile cards", "profile_cards"}),
 }
 
+# These observations describe an irreducible visual grammar, not merely a
+# topic. A department network or team map cannot be repurposed into a generic
+# financial card/comparison page without leaving blank chips or changing the
+# design's meaning. Keep the exception small and deterministic.
+_IRREDUCIBLE_SUBJECTS: dict[str, frozenset[str]] = {
+    "department-network": frozenset({"clinical departments", "department listing", "multi-department coverage"}),
+    "team-network": frozenset({"medical team", "team introduction", "team"}),
+}
+_NETWORK_ONLY_ROLES = frozenset({"team", "business-model"})
+
 # A complete-work anchor is a quality commitment, not merely a convenient
 # source of many pages. The portable render fingerprint is only a coarse
 # prefilter; later blind visual review remains mandatory. It nonetheless
@@ -101,6 +111,15 @@ def role_matches_page(page: Mapping[str, Any], observation: Mapping[str, Any], r
     model prose as a role grant.
     """
 
+    terms = {
+        str(item).casefold()
+        for field in ("semantic_tags", "suggested_roles")
+        for item in observation.get(field, [])
+        if isinstance(item, str)
+    }
+    network_tags = _IRREDUCIBLE_SUBJECTS["department-network"] | _IRREDUCIBLE_SUBJECTS["team-network"]
+    if terms & network_tags and role not in _NETWORK_ONLY_ROLES:
+        return False
     if role in _CATEGORY_ROLES.get(str(page.get("category")), frozenset()):
         return True
     suggested = observation.get("suggested_roles", [])
@@ -109,12 +128,6 @@ def role_matches_page(page: Mapping[str, Any], observation: Mapping[str, Any], r
     hints = _ROLE_SEMANTIC_HINTS.get(role)
     if not hints:
         return False
-    terms = {
-        str(item).casefold()
-        for field in ("semantic_tags", "suggested_roles")
-        for item in observation.get(field, [])
-        if isinstance(item, str)
-    }
     return bool(terms & hints)
 
 
