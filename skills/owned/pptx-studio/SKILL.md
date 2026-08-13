@@ -297,9 +297,16 @@ must contain only `{fact_id,semantic_role,component_key}` references; never add 
 `text`, `source_id`, source paths, or a free-form replacement there.
 
 Immediately run `validate-fact-store --fact-store work/fact-store.v1.json`
-with the standard manager/sentinel arguments. Do not retrieve, compose or
-write an outline until it returns `status:"PASS"`; repair the ledger itself
-on failure. Preserve this result as client-local evidence.
+with the standard manager/sentinel arguments. Capture its JSON result as
+client-local evidence, for example:
+
+```bash
+$PPTX_STUDIO_MANAGER "${COMMON[@]}" validate-fact-store \
+  --fact-store work/fact-store.v1.json > work/fact-store-validation.json
+```
+
+Do not retrieve, compose or write an outline until that file reports
+`status:"PASS"`; repair the ledger itself on failure.
 Pass `--fact-store work/fact-store.v1.json` to `bind-outline`. The binding
 command rejects free-form values, unknown IDs, reused IDs and a fact bound to
 the wrong approved beat. Therefore an
