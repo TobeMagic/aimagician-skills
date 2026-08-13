@@ -130,6 +130,30 @@ def test_outline_binding_rejects_partial_native_component_group() -> None:
     ]
 
 
+def test_outline_binding_requires_curated_visual_component_groups() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "five-item",
+        "component_groups": [{
+            "component_group": "card.01", "component_keys": ["label.01", "metric.01"],
+            "required": True,
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-metric", "component_key": "metric.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    with pytest.raises(BriefBindingError, match=r"OUTLINE_REQUIRED_COMPONENT_GROUP_MISSING:slide_id=s01:groups=card.01"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{
+            "slide_id": "s01", "facts": [
+                {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+            ],
+        }]}, preflight=preflight)
+
+
 def test_outline_binding_rejects_overflow_without_guessing() -> None:
     with pytest.raises(
         BriefBindingError,

@@ -396,6 +396,145 @@ def _page_lookup(catalog: Mapping[str, Any]) -> tuple[dict[str, Mapping[str, Any
     return page_by_id, region_by_id
 
 
+def _deduplicate_nested_alias_slots(
+    slots: Sequence[SlotRecord],
+) -> tuple[tuple[SlotRecord, ...], frozenset[str]]:
+    """Hide a duplicate writable surface inside one native composite.
+
+    A few certified source pages contain two textual child shapes at precisely
+    the same local position inside the *same outer group*.  They are visual
+    aliases (usually an effect layer), not two client-copy fields.  Publishing
+    both lets an author bind two different facts to coincident text boxes and
+    creates an avoidable collision in the output.
+
+    This is deliberately much narrower than a geometry de-duplication rule:
+    sibling cards in separate groups can legitimately share their local
+    coordinates, so they are never collapsed.  We only suppress an exact
+    role-and-bounds duplicate where both shapes share the same outer group.
+    The first reading-order surface remains the sole editable component; the
+    adapter clears the suppressed source copy as ordinary unbound template
+    content during materialisation.
+    """
+
+    retained: list[SlotRecord] = []
+    aliases: set[str] = set()
+    seen: set[tuple[str, str, int, int, int, int]] = set()
+    for slot in sorted(slots, key=lambda item: item.reading_order):
+        group_id = slot.group_id
+        if not isinstance(group_id, str) or not group_id.startswith("group_"):
+            retained.append(slot)
+            continue
+        # ``group_89_22`` and ``group_89_86`` are children of the same outer
+        # composite; ``group_15`` and ``group_26`` are independent cards.
+        outer_group = group_id.split("_", 2)[1]
+        box = slot.bbox
+        key = (
+            outer_group,
+            slot.semantic_role,
+            int(box["x"]), int(box["y"]), int(box["w"]), int(box["h"]),
+        )
+        if key in seen:
+            aliases.add(slot.slot_id)
+            continue
+        seen.add(key)
+        retained.append(slot)
+    return tuple(retained), frozenset(aliases)
+
+
+def _private_root_for_source_root(private_source_root: Path | str) -> Path:
+    """Resolve the private library root without consulting a client folder."""
+
+    source_root = Path(private_source_root).expanduser().resolve(strict=False)
+    # Production passes ``<private>/sources/<provider>``.  The lower-level
+    # adapter also supports a direct ``<private>`` root for isolated local
+    # libraries and tests.  Neither form performs discovery outside the
+    # explicit private root supplied by the caller.
+    if source_root.parent.name == "sources":
+        return source_root.parent.parent
+    return source_root
+
+
+def _curated_component_groups(
+    *,
+    private_source_root: Path | str,
+    package_sha256: str,
+    slide_number: int,
+    shape_to_component: Mapping[str, str],
+) -> list[dict[str, Any]]:
+    """Load optional private visual-component annotations for one source page.
+
+    Native OOXML group membership is useful but incomplete: a designer can
+    build a visual card from a heading, narrative and a separately-grouped
+    metric.  The private annotation is therefore the cataloguer's explicit
+    semantic assertion of that card.  It contains identifiers only; no
+    commercial source text, geometry or bytes leave the private library.
+    """
+
+    path = (
+        _private_root_for_source_root(private_source_root)
+        / "intelligence" / "pptx-studio" / "annotations"
+        / "component-groups.v1.json"
+    )
+    if not path.is_file():
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_INVALID") from exc
+    if payload.get("schema_version") != "1.0" or not isinstance(payload.get("pages"), list):
+        raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_INVALID")
+    matching = [
+        entry for entry in payload["pages"]
+        if isinstance(entry, Mapping)
+        and entry.get("package_sha256") == package_sha256
+        and entry.get("slide_number") == slide_number
+    ]
+    if len(matching) > 1:
+        raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_AMBIGUOUS")
+    if not matching:
+        return []
+    groups = matching[0].get("component_groups")
+    if not isinstance(groups, list):
+        raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_INVALID")
+    result: list[dict[str, Any]] = []
+    used_keys: set[str] = set()
+    for entry in groups:
+        if not isinstance(entry, Mapping):
+            raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_INVALID")
+        group_key, intent, shape_ids = (
+            entry.get("component_group"), entry.get("component_intent"), entry.get("shape_ids"),
+        )
+        required = entry.get("required", False)
+        if (
+            not isinstance(group_key, str) or not group_key
+            or not isinstance(intent, str) or not intent
+            or not isinstance(shape_ids, list) or len(shape_ids) < 2
+            or not isinstance(required, bool)
+        ):
+            raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_INVALID")
+        component_keys: list[str] = []
+        for shape_id in shape_ids:
+            if not isinstance(shape_id, str) or shape_id not in shape_to_component:
+                raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_SOURCE_DRIFT")
+            component_key = shape_to_component[shape_id]
+            if component_key in component_keys:
+                raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_INVALID")
+            component_keys.append(component_key)
+        overlap = used_keys.intersection(component_keys)
+        if overlap:
+            raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_OVERLAP")
+        used_keys.update(component_keys)
+        result.append({
+            "component_group": group_key,
+            "component_keys": component_keys,
+            "component_intent": intent,
+            "required": required,
+        })
+    if len({item["component_group"] for item in result}) != len(result):
+        raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_INVALID")
+    return result
+
+
 def preflight_native_slots(
     composition_plan: Mapping[str, Any],
     *,
@@ -439,7 +578,9 @@ def preflight_native_slots(
         ):
             raise PhysicalAdapterError("CATALOG_SOURCE_DRIFT")
         _, graph = context.graph_for(source_paths[package_sha], package_sha, slide_number)
-        slots = _discover_slots(graph.slide_xml.decode("utf-8", errors="replace"))
+        slots, nested_alias_slot_ids = _deduplicate_nested_alias_slots(
+            _discover_slots(graph.slide_xml.decode("utf-8", errors="replace")),
+        )
         if not slots:
             raise PhysicalAdapterError("SOURCE_PAGE_HAS_NO_EDITABLE_TEXT")
         try:
@@ -491,6 +632,11 @@ def preflight_native_slots(
                 slot_id = f"shape_{raw_shape_id}"
                 slot = slots_by_id.get(slot_id)
                 if slot is None:
+                    if slot_id in nested_alias_slot_ids:
+                        # A duplicate effect layer has no client-facing
+                        # component contract. It is safely cleared later as
+                        # unbound source content.
+                        continue
                     raise PhysicalAdapterError(
                         "TEXT_SLOT_UNRESOLVED"
                         f":slide_id={slide_id}:region_id={region['region_id']}:shape_id={slot_id}"
@@ -613,6 +759,46 @@ def preflight_native_slots(
                 # drawing/group identifiers.
                 "component_intent": group_intent,
             })
+        shape_to_component: dict[str, str] = {}
+        for region in regions:
+            component_key = region.get("component_key")
+            if not isinstance(component_key, str):
+                continue
+            for shape_slot in region.get("shape_slots", []):
+                shape_id = shape_slot.get("shape_id")
+                if isinstance(shape_id, str):
+                    shape_to_component[shape_id] = component_key
+        curated_groups = _curated_component_groups(
+            private_source_root=private_source_root,
+            package_sha256=package_sha,
+            slide_number=int(slide_number),
+            shape_to_component=shape_to_component,
+        )
+        if curated_groups:
+            curated_keys = {
+                component_key
+                for group in curated_groups
+                for component_key in group["component_keys"]
+            }
+            # A hand-curated visual card supersedes any partial native group
+            # touching it. Leaving both published would let the model satisfy
+            # one incomplete view of the same visual component.
+            component_groups = [
+                group for group in component_groups
+                if not curated_keys.intersection(group["component_keys"])
+            ]
+            for entry in component_contract:
+                if entry["component_key"] in curated_keys:
+                    entry.pop("component_group", None)
+            existing_group_keys = {group["component_group"] for group in component_groups}
+            if existing_group_keys.intersection(
+                group["component_group"] for group in curated_groups
+            ):
+                raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_GROUP_COLLISION")
+            for group in curated_groups:
+                for component_key in group["component_keys"]:
+                    by_key[component_key]["component_group"] = group["component_group"]
+            component_groups.extend(curated_groups)
         slides.append({
             "slide_id": slide_id,
             # The declared role is already validated by composition.  It is

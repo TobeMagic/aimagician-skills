@@ -21,6 +21,8 @@ from pptx_studio.brief_binding import compile_outline_bindings  # noqa: E402
 from pptx_studio.physical_adapter import (  # noqa: E402
     PhysicalAdapterError,
     _client_binding_role,
+    _curated_component_groups,
+    _deduplicate_nested_alias_slots,
     _fragment_title_regions,
     _unbound_template_clear_reason,
     assemble_from_plans,
@@ -51,6 +53,63 @@ def test_client_binding_role_keeps_year_bearing_report_heading_as_title() -> Non
         allowed_binding_modes=("replace",),
     )
     assert _client_binding_role(slot) == "title"
+
+
+def test_preflight_hides_only_exact_alias_slots_inside_one_outer_group() -> None:
+    """Independent cards with coincident local coordinates stay addressable."""
+
+    def slot(slot_id: str, group_id: str, order: int) -> SlotRecord:
+        return SlotRecord(
+            slot_id=slot_id, shape_id=order, kind="text", max_chars=8,
+            text="样例", semantic_role="metric", region="middle",
+            reading_order=order, bbox={"x": 100, "y": 200, "w": 80, "h": 40},
+            source_char_count=2, source_line_count=1, source_run_count=1,
+            group_id=group_id, group_order=None, font_size_pt=18.0,
+            allowed_binding_modes=("replace",),
+        )
+
+    retained, aliases = _deduplicate_nested_alias_slots((
+        slot("shape_1", "group_89_22", 1),
+        slot("shape_2", "group_89_86", 2),
+        slot("shape_3", "group_90_22", 3),
+    ))
+    assert [item.slot_id for item in retained] == ["shape_1", "shape_3"]
+    assert aliases == frozenset({"shape_2"})
+
+
+def test_preflight_loads_private_curated_visual_component_groups(tmp_path: Path) -> None:
+    private_root = tmp_path / "private"
+    source_root = private_root / "sources" / "gaojie"
+    annotation_dir = private_root / "intelligence" / "pptx-studio" / "annotations"
+    source_root.mkdir(parents=True)
+    annotation_dir.mkdir(parents=True)
+    (annotation_dir / "component-groups.v1.json").write_text(json.dumps({
+        "schema_version": "1.0",
+        "pages": [{
+            "package_sha256": "a" * 64,
+            "slide_number": 8,
+            "component_groups": [{
+                "component_group": "card.01",
+                "component_intent": "metric-label-card",
+                "shape_ids": ["shape_14", "shape_18", "shape_19"],
+                "required": True,
+            }],
+        }],
+    }), encoding="utf-8")
+    groups = _curated_component_groups(
+        private_source_root=source_root,
+        package_sha256="a" * 64,
+        slide_number=8,
+        shape_to_component={
+            "shape_14": "label.01", "shape_18": "metric.01", "shape_19": "label.02",
+        },
+    )
+    assert groups == [{
+        "component_group": "card.01",
+        "component_keys": ["label.01", "metric.01", "label.02"],
+        "component_intent": "metric-label-card",
+        "required": True,
+    }]
 
 
 def _source_pack(

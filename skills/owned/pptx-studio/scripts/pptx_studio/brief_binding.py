@@ -304,8 +304,6 @@ def _require_component_group_coverage(
     excluded because their groups can represent ornamental network nodes.
     """
 
-    if preflight_slide.get("role") in {"cover", "contents", "section", "closing", "data", "table"}:
-        return
     group_map = _published_component_groups(preflight_slide)
     if not group_map:
         return
@@ -318,6 +316,22 @@ def _require_component_group_coverage(
         group_id for group_id, keys in group_map.items()
         if keys.intersection(selected_keys)
     ]
+    raw_groups = preflight_slide.get("component_groups")
+    required_groups = {
+        str(group.get("component_group"))
+        for group in (raw_groups if isinstance(raw_groups, list) else [])
+        if isinstance(group, Mapping)
+        and group.get("required") is True
+    }
+    missing_required = sorted(required_groups.difference(selected_groups))
+    if missing_required:
+        raise BriefBindingError(
+            "OUTLINE_REQUIRED_COMPONENT_GROUP_MISSING"
+            f":slide_id={preflight_slide.get('slide_id')}"
+            f":groups={','.join(missing_required)}"
+        )
+    if preflight_slide.get("role") in {"cover", "contents", "section", "closing", "data", "table"}:
+        return
     # A compact relationship page with only two or three declared visual
     # units has no spare card: leaving one empty is conspicuous. Larger
     # dashboards can retain deliberate breathing room, but must still express
