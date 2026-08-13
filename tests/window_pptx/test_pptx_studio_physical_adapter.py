@@ -31,7 +31,16 @@ from pptx_studio.physical_adapter import (  # noqa: E402
     resolve_catalog_sources,
 )
 from pptx_studio.qa import _visual_checks, run_studio_qa  # noqa: E402
-from window_pptx.page_template_library import SlotRecord  # noqa: E402
+from window_pptx.page_template_library import PageTemplate, SlotRecord  # noqa: E402
+from window_pptx.physical_assembly import (  # noqa: E402
+    AssemblyPlan,
+    AssemblyTargetSlide,
+    PhysicalAssemblyError,
+    TextBindingSpec,
+    _adapt_slide_text,
+    _build_text_binding_evidence,
+    _validate_assembly_plan,
+)
 import pptx_studio.physical_adapter as physical_adapter  # noqa: E402
 from manage_pptx_studio_library import run  # noqa: E402
 
@@ -53,6 +62,94 @@ def test_client_binding_role_keeps_year_bearing_report_heading_as_title() -> Non
         allowed_binding_modes=("replace",),
     )
     assert _client_binding_role(slot) == "title"
+
+
+def _alias_clear_template() -> PageTemplate:
+    package_sha = "a" * 64
+    return PageTemplate(
+        schema_version="1.0", page_id=f"{package_sha}:001",
+        package_sha256=package_sha, slide_number=1, source_path="/private/source.pptx",
+        source_sha256=package_sha, source_slide_sha256="b" * 64,
+        page_role="content", category_names=("test",), style_cluster_id="test",
+        deck_family_id="test", theme_palette=(), capacity={"max_text_chars": 20, "max_text_runs": 1},
+        editability="native_editable", certification="certified", visual_quality=1.0,
+        structure={}, slot_graph={"text_slot_ids": ["shape_1"]},
+        requires_customer_asset=False, media_retention_policy="preserve",
+        governed_content_inventory={"slots": []},
+    )
+
+
+def test_physical_assembly_allows_only_clear_for_graph_excluded_nested_alias() -> None:
+    """Hidden duplicate nodes may be blanked, but never reused as content slots."""
+
+    template = _alias_clear_template()
+    slide = AssemblyTargetSlide(
+        ordinal=1, page_template=template,
+        bindings={"shape_1": "标题", "shape_2": ""},
+        narrative_role="content", title="标题", headline="摘要",
+        text_binding_specs={
+            "shape_1": TextBindingSpec("标题", (), "source"),
+            "shape_2": TextBindingSpec("", (), "clear"),
+        },
+    )
+    plan = AssemblyPlan(
+        schema_version="1.0", plan_id="test", scenario_id="test",
+        dominant_style_cluster_id="test", created_at="1970-01-01T00:00:00Z",
+        target_slide_count=1, target_slides=(slide,), library_index_sha256="c" * 64,
+    )
+    _validate_assembly_plan(plan, "c" * 64)
+
+    clear_only = AssemblyPlan(
+        schema_version="1.0", plan_id="test", scenario_id="test",
+        dominant_style_cluster_id="test", created_at="1970-01-01T00:00:00Z",
+        target_slide_count=1,
+        target_slides=(AssemblyTargetSlide(
+            ordinal=1,
+            page_template=replace(template, slot_graph={"text_slot_ids": []}),
+            bindings={"shape_2": ""}, narrative_role="content", title="标题", headline="摘要",
+            text_binding_specs={"shape_2": TextBindingSpec("", (), "clear")},
+        ),),
+        library_index_sha256="c" * 64,
+    )
+    assert _build_text_binding_evidence(
+        clear_only, None, require_locked_authority=True,
+    ) == []
+
+    invalid = AssemblyTargetSlide(
+        ordinal=1, page_template=template,
+        bindings={"shape_1": "标题", "shape_2": "遗留文案"},
+        narrative_role="content", title="标题", headline="摘要",
+        text_binding_specs={
+            "shape_1": TextBindingSpec("标题", (), "source"),
+            "shape_2": TextBindingSpec("遗留文案", (), "source"),
+        },
+    )
+    invalid_plan = AssemblyPlan(
+        schema_version="1.0", plan_id="test", scenario_id="test",
+        dominant_style_cluster_id="test", created_at="1970-01-01T00:00:00Z",
+        target_slide_count=1, target_slides=(invalid,), library_index_sha256="c" * 64,
+    )
+    with pytest.raises(PhysicalAssemblyError, match="ASSEMBLY_PLAN_SLOT_COVERAGE"):
+        _validate_assembly_plan(invalid_plan, "c" * 64)
+
+
+def test_native_replacement_allows_only_explicit_clear_alias_outside_slot_graph() -> None:
+    slide_xml = (
+        b'<p:sld xmlns:p="urn:p" xmlns:a="urn:a"><p:cSld><p:spTree>'
+        b'<p:sp><p:nvSpPr><p:cNvPr id="2" name="alias"/></p:nvSpPr>'
+        b'<p:txBody><a:bodyPr/><a:p><a:r><a:t>30</a:t></a:r></a:p></p:txBody></p:sp>'
+        b'</p:spTree></p:cSld></p:sld>'
+    )
+    with pytest.raises(PhysicalAssemblyError, match="outside the certified slot graph"):
+        _adapt_slide_text(slide_xml, {"shape_2": ""}, allowed_slots={"shape_1"})
+
+    rewritten = _adapt_slide_text(
+        slide_xml,
+        {"shape_2": ""},
+        allowed_slots={"shape_1"},
+        allowed_clear_alias_slots={"shape_2"},
+    )
+    assert b">30<" not in rewritten
 
 
 def test_preflight_hides_only_exact_alias_slots_inside_one_outer_group() -> None:

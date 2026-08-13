@@ -2215,12 +2215,14 @@ def _adapt_slide_text(
     bindings: Mapping[str, str],
     *,
     allowed_slots: Iterable[str] | None = None,
+    allowed_clear_alias_slots: Iterable[str] | None = None,
     fit_policies: Mapping[str, str] | None = None,
 ) -> bytes:
     """Apply declared bindings and fail closed on stale or invented slots."""
 
     text = slide_xml.decode("utf-8", errors="replace")
     allowed = set(allowed_slots or ())
+    allowed_clear_aliases = set(allowed_clear_alias_slots or ())
     policies = dict(fit_policies or {})
     extra_policy_slots = set(policies) - set(bindings)
     if extra_policy_slots:
@@ -2231,7 +2233,7 @@ def _adapt_slide_text(
     for slot_id, replacement in bindings.items():
         if not slot_id.startswith("shape_"):
             raise PhysicalAssemblyError(f"invalid text slot id: {slot_id}")
-        if allowed and slot_id not in allowed:
+        if allowed and slot_id not in allowed and slot_id not in allowed_clear_aliases:
             raise PhysicalAssemblyError(
                 f"binding targets a slot outside the certified slot graph: {slot_id}"
             )
@@ -4340,6 +4342,18 @@ def _build_text_binding_evidence(
         total_chars = 0
         for slot_id, replacement in slide.bindings.items():
             slot = metadata.get(slot_id)
+            clear_alias_spec = slide.text_binding_specs.get(slot_id)
+            if (
+                require_locked_authority
+                and slot is None
+                and clear_alias_spec is not None
+                and clear_alias_spec.mode == "clear"
+                and clear_alias_spec.replacement == ""
+                and not clear_alias_spec.fact_refs
+            ):
+                # A graph-excluded nested alias may only be blanked. It is
+                # never a client content surface, so it has no capacity record.
+                continue
             if require_locked_authority and slot is None:
                 raise PhysicalAssemblyError(
                     f"production template slot lacks capacity evidence: {slide.ordinal}:{slot_id}"
@@ -4746,7 +4760,22 @@ def _validate_assembly_plan(
                 f"ASSEMBLY_PLAN_NO_EDITABLE_SLOTS: ordinal={slide.ordinal} page_id={slide.page_template.page_id}"
             )
         missing = sorted(expected - actual)
-        extra = sorted(actual - expected)
+        # Nested aliases are duplicate physical text nodes inside a grouped
+        # component. They are excluded from the public slot graph, but must be
+        # cleared to prevent source text from surviving beside its replacement.
+        # Permit only an empty, no-fact clear binding for such extra nodes.
+        raw_extra = actual - expected
+        permitted_clear_extras = {
+            slot_id
+            for slot_id in raw_extra
+            if (
+                (spec := slide.text_binding_specs.get(slot_id)) is not None
+                and spec.mode == "clear"
+                and spec.replacement == ""
+                and not spec.fact_refs
+            )
+        }
+        extra = sorted(raw_extra - permitted_clear_extras)
         if missing or extra:
             details = []
             if missing:
@@ -4757,7 +4786,8 @@ def _validate_assembly_plan(
                 f"ASSEMBLY_PLAN_SLOT_COVERAGE: ordinal={slide.ordinal} "
                 + " ".join(details)
             )
-        if require_locked_authority and set(slide.text_binding_specs) != expected:
+        effective_spec_slots = set(slide.text_binding_specs) - permitted_clear_extras
+        if require_locked_authority and effective_spec_slots != expected:
             raise PhysicalAssemblyError(
                 f"ASSEMBLY_PLAN_LOCKED_BINDING_COVERAGE: ordinal={slide.ordinal}"
             )
@@ -7019,6 +7049,16 @@ def assemble_physical_deck(
                 governed_slide_xml,
                 slide.bindings,
                 allowed_slots=slide.page_template.slot_graph.get("text_slot_ids", ()),
+                allowed_clear_alias_slots={
+                    slot_id
+                    for slot_id, spec in slide.text_binding_specs.items()
+                    if (
+                        slot_id not in slide.page_template.slot_graph.get("text_slot_ids", ())
+                        and spec.mode == "clear"
+                        and spec.replacement == ""
+                        and not spec.fact_refs
+                    )
+                },
                 fit_policies={
                     slot_id: spec.fit_policy
                     for slot_id, spec in slide.text_binding_specs.items()
