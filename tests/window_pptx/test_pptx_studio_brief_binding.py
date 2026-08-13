@@ -61,6 +61,37 @@ def test_outline_binding_honors_published_component_key() -> None:
         }]})
 
 
+def test_outline_binding_resolves_opaque_component_group_members() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "component_contract": [
+            {"component_key": "title.01"},
+            {"component_key": "label.01"},
+            {"component_key": "metric.01"},
+        ],
+        "component_groups": [{
+            "component_group": "group.01",
+            "component_keys": ["label.01", "metric.01"],
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-metric", "component_key": "metric.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "支付进度", "semantic_role": "label", "component_group": "group.01"},
+        {"value": "93%", "semantic_role": "metric", "component_group": "group.01"},
+    ]}]}, preflight=preflight)
+    assert [item["component_key"] for item in result["bindings"]] == [
+        "title.01", "label.01", "metric.01",
+    ]
+
+
 def test_outline_binding_rejects_partial_native_component_group() -> None:
     preflight = {"status": "PASS", "slides": [{
         "slide_id": "s01",

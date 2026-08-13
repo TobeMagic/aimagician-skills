@@ -20,8 +20,8 @@ class BriefBindingError(ValueError):
 
 _OUTLINE_FIELDS = frozenset({"schema_version", "slides"})
 _SLIDE_FIELDS = frozenset({"slide_id", "facts"})
-_FACT_FIELDS = frozenset({"value", "semantic_role", "component_key"})
-_LOCKED_FACT_FIELDS = frozenset({"fact_id", "semantic_role", "component_key"})
+_FACT_FIELDS = frozenset({"value", "semantic_role", "component_key", "component_group"})
+_LOCKED_FACT_FIELDS = frozenset({"fact_id", "semantic_role", "component_key", "component_group"})
 _SEMANTIC_ROLES = frozenset({"title", "label", "metric", "body", "any"})
 # A long, source-grounded conclusion is frequently supplied by an agent as a
 # ``label`` because it names a visual value (for example ``总支出…万元``).
@@ -261,6 +261,30 @@ def _require_complete_component_groups(
             )
 
 
+def _published_component_groups(preflight_slide: Mapping[str, Any]) -> dict[str, set[str]]:
+    """Return a validated opaque-group → published-component map."""
+
+    groups = preflight_slide.get("component_groups")
+    if groups is None:
+        return {}
+    if not isinstance(groups, list):
+        raise BriefBindingError("OUTLINE_COMPONENT_GROUP_INVALID")
+    result: dict[str, set[str]] = {}
+    for group in groups:
+        if not isinstance(group, Mapping):
+            raise BriefBindingError("OUTLINE_COMPONENT_GROUP_INVALID")
+        group_id, keys = group.get("component_group"), group.get("component_keys")
+        if (
+            not isinstance(group_id, str) or not group_id
+            or not isinstance(keys, list) or len(keys) < 2
+            or any(not isinstance(key, str) or not key for key in keys)
+            or len(set(keys)) != len(keys) or group_id in result
+        ):
+            raise BriefBindingError("OUTLINE_COMPONENT_GROUP_INVALID")
+        result[group_id] = set(keys)
+    return result
+
+
 def validate_fact_store(fact_store: Mapping[str, Any]) -> dict[str, Any]:
     """Validate a locked client ledger before any template retrieval.
 
@@ -315,15 +339,28 @@ def compile_outline_bindings(
             if not isinstance(item, Mapping) or not isinstance(item.get("semantic_role"), str):
                 raise BriefBindingError("OUTLINE_FACT_INVALID")
             component_key = item.get("component_key")
+            component_group = item.get("component_group")
             if component_key is not None and not isinstance(component_key, str):
                 raise BriefBindingError("OUTLINE_COMPONENT_INVALID")
+            if component_group is not None and not isinstance(component_group, str):
+                raise BriefBindingError("OUTLINE_COMPONENT_INVALID")
+            if component_key is not None and component_group is not None:
+                raise BriefBindingError("OUTLINE_COMPONENT_TARGET_AMBIGUOUS")
             if locked_facts is None:
-                if set(item) not in ({"value", "semantic_role"}, _FACT_FIELDS) or not isinstance(item.get("value"), str):
+                if (
+                    not {"value", "semantic_role"}.issubset(item)
+                    or not set(item).issubset(_FACT_FIELDS)
+                    or not isinstance(item.get("value"), str)
+                ):
                     raise BriefBindingError("OUTLINE_FACT_INVALID")
                 value = item["value"]
                 output_fact_id = f"{slide_id}-f{ordinal:02d}"
             else:
-                if set(item) not in ({"fact_id", "semantic_role"}, _LOCKED_FACT_FIELDS) or not isinstance(item.get("fact_id"), str):
+                if (
+                    not {"fact_id", "semantic_role"}.issubset(item)
+                    or not set(item).issubset(_LOCKED_FACT_FIELDS)
+                    or not isinstance(item.get("fact_id"), str)
+                ):
                     raise BriefBindingError("LOCKED_FACT_REFERENCE_REQUIRED")
                 output_fact_id = item["fact_id"]
                 locked_fact = locked_facts.get(output_fact_id)
@@ -349,6 +386,7 @@ def compile_outline_bindings(
                 "source_fact_id": output_fact_id,
                 "required": _compact_len(value),
                 "component_key": component_key,
+                "component_group": component_group,
             })
 
         preflight_slide = next(
@@ -357,9 +395,16 @@ def compile_outline_bindings(
         )
         published_components = preflight_slide.get("component_contract")
         if isinstance(published_components, list) and published_components:
-            if any(item["component_key"] is None for item in prepared):
+            if any(item["component_key"] is None and item["component_group"] is None for item in prepared):
                 raise BriefBindingError(
                     f"OUTLINE_COMPONENT_KEY_REQUIRED:slide_id={slide_id}"
+                )
+        component_groups = _published_component_groups(preflight_slide)
+        for item in prepared:
+            group = item["component_group"]
+            if group is not None and group not in component_groups:
+                raise BriefBindingError(
+                    f"OUTLINE_COMPONENT_GROUP_UNKNOWN:slide_id={slide_id}:group={group}"
                 )
         _require_complete_component_groups(preflight_slide, prepared)
         coverage = _structural_coverage_requirements(preflight, slide_id=slide_id)
@@ -401,6 +446,7 @@ def compile_outline_bindings(
             required = int(item["required"])
             fitting = [region for region in available if region["capacity"] >= required]
             component_key = item.get("component_key")
+            component_group = item.get("component_group")
             if component_key is not None:
                 # Component keys are published by the local preflight only.
                 # They identify a role-ordered native surface, never a shape
@@ -409,6 +455,15 @@ def compile_outline_bindings(
                 fitting = [
                     region for region in fitting
                     if region.get("component_key") == component_key
+                ]
+            elif component_group is not None:
+                # The weak-model interface targets a deliberate visual unit,
+                # not one fragile internal key.  Select the only fitting
+                # native member for this fact's declared role; all members
+                # are still checked as a complete group after allocation.
+                fitting = [
+                    region for region in fitting
+                    if region.get("component_key") in component_groups[component_group]
                 ]
             if requested_role != "any":
                 # A title/body/metric's semantic role is derived from the
@@ -436,7 +491,7 @@ def compile_outline_bindings(
                 fitting = strict_fitting
             if not fitting:
                 raise BriefBindingError(
-                    ("OUTLINE_COMPONENT_NO_FITTING_SLOT" if component_key is not None else "OUTLINE_FACT_NO_FITTING_SLOT")
+                    ("OUTLINE_COMPONENT_NO_FITTING_SLOT" if component_key is not None or component_group is not None else "OUTLINE_FACT_NO_FITTING_SLOT")
                     +
                     f":slide_id={slide_id}:ordinal={ordinal}:requested_chars={required}"
                     f":remaining_slots={_remaining_capacity_summary(available)}"
@@ -451,8 +506,18 @@ def compile_outline_bindings(
                     "replace_fragment_text" if chosen["fragment_group"]
                     else "replace_text"
                 ),
-                "component_key": component_key,
+                "component_key": chosen.get("component_key"),
+                "component_group": component_group,
             }
+
+        # A group-targeting outline does not expose its native component key.
+        # Reconstruct the selected keys from the deterministic allocation and
+        # apply the same full-card guard used by the precise-key interface.
+        resolved_group_prepared = [
+            item | {"component_key": allocated[int(item["ordinal"])]["component_key"]}
+            for item in prepared
+        ]
+        _require_complete_component_groups(preflight_slide, resolved_group_prepared)
 
         for item in prepared:
             ordinal = int(item["ordinal"])
@@ -467,8 +532,15 @@ def compile_outline_bindings(
                 "fact_id": fact_id,
                 "asset_id": None,
             }
-            if binding["component_key"] is not None:
-                output_binding["component_key"] = binding["component_key"]
+            resolved_component_key = binding["component_key"]
+            if resolved_component_key is None:
+                resolved_component_key = next(
+                    item["component_key"]
+                    for item in resolved_group_prepared
+                    if int(item["ordinal"]) == ordinal
+                )
+            if resolved_component_key is not None:
+                output_binding["component_key"] = resolved_component_key
             bindings.append(output_binding)
     # Structured data is deliberately a distinct semantic payload.  Normal
     # text-only decks still carry the empty field so every downstream stage

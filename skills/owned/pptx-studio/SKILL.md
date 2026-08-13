@@ -282,7 +282,11 @@ unique `id`, exact `text`, `source_id`, locator, status and approved
 `recommended_beat` (`s01`…`s15`). Then write a small
 `content-outline.v1.json`: it has only `schema_version` and `slides`; each
 slide has `slide_id` and an ordered `facts` list; in a locked production run
-every fact is `{"fact_id":"locked-client-fact-id","semantic_role":"title|label|metric|body","component_key":"title.01"}`.
+every standalone fact is `{"fact_id":"locked-client-fact-id","semantic_role":"title|label|metric|body","component_key":"title.01"}`.
+For a certified linked unit, use
+`{"fact_id":"locked-client-fact-id","semantic_role":"label|metric|body","component_group":"group.01"}`;
+the binder resolves the compatible native member. Never put both target fields
+on one fact.
 
 The fact store is strict. Do not invent a shortened variant: this is the
 minimum valid shape (extend it with more facts only):
@@ -293,7 +297,8 @@ minimum valid shape (extend it with more facts only):
 
 `project`, nonempty `sources`, every source `id`, every fact `status:"active"`,
 and a source ID matching every fact's `source_id` are mandatory. The outline
-must contain only `{fact_id,semantic_role,component_key}` references; never add `value`,
+must contain only `{fact_id,semantic_role,component_key}` or
+`{fact_id,semantic_role,component_group}` references; never add `value`,
 `text`, `source_id`, source paths, or a free-form replacement there.
 
 Immediately run `validate-fact-store --fact-store work/fact-store.v1.json`
@@ -330,7 +335,8 @@ native slot.
 publishes ordered keys such as `title.01`, `label.01`, `label.02`,
 `metric.01` and `body.01`, with only semantic role, native capacity and a
 fragment-lockup flag. It never reveals shape IDs, coordinates, source copy or
-private paths. Use those keys explicitly in every production outline fact.
+private paths. Use keys for standalone surfaces; for a linked card use its
+published group and let the binder resolve the exact native member.
 
 Treat them as a component sequence, never as one interchangeable text pool:
 write a page heading to `title.01`; keep each project/data card's name and
