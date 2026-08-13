@@ -265,6 +265,14 @@ client content. Use it to preserve the visual grammar of cards and dashboards
 corresponding metrics), rather than merely satisfying the role's minimum fact
 floor. It contains no template copy, shape IDs or geometry.
 
+For a text-only page with eight or more repeated label or metric surfaces, the
+binder enforces structural coverage (65% of that repeated surface). This is a
+hard anti-empty-template gate: a department/network page with twelve chips
+cannot be released with only two facts and ten blank boxes. Supply genuine
+facts for that grammar or reselect a smaller/appropriate page. Governed
+chart/table pages are excluded because their published data contract owns the
+visible data surface.
+
 Treat a zero count as an absolute design constraint. In particular, a
 chart-led page with `body: 0` must carry its interpretation through its
 published structured data, title, labels and metrics; do not add a prose

@@ -50,6 +50,52 @@ def test_outline_binding_never_uses_a_title_or_metric_surface_for_body_copy() ->
         ]}]}, preflight=preflight)
 
 
+def test_outline_binding_rejects_sparse_rich_text_only_template() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "content_contract": {"title": 1, "label": 12, "metric": 2, "body": 0},
+        "governed_content_contract": {"requires_structured_data": False},
+        "regions": [
+            *[
+                {"region_id": f"r-label-{index}", "native_capacity": 12,
+                 "shape_slots": [{"semantic_role": "label"}]}
+                for index in range(12)
+            ],
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+        ],
+    }]}
+    with pytest.raises(
+        BriefBindingError,
+        match=r"OUTLINE_STRUCTURAL_COVERAGE_INSUFFICIENT:slide_id=s01:role=label:provided=2:required=8",
+    ):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{
+            "slide_id": "s01", "facts": [
+                {"value": "标题", "semantic_role": "title"},
+                {"value": "标签一", "semantic_role": "label"},
+                {"value": "标签二", "semantic_role": "label"},
+            ],
+        }]}, preflight=preflight)
+
+
+def test_outline_binding_defers_rich_governed_page_to_data_contract() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "content_contract": {"title": 1, "label": 12, "metric": 10, "body": 0},
+        "governed_content_contract": {"requires_structured_data": True},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "收入构成", "semantic_role": "title"},
+        ],
+    }]}, preflight=preflight)
+    assert result["facts"] == [{"fact_id": "s01-f01", "value": "收入构成"}]
+
+
 def test_outline_binding_reserves_the_largest_slot_for_later_long_copy() -> None:
     preflight = {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
         {"region_id": "r-short", "native_capacity": 6, "shape_slots": [{"semantic_role": "label"}]},

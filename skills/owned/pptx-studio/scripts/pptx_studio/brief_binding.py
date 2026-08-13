@@ -9,6 +9,7 @@ of binding authority.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from math import ceil
 from typing import Any
 
 
@@ -20,6 +21,47 @@ _OUTLINE_FIELDS = frozenset({"schema_version", "slides"})
 _SLIDE_FIELDS = frozenset({"slide_id", "facts"})
 _FACT_FIELDS = frozenset({"value", "semantic_role"})
 _SEMANTIC_ROLES = frozenset({"title", "label", "metric", "body", "any"})
+
+
+def _structural_coverage_requirements(
+    preflight: Mapping[str, Any], *, slide_id: str,
+) -> dict[str, int]:
+    """Return the non-negotiable content density for a rich native page.
+
+    A template may expose many independent label/metric surfaces (cards,
+    timeline stops, department chips).  Satisfying a generic role floor with a
+    handful of facts leaves an otherwise beautiful page visibly empty after
+    source copy is safely cleared.  Dense *text-only* templates therefore
+    require a meaningful portion of their certified visual surface to be
+    populated.  Governed chart/table pages are excluded: their published data
+    contract, rather than ordinary outline facts, owns those visible values.
+    """
+
+    slides = preflight.get("slides")
+    if not isinstance(slides, list):
+        raise BriefBindingError("PREFLIGHT_SCHEMA_INVALID")
+    for slide in slides:
+        if not isinstance(slide, Mapping) or slide.get("slide_id") != slide_id:
+            continue
+        governed = slide.get("governed_content_contract")
+        if isinstance(governed, Mapping) and governed.get("requires_structured_data") is True:
+            return {}
+        contract = slide.get("content_contract")
+        if not isinstance(contract, Mapping):
+            return {}
+        required: dict[str, int] = {}
+        for role in ("label", "metric"):
+            surface_count = contract.get(role, 0)
+            if type(surface_count) is not int or surface_count < 0:
+                raise BriefBindingError("PREFLIGHT_SCHEMA_INVALID")
+            # Small pages are already covered by the role-specific fact floor.
+            # Eight or more repeated surfaces are a deliberate structural
+            # pattern, so require 65% coverage rather than releasing a sparse
+            # shell with only the title changed.
+            if surface_count >= 8:
+                required[role] = ceil(surface_count * 0.65)
+        return required
+    raise BriefBindingError("OUTLINE_SLIDE_UNKNOWN")
 
 
 def _compact_len(value: str) -> int:
@@ -123,6 +165,18 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
                 "requested_role": requested_role,
                 "required": _compact_len(value),
             })
+
+        coverage = _structural_coverage_requirements(preflight, slide_id=slide_id)
+        for role, required_count in coverage.items():
+            provided_count = sum(
+                1 for item in prepared if item["requested_role"] == role
+            )
+            if provided_count < required_count:
+                raise BriefBindingError(
+                    "OUTLINE_STRUCTURAL_COVERAGE_INSUFFICIENT"
+                    f":slide_id={slide_id}:role={role}"
+                    f":provided={provided_count}:required={required_count}"
+                )
 
         # Allocate scarce long-capacity regions first. A presentation outline
         # is naturally written title → metric → body; consuming a 31-character
