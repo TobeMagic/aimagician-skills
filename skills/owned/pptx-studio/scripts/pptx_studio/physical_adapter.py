@@ -596,9 +596,22 @@ def preflight_native_slots(
             ordered_members = [entry for _order, entry in sorted(members)]
             for entry in ordered_members:
                 entry["component_group"] = group_key
+            member_roles = [str(entry["semantic_role"]) for entry in ordered_members]
+            if "metric" in member_roles and "label" in member_roles:
+                group_intent = "metric-label-card"
+            elif "body" in member_roles and "label" in member_roles:
+                group_intent = "labelled-content-unit"
+            elif all(role == "label" for role in member_roles):
+                group_intent = "paired-label-unit"
+            else:
+                group_intent = "linked-text-unit"
             component_groups.append({
                 "component_group": group_key,
                 "component_keys": [entry["component_key"] for entry in ordered_members],
+                # A role-only intent gives the author a useful composition
+                # cue without disclosing private text, coordinates or raw
+                # drawing/group identifiers.
+                "component_intent": group_intent,
             })
         slides.append({
             "slide_id": slide_id,

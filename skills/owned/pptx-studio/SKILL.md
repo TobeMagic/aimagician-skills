@@ -348,6 +348,9 @@ metric, and a roadmap group can contain an ordinal and an action. Bind all
 available client facts for that group before moving to the next group; never
 put a group member's label or value into a different card merely because its
 capacity also fits. A group alias reveals neither source text nor geometry.
+Its `component_intent` is a value-free cue such as `metric-label-card` or
+`paired-label-unit`; use it to decide whether the client facts form one card,
+one labelled content unit or a linked pair.
 This is enforced: if the outline selects one member, `bind-outline` rejects
 the page until every member is explicitly populated. Select a simpler page
 when the agreed brief has no truthful fact for the full component; do not
