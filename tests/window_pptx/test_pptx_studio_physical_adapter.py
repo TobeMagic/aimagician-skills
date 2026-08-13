@@ -77,6 +77,24 @@ def test_preflight_hides_only_exact_alias_slots_inside_one_outer_group() -> None
     assert aliases == frozenset({"shape_2"})
 
 
+def test_preflight_hides_exact_duplicate_fragment_member_but_not_letters() -> None:
+    def slot(slot_id: str, x: int, order: int) -> SlotRecord:
+        return SlotRecord(
+            slot_id=slot_id, shape_id=order, kind="text", max_chars=2,
+            text="字", semantic_role="title_fragment", region="middle",
+            reading_order=order, bbox={"x": x, "y": 200, "w": 80, "h": 40},
+            source_char_count=1, source_line_count=1, source_run_count=1,
+            group_id="fragment_01", group_order=None, font_size_pt=18.0,
+            allowed_binding_modes=("replace",),
+        )
+
+    retained, aliases = _deduplicate_nested_alias_slots((
+        slot("shape_1", 100, 1), slot("shape_2", 100, 2), slot("shape_3", 200, 3),
+    ))
+    assert [item.slot_id for item in retained] == ["shape_1", "shape_3"]
+    assert aliases == frozenset({"shape_2"})
+
+
 def test_preflight_loads_private_curated_visual_component_groups(tmp_path: Path) -> None:
     private_root = tmp_path / "private"
     source_root = private_root / "sources" / "gaojie"

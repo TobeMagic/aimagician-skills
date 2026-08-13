@@ -421,11 +421,16 @@ def _deduplicate_nested_alias_slots(
     seen: set[tuple[str, str, int, int, int, int]] = set()
     for slot in sorted(slots, key=lambda item: item.reading_order):
         group_id = slot.group_id
-        if not isinstance(group_id, str) or not group_id.startswith("group_"):
+        if not isinstance(group_id, str) or not (
+            group_id.startswith("group_") or group_id.startswith("fragment_")
+        ):
             retained.append(slot)
             continue
         # ``group_89_22`` and ``group_89_86`` are children of the same outer
         # composite; ``group_15`` and ``group_26`` are independent cards.
+        # The same rule catches exact duplicate members of a synthesized
+        # fragment lockup (``fragment_01``) without collapsing letters that
+        # occupy different positions.
         outer_group = group_id.split("_", 2)[1]
         box = slot.bbox
         key = (
@@ -987,7 +992,8 @@ def compile_physical_adapter(
             raise PhysicalAdapterError("CATALOG_SOURCE_DRIFT")
         source_path = source_paths[package_sha]
         _, graph = context.graph_for(source_path, package_sha, int(slide_number))
-        slots = _discover_slots(graph.slide_xml.decode("utf-8", errors="replace"))
+        all_slots = _discover_slots(graph.slide_xml.decode("utf-8", errors="replace"))
+        slots, nested_alias_slot_ids = _deduplicate_nested_alias_slots(all_slots)
         if not slots:
             raise PhysicalAdapterError("SOURCE_PAGE_HAS_NO_EDITABLE_TEXT")
         slots_by_id = {slot.slot_id: slot for slot in slots}
@@ -1049,8 +1055,16 @@ def compile_physical_adapter(
         source_text_counts = Counter(
             "".join(slot.text.split()) for slot in slots if slot.text.strip()
         )
-        for slot in slots:
+        for slot in all_slots:
             compact_source_text = "".join(slot.text.split())
+            if slot.slot_id in nested_alias_slot_ids:
+                bindings[slot.slot_id] = ""
+                specs[slot.slot_id] = TextBindingSpec("", (), "clear")
+                template_repairs.append({
+                    "shape_id": slot.slot_id,
+                    "kind": "nested-alias-source-copy",
+                })
+                continue
             clear_reason = _unbound_template_clear_reason(
                 slot.text,
                 occurrence_count=source_text_counts[compact_source_text],
