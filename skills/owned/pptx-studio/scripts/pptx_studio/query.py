@@ -80,6 +80,13 @@ _ROLE_SEMANTIC_HINTS: dict[str, frozenset[str]] = {
     "section": frozenset({"section", "chapter", "chapter_title", "chapter-title", "section divider", "section_divider", "section header", "section-header"}),
     "closing": frozenset({"closing", "thank you", "thanks", "presentation end", "presentation_end", "end"}),
     "dashboard": frozenset({"dashboard", "kpi", "metrics", "data visualization", "data_visualization", "performance assessment"}),
+    # Data pages in certified complete works are often labelled chart/table
+    # rather than the generic product role. Preserve their information grammar
+    # so a report can retrieve a governed source instead of approximating a
+    # chart with unrelated card templates.
+    "data": frozenset({"chart", "data-summary", "financial-overview", "infographic", "table", "data visualization", "data_visualization"}),
+    "comparison": frozenset({"comparison", "chart", "table", "budget comparison", "year-over-year comparison", "cost_breakdown", "budget_analysis"}),
+    "roadmap": frozenset({"roadmap", "work plan", "future planning", "strategy"}),
     "process": frozenset({"process", "flow", "workflow", "roadmap", "flowchart"}),
     "timeline": frozenset({"timeline", "milestone", "milestones", "schedule", "annual_work_plan"}),
     "team": frozenset({"team", "team introduction", "team_introduction", "profile cards", "profile_cards"}),

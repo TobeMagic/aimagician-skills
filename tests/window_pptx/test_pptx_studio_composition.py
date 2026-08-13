@@ -13,6 +13,7 @@ SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 
 from pptx_studio.composition import CompositionError, compile_composition, serialize_composition_plan, style_signature  # noqa: E402
+from pptx_studio.query import role_matches_page  # noqa: E402
 from manage_pptx_studio_library import run  # noqa: E402
 
 
@@ -135,6 +136,26 @@ def test_composition_rejects_department_network_as_financial_card_page() -> None
 
     with pytest.raises(CompositionError, match="ROLE_INCOMPATIBLE"):
         compile_composition(catalog, observations=observations, request=request)
+
+
+@pytest.mark.parametrize(
+    "role,suggested,tags",
+    [
+        ("data", ["chart", "data-summary"], ["financial report", "data visualization"]),
+        ("comparison", ["table", "chart"], ["budget comparison", "year-over-year comparison"]),
+        ("roadmap", ["section"], ["future planning", "strategy"]),
+    ],
+)
+def test_composition_accepts_certified_data_comparison_and_roadmap_grammars(role: str, suggested: list[str], tags: list[str]) -> None:
+    catalog, _observations, _signatures = _fixture()
+    page = catalog["pages"][1]  # type: ignore[index]
+    observation = {
+        "suggested_roles": suggested,
+        "semantic_tags": tags,
+        "visual_style": ["editorial", "dark"],
+        "uncertainty": "none",
+    }
+    assert role_matches_page(page, observation, role)
 
 
 def test_family_assembly_rejects_source_outside_anchor_work() -> None:
