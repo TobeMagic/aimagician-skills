@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from math import ceil
+import re
 from typing import Any
 
 
@@ -138,7 +139,23 @@ def _locked_fact_values(fact_store: Mapping[str, Any]) -> dict[str, Mapping[str,
     """Return the active immutable client-copy ledger for a governed run."""
 
     facts = fact_store.get("facts")
-    if fact_store.get("schema_version") != "1.0" or not isinstance(facts, list):
+    project = fact_store.get("project")
+    sources = fact_store.get("sources")
+    if (
+        fact_store.get("schema_version") != "1.0"
+        or not isinstance(project, Mapping)
+        or not isinstance(project.get("title"), str)
+        or not isinstance(project.get("language"), str)
+        or not isinstance(sources, list)
+        or not sources
+        or not isinstance(facts, list)
+    ):
+        raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
+    source_ids = {
+        item.get("id") for item in sources
+        if isinstance(item, Mapping) and isinstance(item.get("id"), str) and item.get("id")
+    }
+    if len(source_ids) != len(sources):
         raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
     values: dict[str, Mapping[str, Any]] = {}
     for item in facts:
@@ -150,7 +167,12 @@ def _locked_fact_values(fact_store: Mapping[str, Any]) -> dict[str, Mapping[str,
             or not identifier
             or not isinstance(text, str)
             or not text
-            or item.get("status") == "superseded"
+            or item.get("status") != "active"
+            or item.get("source_id") not in source_ids
+            or not isinstance(item.get("locator"), str)
+            or not item.get("locator")
+            or not isinstance(item.get("recommended_beat"), str)
+            or re.fullmatch(r"s(?:0[1-9]|1[0-5])", item["recommended_beat"]) is None
             or identifier in values
         ):
             raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")

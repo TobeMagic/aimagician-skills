@@ -127,9 +127,11 @@ def test_outline_binding_places_a_long_summary_label_in_body_only_as_last_resort
 def _fact_store() -> dict[str, object]:
     return {
         "schema_version": "1.0",
+        "project": {"title": "验收报告", "language": "zh-CN"},
+        "sources": [{"id": "facts-md", "kind": "data", "locator": "FACTS.md"}],
         "facts": [
-            {"id": "report-title", "text": "年度财务运营报告", "status": "active"},
-            {"id": "budget-rate", "text": "96.9%", "status": "active"},
+            {"id": "report-title", "text": "年度财务运营报告", "status": "active", "source_id": "facts-md", "locator": "FACTS.md#标题", "recommended_beat": "s01"},
+            {"id": "budget-rate", "text": "96.9%", "status": "active", "source_id": "facts-md", "locator": "FACTS.md#指标", "recommended_beat": "s01"},
         ],
     }
 
