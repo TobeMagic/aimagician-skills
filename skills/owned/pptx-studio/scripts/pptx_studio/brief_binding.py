@@ -70,6 +70,16 @@ def _structural_coverage_requirements(
         contract = slide.get("content_contract")
         if not isinstance(contract, Mapping):
             return {}
+        # A certified native component group is a stronger density signal than
+        # the raw count of text boxes.  A dashboard/page can contain many
+        # auxiliary numbers, units and decorative labels; requiring 65% of
+        # *all* of them coerces the model to invent client facts merely to
+        # clear a density floor.  Group completeness below already guarantees
+        # that every selected visual unit is filled as designed.  Keep the
+        # generic density gate for ungrouped pages, where no such grammar is
+        # available.
+        if isinstance(slide.get("component_groups"), list) and slide["component_groups"]:
+            return {}
         required: dict[str, int] = {}
         for role in ("label", "metric"):
             surface_count = contract.get(role, 0)

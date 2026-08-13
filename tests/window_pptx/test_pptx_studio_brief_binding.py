@@ -148,6 +148,36 @@ def test_outline_binding_rejects_sparse_rich_text_only_template() -> None:
         }]}, preflight=preflight)
 
 
+def test_outline_binding_uses_complete_component_groups_instead_of_raw_density() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "content_contract": {"title": 1, "label": 12, "metric": 10, "body": 0},
+        "component_contract": [
+            {"component_key": "title.01"},
+            {"component_key": "label.01"},
+            {"component_key": "metric.01"},
+        ],
+        "component_groups": [{
+            "component_group": "group.01",
+            "component_keys": ["label.01", "metric.01"],
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-metric", "component_key": "metric.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "重大项目", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "感染楼", "semantic_role": "label", "component_key": "label.01"},
+        {"value": "1500", "semantic_role": "metric", "component_key": "metric.01"},
+    ]}]}, preflight=preflight)
+    assert len(result["bindings"]) == 3
+
+
 def test_outline_binding_requires_a_title_for_a_certified_title_surface() -> None:
     """A page header cannot be silently left blank by role misclassification."""
 
