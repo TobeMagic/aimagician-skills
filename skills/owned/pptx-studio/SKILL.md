@@ -27,6 +27,12 @@ fact, claim, brand rule, asset or decision. A normal business deck has cover →
 directory → section dividers → evidence → recommendation/summary → closing;
 change this only when the locked brief says so.
 
+Classify a compact caption as `label`; classify a sentence-like total,
+conclusion or takeaway as `body`. The binder has one narrow safety fallback:
+a source-grounded label of 12+ characters may use a body slot only when no
+fitting label slot exists. Do not rely on it for card captions, titles or
+metrics, and never add filler facts to satisfy a template.
+
 ## 2. Establish art direction, then retrieve
 
 Classify the deck (institutional editorial, business proposal, technology,

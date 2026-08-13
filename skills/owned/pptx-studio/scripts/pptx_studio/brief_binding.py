@@ -21,6 +21,12 @@ _OUTLINE_FIELDS = frozenset({"schema_version", "slides"})
 _SLIDE_FIELDS = frozenset({"slide_id", "facts"})
 _FACT_FIELDS = frozenset({"value", "semantic_role"})
 _SEMANTIC_ROLES = frozenset({"title", "label", "metric", "body", "any"})
+# A long, source-grounded conclusion is frequently supplied by an agent as a
+# ``label`` because it names a visual value (for example ``总支出…万元``).
+# It is not a card-caption once it exceeds this threshold. Permit it to use a
+# certified body surface only after all fitting label surfaces are exhausted;
+# short labels still cannot steal narrative space.
+_LONG_LABEL_TO_BODY_MIN_CHARS = 12
 
 
 def _structural_coverage_requirements(
@@ -196,10 +202,25 @@ def compile_outline_bindings(outline: Mapping[str, Any], *, preflight: Mapping[s
                 # certified source page.  Falling back across roles looked
                 # superficially helpful but lets a long body replace a
                 # headline, particularly on chart-led editorial pages.
-                fitting = [
+                strict_fitting = [
                     region for region in fitting
                     if requested_role in region["semantic_roles"]
                 ]
+                # A conclusion-length label is semantically safer in a body
+                # line than in a small card caption. This is deliberately a
+                # narrow one-way fallback: never use it for a short label,
+                # title, metric or body fact, and never take a label surface
+                # when one fits.
+                if (
+                    not strict_fitting
+                    and requested_role == "label"
+                    and required >= _LONG_LABEL_TO_BODY_MIN_CHARS
+                ):
+                    strict_fitting = [
+                        region for region in fitting
+                        if "body" in region["semantic_roles"]
+                    ]
+                fitting = strict_fitting
             if not fitting:
                 raise BriefBindingError(
                     "OUTLINE_FACT_NO_FITTING_SLOT"

@@ -110,3 +110,15 @@ def test_outline_binding_reserves_the_largest_slot_for_later_long_copy() -> None
     # the short first label from consuming the only long-capacity surface.
     assert [item["fact_id"] for item in result["facts"]] == ["s01-f01", "s01-f02"]
     assert [item["region_id"] for item in result["bindings"]] == ["r-short", "r-long"]
+
+
+def test_outline_binding_places_a_long_summary_label_in_body_only_as_last_resort() -> None:
+    preflight = {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
+        {"region_id": "r-label", "native_capacity": 6, "shape_slots": [{"semantic_role": "label"}]},
+        {"region_id": "r-body", "native_capacity": 36, "shape_slots": [{"semantic_role": "body"}]},
+    ]}]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "总支出92846.30万元，全年预算总体平稳", "semantic_role": "label"},
+    ]}]}, preflight=preflight)
+
+    assert result["bindings"][0]["region_id"] == "r-body"
