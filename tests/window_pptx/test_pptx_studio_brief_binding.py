@@ -78,6 +78,31 @@ def test_outline_binding_rejects_sparse_rich_text_only_template() -> None:
         }]}, preflight=preflight)
 
 
+def test_outline_binding_does_not_fill_specialist_roadmap_ornaments() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "role": "roadmap",
+        "content_contract": {"title": 1, "label": 12, "metric": 0, "body": 4},
+        "governed_content_contract": {"requires_structured_data": False},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-quarter", "native_capacity": 8,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-plan", "native_capacity": 24,
+             "shape_slots": [{"semantic_role": "body"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "2026 路线图", "semantic_role": "title"},
+            {"value": "一季度", "semantic_role": "label"},
+            {"value": "更新内控流程", "semantic_role": "body"},
+        ],
+    }]}, preflight=preflight)
+    assert len(result["bindings"]) == 3
+
+
 def test_outline_binding_defers_rich_governed_page_to_data_contract() -> None:
     preflight = {"status": "PASS", "slides": [{
         "slide_id": "s01",

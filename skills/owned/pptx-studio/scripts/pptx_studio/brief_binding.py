@@ -51,6 +51,18 @@ def _structural_coverage_requirements(
     for slide in slides:
         if not isinstance(slide, Mapping) or slide.get("slide_id") != slide_id:
             continue
+        # Rich specialist pages deliberately expose more editable labels than
+        # their client narrative should populate: timeline ticks, process
+        # connectors, map callouts and team ornaments are part of the native
+        # visual grammar, not a request to invent filler.  Generic card pages
+        # keep the coverage guard below.  Older/pre-v7 preflight evidence has
+        # no role and therefore retains the conservative historic behaviour.
+        declared_role = slide.get("role")
+        if declared_role in {
+            "timeline", "roadmap", "process", "flow", "team", "map",
+            "business-model", "product", "quote", "partners", "case-study",
+        }:
+            return {}
         governed = slide.get("governed_content_contract")
         if isinstance(governed, Mapping) and governed.get("requires_structured_data") is True:
             return {}

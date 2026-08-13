@@ -521,6 +521,12 @@ def preflight_native_slots(
             region_count += 1
         slides.append({
             "slide_id": slide_id,
+            # The declared role is already validated by composition.  It is
+            # value-free metadata, but lets downstream binding distinguish a
+            # dense generic card page from a specialised roadmap/process
+            # surface whose many native labels include visual waypoints and
+            # ornamental numbering rather than client-copy obligations.
+            "role": selected.get("role"),
             "ordinal": ordinal,
             "catalog_page_id": str(page_id),
             "source": {
