@@ -79,6 +79,14 @@ def _intentional_fragment_overlap_ids(
     shapes were produced by one ``replace_fragment_text`` operation.  This is
     deliberately narrower than a geometry whitelist: ordinary text boxes,
     separate fragment components, and unbound source text still fail closed.
+
+    Some certified closing/cover pages deliberately position a short unit or
+    subtitle inside the visual field of a large, fragmented display title.
+    The physical adapter never moves either source box; it only replaces the
+    unit's native text.  That pair is therefore also a source-certified
+    lockup, provided the peer is an explicit ``text_binding`` in the same
+    slide lineage.  This does *not* exempt two ordinary bound text boxes, nor
+    an unbound source label, from collision detection.
     """
 
     slides = lineage.get("slides")
@@ -88,6 +96,7 @@ def _intentional_fragment_overlap_ids(
         if not isinstance(slide, Mapping) or slide.get("ordinal") != ordinal:
             continue
         allowed: set[frozenset[str]] = set()
+        fragment_ids: set[str] = set()
         for binding in slide.get("fragment_title_bindings", []):
             if not isinstance(binding, Mapping):
                 continue
@@ -95,9 +104,20 @@ def _intentional_fragment_overlap_ids(
             if not isinstance(shape_ids, list):
                 continue
             normalized = [item for item in shape_ids if isinstance(item, str)]
+            fragment_ids.update(normalized)
             for index, first in enumerate(normalized):
                 for second in normalized[index + 1:]:
                     allowed.add(frozenset((first, second)))
+        # A paired unit/subtitle must be explicitly bound by the adapter; a
+        # merely surviving source string is never allowed to hide a collision.
+        for binding in slide.get("text_bindings", []):
+            if not isinstance(binding, Mapping):
+                continue
+            shape_id = binding.get("shape_id")
+            if not isinstance(shape_id, str):
+                continue
+            for fragment_id in fragment_ids:
+                allowed.add(frozenset((fragment_id, shape_id)))
         return allowed
     return set()
 

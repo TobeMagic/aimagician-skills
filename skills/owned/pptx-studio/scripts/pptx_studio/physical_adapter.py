@@ -83,10 +83,6 @@ def _client_binding_role(slot: SlotRecord) -> str:
     compact = "".join(slot.text.split())
     if not compact or _TEMPLATE_BRAND_RE.search(compact) or compact.casefold() == "logo":
         return "ignore"
-    if _NUMERIC_VALUE_RE.fullmatch(compact) or (
-        _NUMERIC_VALUE_RE.search(compact) and any(unit in compact for unit in ("万", "亿", "元", "%", "％", "人", "次", "项", "个"))
-    ):
-        return "metric"
     if slot.bbox.get("y", 1000) < 240 and (
         _CLIENT_TITLE_RE.search(compact)
         or "标题" in compact
@@ -94,6 +90,15 @@ def _client_binding_role(slot: SlotRecord) -> str:
         or slot.semantic_role in {"title", "subtitle"}
     ):
         return "title"
+    # A report headline nearly always includes a year (for example ``2025
+    # 年财务决算：收入情况``).  It must be classified before generic numeric
+    # detection: matching the year alone previously made the most prominent
+    # page title look like a metric and let an agent place its title into a
+    # small data card.
+    if _NUMERIC_VALUE_RE.fullmatch(compact) or (
+        _NUMERIC_VALUE_RE.search(compact) and any(unit in compact for unit in ("万", "亿", "元", "%", "％", "人", "次", "项", "个"))
+    ):
+        return "metric"
     if "标题" in compact or compact.startswith(("添加", "输入", "请替换")):
         return "label"
     if len(compact) <= 18:

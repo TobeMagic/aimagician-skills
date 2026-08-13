@@ -78,6 +78,30 @@ def test_outline_binding_rejects_sparse_rich_text_only_template() -> None:
         }]}, preflight=preflight)
 
 
+def test_outline_binding_requires_a_title_for_a_certified_title_surface() -> None:
+    """A page header cannot be silently left blank by role misclassification."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "content_contract": {"title": 1, "label": 1, "metric": 0, "body": 0},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+        ],
+    }]}
+    with pytest.raises(
+        BriefBindingError,
+        match=r"OUTLINE_STRUCTURAL_COVERAGE_INSUFFICIENT:slide_id=s01:role=title:provided=0:required=1",
+    ):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{
+            "slide_id": "s01", "facts": [
+                {"value": "经营分析", "semantic_role": "label"},
+            ],
+        }]}, preflight=preflight)
+
+
 def test_outline_binding_does_not_fill_specialist_roadmap_ornaments() -> None:
     preflight = {"status": "PASS", "slides": [{
         "slide_id": "s01",

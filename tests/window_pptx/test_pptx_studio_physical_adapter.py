@@ -20,6 +20,7 @@ from pptx_studio.adaptation import compile_adaptation  # noqa: E402
 from pptx_studio.brief_binding import compile_outline_bindings  # noqa: E402
 from pptx_studio.physical_adapter import (  # noqa: E402
     PhysicalAdapterError,
+    _client_binding_role,
     _fragment_title_regions,
     _unbound_template_clear_reason,
     assemble_from_plans,
@@ -35,6 +36,21 @@ from manage_pptx_studio_library import run  # noqa: E402
 
 def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_client_binding_role_keeps_year_bearing_report_heading_as_title() -> None:
+    """A year in a top report heading is not a metric surface."""
+
+    slot = SlotRecord(
+        slot_id="shape_53", shape_id=53, kind="text", max_chars=20,
+        text="2025 年财务决算：财政项目及政府债支出",
+        semantic_role="body", region="top", reading_order=1,
+        bbox={"x": 35, "y": 51, "w": 630, "h": 85},
+        source_char_count=20, source_line_count=3, source_run_count=1,
+        group_id=None, group_order=None, font_size_pt=30.0,
+        allowed_binding_modes=("replace",),
+    )
+    assert _client_binding_role(slot) == "title"
 
 
 def _source_pack(
@@ -396,6 +412,43 @@ def test_qa_allows_only_same_lineage_fragment_lockup_overlap(tmp_path: Path) -> 
     assert not any(item["rule"] == "text-overlap" for item in blockers)
 
     blockers, _warnings = _visual_checks(output, lineage={"slides": []})
+    assert any(item["rule"] == "text-overlap" for item in blockers)
+
+
+def test_qa_allows_source_certified_unit_inside_fragment_title_lockup(tmp_path: Path) -> None:
+    """A bound unit nested in a certified display title is not a collision.
+
+    This is intentionally narrower than an arbitrary text-overlap exemption:
+    the large title must be lineage-published as a fragment group and the
+    other shape must be an adapter text binding from the same source slide.
+    """
+
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    first = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(2), Inches(3))
+    first.text = "谢"
+    second = slide.shapes.add_textbox(Inches(1.8), Inches(1.1), Inches(2), Inches(3))
+    second.text = "谢"
+    unit = slide.shapes.add_textbox(Inches(2), Inches(3.1), Inches(1), Inches(0.6))
+    unit.text = "财务部"
+    output = tmp_path / "closing-lockup.pptx"
+    presentation.save(output)
+    lineage = {"slides": [{
+        "ordinal": 1,
+        "fragment_title_bindings": [{
+            "shape_ids": [f"shape_{first.shape_id}", f"shape_{second.shape_id}"],
+        }],
+        "text_bindings": [{"shape_id": f"shape_{unit.shape_id}"}],
+    }]}
+    blockers, _warnings = _visual_checks(output, lineage=lineage)
+    assert not any(item["rule"] == "text-overlap" for item in blockers)
+
+    # Without a certified fragment-title lineage, the very same geometry must
+    # remain a release blocker.
+    blockers, _warnings = _visual_checks(
+        output,
+        lineage={"slides": [{"ordinal": 1, "text_bindings": [{"shape_id": f"shape_{unit.shape_id}"}]}]},
+    )
     assert any(item["rule"] == "text-overlap" for item in blockers)
 
 

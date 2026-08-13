@@ -281,6 +281,23 @@ def compile_outline_bindings(
             })
 
         coverage = _structural_coverage_requirements(preflight, slide_id=slide_id)
+        # A visible, certified title surface is a mandatory part of the page
+        # grammar.  Without this gate a weak agent can label its headline as
+        # a generic metric/body fact, leaving the true headline blank and
+        # placing the narrative into a data card.  A title *fact* remains
+        # subject to native capacity, so the model must condense it or select
+        # another certified page instead of overflowing the art direction.
+        preflight_slide = next(
+            item for item in preflight["slides"]
+            if isinstance(item, Mapping) and item.get("slide_id") == slide_id
+        )
+        content_contract = preflight_slide.get("content_contract")
+        if (
+            isinstance(content_contract, Mapping)
+            and isinstance(content_contract.get("title"), int)
+            and content_contract["title"] > 0
+        ):
+            coverage["title"] = max(1, coverage.get("title", 0))
         for role, required_count in coverage.items():
             provided_count = sum(
                 1 for item in prepared if item["requested_role"] == role
