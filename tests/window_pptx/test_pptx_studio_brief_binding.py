@@ -8,7 +8,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"))
 
-from pptx_studio.brief_binding import BriefBindingError, compile_outline_bindings  # noqa: E402
+from pptx_studio.brief_binding import BriefBindingError, compile_outline_bindings, validate_fact_store  # noqa: E402
 
 
 def _preflight() -> dict[str, object]:
@@ -171,6 +171,15 @@ def test_locked_fact_outline_resolves_only_ledger_values() -> None:
         {"fact_id": "report-title", "value": "年度财务运营报告"},
         {"fact_id": "budget-rate", "value": "96.9%"},
     ]
+
+
+def test_fact_store_validation_exposes_only_freeze_summary() -> None:
+    assert validate_fact_store(_fact_store()) == {
+        "schema_version": "1.0",
+        "status": "PASS",
+        "fact_count": 2,
+        "approved_beats": ["s01"],
+    }
 
 
 @pytest.mark.parametrize(

@@ -16,7 +16,7 @@ from pptx_studio.rendering import complete_render_index
 from pptx_studio.query import inspect_certified_deck, query_catalog
 from pptx_studio.composition import compile_composition
 from pptx_studio.adaptation import compile_adaptation
-from pptx_studio.brief_binding import compile_outline_bindings
+from pptx_studio.brief_binding import compile_outline_bindings, validate_fact_store
 from pptx_studio.physical_adapter import assemble_from_plans, preflight_native_slots
 from pptx_studio.visual_batches import ingest_batch_report, plan_visual_batches, prompt_for_batch, run_agnes_batch, run_agnes_range
 
@@ -107,7 +107,7 @@ def _query_batch_request(path: Path) -> list[tuple[str, dict[str, Any]]]:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "refresh-render-index", "rebuild-catalog", "query", "query-batch", "inspect-deck", "compose", "preflight", "bind-outline", "adapt", "assemble", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
+    parser.add_argument("command", choices=("plan", "apply", "verify", "recover", "render", "compile", "refresh-render-index", "rebuild-catalog", "query", "query-batch", "inspect-deck", "compose", "preflight", "validate-fact-store", "bind-outline", "adapt", "assemble", "vision-plan", "vision-prompt", "vision-ingest", "vision-run", "vision-run-range"))
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--archive-root", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
@@ -292,6 +292,10 @@ def run(argv: Sequence[str] | None = None) -> dict[str, Any]:
             result["structured_data"] = structured_payload["structured_data"]
         _write_json(args.adaptation_output, result)
         return {"status": "PASS", "adaptation_input": str(args.adaptation_output), "summary": {"fact_count": len(result["facts"]), "binding_count": len(result["bindings"]), "structured_data_count": len(result["structured_data"])}}
+    if args.command == "validate-fact-store":
+        if args.fact_store is None:
+            raise ValueError("FACT_STORE_ARGUMENT_REQUIRED")
+        return validate_fact_store(_read_json(args.fact_store))
     if args.command == "preflight":
         if any(value is None for value in (args.catalog, args.composition_plan, args.private_source_root, args.preflight_output)):
             raise ValueError("PREFLIGHT_ARGUMENT_REQUIRED")

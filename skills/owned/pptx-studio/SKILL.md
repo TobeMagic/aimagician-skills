@@ -283,6 +283,23 @@ unique `id`, exact `text`, `source_id`, locator, status and approved
 `content-outline.v1.json`: it has only `schema_version` and `slides`; each
 slide has `slide_id` and an ordered `facts` list; in a locked run every fact is
 `{"fact_id":"locked-client-fact-id","semantic_role":"title|label|metric|body|any"}`.
+
+The fact store is strict. Do not invent a shortened variant: this is the
+minimum valid shape (extend it with more facts only):
+
+```json
+{"schema_version":"1.0","project":{"title":"客户已确认项目名","language":"zh-CN"},"sources":[{"id":"facts-md","kind":"client-data","locator":"FACTS.md"}],"facts":[{"id":"s01-title","text":"客户已确认标题","status":"active","source_id":"facts-md","locator":"FACTS.md#报告信息","recommended_beat":"s01"}]}
+```
+
+`project`, nonempty `sources`, every source `id`, every fact `status:"active"`,
+and a source ID matching every fact's `source_id` are mandatory. The outline
+must contain only `{fact_id,semantic_role}` references; never add `value`,
+`text`, `source_id`, source paths, or a free-form replacement there.
+
+Immediately run `validate-fact-store --fact-store work/fact-store.v1.json`
+with the standard manager/sentinel arguments. Do not retrieve, compose or
+write an outline until it returns `status:"PASS"`; repair the ledger itself
+on failure. Preserve this result as client-local evidence.
 Pass `--fact-store work/fact-store.v1.json` to `bind-outline`. The binding
 command rejects free-form values, unknown IDs, reused IDs and a fact bound to
 the wrong approved beat. Therefore an

@@ -194,6 +194,25 @@ def _locked_fact_values(fact_store: Mapping[str, Any]) -> dict[str, Mapping[str,
     return values
 
 
+def validate_fact_store(fact_store: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate a locked client ledger before any template retrieval.
+
+    This makes the brief-freeze boundary an explicit CLI gate rather than an
+    error discovered only after a weak model has spent time composing pages.
+    The return deliberately exposes only counts and approved beat IDs; client
+    values and private source content stay in the local fact-store file.
+    """
+
+    facts = _locked_fact_values(fact_store)
+    beats = sorted({str(record["recommended_beat"]) for record in facts.values()})
+    return {
+        "schema_version": "1.0",
+        "status": "PASS",
+        "fact_count": len(facts),
+        "approved_beats": beats,
+    }
+
+
 def compile_outline_bindings(
     outline: Mapping[str, Any], *, preflight: Mapping[str, Any],
     fact_store: Mapping[str, Any] | None = None,
