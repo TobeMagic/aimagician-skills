@@ -485,6 +485,21 @@ def compile_outline_bindings(
         # native surface by role and capacity. Requiring opaque ordinals such
         # as ``metric.07`` made a valid outline turn into slot-guessing.
         component_groups = _published_component_groups(preflight_slide)
+        # A group alias is the author-facing API for a linked visual unit.
+        # Once a complete group is requested, its facts must resolve to the
+        # published member order.  Capacity-first allocation can otherwise
+        # distribute same-role facts across cards and leave every card
+        # formally complete but visually cross-wired.  The outline supplies
+        # facts in this public component order; it never needs to know a
+        # shape identifier or coordinate.
+        raw_component_groups = preflight_slide.get("component_groups")
+        ordered_component_groups = {
+            str(group["component_group"]): list(group["component_keys"])
+            for group in (raw_component_groups if isinstance(raw_component_groups, list) else [])
+            if isinstance(group, Mapping)
+            and isinstance(group.get("component_group"), str)
+            and isinstance(group.get("component_keys"), list)
+        }
         for item in prepared:
             group = item["component_group"]
             if group is not None and group not in component_groups:
@@ -492,6 +507,17 @@ def compile_outline_bindings(
                     f"OUTLINE_COMPONENT_GROUP_UNKNOWN:slide_id={slide_id}:group={group}"
                 )
         _require_complete_component_groups(preflight_slide, prepared)
+        for group_id, keys in ordered_component_groups.items():
+            group_items = [item for item in prepared if item["component_group"] == group_id]
+            if not group_items:
+                continue
+            if len(group_items) != len(keys):
+                raise BriefBindingError(
+                    "OUTLINE_COMPONENT_GROUP_MEMBER_COUNT_INVALID"
+                    f":slide_id={slide_id}:group={group_id}"
+                )
+            for group_item, component_key in zip(group_items, keys):
+                group_item["resolved_group_component_key"] = component_key
         coverage = _structural_coverage_requirements(preflight, slide_id=slide_id)
         # A visible, certified title surface is a mandatory part of the page
         # grammar.  Without this gate a weak agent can label its headline as
@@ -546,9 +572,10 @@ def compile_outline_bindings(
                 # not one fragile internal key.  Select the only fitting
                 # native member for this fact's declared role; all members
                 # are still checked as a complete group after allocation.
+                resolved_component_key = item.get("resolved_group_component_key")
                 fitting = [
                     region for region in fitting
-                    if region.get("component_key") in component_groups[component_group]
+                    if region.get("component_key") == resolved_component_key
                 ]
             if requested_role != "any":
                 # A title/body/metric's semantic role is derived from the

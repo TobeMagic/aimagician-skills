@@ -94,6 +94,43 @@ def test_outline_binding_resolves_opaque_component_group_members() -> None:
     ]
 
 
+def test_outline_binding_preserves_published_order_for_same_role_group_members() -> None:
+    """A card's two labels must not swap solely because both fit either slot."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "component_contract": [
+            {"component_key": "title.01"},
+            {"component_key": "label.01"},
+            {"component_key": "label.02"},
+            {"component_key": "metric.01"},
+        ],
+        "component_groups": [{
+            "component_group": "project-card.01",
+            "component_keys": ["label.01", "label.02", "metric.01"],
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-project", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-caption", "component_key": "label.02", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-metric", "component_key": "metric.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "感染楼", "semantic_role": "label", "component_group": "project-card.01"},
+        {"value": "已完成主体施工", "semantic_role": "label", "component_group": "project-card.01"},
+        {"value": "93%", "semantic_role": "metric", "component_group": "project-card.01"},
+    ]}]}, preflight=preflight)
+    assert [item["component_key"] for item in result["bindings"]] == [
+        "title.01", "label.01", "label.02", "metric.01",
+    ]
+
+
 def test_auto_slot_allocation_does_not_activate_nonrequired_component_group() -> None:
     """A decorative group is only all-or-nothing when the outline chose it."""
 
