@@ -51,6 +51,14 @@ For each slide retrieve a role- and capacity-safe candidate:
 - parallel points use one-to-six/multi-content families;
 - chronology uses timeline; causal sequence uses process; differences use
   comparison/content blocks;
+- a quantitative composition, trend, revenue mix, KPI or financial overview
+  uses `data` or `dashboard`; a before/after, plan/actual, year-on-year or
+  category variance uses `comparison`; a published numeric grid uses `table`;
+  an ordered future plan uses `roadmap` or `timeline`.  These are semantic
+  page roles, never aliases for `multi-item` merely because a source page has
+  several labels.  When the certified source has a governed chart/table data
+  contract, use that native data surface and provide its complete client data;
+  do not flatten it into text cards.
 - people, awards, map, business model, product, quote and partners use their
   specialist categories.
 
@@ -120,7 +128,11 @@ Use `general` only when the locked brief genuinely permits such material. Use
 only returned `candidate_id` values in the composition request. The role
 vocabulary includes `cover`, `contents`, `section`, `closing`, `one-item`,
 `two-item` through `six-item`, `multi-item`, `team`, `timeline`, `process`,
-`business-model`, `product`, `quote`, `partners`, `case-study` and `map`.
+`business-model`, `comparison`, `matrix`, `roadmap`, `dashboard`, `data`,
+`table`, `product`, `quote`, `partners`, `case-study` and `map`.  Select the
+role from the client message's information grammar before selecting a page:
+data, comparison, table and dashboard have dedicated native surfaces and must
+not be relabelled as multi-item.
 Use `page_assembly` for a normal mixed-role business deck. Preserve query
 results in client-local `work/` evidence; never copy a catalog, preview or
 source package there.
