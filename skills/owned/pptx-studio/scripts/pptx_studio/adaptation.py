@@ -25,6 +25,7 @@ _REQUEST_FIELDS = frozenset({"schema_version", "facts", "assets", "bindings", "s
 _FACT_FIELDS = frozenset({"fact_id", "value"})
 _ASSET_FIELDS = frozenset({"asset_id", "sha256"})
 _BINDING_FIELDS = frozenset({"slide_id", "operation", "region_id", "shape_id", "fact_id", "asset_id"})
+_COMPONENT_BINDING_FIELDS = _BINDING_FIELDS | {"component_key"}
 _STRUCTURED_FIELDS = frozenset({"slide_id", "contract_id", "values"})
 _FORBIDDEN = frozenset({"text", "x", "y", "w", "h", "color", "font", "size", "style", "xml", "ooxml", "path", "locator"})
 
@@ -86,6 +87,7 @@ def _physical_region_capacities(preflight: Mapping[str, Any]) -> dict[tuple[str,
             capacities[key] = {
                 "capacity": region["native_capacity"],
                 "fragment_group": region.get("fragment_group") is True,
+                "component_key": region.get("component_key"),
             }
     return capacities
 
@@ -109,7 +111,7 @@ def compile_adaptation(
     operations: list[dict[str, Any]] = []
     targets: set[tuple[str, str]] = set()
     for binding in bindings:
-        if not isinstance(binding, Mapping) or set(binding) != _BINDING_FIELDS or any(key in binding for key in _FORBIDDEN):
+        if not isinstance(binding, Mapping) or set(binding) not in {_BINDING_FIELDS, _COMPONENT_BINDING_FIELDS} or any(key in binding for key in _FORBIDDEN):
             raise AdaptationError("BINDING_SCHEMA_INVALID")
         slide_id, operation = binding.get("slide_id"), binding.get("operation")
         if not isinstance(slide_id, str) or slide_id not in selected or operation not in {"replace_text", "replace_fragment_text", "replace_asset"}:
@@ -129,6 +131,10 @@ def compile_adaptation(
                 physical_capacities.get((slide_id, region_id))
                 if physical_capacities is not None else None
             )
+            component_key = binding.get("component_key")
+            if component_key is not None:
+                if not isinstance(component_key, str) or physical_region is None or physical_region.get("component_key") != component_key:
+                    raise AdaptationError("COMPONENT_BINDING_DRIFT")
             is_fragment = operation == "replace_fragment_text"
             if is_fragment:
                 if physical_region is None or not physical_region["fragment_group"]:

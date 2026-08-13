@@ -15,7 +15,7 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["slide_id", "ordinal", "catalog_page_id", "source", "regions", "content_contract", "governed_content_contract"],
+        "required": ["slide_id", "ordinal", "catalog_page_id", "source", "regions", "component_contract", "content_contract", "governed_content_contract"],
         "properties": {
           "slide_id": {"type": "string", "minLength": 1},
           "ordinal": {"type": "integer", "minimum": 1},
@@ -37,13 +37,14 @@
               "required": ["region_id", "native_capacity", "shape_slots"],
               "properties": {
                 "region_id": {"type": "string", "minLength": 1},
+                "component_key": {"type": "string", "pattern": "^(title|label|metric|body)\\.[0-9]{2}$"},
                 "native_capacity": {"type": "integer", "minimum": 0},
                 "shape_slots": {
                   "type": "array",
                   "minItems": 1,
                   "items": {
                     "type": "object",
-                    "required": ["shape_id", "native_capacity", "semantic_role"],
+                    "required": ["shape_id", "native_capacity", "semantic_role", "binding_role"],
                     "properties": {
                       "shape_id": {"type": "string", "minLength": 1},
                       "native_capacity": {"type": "integer", "minimum": 0},
@@ -52,6 +53,20 @@
                     "additionalProperties": false
                   }
                 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "component_contract": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["component_key", "semantic_role", "native_capacity", "fragment_group"],
+              "properties": {
+                "component_key": {"type": "string", "pattern": "^(title|label|metric|body)\\.[0-9]{2}$"},
+                "semantic_role": {"enum": ["title", "label", "metric", "body"]},
+                "native_capacity": {"type": "integer", "minimum": 1},
+                "fragment_group": {"type": "boolean"}
               },
               "additionalProperties": false
             }

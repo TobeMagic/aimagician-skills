@@ -336,10 +336,11 @@ def test_fragment_title_group_is_bound_as_one_semantic_title(
         "semantic_roles": ["title"],
         "fragment_group": True,
         "fragment_count": 2,
+        "component_key": "title.01",
     }
     request = compile_outline_bindings({"schema_version": "1.0", "slides": [{
         "slide_id": "slide-01",
-        "facts": [{"value": "财务", "semantic_role": "title"}],
+        "facts": [{"value": "财务", "semantic_role": "title", "component_key": "title.01"}],
     }]}, preflight=preflight)
     assert request["bindings"][0]["operation"] == "replace_fragment_text"
     adaptation = compile_adaptation(

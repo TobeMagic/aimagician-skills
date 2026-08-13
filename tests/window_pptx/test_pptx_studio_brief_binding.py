@@ -29,6 +29,38 @@ def test_outline_binding_uses_native_capacity_and_semantic_role() -> None:
     assert [item["fact_id"] for item in result["facts"]] == ["s01-f01", "s01-f02", "s01-f03"]
 
 
+def test_outline_binding_honors_published_component_key() -> None:
+    """The agent may target a semantic component, never an arbitrary slot."""
+
+    preflight = {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
+        {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+         "shape_slots": [{"semantic_role": "title"}]},
+        {"region_id": "r-card-1", "component_key": "label.01", "native_capacity": 8,
+         "shape_slots": [{"semantic_role": "label"}]},
+        {"region_id": "r-card-2", "component_key": "label.02", "native_capacity": 8,
+         "shape_slots": [{"semantic_role": "label"}]},
+    ]}]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "感染楼", "semantic_role": "label", "component_key": "label.02"},
+    ]}]}, preflight=preflight)
+    assert [item["region_id"] for item in result["bindings"]] == ["r-title", "r-card-2"]
+    assert [item["component_key"] for item in result["bindings"]] == ["title.01", "label.02"]
+
+    with pytest.raises(BriefBindingError, match="OUTLINE_COMPONENT_NO_FITTING_SLOT"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+            {"value": "项目进度", "semantic_role": "title", "component_key": "label.01"},
+        ]}]}, preflight=preflight)
+
+    with pytest.raises(BriefBindingError, match="OUTLINE_COMPONENT_KEY_REQUIRED:slide_id=s01"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+            {"value": "项目进度", "semantic_role": "title"},
+        ]}]}, preflight=preflight | {"slides": [{
+            **preflight["slides"][0],
+            "component_contract": [{"component_key": "title.01"}],
+        }]})
+
+
 def test_outline_binding_rejects_overflow_without_guessing() -> None:
     with pytest.raises(
         BriefBindingError,

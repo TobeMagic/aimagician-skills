@@ -281,8 +281,8 @@ authoritative data. It is the client-copy ledger: every active fact has a
 unique `id`, exact `text`, `source_id`, locator, status and approved
 `recommended_beat` (`s01`…`s15`). Then write a small
 `content-outline.v1.json`: it has only `schema_version` and `slides`; each
-slide has `slide_id` and an ordered `facts` list; in a locked run every fact is
-`{"fact_id":"locked-client-fact-id","semantic_role":"title|label|metric|body|any"}`.
+slide has `slide_id` and an ordered `facts` list; in a locked production run
+every fact is `{"fact_id":"locked-client-fact-id","semantic_role":"title|label|metric|body","component_key":"title.01"}`.
 
 The fact store is strict. Do not invent a shortened variant: this is the
 minimum valid shape (extend it with more facts only):
@@ -293,7 +293,7 @@ minimum valid shape (extend it with more facts only):
 
 `project`, nonempty `sources`, every source `id`, every fact `status:"active"`,
 and a source ID matching every fact's `source_id` are mandatory. The outline
-must contain only `{fact_id,semantic_role}` references; never add `value`,
+must contain only `{fact_id,semantic_role,component_key}` references; never add `value`,
 `text`, `source_id`, source paths, or a free-form replacement there.
 
 Immediately run `validate-fact-store --fact-store work/fact-store.v1.json`
@@ -316,6 +316,27 @@ generated adaptation request **and the same `--preflight-output` file**. The
 physical preflight is the only capacity authority for adaptation; catalog
 capacities are retrieval hints and must not override a successfully bound
 native slot.
+
+### Component grammar is mandatory
+
+`component_contract` in the preflight is the agent's page-level layout API. It
+publishes ordered keys such as `title.01`, `label.01`, `label.02`,
+`metric.01` and `body.01`, with only semantic role, native capacity and a
+fragment-lockup flag. It never reveals shape IDs, coordinates, source copy or
+private paths. Use those keys explicitly in every production outline fact.
+
+Treat them as a component sequence, never as one interchangeable text pool:
+write a page heading to `title.01`; keep each project/data card's name and
+value in the corresponding returned label/metric order; preserve dashboard
+card label/value order; and place clinical-network central totals separately
+from the surrounding chip labels. If the brief cannot fill meaningful
+components, choose a simpler certified page. `bind-outline` rejects a
+misspelled, role-incompatible, over-capacity or already-used key instead of
+silently spilling the fact into an unrelated card.
+
+This is the central weak-model guardrail: the agent decides only which
+approved client fact belongs to which semantic component; the runtime owns the
+template geometry and all PowerPoint mechanics.
 
 The preflight also reports a value-free `content_contract` per selected page:
 the number of certified title, label, metric and body slots that can accept

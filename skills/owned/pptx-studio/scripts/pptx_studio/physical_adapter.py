@@ -524,6 +524,36 @@ def preflight_native_slots(
                 "fragment_count": fragment["native_capacity"],
             })
             region_count += 1
+        # Publish a stable, geometry-free component key for every writable
+        # native surface. The client model may select ``label.03`` or
+        # ``metric.05`` but never sees a source shape ID or a coordinate; the
+        # physical adapter remains the sole mapper to the actual template.
+        # Ordering is the source page's natural reading order, which is much
+        # more stable than the former hash-like region-ID tie break.
+        component_contract: list[dict[str, Any]] = []
+        for role in ("title", "label", "metric", "body"):
+            candidates: list[tuple[int, int, str, dict[str, Any]]] = []
+            for region in regions:
+                region_roles = (
+                    [slot["binding_role"] for slot in region.get("shape_slots", [])]
+                    or list(region.get("semantic_roles", []))
+                )
+                if role not in region_roles:
+                    continue
+                raw_region = region_by_id.get(str(region["region_id"]), {})
+                bbox = raw_region.get("bbox") if isinstance(raw_region, Mapping) else None
+                x = int(bbox.get("x", 0)) if isinstance(bbox, Mapping) else 0
+                y = int(bbox.get("y", 0)) if isinstance(bbox, Mapping) else 0
+                candidates.append((y, x, str(region["region_id"]), region))
+            for index, (_y, _x, _region_id, region) in enumerate(sorted(candidates), start=1):
+                key = f"{role}.{index:02d}"
+                region["component_key"] = key
+                component_contract.append({
+                    "component_key": key,
+                    "semantic_role": role,
+                    "native_capacity": region["native_capacity"],
+                    "fragment_group": bool(region.get("fragment_group", False)),
+                })
         slides.append({
             "slide_id": slide_id,
             # The declared role is already validated by composition.  It is
@@ -540,6 +570,7 @@ def preflight_native_slots(
                 "source_slide_sha256": graph.slide_sha,
             },
             "regions": regions,
+            "component_contract": component_contract,
             "content_contract": {
                 role: sum(
                     1

@@ -20,8 +20,8 @@ class BriefBindingError(ValueError):
 
 _OUTLINE_FIELDS = frozenset({"schema_version", "slides"})
 _SLIDE_FIELDS = frozenset({"slide_id", "facts"})
-_FACT_FIELDS = frozenset({"value", "semantic_role"})
-_LOCKED_FACT_FIELDS = frozenset({"fact_id", "semantic_role"})
+_FACT_FIELDS = frozenset({"value", "semantic_role", "component_key"})
+_LOCKED_FACT_FIELDS = frozenset({"fact_id", "semantic_role", "component_key"})
 _SEMANTIC_ROLES = frozenset({"title", "label", "metric", "body", "any"})
 # A long, source-grounded conclusion is frequently supplied by an agent as a
 # ``label`` because it names a visual value (for example ``总支出…万元``).
@@ -122,6 +122,7 @@ def _preflight_regions(preflight: Mapping[str, Any]) -> dict[str, list[dict[str,
                 "capacity": region["native_capacity"],
                 "semantic_roles": slot_roles,
                 "fragment_group": region.get("fragment_group") is True,
+                "component_key": region.get("component_key"),
             })
         result[slide["slide_id"]] = regions
     return result
@@ -247,13 +248,16 @@ def compile_outline_bindings(
         for ordinal, item in enumerate(slide["facts"], start=1):
             if not isinstance(item, Mapping) or not isinstance(item.get("semantic_role"), str):
                 raise BriefBindingError("OUTLINE_FACT_INVALID")
+            component_key = item.get("component_key")
+            if component_key is not None and not isinstance(component_key, str):
+                raise BriefBindingError("OUTLINE_COMPONENT_INVALID")
             if locked_facts is None:
-                if set(item) != _FACT_FIELDS or not isinstance(item.get("value"), str):
+                if set(item) not in ({"value", "semantic_role"}, _FACT_FIELDS) or not isinstance(item.get("value"), str):
                     raise BriefBindingError("OUTLINE_FACT_INVALID")
                 value = item["value"]
                 output_fact_id = f"{slide_id}-f{ordinal:02d}"
             else:
-                if set(item) != _LOCKED_FACT_FIELDS or not isinstance(item.get("fact_id"), str):
+                if set(item) not in ({"fact_id", "semantic_role"}, _LOCKED_FACT_FIELDS) or not isinstance(item.get("fact_id"), str):
                     raise BriefBindingError("LOCKED_FACT_REFERENCE_REQUIRED")
                 output_fact_id = item["fact_id"]
                 locked_fact = locked_facts.get(output_fact_id)
@@ -278,8 +282,19 @@ def compile_outline_bindings(
                 "requested_role": requested_role,
                 "source_fact_id": output_fact_id,
                 "required": _compact_len(value),
+                "component_key": component_key,
             })
 
+        preflight_slide = next(
+            item for item in preflight["slides"]
+            if isinstance(item, Mapping) and item.get("slide_id") == slide_id
+        )
+        published_components = preflight_slide.get("component_contract")
+        if isinstance(published_components, list) and published_components:
+            if any(item["component_key"] is None for item in prepared):
+                raise BriefBindingError(
+                    f"OUTLINE_COMPONENT_KEY_REQUIRED:slide_id={slide_id}"
+                )
         coverage = _structural_coverage_requirements(preflight, slide_id=slide_id)
         # A visible, certified title surface is a mandatory part of the page
         # grammar.  Without this gate a weak agent can label its headline as
@@ -287,10 +302,6 @@ def compile_outline_bindings(
         # placing the narrative into a data card.  A title *fact* remains
         # subject to native capacity, so the model must condense it or select
         # another certified page instead of overflowing the art direction.
-        preflight_slide = next(
-            item for item in preflight["slides"]
-            if isinstance(item, Mapping) and item.get("slide_id") == slide_id
-        )
         content_contract = preflight_slide.get("content_contract")
         if (
             isinstance(content_contract, Mapping)
@@ -322,6 +333,16 @@ def compile_outline_bindings(
             requested_role = str(item["requested_role"])
             required = int(item["required"])
             fitting = [region for region in available if region["capacity"] >= required]
+            component_key = item.get("component_key")
+            if component_key is not None:
+                # Component keys are published by the local preflight only.
+                # They identify a role-ordered native surface, never a shape
+                # or a coordinate.  A typo must fail rather than silently
+                # spilling the fact into an arbitrary card.
+                fitting = [
+                    region for region in fitting
+                    if region.get("component_key") == component_key
+                ]
             if requested_role != "any":
                 # A title/body/metric's semantic role is derived from the
                 # certified source page.  Falling back across roles looked
@@ -348,7 +369,8 @@ def compile_outline_bindings(
                 fitting = strict_fitting
             if not fitting:
                 raise BriefBindingError(
-                    "OUTLINE_FACT_NO_FITTING_SLOT"
+                    ("OUTLINE_COMPONENT_NO_FITTING_SLOT" if component_key is not None else "OUTLINE_FACT_NO_FITTING_SLOT")
+                    +
                     f":slide_id={slide_id}:ordinal={ordinal}:requested_chars={required}"
                     f":remaining_slots={_remaining_capacity_summary(available)}"
                 )
@@ -362,6 +384,7 @@ def compile_outline_bindings(
                     "replace_fragment_text" if chosen["fragment_group"]
                     else "replace_text"
                 ),
+                "component_key": component_key,
             }
 
         for item in prepared:
@@ -369,14 +392,17 @@ def compile_outline_bindings(
             binding = allocated[ordinal]
             fact_id = str(binding["source_fact_id"])
             facts.append({"fact_id": fact_id, "value": binding["value"]})
-            bindings.append({
+            output_binding = {
                 "slide_id": slide_id,
                 "operation": binding["operation"],
                 "region_id": binding["region_id"],
                 "shape_id": None,
                 "fact_id": fact_id,
                 "asset_id": None,
-            })
+            }
+            if binding["component_key"] is not None:
+                output_binding["component_key"] = binding["component_key"]
+            bindings.append(output_binding)
     # Structured data is deliberately a distinct semantic payload.  Normal
     # text-only decks still carry the empty field so every downstream stage
     # sees one strict adaptation-request schema.
