@@ -528,11 +528,12 @@ def preflight_native_slots(
         # native surface. The client model may select ``label.03`` or
         # ``metric.05`` but never sees a source shape ID or a coordinate; the
         # physical adapter remains the sole mapper to the actual template.
-        # Ordering is the source page's natural reading order, which is much
-        # more stable than the former hash-like region-ID tie break.
+        # Ordering is the source page's native drawing/reading order. Grouped
+        # OOXML children can share local coordinates, so bbox sorting would
+        # otherwise scramble a dashboard's visible card sequence.
         component_contract: list[dict[str, Any]] = []
         for role in ("title", "label", "metric", "body"):
-            candidates: list[tuple[int, int, str, dict[str, Any]]] = []
+            candidates: list[tuple[int, str, dict[str, Any]]] = []
             for region in regions:
                 region_roles = (
                     [slot["binding_role"] for slot in region.get("shape_slots", [])]
@@ -540,12 +541,21 @@ def preflight_native_slots(
                 )
                 if role not in region_roles:
                     continue
-                raw_region = region_by_id.get(str(region["region_id"]), {})
-                bbox = raw_region.get("bbox") if isinstance(raw_region, Mapping) else None
-                x = int(bbox.get("x", 0)) if isinstance(bbox, Mapping) else 0
-                y = int(bbox.get("y", 0)) if isinstance(bbox, Mapping) else 0
-                candidates.append((y, x, str(region["region_id"]), region))
-            for index, (_y, _x, _region_id, region) in enumerate(sorted(candidates), start=1):
+                raw_shape_slots = region.get("shape_slots", [])
+                if raw_shape_slots:
+                    raw_shape_id = raw_shape_slots[0].get("shape_id")
+                    slot = slots_by_id.get(str(raw_shape_id))
+                    order = slot.reading_order if slot is not None else 10**9
+                else:
+                    # Fragment groups retain their first source-character's
+                    # native reading order.
+                    fragment = next(
+                        (item for item in fragment_regions if item["region_id"] == region["region_id"]),
+                        None,
+                    )
+                    order = fragment["slots"][0].reading_order if fragment is not None else 10**9
+                candidates.append((int(order), str(region["region_id"]), region))
+            for index, (_order, _region_id, region) in enumerate(sorted(candidates), start=1):
                 key = f"{role}.{index:02d}"
                 region["component_key"] = key
                 component_contract.append({
