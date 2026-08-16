@@ -11,9 +11,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 
-from pptx_studio.query import QueryError, _suitability_safe, inspect_certified_deck, query_catalog, serialize_query_result  # noqa: E402
+from pptx_studio.query import QueryError, _suitability_safe, inspect_certified_deck, query_catalog, role_matches_page, serialize_query_result  # noqa: E402
 from pptx_studio.composition import style_signature  # noqa: E402
 from manage_pptx_studio_library import run  # noqa: E402
+from pptx_studio.query import style_profile_from_observation  # noqa: E402
 
 
 def _catalog() -> tuple[dict[str, object], dict[str, object]]:
@@ -102,6 +103,36 @@ def test_institutional_finance_subject_filter_does_not_reject_data_cards_as_cars
         {"semantic_tags": ["financial report", "data card"], "visual_style": ["corporate"]},
         profile="institutional-finance",
     )
+
+
+def test_academic_defense_profile_keeps_research_evidence_and_rejects_commercial_subjects() -> None:
+    assert _suitability_safe(
+        {"semantic_tags": ["research", "methods", "experiment"], "visual_style": ["academic", "clean"]},
+        profile="academic-defense",
+    )
+    assert not _suitability_safe(
+        {"semantic_tags": ["marketing", "product showcase"], "visual_style": ["corporate"]},
+        profile="academic-defense",
+    )
+    catalog, observations = _catalog()
+    observations["page_aaaaaaaaaaaaaaaaaaaaaaaa_001"]["observation"].update({
+        "semantic_tags": ["research", "methodology"], "visual_style": ["academic", "clean"],
+    })
+    assert query_catalog(
+        catalog, observations=observations,
+        request={"mode": "page", "role": "cover", "suitability": "academic-defense"},
+    )["status"] == "PASS"
+
+
+def test_blue_skyline_quote_style_is_classified_as_cool_without_relaxing_warm_exclusions() -> None:
+    """Certified blue-city quote pages must stay compatible with a cool deck."""
+
+    assert style_profile_from_observation({
+        "visual_style": ["corporate", "gradient", "inspirational", "minimalist", "modern", "skyline"],
+    })["color_family"] == "cool"
+    assert style_profile_from_observation({
+        "visual_style": ["corporate", "orange", "skyline"],
+    })["color_family"] == "warm"
     assert not _suitability_safe(
         {"semantic_tags": ["automotive", "car"], "visual_style": ["corporate"]},
         profile="institutional-finance",
@@ -132,6 +163,21 @@ def test_query_excludes_missing_or_mismatched_observation() -> None:
     assert result["candidates"] == []
 
 
+def test_query_excludes_component_only_pages_from_general_page_and_region_retrieval() -> None:
+    catalog, observations = _catalog()
+    catalog["pages"][0]["component_only"] = True  # type: ignore[index]
+
+    page_result = query_catalog(
+        catalog, observations=observations, request={"mode": "page", "role": "cover"},
+    )
+    region_result = query_catalog(
+        catalog, observations=observations, request={"mode": "region", "role": "cover"},
+    )
+
+    assert page_result["status"] == "NO_MATCH"
+    assert region_result["status"] == "NO_MATCH"
+
+
 @pytest.mark.parametrize(
     ("semantic_tags", "visual_style"),
     [
@@ -139,6 +185,7 @@ def test_query_excludes_missing_or_mismatched_observation() -> None:
         (["landscape", "sailboat", "template"], ["nature-themed", "corporate"]),
         (["automotive", "annual-report"], ["corporate", "dark"]),
         (["traditional Chinese medicine", "pathology", "financial-report"], ["corporate", "green"]),
+        (["speaker portrait", "keynote speaker"], ["corporate", "editorial"]),
     ],
 )
 def test_institutional_finance_query_excludes_incompatible_visual_subjects(
@@ -182,6 +229,33 @@ def test_query_recognizes_certified_chapter_tag_as_section_role() -> None:
         request={"mode": "page", "role": "section"},
     )
     assert result["status"] == "PASS"
+
+
+def test_certified_quote_can_be_a_closing_only_with_an_explicit_quote_observation() -> None:
+    catalog, observations = _catalog()
+    page = catalog["pages"][0]  # type: ignore[index]
+    page["category"] = "053-金句模板"
+    catalog["active_categories"] = ["053-金句模板"]
+    observation = observations[page["page_id"]]["observation"]  # type: ignore[index]
+    observation["suggested_roles"] = ["quote"]
+
+    assert role_matches_page(page, observation, "closing")
+
+    observation["suggested_roles"] = ["one-item"]
+    assert not role_matches_page(page, observation, "closing")
+
+
+def test_certified_editorial_detail_page_can_be_selected_as_a_risk_register() -> None:
+    """Risk keeps its own semantic role while using a compatible detail form."""
+
+    catalog, observations = _catalog()
+    page = catalog["pages"][0]  # type: ignore[index]
+    page["category"] = "057-优秀作品"
+    catalog["active_categories"] = ["057-优秀作品"]
+    observation = observations[page["page_id"]]["observation"]  # type: ignore[index]
+    observation["suggested_roles"] = ["case-study"]
+
+    assert role_matches_page(page, observation, "risk")
 
 
 def test_query_can_revalidate_a_bounded_preselected_candidate() -> None:
@@ -323,6 +397,28 @@ def test_query_excludes_catalog_page_blocked_by_physical_materialization() -> No
     assert result["status"] == "NO_MATCH"
 
 
+def test_query_excludes_visual_certification_denial_even_if_status_is_stale() -> None:
+    catalog, observations = _catalog()
+    catalog["pages"][0]["materialization"] = {  # type: ignore[index]
+        "status": "eligible",
+        "governed_content_slot_count": 0,
+        "blocker_codes": [],
+    }
+    catalog["pages"][0]["certification"] = {  # type: ignore[index]
+        "visual_disposition": "deny",
+        "reason_code": "I-LOW",
+        "visual_sha256": "b" * 64,
+    }
+
+    result = query_catalog(
+        catalog,
+        observations=observations,
+        request={"mode": "page", "role": "cover"},
+    )
+
+    assert result["status"] == "NO_MATCH"
+
+
 def test_cover_query_rejects_weak_complete_theme_family() -> None:
     catalog, observations = _catalog()
     catalog["pages"][0]["render"]["visual_quality"] = 0.91  # type: ignore[index]
@@ -355,6 +451,7 @@ def test_cover_query_rejects_weak_complete_theme_family() -> None:
     assert result["status"] == "PASS"
     assert all(item["deck_id"] != weak_deck for item in result["candidates"])
     assert result["candidates"][0]["theme_family_visual_quality"]["mean"] == 0.91
+    assert result["candidates"][0]["page_visual_quality"] == 0.91
 
 
 def test_cover_query_prefers_certified_complete_family_over_orphan() -> None:

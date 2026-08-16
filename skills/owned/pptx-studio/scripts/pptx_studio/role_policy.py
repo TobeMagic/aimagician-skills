@@ -47,6 +47,9 @@ MIN_DISTINCT_CLIENT_FACTS_BY_ROLE: dict[str, int] = {
     "quote": 2,
     "partners": 4,
     "case-study": 4,
+    # A risk register stays semantically distinct from a customer case study
+    # even when both use the same certified editorial-detail visual grammar.
+    "risk": 4,
     "map": 4,
 }
 

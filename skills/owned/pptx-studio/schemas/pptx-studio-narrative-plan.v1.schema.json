@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/pptx-studio-narrative-plan.v1.schema.json",
+  "title": "PPTX Studio Narrative Plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "brief_id", "style_intent", "beats", "fact_coverage"],
+  "properties": {
+    "schema_version": {"const": "pptx-studio-narrative-plan.v1"},
+    "brief_id": {"type": "string", "minLength": 1},
+    "style_intent": {"type": "object", "additionalProperties": false, "required": ["industry", "audience_tone", "visual_tone", "brand_constraints"], "properties": {"industry": {"type": "string", "minLength": 1}, "audience_tone": {"type": "string", "minLength": 1}, "visual_tone": {"type": "string", "minLength": 1}, "brand_constraints": {"type": "string", "minLength": 1}}},
+    "beats": {"type": "array", "minItems": 2, "items": {"type": "object", "additionalProperties": false, "required": ["beat_id", "kind", "section_id", "page_intent", "key_message", "fact_ids", "grammar", "density", "estimated_units", "capacity_units", "disposition"], "properties": {"beat_id": {"type": "string", "minLength": 1}, "kind": {"enum": ["cover", "contents", "section", "body", "closing"]}, "section_id": {"type": ["string", "null"]}, "page_intent": {"type": "string", "minLength": 1}, "key_message": {"type": "string", "minLength": 1}, "fact_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}, "grammar": {"enum": ["cover", "agenda", "section", "statement", "kpi", "comparison", "trend", "composition", "table", "timeline", "process", "matrix", "roadmap", "business_model", "product", "team", "risk", "quote", "closing"]}, "density": {"enum": ["low", "balanced", "high"]}, "estimated_units": {"type": "integer", "minimum": 0}, "capacity_units": {"type": "integer", "minimum": 1}, "disposition": {"enum": ["keep", "split", "merge", "delete"]}}}},
+    "fact_coverage": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["fact_id", "disposition", "reason"], "properties": {"fact_id": {"type": "string", "minLength": 1}, "disposition": {"enum": ["used", "deferred", "rejected"]}, "reason": {"type": "string", "minLength": 1}}}}
+  }
+}

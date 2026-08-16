@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/pptx-studio-composition-request.v2.schema.json",
+  "title": "PPTX Studio Composition Request v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "strategy", "art_direction", "narrative_validation", "slides"],
+  "properties": {
+    "schema_version": {"const": "2.0"},
+    "strategy": {"enum": ["exact_deck", "family_assembly", "page_assembly", "component_assembly"]},
+    "art_direction": {"type": "object", "additionalProperties": false, "required": ["anchor_page_id", "allowed_style_signatures", "suitability"], "properties": {"anchor_page_id": {"type": "string", "pattern": "^page_[0-9a-f]{24}_[0-9]{3}$"}, "allowed_style_signatures": {"type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true, "items": {"type": "string", "pattern": "^style_[0-9a-f]{24}$"}}, "suitability": {"enum": ["general", "institutional-finance"]}}},
+    "narrative_validation": {"type": "object", "additionalProperties": false, "required": ["schema_version", "status", "brief_id", "brief_sha256", "narrative_sha256", "slide_count", "delivery_beat_ids", "section_evidence"], "properties": {"schema_version": {"const": "pptx-studio-narrative-validation.v1"}, "status": {"const": "PASS"}, "brief_id": {"type": "string", "minLength": 1}, "brief_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "narrative_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "slide_count": {"type": "integer", "minimum": 2}, "delivery_beat_ids": {"type": "array", "minItems": 2, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}, "section_evidence": {"type": "array"}}},
+    "slides": {"type": "array", "minItems": 2, "items": {"type": "object", "additionalProperties": false, "required": ["slide_id", "beat_id", "role", "candidate_ids", "selected_candidate_id", "minimum_capacity"], "properties": {"slide_id": {"type": "string", "minLength": 1}, "beat_id": {"type": "string", "minLength": 1}, "role": {"type": "string", "minLength": 1}, "candidate_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}, "selected_candidate_id": {"type": "string", "minLength": 1}, "minimum_capacity": {"type": "integer", "minimum": 0}}}}
+  }
+}

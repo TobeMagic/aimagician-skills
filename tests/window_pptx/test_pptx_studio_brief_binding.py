@@ -359,6 +359,83 @@ def test_outline_binding_requires_coverage_of_dense_card_groups() -> None:
         compile_outline_bindings(sparse, preflight=preflight)
 
 
+def test_outline_binding_rejects_sparse_facts_for_dense_visual_skeleton() -> None:
+    """Cleared sample copy must not leave most visible template units empty."""
+
+    component_contract = [
+        {"component_key": "title.01"},
+        *[{"component_key": f"body.{index:02d}"} for index in range(1, 6)],
+    ]
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "section",
+        "content_contract": {"title": 1, "label": 0, "metric": 0, "body": 5},
+        "component_contract": component_contract,
+        "regions": [
+            {
+                "region_id": "r-title", "component_key": "title.01",
+                "native_capacity": 12,
+                "shape_slots": [{"semantic_role": "title"}],
+            },
+            *[
+                {
+                    "region_id": f"r-body-{index}",
+                    "component_key": f"body.{index:02d}",
+                    "native_capacity": 24,
+                    "shape_slots": [{"semantic_role": "body"}],
+                }
+                for index in range(1, 6)
+            ],
+        ],
+    }]}
+    sparse = {"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "重点工作", "semantic_role": "title"},
+        {"value": "两项事实不足以支撑六个视觉表面", "semantic_role": "body"},
+    ]}]}
+
+    with pytest.raises(
+        BriefBindingError,
+        match=r"OUTLINE_VISUAL_SURFACE_COVERAGE_INSUFFICIENT:slide_id=s01:provided=2:required=3:published=6",
+    ):
+        compile_outline_bindings(sparse, preflight=preflight)
+
+
+def test_outline_binding_allows_a_deliberately_sparse_title_only_cover() -> None:
+    """Metadata decorations must not coerce filler into a certified cover."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "cover",
+        "component_contract": [
+            {"component_key": "title.01"}, {"component_key": "label.01"},
+            {"component_key": "label.02"}, {"component_key": "body.01"},
+            {"component_key": "label.03"},
+        ],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label-1", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-label-2", "component_key": "label.02", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-body", "component_key": "body.01", "native_capacity": 32,
+             "shape_slots": [{"semantic_role": "body"}]},
+            {"region_id": "r-label-3", "component_key": "label.03", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+        ],
+    }]}
+
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "数智化升级", "semantic_role": "title"},
+        ],
+    }]}, preflight=preflight)
+
+    assert result["bindings"] == [{
+        "slide_id": "s01", "operation": "replace_text", "region_id": "r-title",
+        "shape_id": None, "fact_id": "s01-f01", "asset_id": None,
+        "component_key": "title.01",
+    }]
+
+
 def test_outline_binding_uses_complete_component_groups_instead_of_raw_density() -> None:
     preflight = {"status": "PASS", "slides": [{
         "slide_id": "s01",
@@ -455,6 +532,92 @@ def test_outline_binding_does_not_fill_specialist_roadmap_ornaments() -> None:
     assert len(result["bindings"]) == 3
 
 
+def test_outline_binding_allows_timeline_actions_in_certified_label_surfaces() -> None:
+    """Timeline date/action pairs remain semantically typed without fake body slots."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "timeline",
+        "content_contract": {"title": 1, "label": 4, "metric": 0, "body": 0},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-date", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-action", "native_capacity": 24,
+             "shape_slots": [{"semantic_role": "label"}]},
+        ],
+    }]}
+
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "实施里程碑", "semantic_role": "title"},
+            {"value": "2026 年 1 月", "semantic_role": "label"},
+            {"value": "完成项目立项", "semantic_role": "body"},
+        ],
+    }]}, preflight=preflight)
+
+    assert [item["region_id"] for item in result["bindings"]] == [
+        "r-title", "r-date", "r-action",
+    ]
+
+
+def test_outline_binding_automatically_preserves_timeline_date_action_pairs() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "timeline",
+        "component_contract": [
+            {"component_key": "title.01"}, {"component_key": "label.01"},
+            {"component_key": "label.02"}, {"component_key": "label.03"},
+            {"component_key": "label.04"},
+        ],
+        "component_groups": [
+            {"component_group": "timeline-step.01", "component_keys": ["label.01", "label.02"],
+             "component_intent": "timeline-milestone", "component_fields": ["date", "action"], "required": True},
+            {"component_group": "timeline-step.02", "component_keys": ["label.03", "label.04"],
+             "component_intent": "timeline-milestone", "component_fields": ["date", "action"], "required": True},
+        ],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-date-1", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-action-1", "component_key": "label.02", "native_capacity": 24,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-date-2", "component_key": "label.03", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-action-2", "component_key": "label.04", "native_capacity": 24,
+             "shape_slots": [{"semantic_role": "label"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "实施里程碑", "semantic_role": "title"},
+            {"value": "2026 年 1 月", "semantic_role": "label"},
+            {"value": "完成项目立项", "semantic_role": "body"},
+            {"value": "2026 年 4 月", "semantic_role": "label"},
+            {"value": "启动第一阶段建设", "semantic_role": "body"},
+        ],
+    }]}, preflight=preflight)
+
+    assert [item["component_key"] for item in result["bindings"]] == [
+        "title.01", "label.01", "label.02", "label.03", "label.04",
+    ]
+
+
+def test_outline_binding_never_applies_timeline_label_fallback_to_an_ordinary_page() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "three-item",
+        "regions": [{"region_id": "r-label", "native_capacity": 24,
+                     "shape_slots": [{"semantic_role": "label"}]}],
+    }]}
+
+    with pytest.raises(BriefBindingError, match=r"OUTLINE_FACT_NO_FITTING_SLOT:slide_id=s01:ordinal=1"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{
+            "slide_id": "s01", "facts": [
+                {"value": "普通页面正文不能占用标签表面", "semantic_role": "body"},
+            ],
+        }]}, preflight=preflight)
+
+
 def test_outline_binding_does_not_invent_clinical_network_chips() -> None:
     preflight = {"status": "PASS", "slides": [{
         "slide_id": "s01", "role": "clinical-network",
@@ -546,6 +709,15 @@ def test_locked_fact_outline_resolves_only_ledger_values() -> None:
     ]
 
 
+def test_locked_fact_outline_rejects_an_unbound_active_customer_fact() -> None:
+    outline = {"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"fact_id": "report-title", "semantic_role": "title"},
+    ]}]}
+
+    with pytest.raises(BriefBindingError, match="LOCKED_FACT_UNBOUND:fact_ids=budget-rate"):
+        compile_outline_bindings(outline, preflight=_preflight(), fact_store=_fact_store())
+
+
 def test_fact_store_validation_exposes_only_freeze_summary() -> None:
     assert validate_fact_store(_fact_store()) == {
         "schema_version": "1.0",
@@ -555,6 +727,15 @@ def test_fact_store_validation_exposes_only_freeze_summary() -> None:
     }
 
 
+def test_fact_store_accepts_narrative_derived_delivery_beats_beyond_fifteen() -> None:
+    """The frozen ledger must match the 24-beat narrative planner boundary."""
+
+    fact_store = _fact_store()
+    fact_store["facts"][1]["recommended_beat"] = "s17"  # type: ignore[index]
+
+    assert validate_fact_store(fact_store)["status"] == "PASS"
+
+
 def test_fact_store_accepts_optional_classification_without_changing_copy() -> None:
     fact_store = _fact_store()
     fact_store["facts"][0]["kind"] = "label"  # type: ignore[index]
@@ -562,6 +743,18 @@ def test_fact_store_accepts_optional_classification_without_changing_copy() -> N
 
     fact_store["facts"][0]["kind"] = 7  # type: ignore[index]
     with pytest.raises(BriefBindingError, match="FACT_STORE_SCHEMA_INVALID"):
+        validate_fact_store(fact_store)
+
+
+def test_fact_store_rejects_single_cjk_glyph_used_as_a_fake_component_fact() -> None:
+    """Source location alone must not license splitting ``建设`` into 建 / 设."""
+
+    fact_store = _fact_store()
+    fact_store["facts"][0]["text"] = "建"  # type: ignore[index]
+    with pytest.raises(
+        BriefBindingError,
+        match="FACT_STORE_SEMANTIC_FRAGMENT_INVALID:fact_id=report-title",
+    ):
         validate_fact_store(fact_store)
 
 

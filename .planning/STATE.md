@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v7
 milestone_name: PPTX Studio Curated Composition
-current_phase: 53
-current_phase_name: Clean-Room Work-Report Acceptance and Release
+current_phase: 54
+current_phase_name: Cross-Library Component Assembly and PowerPoint Compatibility
 status: in_progress
-stopped_at: v7 Phase 53 clean-room Codex work-report acceptance and independent visual-release audit
-last_updated: "2026-08-12T17:50:00+08:00"
-last_activity: 2026-08-12
+stopped_at: Phase 54 fixed canvas insertion and component-source style gating are implemented; 169 focused regressions pass. Curate cool-professional title/statement and KPI sources, then resume professional-report author run and academic-defense acceptance
+last_updated: "2026-08-17T00:00:00+08:00"
+last_activity: 2026-08-17
 progress:
   total_phases: 54
   completed_phases: 48
@@ -68,12 +68,13 @@ fully independent AI blind-review contexts for v6 acceptance.
 ## Current Position
 
 Milestone: v7 PPTX Studio Curated Composition
-Current Phase: 53
-Current Phase Name: Clean-Room Work-Report Acceptance and Release
-Status: In Progress — Phase 52 is committed as `a36f4b8` and `4c57d0b`; it
-binds composition/adaptation plans to physical PPTX assembly, adds evidence QA,
-and migrates the public owned skill identity to `pptx-studio`.
-Last Activity: 2026-08-12
+Current Phase: 54
+Current Phase Name: Cross-Library Component Assembly and PowerPoint Compatibility
+Status: In Progress — the former Phase 53 fixed 15-page replay is retained as
+a same-source PowerPoint regression baseline only. The production workflow now
+derives page count from a narrative rationale ledger and must assemble an
+editable coherent deck from multiple certified source packages/components.
+Last Activity: 2026-08-14
 
 ### Preserved Control-Plane History
 

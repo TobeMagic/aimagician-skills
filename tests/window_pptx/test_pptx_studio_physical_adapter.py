@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+import xml.etree.ElementTree as ET
 from dataclasses import replace
 from pathlib import Path
 
@@ -17,9 +18,14 @@ SCRIPT_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 
 from pptx_studio.adaptation import compile_adaptation  # noqa: E402
+from pptx_studio.component_profiles import (  # noqa: E402
+    catalog_sha256, component_profile_sha256, load_component_profiles,
+)
 from pptx_studio.brief_binding import compile_outline_bindings  # noqa: E402
+from pptx_studio.composition import compile_composition, style_signature  # noqa: E402
 from pptx_studio.physical_adapter import (  # noqa: E402
     PhysicalAdapterError,
+    _automatic_sequence_component_groups,
     _client_binding_role,
     _certified_fragment_font_scales,
     _curated_component_groups,
@@ -30,6 +36,7 @@ from pptx_studio.physical_adapter import (  # noqa: E402
     compile_physical_adapter,
     preflight_native_slots,
     resolve_catalog_sources,
+    resolve_component_import_specs,
 )
 from pptx_studio.qa import _visual_checks, run_studio_qa  # noqa: E402
 from window_pptx.page_template_library import PageTemplate, SlotRecord  # noqa: E402
@@ -41,6 +48,10 @@ from window_pptx.physical_assembly import (  # noqa: E402
     _adapt_slide_text,
     _build_text_binding_evidence,
     _validate_assembly_plan,
+    AssemblyImportContext,
+    _component_nodes_sha256,
+    _component_relationship_ids,
+    _component_root_nodes,
 )
 import pptx_studio.physical_adapter as physical_adapter  # noqa: E402
 from manage_pptx_studio_library import run  # noqa: E402
@@ -84,6 +95,133 @@ def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def test_component_profile_resolver_recomputes_every_native_fingerprint(tmp_path: Path) -> None:
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    component_shape = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(2), Inches(1))
+    component_shape.text = "Component"
+    anchor_shape = slide.shapes.add_textbox(Inches(5), Inches(1), Inches(2), Inches(1))
+    anchor_shape.text = "Reservation"
+    package = tmp_path / "fixture.pptx"
+    presentation.save(package)
+    package_sha = _sha(package)
+    context = AssemblyImportContext()
+    _source, graph = context.graph_for(package, package_sha, 1)
+    root = ET.fromstring(graph.slide_xml)
+    component_nodes = _component_root_nodes(root, shape_ids=(component_shape.shape_id,), label="COMPONENT_SOURCE")
+    anchor_nodes = _component_root_nodes(root, shape_ids=(anchor_shape.shape_id,), label="COMPONENT_HOST_ANCHOR")
+    component_capacity = next(
+        slot.max_chars for slot in physical_adapter._discover_slots(
+            graph.slide_xml.decode("utf-8", errors="replace"),
+        ) if slot.slot_id == f"shape_{component_shape.shape_id}"
+    )
+    page_id = "page_aaaaaaaaaaaaaaaaaaaaaaaa_001"
+    catalog: dict[str, object] = {
+        "pages": [{"page_id": page_id, "package_sha256": package_sha, "slide_number": 1}],
+    }
+    profile: dict[str, object] = {
+        "schema_version": "pptx-studio-component-profile.v1", "status": "COMPLETE",
+        "profile_id": "fixture", "profile_sha256": "", "catalog_sha256": catalog_sha256(catalog),
+        "components": [{
+            "component_id": "component_111111111111111111111111",
+            "source": {"page_id": page_id, "package_sha256": package_sha, "slide_number": 1, "slide_sha256": graph.slide_sha},
+            "shape_ids": [component_shape.shape_id], "component_sha256": _component_nodes_sha256(component_nodes),
+            "relationship_ids": list(_component_relationship_ids(component_nodes)), "semantic_intent": "metric-card",
+            "allowed_roles": ["dashboard"],
+            "fields": [{"field_id": "metric", "shape_id": component_shape.shape_id, "semantic_role": "metric", "max_chars": component_capacity}],
+            "allowed_host_anchor_ids": ["anchor_222222222222222222222222"],
+        }],
+        "host_anchors": [{
+            "host_anchor_id": "anchor_222222222222222222222222",
+            "source": {"page_id": page_id, "package_sha256": package_sha, "slide_number": 1, "slide_sha256": graph.slide_sha},
+            "shape_ids": [anchor_shape.shape_id], "host_anchor_sha256": _component_nodes_sha256(anchor_nodes),
+            "compatible_component_ids": ["component_111111111111111111111111"],
+        }],
+    }
+    profile["profile_sha256"] = component_profile_sha256(profile)
+    profile_path = tmp_path / "component-profile.json"
+    profile_path.write_text(json.dumps(profile), encoding="utf-8")
+    index = load_component_profiles(profile_path, catalog=catalog)
+
+    specs = resolve_component_import_specs(
+        {"page_id": page_id, "package_sha256": package_sha, "slide_number": 1, "component_assembly": {
+            "host_anchor_id": "anchor_222222222222222222222222",
+            "component_ids": ["component_111111111111111111111111"],
+        }},
+        component_profiles=index, source_paths={package_sha: package}, context=context,
+    )
+
+    assert len(specs) == 1
+    assert specs[0].source_shape_ids == (component_shape.shape_id,)
+    assert specs[0].host_anchor_shape_ids == (anchor_shape.shape_id,)
+
+
+def test_component_profile_resolver_recomputes_fixed_canvas_source(tmp_path: Path) -> None:
+    presentation = Presentation()
+    source_slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    title = source_slide.shapes.add_textbox(Inches(1), Inches(1), Inches(2), Inches(1))
+    title.text = "Native title"
+    host_slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    host_slide.shapes.add_textbox(Inches(5), Inches(1), Inches(2), Inches(1)).text = "KPI"
+    package = tmp_path / "canvas-fixture.pptx"
+    presentation.save(package)
+    package_sha = _sha(package)
+    context = AssemblyImportContext()
+    _source, source_graph = context.graph_for(package, package_sha, 1)
+    _host, host_graph = context.graph_for(package, package_sha, 2)
+    source_root = ET.fromstring(source_graph.slide_xml)
+    title_nodes = _component_root_nodes(source_root, shape_ids=(title.shape_id,), label="COMPONENT_SOURCE")
+    title_bbox = physical_adapter._component_nodes_bbox(title_nodes)
+    assert title_bbox is not None
+    title_capacity = next(
+        slot.max_chars for slot in physical_adapter._discover_slots(
+            source_graph.slide_xml.decode("utf-8", errors="replace"),
+        ) if slot.slot_id == f"shape_{title.shape_id}"
+    )
+    source_page_id = "page_aaaaaaaaaaaaaaaaaaaaaaaa_001"
+    host_page_id = "page_bbbbbbbbbbbbbbbbbbbbbbbb_002"
+    catalog: dict[str, object] = {"pages": [
+        {"page_id": source_page_id, "package_sha256": package_sha, "slide_number": 1},
+        {"page_id": host_page_id, "package_sha256": package_sha, "slide_number": 2},
+    ]}
+    profile: dict[str, object] = {
+        "schema_version": "pptx-studio-component-profile.v3", "status": "COMPLETE",
+        "profile_id": "canvas-fixture", "profile_sha256": "", "catalog_sha256": catalog_sha256(catalog),
+        "components": [{
+            "component_id": "component_111111111111111111111111",
+            "source": {"page_id": source_page_id, "package_sha256": package_sha, "slide_number": 1, "slide_sha256": source_graph.slide_sha},
+            "shape_ids": [title.shape_id], "component_sha256": _component_nodes_sha256(title_nodes),
+            "relationship_ids": list(_component_relationship_ids(title_nodes)), "semantic_intent": "report-title",
+            "allowed_roles": ["dashboard"],
+            "fields": [{"field_id": "title", "shape_id": title.shape_id, "semantic_role": "title", "max_chars": title_capacity}],
+            "allowed_host_anchor_ids": ["anchor_222222222222222222222222"],
+        }],
+        "host_anchors": [{
+            "host_anchor_id": "anchor_222222222222222222222222", "anchor_mode": "canvas",
+            "source": {"page_id": host_page_id, "package_sha256": package_sha, "slide_number": 2, "slide_sha256": host_graph.slide_sha},
+            "canvas_source": {"page_id": source_page_id, "package_sha256": package_sha, "slide_number": 1, "slide_sha256": source_graph.slide_sha},
+            "canvas_shape_ids": [title.shape_id], "canvas_sha256": _component_nodes_sha256(title_nodes),
+            "canvas_bbox": [title_bbox[0], title_bbox[1], title_bbox[2] - title_bbox[0], title_bbox[3] - title_bbox[1]],
+            "compatible_component_ids": ["component_111111111111111111111111"],
+        }],
+    }
+    profile["profile_sha256"] = component_profile_sha256(profile)
+    profile_path = tmp_path / "canvas-component-profile.json"
+    profile_path.write_text(json.dumps(profile), encoding="utf-8")
+    index = load_component_profiles(profile_path, catalog=catalog)
+
+    specs = resolve_component_import_specs(
+        {"page_id": host_page_id, "package_sha256": package_sha, "slide_number": 2, "component_assembly": {
+            "host_anchor_id": "anchor_222222222222222222222222",
+            "component_ids": ["component_111111111111111111111111"],
+        }},
+        component_profiles=index, source_paths={package_sha: package}, context=context,
+    )
+
+    assert specs[0].host_anchor_shape_ids == ()
+    assert specs[0].canvas_bbox == (title_bbox[0], title_bbox[1], title_bbox[2] - title_bbox[0], title_bbox[3] - title_bbox[1])
+
+
 def test_client_binding_role_keeps_year_bearing_report_heading_as_title() -> None:
     """A year in a top report heading is not a metric surface."""
 
@@ -97,6 +235,196 @@ def test_client_binding_role_keeps_year_bearing_report_heading_as_title() -> Non
         allowed_binding_modes=("replace",),
     )
     assert _client_binding_role(slot) == "title"
+
+
+def test_client_binding_role_preserves_central_process_heading() -> None:
+    """A process hub heading remains a title even outside the top band."""
+
+    slot = SlotRecord(
+        slot_id="shape_9", shape_id=9, kind="text", max_chars=12,
+        text="实施路径", semantic_role="title", region="middle", reading_order=1,
+        bbox={"x": 420, "y": 380, "w": 180, "h": 60},
+        source_char_count=4, source_line_count=1, source_run_count=1,
+        group_id=None, group_order=None, font_size_pt=28.0,
+        allowed_binding_modes=("replace",),
+    )
+
+    assert _client_binding_role(slot, declared_role="process") == "title"
+
+
+def test_contents_ordinal_is_preserved_as_structure_not_a_client_fact() -> None:
+    slot = SlotRecord(
+        slot_id="shape_8", shape_id=8, kind="text", max_chars=4,
+        text="03.", semantic_role="metric", region="middle", reading_order=3,
+        bbox={"x": 100, "y": 300, "w": 80, "h": 50},
+        source_char_count=3, source_line_count=1, source_run_count=1,
+        group_id=None, group_order=None, font_size_pt=24.0,
+        allowed_binding_modes=("replace",),
+    )
+
+    assert _client_binding_role(slot, declared_role="contents") == "ignore"
+    assert _unbound_template_clear_reason("03.", declared_role="contents") is None
+    assert _unbound_template_clear_reason("03.") == "unbound-template-copy"
+
+
+def test_timeline_publishes_required_date_action_groups_in_visual_order() -> None:
+    """Chronology is bound as atomic date/action pairs from left to right."""
+
+    def slot(slot_id: str, text: str, x: int, y: int, order: int) -> SlotRecord:
+        return SlotRecord(
+            slot_id=slot_id, shape_id=order, kind="text", max_chars=18,
+            text=text, semantic_role="title" if "年" in text else "body",
+            region="middle", reading_order=order,
+            bbox={"x": x, "y": y, "w": 160, "h": 50},
+            source_char_count=len(text), source_line_count=1, source_run_count=1,
+            group_id=None, group_order=None, font_size_pt=18.0,
+            allowed_binding_modes=("replace",),
+        )
+
+    slots = (
+        slot("shape_2", "2026年4月", 500, 200, 2),
+        slot("shape_4", "全面推广", 500, 320, 4),
+        slot("shape_1", "2026年1月", 100, 200, 1),
+        slot("shape_3", "启动试点", 100, 320, 3),
+    )
+    groups = _automatic_sequence_component_groups(
+        slots,
+        declared_role="timeline",
+        shape_to_component={
+            "shape_1": "label.01", "shape_2": "label.02",
+            "shape_3": "body.01", "shape_4": "body.02",
+        },
+    )
+
+    assert groups == [
+        {
+            "component_group": "timeline-step.01",
+            "component_keys": ["label.01", "body.01"],
+            "component_intent": "timeline-milestone",
+            "component_fields": ["date", "action"],
+            "required": True,
+        },
+        {
+            "component_group": "timeline-step.02",
+            "component_keys": ["label.02", "body.02"],
+            "component_intent": "timeline-milestone",
+            "component_fields": ["date", "action"],
+            "required": True,
+        },
+    ]
+
+
+def test_timeline_cardinality_adaptation_is_private_exact_and_fails_closed(
+    tmp_path: Path,
+) -> None:
+    """Only one curator-approved page/role/capacity tuple can remove a node."""
+
+    source_root = tmp_path / "private" / "sources" / "gaojie"
+    annotation = (
+        tmp_path / "private" / "intelligence" / "pptx-studio" / "annotations"
+        / "timeline-cardinality-adaptations.v1.json"
+    )
+    source_root.mkdir(parents=True)
+    page_id = "page_" + "c" * 24 + "_001"
+    entry = {
+        "page_id": page_id,
+        "role": "timeline",
+        "minimum_capacity": 5,
+        "shape_ids": [14, 15],
+        "shape_sha256": "a" * 64,
+    }
+    annotation.parent.mkdir(parents=True)
+    annotation.write_text(json.dumps({
+        "schema_version": "pptx-studio-timeline-cardinality-adaptations.v1",
+        "adaptations": [entry],
+    }), encoding="utf-8")
+
+    exact = physical_adapter._timeline_cardinality_cleanup_specs(
+        private_source_root=source_root, page_id=page_id, role="timeline",
+        minimum_capacity=5,
+    )
+    assert len(exact) == 1
+    assert exact[0].shape_ids == (14, 15)
+    assert physical_adapter._timeline_cardinality_cleanup_specs(
+        private_source_root=source_root, page_id=page_id, role="process",
+        minimum_capacity=5,
+    ) == ()
+    assert physical_adapter._timeline_cardinality_cleanup_specs(
+        private_source_root=source_root, page_id=page_id, role="timeline",
+        minimum_capacity=4,
+    ) == ()
+
+    annotation.write_text(json.dumps({
+        "schema_version": "pptx-studio-timeline-cardinality-adaptations.v1",
+        "adaptations": [entry, entry],
+    }), encoding="utf-8")
+    with pytest.raises(PhysicalAdapterError, match="TIMELINE_CARDINALITY_ADAPTATION_AMBIGUOUS"):
+        physical_adapter._timeline_cardinality_cleanup_specs(
+            private_source_root=source_root, page_id=page_id, role="timeline",
+            minimum_capacity=5,
+        )
+
+    annotation.write_text(json.dumps({
+        "schema_version": "pptx-studio-timeline-cardinality-adaptations.v1",
+        "adaptations": [{**entry, "shape_ids": [14, 14]}],
+    }), encoding="utf-8")
+    with pytest.raises(PhysicalAdapterError, match="TIMELINE_CARDINALITY_ADAPTATION_INVALID"):
+        physical_adapter._timeline_cardinality_cleanup_specs(
+            private_source_root=source_root, page_id=page_id, role="timeline",
+            minimum_capacity=5,
+        )
+
+    with pytest.raises(PhysicalAdapterError, match="CERTIFIED_CLEANUP_OVERLAP"):
+        physical_adapter._merge_cleanup_specs(exact, exact)
+
+
+def test_process_publishes_required_label_body_steps_in_visual_order() -> None:
+    """A four-step process cannot cross-wire labels and descriptions."""
+
+    def slot(
+        slot_id: str, text: str, role: str, x: int, y: int, order: int,
+    ) -> SlotRecord:
+        return SlotRecord(
+            slot_id=slot_id, shape_id=order, kind="text", max_chars=30,
+            text=text, semantic_role=role, region="middle", reading_order=order,
+            bbox={"x": x, "y": y, "w": 160, "h": 50},
+            source_char_count=len(text), source_line_count=1, source_run_count=1,
+            group_id=None, group_order=None, font_size_pt=18.0,
+            allowed_binding_modes=("replace",),
+        )
+
+    slots = (
+        slot("shape_1", "第一阶段", "label", 100, 200, 1),
+        slot("shape_2", "完成准备工作并确认范围", "body", 100, 320, 2),
+        slot("shape_3", "第二阶段", "label", 500, 200, 3),
+        slot("shape_4", "进入建设并提交阶段成果", "body", 500, 320, 4),
+    )
+
+    groups = _automatic_sequence_component_groups(
+        slots,
+        declared_role="process",
+        shape_to_component={
+            "shape_1": "label.01", "shape_2": "body.01",
+            "shape_3": "label.02", "shape_4": "body.02",
+        },
+    )
+
+    assert groups == [
+        {
+            "component_group": "process-step.01",
+            "component_keys": ["label.01", "body.01"],
+            "component_intent": "process-step",
+            "component_fields": ["label", "body"],
+            "required": True,
+        },
+        {
+            "component_group": "process-step.02",
+            "component_keys": ["label.02", "body.02"],
+            "component_intent": "process-step",
+            "component_fields": ["label", "body"],
+            "required": True,
+        },
+    ]
 
 
 def _alias_clear_template() -> PageTemplate:
@@ -260,6 +588,22 @@ def test_preflight_loads_private_curated_visual_component_groups(tmp_path: Path)
         "component_intent": "metric-label-card",
         "required": True,
     }]
+    # A V4 placement or certified cleanup can remove a whole host card. Its
+    # historical source annotation is then intentionally absent rather than
+    # a reason to demand bindings for non-existent surfaces.
+    assert _curated_component_groups(
+        private_source_root=source_root,
+        package_sha256="a" * 64,
+        slide_number=8,
+        shape_to_component={},
+    ) == []
+    with pytest.raises(PhysicalAdapterError, match="CURATED_COMPONENT_ANNOTATION_SOURCE_DRIFT"):
+        _curated_component_groups(
+            private_source_root=source_root,
+            package_sha256="a" * 64,
+            slide_number=8,
+            shape_to_component={"shape_14": "label.01"},
+        )
 
 
 def _source_pack(
@@ -352,6 +696,242 @@ def test_adapter_materializes_native_editable_pptx_with_lineage(tmp_path: Path) 
     assert lineage["qa"]["status"] == "pass"
     assert lineage["slides"][0]["source"]["slide_number"] == 1
     assert lineage["slides"][0]["asset_bindings"][0]["asset_id"] == "cover-image"
+
+
+def test_native_preflight_rejects_visual_certification_denial(tmp_path: Path) -> None:
+    source_root, catalog, composition, _request, _replacement = _source_pack(tmp_path)
+    catalog["pages"][0]["materialization"] = {  # type: ignore[index]
+        "status": "eligible", "blocker_codes": [],
+    }
+    catalog["pages"][0]["certification"] = {  # type: ignore[index]
+        "visual_disposition": "deny",
+        "reason_code": "I-LOW",
+        "visual_sha256": "b" * 64,
+    }
+
+    with pytest.raises(
+        PhysicalAdapterError, match="CATALOG_MATERIALIZATION_INELIGIBLE",
+    ):
+        preflight_native_slots(
+            composition, catalog=catalog, private_source_root=source_root,
+        )
+
+
+def test_adapter_replays_native_component_contract_for_normal_text_bindings(tmp_path: Path) -> None:
+    """Published component keys must not fail only when physical assembly starts."""
+
+    source_root, catalog, composition, _request, _replacement = _source_pack(tmp_path)
+    preflight = preflight_native_slots(
+        composition, catalog=catalog, private_source_root=source_root,
+    )
+    request = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "slide-01",
+        "facts": [
+            {"value": "2025年度工作汇报", "semantic_role": "title", "component_key": "title.01"},
+            {"value": "财务运营部｜林晓", "semantic_role": "title", "component_key": "title.02"},
+        ],
+    }]}, preflight=preflight)
+    adaptation = compile_adaptation(
+        composition, catalog=catalog, request=request, preflight=preflight,
+    )
+
+    report, lineage = assemble_from_plans(
+        composition, adaptation, request, catalog=catalog,
+        private_source_root=source_root, workspace=tmp_path / "component-stage",
+        output_path=tmp_path / "component-contract.pptx",
+    )
+
+    assert report.status == "pass"
+    assert lineage["status"] == "PASS"
+
+
+def test_v3_component_route_binds_customer_text_and_records_physical_lineage(
+    tmp_path: Path,
+) -> None:
+    """A v3 selection must survive every production boundary as native text.
+
+    This deliberately uses three small private-style source packages: an
+    ordinary cover, a host page with a certified reservation and a separate
+    two-field component.  It proves that the outline binder publishes the
+    component fields, adaptation preserves their fact IDs, and physical
+    assembly writes customer text into the imported native shapes after ID
+    remapping.  No coordinate, OOXML or source path enters the v3 request.
+    """
+
+    source_root = tmp_path / "private"
+    cover_category = source_root / "003-封面模板"
+    host_category = source_root / "059-一段内容"
+    component_category = source_root / "057-优秀作品"
+    for directory in (cover_category, host_category, component_category):
+        directory.mkdir(parents=True)
+
+    cover_path = cover_category / "cover.pptx"
+    cover_deck = Presentation()
+    cover_slide = cover_deck.slides.add_slide(cover_deck.slide_layouts[6])
+    cover_title = cover_slide.shapes.add_textbox(Inches(1), Inches(0.7), Inches(9), Inches(0.8))
+    cover_title.text = "模板封面"
+    cover_title.text_frame.paragraphs[0].font.size = Pt(30)
+    cover_deck.save(cover_path)
+
+    host_path = host_category / "host.pptx"
+    host_deck = Presentation()
+    host_slide = host_deck.slides.add_slide(host_deck.slide_layouts[6])
+    host_title = host_slide.shapes.add_textbox(Inches(1), Inches(0.7), Inches(9), Inches(0.8))
+    host_title.text = "模板洞察"
+    host_title.text_frame.paragraphs[0].font.size = Pt(28)
+    host_anchor = host_slide.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(1))
+    host_anchor.text = "组件预留位"
+    host_deck.save(host_path)
+
+    component_path = component_category / "component.pptx"
+    component_deck = Presentation()
+    component_slide = component_deck.slides.add_slide(component_deck.slide_layouts[6])
+    component_label = component_slide.shapes.add_textbox(Inches(1), Inches(2), Inches(2), Inches(1))
+    component_label.text = "样例指标"
+    component_body = component_slide.shapes.add_textbox(Inches(3), Inches(2), Inches(2), Inches(1))
+    component_body.text = "样例结论"
+    component_deck.save(component_path)
+
+    cover_sha, host_sha, component_sha = (_sha(cover_path), _sha(host_path), _sha(component_path))
+    cover_page_id = f"page_{cover_sha[:24]}_001"
+    host_page_id = f"page_{host_sha[:24]}_001"
+    component_page_id = f"page_{component_sha[:24]}_001"
+    context = AssemblyImportContext()
+    _source, host_graph = context.graph_for(host_path, host_sha, 1)
+    _source, component_graph = context.graph_for(component_path, component_sha, 1)
+    host_root = ET.fromstring(host_graph.slide_xml)
+    component_root = ET.fromstring(component_graph.slide_xml)
+    anchor_nodes = _component_root_nodes(
+        host_root, shape_ids=(host_anchor.shape_id,), label="COMPONENT_HOST_ANCHOR",
+    )
+    component_nodes = _component_root_nodes(
+        component_root,
+        shape_ids=(component_label.shape_id, component_body.shape_id),
+        label="COMPONENT_SOURCE",
+    )
+    component_slots = {
+        slot.slot_id: slot for slot in physical_adapter._discover_slots(
+            component_graph.slide_xml.decode("utf-8", errors="replace"),
+        )
+    }
+
+    catalog: dict[str, object] = {
+        "catalog_id": "v3-component-fixture",
+        "active_categories": ["003-封面模板", "059-一段内容", "057-优秀作品"],
+        "pages": [
+            {
+                "page_id": cover_page_id, "deck_id": f"deck_{cover_sha[:24]}",
+                "package_sha256": cover_sha, "slide_number": 1,
+                "category": "003-封面模板", "render": {"image_sha256": "a" * 64, "visual_quality": 1.0},
+                "shapes": [{"shape_id": str(cover_title.shape_id), "kind": "text", "max_chars": 48}],
+            },
+            {
+                "page_id": host_page_id, "deck_id": f"deck_{host_sha[:24]}",
+                "package_sha256": host_sha, "slide_number": 1,
+                "category": "059-一段内容", "render": {"image_sha256": "b" * 64, "visual_quality": 1.0},
+                "shapes": [
+                    {"shape_id": str(host_title.shape_id), "kind": "text", "max_chars": 48},
+                    {"shape_id": str(host_anchor.shape_id), "kind": "text", "max_chars": 48},
+                ],
+            },
+            {
+                "page_id": component_page_id, "deck_id": f"deck_{component_sha[:24]}",
+                "package_sha256": component_sha, "slide_number": 1,
+                "category": "057-优秀作品", "render": {"image_sha256": "c" * 64, "visual_quality": 1.0},
+                "shapes": [
+                    {"shape_id": str(component_label.shape_id), "kind": "text", "max_chars": 16},
+                    {"shape_id": str(component_body.shape_id), "kind": "text", "max_chars": 16},
+                ],
+            },
+        ],
+        "regions": [
+            {"region_id": "cover-title", "page_id": cover_page_id, "editable_shape_ids": [str(cover_title.shape_id)], "capacity": {"max_text_chars": 48}},
+            {"region_id": "host-title", "page_id": host_page_id, "editable_shape_ids": [str(host_title.shape_id)], "capacity": {"max_text_chars": 48}},
+            {"region_id": "host-anchor", "page_id": host_page_id, "editable_shape_ids": [str(host_anchor.shape_id)], "capacity": {"max_text_chars": 48}},
+        ],
+    }
+    observations = {
+        cover_page_id: {"page_id": cover_page_id, "image_sha256": "a" * 64, "observation": {"suggested_roles": ["cover"], "visual_style": ["corporate", "blue"], "uncertainty": "none"}},
+        host_page_id: {"page_id": host_page_id, "image_sha256": "b" * 64, "observation": {"suggested_roles": ["one-item"], "visual_style": ["corporate", "blue"], "uncertainty": "none"}},
+        component_page_id: {"page_id": component_page_id, "image_sha256": "c" * 64, "observation": {"suggested_roles": ["one-item"], "visual_style": ["corporate", "blue"], "uncertainty": "none"}},
+    }
+    profile: dict[str, object] = {
+        "schema_version": "pptx-studio-component-profile.v1", "status": "COMPLETE",
+        "profile_id": "v3-component-fixture", "profile_sha256": "", "catalog_sha256": catalog_sha256(catalog),
+        "components": [{
+            "component_id": "component_111111111111111111111111",
+            "source": {"page_id": component_page_id, "package_sha256": component_sha, "slide_number": 1, "slide_sha256": component_graph.slide_sha},
+            "shape_ids": [component_label.shape_id, component_body.shape_id],
+            "component_sha256": _component_nodes_sha256(component_nodes),
+            "relationship_ids": list(_component_relationship_ids(component_nodes)),
+            "semantic_intent": "key-insight", "allowed_roles": ["one-item"],
+            "fields": [
+                {"field_id": "label", "shape_id": component_label.shape_id, "semantic_role": "label", "max_chars": component_slots[f"shape_{component_label.shape_id}"].max_chars},
+                {"field_id": "body", "shape_id": component_body.shape_id, "semantic_role": "body", "max_chars": component_slots[f"shape_{component_body.shape_id}"].max_chars},
+            ],
+            "allowed_host_anchor_ids": ["anchor_222222222222222222222222"],
+        }],
+        "host_anchors": [{
+            "host_anchor_id": "anchor_222222222222222222222222",
+            "source": {"page_id": host_page_id, "package_sha256": host_sha, "slide_number": 1, "slide_sha256": host_graph.slide_sha},
+            "shape_ids": [host_anchor.shape_id], "host_anchor_sha256": _component_nodes_sha256(anchor_nodes),
+            "compatible_component_ids": ["component_111111111111111111111111"],
+        }],
+    }
+    profile["profile_sha256"] = component_profile_sha256(profile)
+    profile_path = tmp_path / "component-profile.json"
+    profile_path.write_text(json.dumps(profile), encoding="utf-8")
+    component_profiles = load_component_profiles(profile_path, catalog=catalog)
+    cover_signature = style_signature(catalog["pages"][0], observations)  # type: ignore[index]
+    composition = compile_composition(catalog, observations=observations, component_profiles=component_profiles, request={
+        "schema_version": "4.0", "strategy": "page_assembly",
+        "art_direction": {"anchor_page_id": cover_page_id, "allowed_style_signatures": [cover_signature], "suitability": "general"},
+        "narrative_validation": {
+            "schema_version": "pptx-studio-narrative-validation.v1", "status": "PASS", "brief_id": "fixture",
+            "brief_sha256": "d" * 64, "narrative_sha256": "e" * 64, "slide_count": 2,
+            "delivery_beat_ids": ["cover", "insight"], "section_evidence": [],
+        },
+        "component_profile": {"profile_id": component_profiles.profile_id, "profile_sha256": component_profiles.profile_sha256},
+        "slides": [
+            {"slide_id": "s01", "beat_id": "cover", "role": "cover", "candidate_ids": [cover_page_id], "selected_candidate_id": cover_page_id, "minimum_capacity": 1},
+            {"slide_id": "s02", "beat_id": "insight", "role": "one-item", "host_candidate_ids": [host_page_id], "selected_host_candidate_id": host_page_id, "component_placements": [{"host_anchor_id": "anchor_222222222222222222222222", "component_id": "component_111111111111111111111111"}], "minimum_capacity": 1},
+        ],
+    })
+    preflight = preflight_native_slots(
+        composition, catalog=catalog, private_source_root=source_root,
+        component_profiles=component_profiles,
+    )
+    request = compile_outline_bindings({"schema_version": "1.0", "slides": [
+        {"slide_id": "s01", "facts": [{"value": "2026工作汇报", "semantic_role": "title"}]},
+        {"slide_id": "s02", "facts": [
+            {"value": "核心发现", "semantic_role": "title"},
+            {"value": "结算效率", "semantic_role": "label"},
+            {"value": "月结周期缩短30%", "semantic_role": "body"},
+        ]},
+    ]}, preflight=preflight)
+    adaptation = compile_adaptation(
+        composition, catalog=catalog, request=request, preflight=preflight,
+        component_profiles=component_profiles,
+    )
+    output = tmp_path / "v3-component-output.pptx"
+    report, lineage = assemble_from_plans(
+        composition, adaptation, request, catalog=catalog, private_source_root=source_root,
+        workspace=tmp_path / "stage", output_path=output,
+        component_profiles=component_profiles,
+    )
+
+    assert report.status == "pass"
+    assert lineage["status"] == "PASS"
+    slide_text = "\n".join(
+        shape.text for shape in Presentation(output).slides[1].shapes
+        if hasattr(shape, "text")
+    )
+    assert "结算效率" in slide_text
+    assert "月结周期缩短30%" in slide_text
+    assert "样例指标" not in slide_text and "样例结论" not in slide_text
+    component_lineage = lineage["slides"][1]["component_imports"]
+    assert component_lineage[0]["component_id"] == "component_111111111111111111111111"
+    assert component_lineage[0]["bound_field_count"] == 2
 
 
 def test_adapter_exact_deck_completeness_uses_selected_native_regions(tmp_path: Path) -> None:

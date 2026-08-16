@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import shutil
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -20,13 +21,19 @@ ACTIVE_GAOJIE_CATEGORIES: tuple[str, ...] = (
     "044-五段内容", "045-六段内容", "046-多段内容", "047-人物介绍",
     "048-荣誉奖项", "049-时间轴图", "050-架构流程", "051-商业模型",
     "052-样机展示", "053-金句模板", "054-合作伙伴", "057-优秀作品",
-    "059-一段内容", "082-地图排版",
+    "059-一段内容", "082-地图排版", "104-数据基座-精选",
 )
 INACTIVE_GAOJIE_CATEGORIES: tuple[str, ...] = (
     "055-图文排版", "056-表格图表", "058-实用素材", "062-风格配色",
     "104-数据基座", "105-文本组件", "106-装饰形状",
 )
 SCHEMA_VERSION = "1.0"
+COMPONENT_PROMOTION_SCHEMA_VERSION = "pptx-studio-component-promotion.v1"
+COMPONENT_PROMOTION_SOURCE_CATEGORY = "104-数据基座"
+COMPONENT_PROMOTION_TARGET_CATEGORY = "104-数据基座-精选"
+COMPONENT_ONLY_GAOJIE_CATEGORIES: tuple[str, ...] = (
+    COMPONENT_PROMOTION_TARGET_CATEGORY,
+)
 
 
 class CurationError(ValueError):
@@ -353,3 +360,215 @@ def recover_curation(
         raise
     result["status"] = "RECOVERED"
     return result
+
+
+def _promotion_request(value: Mapping[str, Any]) -> list[str]:
+    """Validate an operator's exact archive-package selection.
+
+    Promotion deliberately accepts source locators rather than a category-wide
+    switch.  The local archive holds many low-value data-base packages, while
+    this route is only allowed to copy explicitly reviewed ones into the
+    component-only active shelf.
+    """
+
+    if set(value) != {"schema_version", "source_locators"}:
+        raise CurationError("COMPONENT_PROMOTION_REQUEST_INVALID")
+    if value.get("schema_version") != COMPONENT_PROMOTION_SCHEMA_VERSION:
+        raise CurationError("COMPONENT_PROMOTION_REQUEST_INVALID")
+    raw = value.get("source_locators")
+    if (
+        not isinstance(raw, list)
+        or not raw
+        or any(not isinstance(item, str) for item in raw)
+        or len(raw) != len(set(raw))
+    ):
+        raise CurationError("COMPONENT_PROMOTION_REQUEST_INVALID")
+    result: list[str] = []
+    prefix = f"{COMPONENT_PROMOTION_SOURCE_CATEGORY}/"
+    for item in raw:
+        safe = _safe_relative(item)
+        if not item.startswith(prefix) or safe.suffix.casefold() != ".pptx":
+            raise CurationError("COMPONENT_PROMOTION_SOURCE_INVALID")
+        result.append(safe.as_posix())
+    return sorted(result)
+
+
+def plan_component_promotion(
+    request: Mapping[str, Any],
+    source_root: Path | str,
+    *,
+    archive_root: Path | str,
+) -> dict[str, Any]:
+    """Plan a hash-bound archive-to-component-shelf copy without mutation."""
+
+    source = _resolve_directory(source_root, label="SOURCE_ROOT")
+    archive = _resolve_directory(archive_root, label="ARCHIVE_ROOT")
+    if source in archive.parents or archive == source:
+        raise CurationError("ARCHIVE_ROOT_INVALID")
+    locators = _promotion_request(request)
+    target_directory = source / COMPONENT_PROMOTION_TARGET_CATEGORY
+    if target_directory.exists() and (target_directory.is_symlink() or not target_directory.is_dir()):
+        raise CurationError("COMPONENT_PROMOTION_TARGET_INVALID")
+    records: list[dict[str, str | None]] = []
+    for locator in locators:
+        candidate = archive / _safe_relative(locator)
+        if candidate.is_symlink() or not candidate.is_file():
+            raise CurationError("COMPONENT_PROMOTION_SOURCE_UNAVAILABLE")
+        destination = target_directory / candidate.name
+        if destination.name != candidate.name or destination.suffix.casefold() != ".pptx":
+            raise CurationError("COMPONENT_PROMOTION_TARGET_INVALID")
+        # Promotion is deliberately additive: the shelf is curated in small,
+        # independently reviewed batches. An existing file is never silently
+        # replaced, even when its bytes would match the archive source.
+        if destination.exists():
+            raise CurationError("COMPONENT_PROMOTION_TARGET_COLLISION")
+        records.append({
+            "source_locator": locator,
+            "target_locator": _relative(source, destination),
+            "source_sha256": _file_sha256(candidate),
+            "target_sha256": None,
+        })
+    return {
+        "schema_version": COMPONENT_PROMOTION_SCHEMA_VERSION,
+        "status": "PLANNED",
+        "source_category": COMPONENT_PROMOTION_SOURCE_CATEGORY,
+        "target_category": COMPONENT_PROMOTION_TARGET_CATEGORY,
+        "packages": records,
+    }
+
+
+def _validate_component_promotion(plan: Mapping[str, Any]) -> None:
+    if (
+        plan.get("schema_version") != COMPONENT_PROMOTION_SCHEMA_VERSION
+        or plan.get("status") not in {"PLANNED", "APPLIED"}
+        or plan.get("source_category") != COMPONENT_PROMOTION_SOURCE_CATEGORY
+        or plan.get("target_category") != COMPONENT_PROMOTION_TARGET_CATEGORY
+        or not isinstance(plan.get("packages"), list)
+        or not plan["packages"]
+    ):
+        raise CurationError("COMPONENT_PROMOTION_MANIFEST_INVALID")
+    seen_sources: set[str] = set()
+    seen_targets: set[str] = set()
+    for record in plan["packages"]:
+        if not isinstance(record, Mapping) or set(record) != {
+            "source_locator", "target_locator", "source_sha256", "target_sha256",
+        }:
+            raise CurationError("COMPONENT_PROMOTION_MANIFEST_INVALID")
+        source_locator = record.get("source_locator")
+        target_locator = record.get("target_locator")
+        source_sha = record.get("source_sha256")
+        target_sha = record.get("target_sha256")
+        if (
+            not isinstance(source_locator, str)
+            or not source_locator.startswith(f"{COMPONENT_PROMOTION_SOURCE_CATEGORY}/")
+            or not isinstance(target_locator, str)
+            or not target_locator.startswith(f"{COMPONENT_PROMOTION_TARGET_CATEGORY}/")
+            or not isinstance(source_sha, str)
+            or len(source_sha) != 64
+            or any(char not in "0123456789abcdef" for char in source_sha)
+            or target_sha is not None and (not isinstance(target_sha, str) or target_sha != source_sha)
+            or source_locator in seen_sources
+            or target_locator in seen_targets
+        ):
+            raise CurationError("COMPONENT_PROMOTION_MANIFEST_INVALID")
+        _safe_relative(source_locator)
+        _safe_relative(target_locator)
+        seen_sources.add(source_locator)
+        seen_targets.add(target_locator)
+
+
+def apply_component_promotion(
+    plan: Mapping[str, Any],
+    source_root: Path | str,
+    *,
+    archive_root: Path | str,
+) -> dict[str, Any]:
+    """Copy exactly planned packages while retaining archive originals.
+
+    Each copy writes to a same-directory temporary file, verifies its SHA-256,
+    then atomically promotes it.  A failed operation removes only its temporary
+    file and never modifies the archive tree.
+    """
+
+    _validate_component_promotion(plan)
+    if plan.get("status") != "PLANNED":
+        raise CurationError("COMPONENT_PROMOTION_NOT_PLANNED")
+    source = _resolve_directory(source_root, label="SOURCE_ROOT")
+    archive = _resolve_directory(archive_root, label="ARCHIVE_ROOT")
+    target_directory = source / COMPONENT_PROMOTION_TARGET_CATEGORY
+    if target_directory.exists() and (target_directory.is_symlink() or not target_directory.is_dir()):
+        raise CurationError("COMPONENT_PROMOTION_TARGET_INVALID")
+    target_directory.mkdir(parents=True, exist_ok=True)
+    completed: list[dict[str, str | None]] = []
+    try:
+        for raw in plan["packages"]:
+            record = dict(raw)
+            source_path = archive / _safe_relative(str(record["source_locator"]))
+            target_path = source / _safe_relative(str(record["target_locator"]))
+            if source_path.is_symlink() or not source_path.is_file():
+                raise CurationError("COMPONENT_PROMOTION_SOURCE_UNAVAILABLE")
+            if _file_sha256(source_path) != record["source_sha256"]:
+                raise CurationError("COMPONENT_PROMOTION_SOURCE_HASH_MISMATCH")
+            if target_path.exists() or target_path.parent != target_directory:
+                raise CurationError("COMPONENT_PROMOTION_TARGET_INVALID")
+            temporary = target_directory / f".{target_path.name}.promotion.tmp"
+            try:
+                with source_path.open("rb") as input_stream, temporary.open("xb") as output_stream:
+                    shutil.copyfileobj(input_stream, output_stream, length=1024 * 1024)
+                    output_stream.flush()
+                    os.fsync(output_stream.fileno())
+                if _file_sha256(temporary) != record["source_sha256"]:
+                    raise CurationError("COMPONENT_PROMOTION_TARGET_HASH_MISMATCH")
+                os.replace(temporary, target_path)
+            finally:
+                temporary.unlink(missing_ok=True)
+            record["target_sha256"] = record["source_sha256"]
+            completed.append(record)
+    except BaseException:
+        for record in reversed(completed):
+            target_path = source / _safe_relative(str(record["target_locator"]))
+            if target_path.is_file() and _file_sha256(target_path) == record["source_sha256"]:
+                target_path.unlink()
+        target_directory.rmdir()
+        raise
+    result = dict(plan)
+    result["status"] = "APPLIED"
+    result["packages"] = completed
+    return result
+
+
+def verify_component_promotion(
+    manifest: Mapping[str, Any],
+    source_root: Path | str,
+    *,
+    archive_root: Path | str,
+) -> dict[str, Any]:
+    """Verify both archive provenance and promoted copy fingerprints."""
+
+    _validate_component_promotion(manifest)
+    if manifest.get("status") != "APPLIED":
+        raise CurationError("COMPONENT_PROMOTION_NOT_APPLIED")
+    source = _resolve_directory(source_root, label="SOURCE_ROOT")
+    archive = _resolve_directory(archive_root, label="ARCHIVE_ROOT")
+    count = 0
+    for record in manifest["packages"]:
+        source_path = archive / _safe_relative(str(record["source_locator"]))
+        target_path = source / _safe_relative(str(record["target_locator"]))
+        expected = record["source_sha256"]
+        if (
+            source_path.is_symlink()
+            or target_path.is_symlink()
+            or not source_path.is_file()
+            or not target_path.is_file()
+            or _file_sha256(source_path) != expected
+            or _file_sha256(target_path) != expected
+            or record.get("target_sha256") != expected
+        ):
+            raise CurationError("COMPONENT_PROMOTION_VERIFICATION_FAILED")
+        count += 1
+    return {
+        "schema_version": COMPONENT_PROMOTION_SCHEMA_VERSION,
+        "status": "PASS",
+        "target_category": COMPONENT_PROMOTION_TARGET_CATEGORY,
+        "package_count": count,
+    }

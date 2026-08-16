@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/pptx-studio-composition-plan.v2.schema.json",
+  "title": "PPTX Studio Composition Plan v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "strategy", "art_direction", "narrative_validation", "slides", "mixed_library", "style_anchor", "replay_lock"],
+  "properties": {
+    "schema_version": {"const": "2.0"},
+    "status": {"const": "PASS"},
+    "strategy": {"enum": ["exact_deck", "family_assembly", "page_assembly", "component_assembly"]},
+    "art_direction": {"type": "object"},
+    "narrative_validation": {"type": "object"},
+    "mixed_library": {"type": "object", "additionalProperties": false, "required": ["enforced", "source_package_count", "source_category_count", "maximum_pages_from_one_source"], "properties": {"enforced": {"type": "boolean"}, "source_package_count": {"type": "integer", "minimum": 1}, "source_category_count": {"type": "integer", "minimum": 1}, "maximum_pages_from_one_source": {"type": "integer", "minimum": 1}}},
+    "style_anchor": {"type": "object", "additionalProperties": false, "required": ["anchor_style_signature", "anchor_cluster_page_count", "compatible_fallback_page_count", "anchor_cluster_coverage", "enforced"], "properties": {"anchor_style_signature": {"type": "string", "pattern": "^style_[0-9a-f]{24}$"}, "anchor_cluster_page_count": {"type": "integer", "minimum": 1}, "compatible_fallback_page_count": {"type": "integer", "minimum": 0}, "anchor_cluster_coverage": {"type": "number", "minimum": 0, "maximum": 1}, "enforced": {"type": "boolean"}}},
+    "replay_lock": {"type": "object", "additionalProperties": false, "required": ["schema_version", "catalog_sha256", "observations_sha256", "compiler_sha256", "narrative_sha256"], "properties": {"schema_version": {"const": "pptx-studio-replay-lock.v1"}, "catalog_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "observations_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "compiler_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "narrative_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+    "slides": {"type": "array", "minItems": 2, "items": {"type": "object", "required": ["slide_id", "beat_id", "role", "source", "evidence"]}}
+  }
+}

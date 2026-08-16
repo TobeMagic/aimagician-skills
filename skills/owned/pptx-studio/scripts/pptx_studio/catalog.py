@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 from xml.etree import ElementTree as ET
 
-from .curation import ACTIVE_GAOJIE_CATEGORIES
+from .curation import ACTIVE_GAOJIE_CATEGORIES, COMPONENT_ONLY_GAOJIE_CATEGORIES
 
 
 class CatalogError(ValueError):
@@ -22,6 +22,9 @@ _SLIDE_RE = re.compile(r"^ppt/slides/slide([1-9][0-9]*)\.xml$")
 _EMU_PER_SLIDE_WIDTH = 12192000
 _EMU_PER_SLIDE_HEIGHT = 6858000
 _SRGB_RE = re.compile(r'(?:val|lastClr)="([A-Fa-f0-9]{6})"')
+_SHA256_RE = re.compile(r"[0-9a-f]{64}")
+_CERTIFICATION_OVERLAY_SCHEMA = "pptx-studio-certification-overlay.v1"
+_CERTIFICATION_DENY_BLOCKER = "visual-certification-denied"
 
 
 def _sha256_file(path: Path) -> str:
@@ -30,6 +33,93 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def certification_evidence_sha256(value: Mapping[str, Any]) -> str:
+    """Digest certification semantics independently of JSON whitespace."""
+
+    payload = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _certification_denials(
+    evidence: Mapping[str, Any] | None,
+) -> tuple[dict[tuple[str, int], dict[str, str]], dict[str, Any]]:
+    """Validate the curated deny partition and return exact source identities.
+
+    The commercial curation ledger uses a full package SHA plus a one-based
+    slide number.  The public page ID is intentionally shorter, so compilation
+    must never trust that truncated identifier by itself.
+    """
+
+    if evidence is None:
+        return {}, {
+            "schema_version": _CERTIFICATION_OVERLAY_SCHEMA,
+            "status": "NOT_APPLIED",
+            "source_schema_version": None,
+            "source_sha256": None,
+            "source_entry_count": 0,
+            "denied_page_count": 0,
+            "applied_denied_page_count": 0,
+            "out_of_scope_denied_page_count": 0,
+        }
+    if evidence.get("schema_version") != "gaojie-certified-core.v2":
+        raise CatalogError("CERTIFICATION_EVIDENCE_SCHEMA_INVALID")
+    denied = evidence.get("denied_pages")
+    declared_count = evidence.get("denied_page_count")
+    if (
+        not isinstance(denied, list)
+        or type(declared_count) is not int
+        or declared_count != len(denied)
+    ):
+        raise CatalogError("CERTIFICATION_EVIDENCE_INVALID")
+    result: dict[tuple[str, int], dict[str, str]] = {}
+    seen: set[tuple[str, int]] = set()
+    for entry in denied:
+        if not isinstance(entry, Mapping):
+            raise CatalogError("CERTIFICATION_EVIDENCE_INVALID")
+        package_sha = entry.get("package_sha256")
+        slide_number = entry.get("slide_number")
+        legacy_page_id = entry.get("page_id")
+        visual_sha = entry.get("visual_sha256")
+        reason_code = entry.get("reason_code")
+        disposition = entry.get("visual_disposition")
+        if (
+            not isinstance(package_sha, str)
+            or _SHA256_RE.fullmatch(package_sha) is None
+            or type(slide_number) is not int
+            or slide_number < 1
+            or legacy_page_id != f"{package_sha}:{slide_number:03d}"
+            or not isinstance(visual_sha, str)
+            or _SHA256_RE.fullmatch(visual_sha) is None
+            or not isinstance(reason_code, str)
+            or not reason_code
+            or disposition not in {"deny", "keep", "reroute"}
+        ):
+            raise CatalogError("CERTIFICATION_EVIDENCE_INVALID")
+        key = (package_sha, slide_number)
+        if key in seen:
+            raise CatalogError("CERTIFICATION_EVIDENCE_DUPLICATE")
+        seen.add(key)
+        if disposition == "deny":
+            result[key] = {
+                "visual_sha256": visual_sha,
+                "reason_code": reason_code,
+            }
+    return result, {
+        "schema_version": _CERTIFICATION_OVERLAY_SCHEMA,
+        "status": "PASS",
+        "source_schema_version": str(evidence["schema_version"]),
+        "source_sha256": certification_evidence_sha256(evidence),
+        "source_entry_count": len(denied),
+        "denied_page_count": len(result),
+        # The active catalog intentionally excludes archived categories. These
+        # two counts are finalized after source compilation.
+        "applied_denied_page_count": 0,
+        "out_of_scope_denied_page_count": 0,
+    }
 
 
 def _safe_source_root(value: Path | str, active_categories: Sequence[str]) -> Path:
@@ -146,6 +236,7 @@ def _slide_record(
             "text": slot.text,
             "bbox": dict(slot.bbox),
             "max_chars": slot.max_chars,
+            "semantic_role": slot.semantic_role,
             "z_order": slot.reading_order,
         }
         for slot in slots
@@ -171,7 +262,15 @@ def _render_record(render_index: Mapping[str, Mapping[str, Any]], package_sha: s
     return {"image_sha256": image_sha, "width": width, "height": height, "visual_quality": round(float(quality), 8)}
 
 
-def _materialization_record(archive: zipfile.ZipFile, *, slide_number: int) -> dict[str, Any]:
+def _materialization_record(
+    archive: zipfile.ZipFile,
+    *,
+    slide_number: int,
+    dependency_bytes: int | None,
+    fragment_slot_count: int,
+    visual_text_unit_count: int,
+    dependency_blocker: str | None = None,
+) -> dict[str, Any]:
     """Publish whether a page can be physically assembled without source residue.
 
     A native chart is not automatically safe to reuse.  The physical assembler
@@ -197,10 +296,36 @@ def _materialization_record(archive: zipfile.ZipFile, *, slide_number: int) -> d
     slots = inventory.get("slots", [])
     if not isinstance(slots, list):
         raise CatalogError("MATERIALIZATION_INVENTORY_INVALID")
+    if dependency_bytes is not None and (type(dependency_bytes) is not int or dependency_bytes < 1):
+        raise CatalogError("MATERIALIZATION_DEPENDENCY_SIZE_INVALID")
+    if dependency_blocker is not None and dependency_blocker != "dependency-closure-unsafe":
+        raise CatalogError("MATERIALIZATION_DEPENDENCY_BLOCKER_INVALID")
+    if type(fragment_slot_count) is not int or fragment_slot_count < 0:
+        raise CatalogError("MATERIALIZATION_FRAGMENT_PROFILE_INVALID")
+    if type(visual_text_unit_count) is not int or visual_text_unit_count < 0:
+        raise CatalogError("MATERIALIZATION_VISUAL_SKELETON_INVALID")
+    blocker_codes = sorted(set(errors) | ({dependency_blocker} if dependency_blocker else set()))
     return {
-        "status": "eligible" if complete else "blocked",
+        "status": "eligible" if complete and dependency_blocker is None else "blocked",
         "governed_content_slot_count": len(slots),
-        "blocker_codes": sorted(set(errors)),
+        "blocker_codes": blocker_codes,
+        # This is a private-library planning signal, not a delivery-file
+        # promise. It counts the source slide's recursive OPC closure before
+        # cross-page byte deduplication, so a bounded planner can avoid
+        # needlessly importing several photographic masters for a short deck.
+        # The final physical size gate remains authoritative.
+        "dependency_bytes": dependency_bytes or 0,
+        # Fragment slots accept exactly one source character. They are often
+        # visual ornaments (outlined numerals, letter-spacing effects) rather
+        # than a client-fact surface. The planner consumes this count for
+        # grammars such as business models where treating several of them as
+        # mandatory metrics would coerce semantic fragmentation.
+        "fragment_slot_count": fragment_slot_count,
+        # A value-free count of native visible text units.  It is not the
+        # number of facts a client must provide; it prevents a three-item
+        # narrative from selecting a dense editorial/dashboard skeleton whose
+        # many visible units would otherwise render as conspicuous blanks.
+        "visual_text_unit_count": visual_text_unit_count,
     }
 
 
@@ -208,11 +333,16 @@ def compile_catalog(
     source_root: Path | str,
     *,
     render_index: Mapping[str, Mapping[str, Any]],
+    certification_evidence: Mapping[str, Any] | None = None,
     active_categories: Sequence[str] = ACTIVE_GAOJIE_CATEGORIES,
 ) -> dict[str, Any]:
     """Compile exactly the declared active source scope, with no file discovery later."""
 
     root = _safe_source_root(source_root, active_categories)
+    certification_denials, certification_overlay = _certification_denials(
+        certification_evidence,
+    )
+    applied_denials: set[tuple[str, int]] = set()
     decks: list[dict[str, Any]] = []
     pages: list[dict[str, Any]] = []
     for category in active_categories:
@@ -220,7 +350,29 @@ def compile_catalog(
             if path.is_symlink() or not path.is_file():
                 raise CatalogError("SOURCE_PATH_INVALID")
             package_sha = _sha256_file(path)
+            source_context = None
             try:
+                # Reuse the production importer’s exact dependency traversal
+                # rather than estimating a slide from package byte size. A
+                # multi-page 25 MB deck can still contain a 200 KB reusable
+                # component page, while a one-page deck can carry a large
+                # photographic master. This maintenance-time metadata lets
+                # the agent select for visual quality *and* delivery cost
+                # without inspecting private files at client runtime.
+                from window_pptx.physical_assembly import (
+                    _SourcePackageContext,
+                    _build_source_graph_from_context,
+                )
+
+                try:
+                    source_context = _SourcePackageContext.open(path, package_sha)
+                except (KeyError, zipfile.BadZipFile):
+                    # Minimal catalog fixtures predating physical import do
+                    # not contain an OPC content-type table. They cannot
+                    # certify a real import closure, but remain useful for
+                    # deterministic metadata tests; estimate only their
+                    # slide XML rather than weakening the production importer.
+                    source_context = None
                 with zipfile.ZipFile(path) as archive:
                     width, height = _slide_size(archive)
                     slide_names = sorted(
@@ -238,32 +390,100 @@ def compile_catalog(
                     })
                     for name in slide_names:
                         slide_number = int(_SLIDE_RE.fullmatch(name).group(1))
+                        dependency_blocker = None
+                        if source_context is None:
+                            dependency_bytes = len(archive.read(name))
+                        else:
+                            try:
+                                graph = _build_source_graph_from_context(
+                                    source_context, slide_number,
+                                )
+                                dependency_bytes = sum(
+                                    len(payload)
+                                    for payload in (
+                                        graph.slide_xml,
+                                        *graph.rels.values(),
+                                        *graph.extra_parts.values(),
+                                    )
+                                )
+                            except Exception as exc:
+                                # The importer is the final authority on OPC
+                                # safety. Do not leak an unsafe target or a
+                                # private path into the catalog: record only
+                                # that this page cannot be physically reused.
+                                from window_pptx.physical_assembly import PhysicalAssemblyError
+
+                                if not isinstance(exc, PhysicalAssemblyError):
+                                    raise
+                                dependency_bytes = None
+                                dependency_blocker = "dependency-closure-unsafe"
                         shapes, palette = _slide_record(
                             archive.read(name), width=width, height=height,
                         )
                         text_shapes = [shape for shape in shapes if shape["kind"] == "text" and shape["text"]]
                         editability = "native_editable" if text_shapes else "image_only"
+                        render = _render_record(render_index, package_sha, slide_number)
+                        materialization = _materialization_record(
+                            archive,
+                            slide_number=slide_number,
+                            dependency_bytes=dependency_bytes,
+                            fragment_slot_count=sum(
+                                shape.get("semantic_role") in {"title_fragment", "label_fragment"}
+                                for shape in shapes
+                            ),
+                            visual_text_unit_count=sum(
+                                shape.get("semantic_role") not in {"title_fragment", "label_fragment"}
+                                for shape in text_shapes
+                            ),
+                            dependency_blocker=dependency_blocker,
+                        )
+                        certification: dict[str, str] | None = None
+                        denial_key = (package_sha, slide_number)
+                        denial = certification_denials.get(denial_key)
+                        if denial is not None:
+                            if denial["visual_sha256"] != render["image_sha256"]:
+                                raise CatalogError("CERTIFICATION_VISUAL_EVIDENCE_DRIFT")
+                            applied_denials.add(denial_key)
+                            materialization["status"] = "blocked"
+                            materialization["blocker_codes"] = sorted(set(
+                                [*materialization["blocker_codes"], _CERTIFICATION_DENY_BLOCKER]
+                            ))
+                            certification = {
+                                "visual_disposition": "deny",
+                                "reason_code": denial["reason_code"],
+                                "visual_sha256": denial["visual_sha256"],
+                            }
                         pages.append({
                             "page_id": f"page_{package_sha[:24]}_{slide_number:03d}",
                             "deck_id": deck_id,
                             "package_sha256": package_sha,
                             "slide_number": slide_number,
                             "category": category,
-                            "render": _render_record(render_index, package_sha, slide_number),
+                            "component_only": category in COMPONENT_ONLY_GAOJIE_CATEGORIES,
+                            "render": render,
                             "style": {"palette": list(palette), "tone": "unknown"},
                             "editability": editability,
                             "component_eligible": bool(text_shapes),
-                            "materialization": _materialization_record(
-                                archive, slide_number=slide_number,
-                            ),
+                            "materialization": materialization,
+                            **({"certification": certification} if certification is not None else {}),
                             "shapes": shapes,
                         })
             except zipfile.BadZipFile as exc:
                 raise CatalogError("PPTX_INVALID") from exc
+            finally:
+                if source_context is not None:
+                    source_context.close()
     pages.sort(key=lambda item: item["page_id"])
     decks.sort(key=lambda item: item["deck_id"])
     if len({item["page_id"] for item in pages}) != len(pages):
         raise CatalogError("PAGE_ID_DUPLICATE")
+    active_package_hashes = {str(item["package_sha256"]) for item in decks}
+    unmatched_denials = set(certification_denials) - applied_denials
+    if any(package_sha in active_package_hashes for package_sha, _ in unmatched_denials):
+        raise CatalogError("CERTIFICATION_SOURCE_SCOPE_DRIFT")
+    if certification_overlay["status"] == "PASS":
+        certification_overlay["applied_denied_page_count"] = len(applied_denials)
+        certification_overlay["out_of_scope_denied_page_count"] = len(unmatched_denials)
     # Import here to keep the compiler's OOXML parser independent while making
     # its returned object conform to the published catalog contract.
     from .regions import extract_regions
@@ -276,6 +496,7 @@ def compile_catalog(
         "active_categories": list(active_categories),
         "deck_count": len(decks),
         "page_count": len(pages),
+        "certification_overlay": certification_overlay,
         "category_index": dict(sorted(Counter(item["category"] for item in pages).items())),
         "decks": decks,
         "pages": pages,

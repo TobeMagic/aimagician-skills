@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PPTX Studio Style Cluster Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "suitability", "slides"],
+  "properties": {
+    "schema_version": {"const": "pptx-studio-style-cluster-request.v1"},
+    "suitability": {"enum": ["general", "institutional-finance"]},
+    "locked_anchor_page_id": {"type": "string", "minLength": 1},
+    "slides": {
+      "type": "array", "minItems": 1, "maxItems": 24,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["beat_id", "role", "minimum_capacity"],
+        "properties": {
+          "beat_id": {"type": "string", "minLength": 1},
+          "role": {"type": "string", "minLength": 1},
+          "minimum_capacity": {"type": "integer", "minimum": 0},
+          "sequence_index": {"type": "integer", "minimum": 0},
+          "content_requirements": {
+            "type": "object", "minProperties": 1, "additionalProperties": false,
+            "properties": {
+              "title": {"type": "integer", "minimum": 0},
+              "label": {"type": "integer", "minimum": 0},
+              "metric": {"type": "integer", "minimum": 0},
+              "body": {"type": "integer", "minimum": 0}
+            }
+          },
+          "minimum_role_capacities": {
+            "type": "object", "minProperties": 1, "additionalProperties": false,
+            "properties": {
+              "title": {"type": "integer", "minimum": 1},
+              "label": {"type": "integer", "minimum": 1},
+              "metric": {"type": "integer", "minimum": 1},
+              "body": {"type": "integer", "minimum": 1}
+            }
+          }
+        }
+      }
+    }
+  }
+}

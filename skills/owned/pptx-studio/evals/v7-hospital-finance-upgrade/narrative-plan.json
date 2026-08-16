@@ -1,0 +1,39 @@
+{
+  "schema_version": "pptx-studio-narrative-plan.v1",
+  "brief_id": "hospital-finance-digital-upgrade-2026",
+  "style_intent": {
+    "industry": "医疗财务运营",
+    "audience_tone": "院务会决策、审慎可信",
+    "visual_tone": "现代医院、蓝绿低饱和、数据清晰",
+    "brand_constraints": "避免营销化人物图；以可编辑数据、流程、系统模型为主"
+  },
+  "beats": [
+    {"beat_id":"cover","kind":"cover","section_id":null,"page_intent":"明确本次需要院务会批准的事项","key_message":"现在立项，6 个月形成可验证的结算与预警成果","fact_ids":[],"grammar":"cover","density":"low","estimated_units":0,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"agenda","kind":"contents","section_id":null,"page_intent":"让受众预览决策链路","key_message":"从现状瓶颈、建设方案、投资回报到实施决策依次展开","fact_ids":["f11"],"grammar":"agenda","density":"balanced","estimated_units":1,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"section-current","kind":"section","section_id":"current","page_intent":"切换到现状诊断","key_message":"业务增长已超过现有结算协同能力","fact_ids":[],"grammar":"section","density":"low","estimated_units":0,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"current-pressure","kind":"body","section_id":"current","page_intent":"证明瓶颈具有紧迫性","key_message":"结算量增长 18%，人工核对正在挤压月末结算周期","fact_ids":["f01","f02"],"grammar":"trend","density":"balanced","estimated_units":5,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"current-friction","kind":"body","section_id":"current","page_intent":"解释问题为何跨部门反复发生","key_message":"7 类高频差异项让临床、医保和财务在重复追溯中延迟","fact_ids":["f03"],"grammar":"process","density":"balanced","estimated_units":4,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"section-solution","kind":"section","section_id":"solution","page_intent":"切换到解决方案","key_message":"用统一数据与规则能力替代分散人工核对","fact_ids":[],"grammar":"section","density":"low","estimated_units":0,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"solution-architecture","kind":"body","section_id":"solution","page_intent":"说明方案覆盖范围、试点顺序与协同机制","key_message":"以统一平台先落地结算核对和异常预警，再由财务、信息与临床共同扩展","fact_ids":["f04","f05","f06"],"grammar":"process","density":"balanced","estimated_units":7,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"section-value","kind":"section","section_id":"value","page_intent":"切换到投资与回报判断","key_message":"投资边界明确，收益可用运营指标验证","fact_ids":[],"grammar":"section","density":"low","estimated_units":0,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"investment","kind":"body","section_id":"value","page_intent":"让受众判断投入是否可控","key_message":"1,800 万元投资分为平台、接口治理和试运行三类可管控投入","fact_ids":["f07"],"grammar":"composition","density":"balanced","estimated_units":5,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"return","kind":"body","section_id":"value","page_intent":"让受众判断预期收益是否可验收","key_message":"周期缩短、差异识别和预算预警构成三项可量化验收指标","fact_ids":["f08"],"grammar":"kpi","density":"balanced","estimated_units":4,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"section-execution","kind":"section","section_id":"execution","page_intent":"切换到执行保障","key_message":"风险有责任人，里程碑有明确批准动作","fact_ids":[],"grammar":"section","density":"low","estimated_units":0,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"risk","kind":"body","section_id":"execution","page_intent":"证明风险已被可执行地治理","key_message":"数据、协同和采购风险分别由明确部门闭环","fact_ids":["f09"],"grammar":"risk","density":"balanced","estimated_units":4,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"decision-roadmap","kind":"body","section_id":"execution","page_intent":"明确本次会议后应启动的动作","key_message":"1 月立项、4 月启动、9 月评估，按阶段交付可验证成果","fact_ids":["f10"],"grammar":"timeline","density":"balanced","estimated_units":4,"capacity_units":8,"disposition":"keep"},
+    {"beat_id":"closing","kind":"closing","section_id":null,"page_intent":"请求院务会作出明确决策","key_message":"请批准立项并授权进入采购准备","fact_ids":[],"grammar":"closing","density":"low","estimated_units":0,"capacity_units":8,"disposition":"keep"}
+  ],
+  "fact_coverage": [
+    {"fact_id":"f01","disposition":"used","reason":"说明业务增长压力"},
+    {"fact_id":"f02","disposition":"used","reason":"量化结算周期与人工核对占比"},
+    {"fact_id":"f03","disposition":"used","reason":"说明跨部门差异摩擦"},
+    {"fact_id":"f04","disposition":"used","reason":"说明平台能力范围"},
+    {"fact_id":"f05","disposition":"used","reason":"说明试点节奏"},
+    {"fact_id":"f06","disposition":"used","reason":"说明治理机制"},
+    {"fact_id":"f07","disposition":"used","reason":"说明投资构成"},
+    {"fact_id":"f08","disposition":"used","reason":"说明可量化回报"},
+    {"fact_id":"f09","disposition":"used","reason":"说明风险责任"},
+    {"fact_id":"f10","disposition":"used","reason":"说明决策后里程碑"},
+    {"fact_id":"f11","disposition":"used","reason":"提供客户确认的目录页标题"}
+  ]
+}

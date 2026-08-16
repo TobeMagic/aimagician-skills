@@ -14,8 +14,9 @@ import json
 import os
 import re
 import zipfile
+import xml.etree.ElementTree as ET
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -31,15 +32,31 @@ from window_pptx.physical_assembly import (
     AssemblyTargetSlide,
     AssetBindingSpec,
     AuthorityLock,
+    ComponentImportSpec,
+    HostCleanupSpec,
     PhysicalAssemblyReport,
     TextBindingSpec,
+    _component_nodes_sha256,
+    _component_nodes_bbox,
+    _component_relationship_ids,
+    _component_root_nodes,
     assemble_physical_deck,
 )
 
 from .adaptation import adaptation_request_sha256, compile_adaptation, serialize_adaptation_plan
 from .composition import composition_plan_sha256
+from .composition import verify_composition_replay_lock
+from .component_profiles import ComponentProfileError, ComponentProfileIndex
+from .query import materialization_eligible
 from .qa import run_studio_qa
 from .role_policy import minimum_distinct_client_facts
+from .surface_semantics import (
+    STRUCTURAL_ORDINAL_RE,
+    TEMPLATE_BRAND_RE as _TEMPLATE_BRAND_RE,
+    compact_text,
+    classify_text_surface,
+    is_sequence_date_source,
+)
 from .structured_data import (
     StructuredDataError,
     contract_by_id,
@@ -62,17 +79,13 @@ _TEMPLATE_PLACEHOLDER_RE = re.compile(
     r"(?:20XX|20\dX|XXX|LOGO|(?:输入|添加|点击)[^\n]{0,12}标题|请替换|占位|某某|Lorem|Your\s+(?:title|text))",
     re.IGNORECASE,
 )
-_TEMPLATE_BRAND_RE = re.compile(
-    r"(?:B站|哔哩哔哩|bilibili|nestle|雀巢|erke|安踏|Abbott|完美日记|蚂蚁森林)",
-    re.IGNORECASE,
+_CERTIFIED_WORK_REPORT_SHA = "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839"
+_CARDINALITY_ADAPTATION_RELATIVE = Path(
+    "intelligence/pptx-studio/annotations/timeline-cardinality-adaptations.v1.json"
 )
 
-_CLIENT_TITLE_RE = re.compile(r"(?:年度|年终|工作汇报|工作总结|财务决算|工作思路|收入情况|支出情况|经济指标|项目及)")
-_NUMERIC_VALUE_RE = re.compile(r"[0-9０-９][0-9０-９,，.．%％]*\s*(?:万|亿|元|人|次|项|个|家|年|月|日|%|％)?")
-_CERTIFIED_WORK_REPORT_SHA = "59b104d31bf3f44c15d407adefe51425c9dcd8bb5c5d1e2212fb38753dc72839"
 
-
-def _client_binding_role(slot: SlotRecord) -> str:
+def _client_binding_role(slot: SlotRecord, *, declared_role: str | None = None) -> str:
     """Classify a native text slot for content planning without exposing text.
 
     The historical importer role is intentionally conservative for OOXML
@@ -81,30 +94,123 @@ def _client_binding_role(slot: SlotRecord) -> str:
     report title should not all be presented as generic body slots.
     """
 
-    compact = "".join(slot.text.split())
-    if not compact or _TEMPLATE_BRAND_RE.search(compact) or compact.casefold() == "logo":
-        return "ignore"
-    if slot.bbox.get("y", 1000) < 240 and (
-        _CLIENT_TITLE_RE.search(compact)
-        or "标题" in compact
-        or "title" in compact.casefold()
-        or slot.semantic_role in {"title", "subtitle"}
+    return classify_text_surface(
+        text=slot.text,
+        semantic_role=slot.semantic_role,
+        bbox=slot.bbox,
+        declared_role=declared_role,
+    )
+
+
+def _automatic_sequence_component_groups(
+    slots: Sequence[SlotRecord],
+    *,
+    declared_role: str | None,
+    shape_to_component: Mapping[str, str],
+) -> list[dict[str, Any]]:
+    """Publish ordered date/action pairs for a native timeline or roadmap.
+
+    The inference uses source-private placeholder semantics and geometry, but
+    returns only opaque group names and component fields.  A model therefore
+    knows that one approved date belongs with one approved action without
+    receiving coordinates, source text or shape identifiers.
+    """
+
+    if declared_role not in {"timeline", "roadmap", "process"}:
+        return []
+    if declared_role == "process":
+        labels = [
+            slot for slot in slots
+            if slot.slot_id in shape_to_component
+            and _client_binding_role(slot, declared_role=declared_role) == "label"
+        ]
+        bodies = [
+            slot for slot in slots
+            if slot.slot_id in shape_to_component
+            and _client_binding_role(slot, declared_role=declared_role) == "body"
+        ]
+        if len(labels) < 2 or len(labels) != len(bodies):
+            return []
+        remaining = list(bodies)
+        groups: list[dict[str, Any]] = []
+        for index, label in enumerate(
+            sorted(labels, key=lambda item: item.reading_order),
+            start=1,
+        ):
+            label_x = int(label.bbox.get("x", 0)) + int(label.bbox.get("w", 0)) // 2
+            label_y = int(label.bbox.get("y", 0)) + int(label.bbox.get("h", 0)) // 2
+            body = min(
+                remaining,
+                key=lambda item: (
+                    abs(int(item.bbox.get("x", 0)) + int(item.bbox.get("w", 0)) // 2 - label_x)
+                    + abs(int(item.bbox.get("y", 0)) + int(item.bbox.get("h", 0)) // 2 - label_y),
+                    item.reading_order,
+                ),
+            )
+            remaining.remove(body)
+            groups.append({
+                "component_group": f"process-step.{index:02d}",
+                "component_keys": [
+                    shape_to_component[label.slot_id],
+                    shape_to_component[body.slot_id],
+                ],
+                "component_intent": "process-step",
+                "component_fields": ["label", "body"],
+                "required": True,
+            })
+        return groups
+    dates = [
+        slot for slot in slots
+        if slot.slot_id in shape_to_component
+        and is_sequence_date_source(slot.text)
+    ]
+    actions = [
+        slot for slot in slots
+        if slot.slot_id in shape_to_component
+        and slot not in dates
+        and _client_binding_role(slot, declared_role=declared_role) in {"label", "body"}
+    ]
+    if len(dates) < 2 or len(actions) < len(dates):
+        return []
+
+    remaining = list(actions)
+    groups: list[dict[str, Any]] = []
+    for index, date in enumerate(
+        sorted(dates, key=lambda item: (int(item.bbox.get("x", 0)), item.reading_order)),
+        start=1,
     ):
-        return "title"
-    # A report headline nearly always includes a year (for example ``2025
-    # 年财务决算：收入情况``).  It must be classified before generic numeric
-    # detection: matching the year alone previously made the most prominent
-    # page title look like a metric and let an agent place its title into a
-    # small data card.
-    if _NUMERIC_VALUE_RE.fullmatch(compact) or (
-        _NUMERIC_VALUE_RE.search(compact) and any(unit in compact for unit in ("万", "亿", "元", "%", "％", "人", "次", "项", "个"))
-    ):
-        return "metric"
-    if "标题" in compact or compact.startswith(("添加", "输入", "请替换")):
-        return "label"
-    if len(compact) <= 18:
-        return "label"
-    return "body"
+        date_center = int(date.bbox.get("x", 0)) + int(date.bbox.get("w", 0)) // 2
+        below = [
+            item for item in remaining
+            if int(item.bbox.get("y", 0)) >= int(date.bbox.get("y", 0))
+        ]
+        candidates = below or remaining
+        if not candidates:
+            return []
+        action = min(
+            candidates,
+            key=lambda item: (
+                abs(
+                    int(item.bbox.get("x", 0))
+                    + int(item.bbox.get("w", 0)) // 2
+                    - date_center
+                ),
+                abs(int(item.bbox.get("y", 0)) - int(date.bbox.get("y", 0))),
+                item.reading_order,
+            ),
+        )
+        remaining.remove(action)
+        groups.append({
+            "component_group": f"timeline-step.{index:02d}",
+            "component_keys": [
+                shape_to_component[date.slot_id],
+                shape_to_component[action.slot_id],
+            ],
+            "component_intent": "timeline-milestone",
+            "component_fields": ["date", "action"],
+            "required": True,
+        })
+    return groups
 
 
 def _fragment_title_regions(
@@ -189,10 +295,12 @@ def _fragment_title_regions(
             })
     return regions
 
-def _unbound_template_clear_reason(value: str, *, occurrence_count: int = 1) -> str | None:
+def _unbound_template_clear_reason(
+    value: str, *, occurrence_count: int = 1, declared_role: str | None = None,
+) -> str | None:
     """Classify only safe, non-client source copy for compiler-owned clearing."""
 
-    compact = "".join(value.split())
+    compact = compact_text(value)
     if not compact:
         return None
     if _TEMPLATE_PLACEHOLDER_RE.search(compact):
@@ -201,6 +309,8 @@ def _unbound_template_clear_reason(value: str, *, occurrence_count: int = 1) -> 
         return "template-brand-residue"
     if occurrence_count >= 3 and re.fullmatch(r"\d+(?:\.\d+)?(?:万|元|%|人|项|个)?", compact):
         return "template-repeated-data"
+    if declared_role == "contents" and STRUCTURAL_ORDINAL_RE.fullmatch(compact):
+        return None
     if re.fullmatch(r"\d{1,2}", compact):
         return "template-ordinal"
     # Source copy is retained only where it is a truly generic navigation
@@ -330,6 +440,346 @@ def _selected_package_hashes(composition_plan: Mapping[str, Any]) -> set[str]:
             raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
         hashes.add(package_sha)
     return hashes
+
+
+def _component_source_hashes(
+    composition_plan: Mapping[str, Any], *, component_profiles: ComponentProfileIndex | None,
+) -> set[str]:
+    """Return the exact private package closure for selected components."""
+
+    hashes = _selected_package_hashes(composition_plan)
+    for selected in composition_plan.get("slides", []):
+        source = selected.get("source") if isinstance(selected, Mapping) else None
+        assembly = source.get("component_assembly") if isinstance(source, Mapping) else None
+        if assembly is None:
+            continue
+        if component_profiles is None or not isinstance(assembly, Mapping):
+            raise PhysicalAdapterError("COMPONENT_PROFILE_REQUIRED")
+        try:
+            placements = _component_placements(source, component_profiles=component_profiles)
+        except ComponentProfileError as exc:
+            raise PhysicalAdapterError(str(exc)) from exc
+        hashes.update(component.package_sha256 for _anchor, component in placements)
+        hashes.update(
+            anchor.canvas_source_package_sha256
+            for anchor, _component in placements
+            if anchor.anchor_mode == "canvas"
+            and isinstance(anchor.canvas_source_package_sha256, str)
+        )
+    return hashes
+
+
+def _component_placements(
+    source: Mapping[str, Any], *, component_profiles: ComponentProfileIndex,
+) -> tuple[tuple[Any, Any], ...]:
+    """Resolve a plan's private V3/V4 component authority to one-to-one pairs.
+
+    V4 is deliberately placement based: each imported component removes one
+    distinct certified host reservation.  V3 remains readable for replay but
+    is a single-placement-only legacy route.
+    """
+
+    assembly = source.get("component_assembly")
+    host_page_id = source.get("page_id")
+    if not isinstance(assembly, Mapping) or not isinstance(host_page_id, str):
+        raise PhysicalAdapterError("COMPONENT_PLAN_INVALID")
+    raw_placements = assembly.get("placements")
+    if raw_placements is not None:
+        if (
+            not isinstance(raw_placements, list)
+            or any(
+                not isinstance(entry, Mapping)
+                or set(entry) != {"host_anchor_id", "component_id", "component_intent"}
+                or not isinstance(entry.get("host_anchor_id"), str)
+                or not isinstance(entry.get("component_id"), str)
+                or not isinstance(entry.get("component_intent"), str)
+                for entry in raw_placements
+            )
+        ):
+            raise PhysicalAdapterError("COMPONENT_PLAN_INVALID")
+        return component_profiles.validate_placements(
+            host_page_id=host_page_id,
+            placements=tuple(
+                (str(entry["host_anchor_id"]), str(entry["component_id"]))
+                for entry in raw_placements
+            ),
+        )
+    anchor_id = assembly.get("host_anchor_id")
+    component_ids = assembly.get("component_ids")
+    if (
+        not isinstance(anchor_id, str)
+        or not isinstance(component_ids, list)
+        or len(component_ids) != 1
+        or any(not isinstance(value, str) for value in component_ids)
+    ):
+        raise PhysicalAdapterError("COMPONENT_PLAN_INVALID")
+    anchor, components = component_profiles.validate_selection(
+        host_page_id=host_page_id, host_anchor_id=anchor_id,
+        component_ids=(str(component_ids[0]),),
+    )
+    return ((anchor, components[0]),)
+
+
+def _host_cleanup_specs(
+    placements: Sequence[tuple[Any, Any]],
+) -> tuple[HostCleanupSpec, ...]:
+    """Deduplicate profile-certified unused host variants for one target page."""
+
+    by_shape_set: dict[tuple[int, ...], HostCleanupSpec] = {}
+    claimed: set[int] = set()
+    for anchor, _component in placements:
+        shape_ids = tuple(anchor.removable_shape_ids)
+        if not shape_ids:
+            continue
+        digest = anchor.removable_shape_sha256
+        if not isinstance(digest, str):
+            raise PhysicalAdapterError("COMPONENT_PROFILE_HOST_CLEANUP_INVALID")
+        if claimed.intersection(shape_ids):
+            existing = by_shape_set.get(shape_ids)
+            if existing is None or existing.shape_sha256 != digest:
+                raise PhysicalAdapterError("COMPONENT_PROFILE_HOST_CLEANUP_OVERLAP")
+            continue
+        claimed.update(shape_ids)
+        by_shape_set[shape_ids] = HostCleanupSpec(
+            shape_ids=shape_ids, shape_sha256=digest,
+        )
+    return tuple(
+        by_shape_set[key] for key in sorted(by_shape_set)
+    )
+
+
+def _load_timeline_cardinality_adaptations(
+    private_source_root: Path | str,
+) -> dict[tuple[str, str, int], HostCleanupSpec]:
+    """Load the small curator-only sequence adaptation registry fail-closed."""
+
+    path = _private_root_for_source_root(private_source_root) / _CARDINALITY_ADAPTATION_RELATIVE
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise PhysicalAdapterError("TIMELINE_CARDINALITY_ADAPTATION_INVALID") from exc
+    entries = payload.get("adaptations") if isinstance(payload, Mapping) else None
+    if (
+        payload.get("schema_version") != "pptx-studio-timeline-cardinality-adaptations.v1"
+        or not isinstance(entries, list)
+    ):
+        raise PhysicalAdapterError("TIMELINE_CARDINALITY_ADAPTATION_INVALID")
+    resolved: dict[tuple[str, str, int], HostCleanupSpec] = {}
+    for entry in entries:
+        if not isinstance(entry, Mapping):
+            raise PhysicalAdapterError("TIMELINE_CARDINALITY_ADAPTATION_INVALID")
+        page_id, role, minimum_capacity = (
+            entry.get("page_id"), entry.get("role"), entry.get("minimum_capacity"),
+        )
+        shape_ids, digest = entry.get("shape_ids"), entry.get("shape_sha256")
+        if (
+            not isinstance(page_id, str)
+            or not page_id
+            or role not in {"timeline", "roadmap"}
+            or type(minimum_capacity) is not int
+            or minimum_capacity < 2
+            or not isinstance(shape_ids, list)
+            or not shape_ids
+            or len(set(shape_ids)) != len(shape_ids)
+            or any(type(shape_id) is not int or shape_id < 1 for shape_id in shape_ids)
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        ):
+            raise PhysicalAdapterError("TIMELINE_CARDINALITY_ADAPTATION_INVALID")
+        key = (page_id, role, minimum_capacity)
+        if key in resolved:
+            raise PhysicalAdapterError("TIMELINE_CARDINALITY_ADAPTATION_AMBIGUOUS")
+        resolved[key] = HostCleanupSpec(
+            shape_ids=tuple(shape_ids), shape_sha256=digest,
+        )
+    return resolved
+
+
+def certified_timeline_cardinality_adaptation_keys(
+    *, private_source_root: Path | str,
+) -> frozenset[tuple[str, str, int]]:
+    """Return opaque eligible page/role/capacity tuples for style planning.
+
+    Shape closures and their hashes remain inside the physical adapter.  The
+    planner receives only an already-certified opaque eligibility tuple and
+    cannot turn it into a general deletion request.
+    """
+
+    return frozenset(_load_timeline_cardinality_adaptations(private_source_root))
+
+
+def _timeline_cardinality_cleanup_specs(
+    *, private_source_root: Path | str, page_id: str, role: str,
+    minimum_capacity: object,
+) -> tuple[HostCleanupSpec, ...]:
+    """Resolve one private, hash-bound timeline-node removal contract."""
+
+    if role not in {"timeline", "roadmap"} or type(minimum_capacity) is not int:
+        return ()
+    entry = _load_timeline_cardinality_adaptations(private_source_root).get(
+        (page_id, role, minimum_capacity),
+    )
+    return (entry,) if entry is not None else ()
+
+
+def _merge_cleanup_specs(*groups: Sequence[HostCleanupSpec]) -> tuple[HostCleanupSpec, ...]:
+    """Reject overlapping cleanup closures before they reach the assembler."""
+
+    merged: list[HostCleanupSpec] = []
+    claimed: set[int] = set()
+    for group in groups:
+        for spec in group:
+            if claimed.intersection(spec.shape_ids):
+                raise PhysicalAdapterError("CERTIFIED_CLEANUP_OVERLAP")
+            claimed.update(spec.shape_ids)
+            merged.append(spec)
+    return tuple(merged)
+
+
+def _requested_minimum_capacity(selected: Mapping[str, Any]) -> int | None:
+    """Recover the request's semantic capacity from sealed composition evidence."""
+
+    evidence = selected.get("evidence")
+    if not isinstance(evidence, Mapping):
+        return None
+    capacity, residue = evidence.get("capacity"), evidence.get("capacity_residue")
+    if type(capacity) is not int or type(residue) is not int:
+        return None
+    minimum = capacity - residue
+    return minimum if minimum >= 1 else None
+
+
+def resolve_component_import_specs(
+    source: Mapping[str, Any], *,
+    component_profiles: ComponentProfileIndex | None,
+    source_paths: Mapping[str, Path],
+    context: AssemblyImportContext,
+) -> tuple[ComponentImportSpec, ...]:
+    """Map opaque V3/V4 selections to verified native closures, privately."""
+
+    assembly = source.get("component_assembly")
+    if assembly is None:
+        return ()
+    if component_profiles is None or not isinstance(assembly, Mapping):
+        raise PhysicalAdapterError("COMPONENT_PROFILE_REQUIRED")
+    host_package_sha = source.get("package_sha256")
+    host_slide_number = source.get("slide_number")
+    if (
+        not isinstance(host_package_sha, str)
+        or type(host_slide_number) is not int
+    ):
+        raise PhysicalAdapterError("COMPONENT_PLAN_INVALID")
+    try:
+        placements = _component_placements(source, component_profiles=component_profiles)
+    except ComponentProfileError as exc:
+        raise PhysicalAdapterError(str(exc)) from exc
+    host_path = source_paths.get(host_package_sha)
+    if host_path is None:
+        raise PhysicalAdapterError("COMPONENT_HOST_SOURCE_MISSING")
+    _context, host_graph = context.graph_for(host_path, host_package_sha, host_slide_number)
+    resolved: list[ComponentImportSpec] = []
+    for anchor, component in placements:
+        if anchor.package_sha256 != host_package_sha or anchor.slide_number != host_slide_number:
+            raise PhysicalAdapterError("COMPONENT_PROFILE_HOST_SOURCE_DRIFT")
+        if host_graph.slide_sha != anchor.slide_sha256:
+            raise PhysicalAdapterError("COMPONENT_PROFILE_HOST_SLIDE_DRIFT")
+        if anchor.anchor_mode == "replacement":
+            try:
+                host_nodes = _component_root_nodes(
+                    ET.fromstring(host_graph.slide_xml), shape_ids=anchor.shape_ids,
+                    label="COMPONENT_HOST_ANCHOR",
+                )
+            except (ET.ParseError, ValueError) as exc:
+                raise PhysicalAdapterError("COMPONENT_PROFILE_HOST_CLOSURE_INVALID") from exc
+            if _component_nodes_sha256(host_nodes) != anchor.host_anchor_sha256:
+                raise PhysicalAdapterError("COMPONENT_PROFILE_HOST_ANCHOR_DRIFT")
+        elif anchor.anchor_mode == "canvas":
+            if (
+                not isinstance(anchor.canvas_source_package_sha256, str)
+                or type(anchor.canvas_source_slide_number) is not int
+                or not isinstance(anchor.canvas_source_slide_sha256, str)
+                or not anchor.canvas_shape_ids
+                or not isinstance(anchor.canvas_sha256, str)
+                or anchor.canvas_bbox is None
+            ):
+                raise PhysicalAdapterError("COMPONENT_PROFILE_CANVAS_INVALID")
+            canvas_path = source_paths.get(anchor.canvas_source_package_sha256)
+            if canvas_path is None:
+                raise PhysicalAdapterError("COMPONENT_CANVAS_SOURCE_MISSING")
+            _context, canvas_graph = context.graph_for(
+                canvas_path, anchor.canvas_source_package_sha256,
+                anchor.canvas_source_slide_number,
+            )
+            if canvas_graph.slide_sha != anchor.canvas_source_slide_sha256:
+                raise PhysicalAdapterError("COMPONENT_PROFILE_CANVAS_SOURCE_DRIFT")
+            try:
+                canvas_nodes = _component_root_nodes(
+                    ET.fromstring(canvas_graph.slide_xml), shape_ids=anchor.canvas_shape_ids,
+                    label="COMPONENT_CANVAS",
+                )
+            except (ET.ParseError, ValueError) as exc:
+                raise PhysicalAdapterError("COMPONENT_PROFILE_CANVAS_CLOSURE_INVALID") from exc
+            if _component_nodes_sha256(canvas_nodes) != anchor.canvas_sha256:
+                raise PhysicalAdapterError("COMPONENT_PROFILE_CANVAS_DRIFT")
+            canvas_bbox = _component_nodes_bbox(canvas_nodes)
+            if canvas_bbox is None or (
+                canvas_bbox[0], canvas_bbox[1],
+                canvas_bbox[2] - canvas_bbox[0], canvas_bbox[3] - canvas_bbox[1],
+            ) != anchor.canvas_bbox:
+                raise PhysicalAdapterError("COMPONENT_PROFILE_CANVAS_BOUNDS_DRIFT")
+        else:
+            raise PhysicalAdapterError("COMPONENT_PROFILE_ANCHOR_MODE_INVALID")
+        component_path = source_paths.get(component.package_sha256)
+        if component_path is None:
+            raise PhysicalAdapterError("COMPONENT_SOURCE_MISSING")
+        _context, component_graph = context.graph_for(
+            component_path, component.package_sha256, component.slide_number,
+        )
+        if component_graph.slide_sha != component.slide_sha256:
+            raise PhysicalAdapterError("COMPONENT_PROFILE_SOURCE_SLIDE_DRIFT")
+        try:
+            nodes = _component_root_nodes(
+                ET.fromstring(component_graph.slide_xml), shape_ids=component.shape_ids,
+                label="COMPONENT_SOURCE",
+            )
+        except (ET.ParseError, ValueError) as exc:
+            raise PhysicalAdapterError("COMPONENT_PROFILE_SOURCE_CLOSURE_INVALID") from exc
+        if _component_nodes_sha256(nodes) != component.component_sha256:
+            raise PhysicalAdapterError("COMPONENT_PROFILE_COMPONENT_DRIFT")
+        relationship_ids = _component_relationship_ids(nodes)
+        if relationship_ids != component.relationship_ids:
+            raise PhysicalAdapterError("COMPONENT_PROFILE_RELATIONSHIP_DRIFT")
+        source_slots = {
+            slot.slot_id: slot for slot in _discover_slots(
+                component_graph.slide_xml.decode("utf-8", errors="replace"),
+            )
+        }
+        for field in component.fields:
+            slot = source_slots.get(f"shape_{field.shape_id}")
+            if slot is None or slot.max_chars < field.max_chars:
+                raise PhysicalAdapterError("COMPONENT_PROFILE_FIELD_DRIFT")
+        component_bbox = _component_nodes_bbox(nodes)
+        if component_bbox is None:
+            raise PhysicalAdapterError("COMPONENT_PROFILE_COMPONENT_GEOMETRY_UNAVAILABLE")
+        if anchor.anchor_mode == "canvas" and (
+            component_bbox[2] - component_bbox[0], component_bbox[3] - component_bbox[1]
+        ) != (anchor.canvas_bbox[2], anchor.canvas_bbox[3]):
+            raise PhysicalAdapterError("COMPONENT_PROFILE_CANVAS_BOUNDS_MISMATCH")
+        resolved.append(ComponentImportSpec(
+            source_path=str(component_path), source_package_sha256=component.package_sha256,
+            source_slide_number=component.slide_number,
+            source_slide_sha256=component.slide_sha256,
+            source_shape_ids=component.shape_ids,
+            host_anchor_shape_ids=anchor.shape_ids,
+            component_sha256=component.component_sha256,
+            host_anchor_sha256=anchor.host_anchor_sha256,
+            relationship_ids=relationship_ids,
+            canvas_bbox=anchor.canvas_bbox if anchor.anchor_mode == "canvas" else None,
+            canvas_anchor_sha256=anchor.canvas_sha256 if anchor.anchor_mode == "canvas" else None,
+        ))
+    return tuple(resolved)
 
 
 def _slot_graph(slots: Sequence[SlotRecord]) -> dict[str, Any]:
@@ -633,6 +1083,22 @@ def _curated_component_groups(
             ))
         ):
             raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_INVALID")
+        available_shape_ids = [
+            shape_id for shape_id in shape_ids
+            if isinstance(shape_id, str) and shape_id in shape_to_component
+        ]
+        # A V4 host can deliberately reserve a complete visual card for a
+        # native imported component, or remove a complete unused card through
+        # a hash-bound cleanup spec.  In both cases none of that host card's
+        # text surfaces remain publishable.  Keeping its old page-level group
+        # would require facts for invisible shapes; treating it as source
+        # drift would make safe component assembly impossible.  A *partial*
+        # disappearance is still a hard failure because it would leave a
+        # broken visual card or an unverified source mutation.
+        if not available_shape_ids:
+            continue
+        if len(available_shape_ids) != len(shape_ids):
+            raise PhysicalAdapterError("CURATED_COMPONENT_ANNOTATION_SOURCE_DRIFT")
         component_keys: list[str] = []
         for shape_id in shape_ids:
             if not isinstance(shape_id, str) or shape_id not in shape_to_component:
@@ -662,6 +1128,7 @@ def preflight_native_slots(
     *,
     catalog: Mapping[str, Any],
     private_source_root: Path | str,
+    component_profiles: ComponentProfileIndex | None = None,
 ) -> dict[str, Any]:
     """Return value-free, source-authoritative capacity for selected regions.
 
@@ -672,12 +1139,20 @@ def preflight_native_slots(
     capacities: neither private paths nor source/client text can escape.
     """
 
-    if composition_plan.get("schema_version") != "1.0" or composition_plan.get("status") != "PASS":
+    if composition_plan.get("schema_version") not in {"1.0", "2.0", "3.0", "4.0"} or composition_plan.get("status") != "PASS":
         raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
+    try:
+        verify_composition_replay_lock(
+            composition_plan, catalog=catalog, component_profiles=component_profiles,
+        )
+    except ValueError as exc:
+        raise PhysicalAdapterError(str(exc)) from exc
     page_by_id, region_by_id = _page_lookup(catalog)
     source_paths = resolve_catalog_sources(
         catalog, private_source_root=private_source_root,
-        required_package_hashes=_selected_package_hashes(composition_plan),
+        required_package_hashes=_component_source_hashes(
+            composition_plan, component_profiles=component_profiles,
+        ),
     )
     context = AssemblyImportContext()
     slides: list[dict[str, Any]] = []
@@ -702,6 +1177,8 @@ def preflight_native_slots(
             or type(slide_number) is not int
         ):
             raise PhysicalAdapterError("CATALOG_SOURCE_DRIFT")
+        if not materialization_eligible(page):
+            raise PhysicalAdapterError("CATALOG_MATERIALIZATION_INELIGIBLE")
         _, graph = context.graph_for(source_paths[package_sha], package_sha, slide_number)
         slots, nested_alias_slot_ids = _deduplicate_nested_alias_slots(
             _discover_slots(graph.slide_xml.decode("utf-8", errors="replace")),
@@ -726,6 +1203,40 @@ def preflight_native_slots(
         source_regions = source.get("region_ids")
         if not isinstance(source_regions, list):
             raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
+        # A component host anchor is an integrity-locked reservation, not an
+        # editable host text surface.  Publishing or clearing it before the
+        # importer swaps it out changes its hash and must therefore be
+        # rejected.  Resolve the opaque authority privately here and remove
+        # only its certified member shapes from the ordinary preflight API.
+        component_assembly = source.get("component_assembly")
+        reserved_host_slot_ids: set[str] = set()
+        cardinality_cleanup_specs = _timeline_cardinality_cleanup_specs(
+            private_source_root=private_source_root, page_id=str(page_id),
+            role=str(selected.get("role", "")),
+            minimum_capacity=_requested_minimum_capacity(selected),
+        )
+        reserved_host_slot_ids.update(
+            f"shape_{shape_id}"
+            for cleanup in cardinality_cleanup_specs
+            for shape_id in cleanup.shape_ids
+        )
+        if component_assembly is not None:
+            if component_profiles is None or not isinstance(component_assembly, Mapping):
+                raise PhysicalAdapterError("COMPONENT_PROFILE_REQUIRED")
+            try:
+                placements = _component_placements(source, component_profiles=component_profiles)
+            except ComponentProfileError as exc:
+                raise PhysicalAdapterError(str(exc)) from exc
+            reserved_host_slot_ids.update({
+                f"shape_{shape_id}"
+                for anchor, _component in placements
+                for shape_id in anchor.shape_ids
+            })
+            reserved_host_slot_ids.update(
+                f"shape_{shape_id}"
+                for cleanup in _host_cleanup_specs(placements)
+                for shape_id in cleanup.shape_ids
+            )
         selected_shape_ids: set[str] = set()
         for region_id in source_regions:
             region = region_by_id.get(str(region_id))
@@ -734,7 +1245,10 @@ def preflight_native_slots(
             raw_shape_ids = region.get("editable_shape_ids")
             if not isinstance(raw_shape_ids, list) or not raw_shape_ids:
                 raise PhysicalAdapterError("TEXT_REGION_EMPTY")
-            selected_shape_ids.update(f"shape_{raw_shape_id}" for raw_shape_id in raw_shape_ids)
+            selected_shape_ids.update(
+                f"shape_{raw_shape_id}" for raw_shape_id in raw_shape_ids
+                if f"shape_{raw_shape_id}" not in reserved_host_slot_ids
+            )
         fragment_regions = [
             fragment for fragment in _fragment_title_regions(
                 slots, package_sha256=package_sha, slide_number=slide_number,
@@ -755,6 +1269,8 @@ def preflight_native_slots(
             shape_slots: list[dict[str, Any]] = []
             for raw_shape_id in raw_shape_ids:
                 slot_id = f"shape_{raw_shape_id}"
+                if slot_id in reserved_host_slot_ids:
+                    continue
                 slot = slots_by_id.get(slot_id)
                 if slot is None:
                     if slot_id in nested_alias_slot_ids:
@@ -775,7 +1291,9 @@ def preflight_native_slots(
                     "shape_id": slot_id,
                     "native_capacity": slot.max_chars,
                     "semantic_role": slot.semantic_role,
-                    "binding_role": _client_binding_role(slot),
+                    "binding_role": _client_binding_role(
+                        slot, declared_role=str(selected.get("role", "")),
+                    ),
                 })
             if not shape_slots:
                 continue
@@ -795,6 +1313,33 @@ def preflight_native_slots(
                 "fragment_count": fragment["native_capacity"],
             })
             region_count += 1
+        if component_assembly is not None:
+            if component_profiles is None or not isinstance(component_assembly, Mapping):
+                raise PhysicalAdapterError("COMPONENT_PROFILE_REQUIRED")
+            try:
+                placements = _component_placements(source, component_profiles=component_profiles)
+            except ComponentProfileError as exc:
+                raise PhysicalAdapterError(str(exc)) from exc
+            # Resolve the private source closure now. This verifies every
+            # field capacity against its actual native text shape before the
+            # value-free field API reaches the outline binder.
+            resolve_component_import_specs(
+                source, component_profiles=component_profiles,
+                source_paths=source_paths, context=context,
+            )
+            for _anchor, component in placements:
+                for field in component.fields:
+                    regions.append({
+                        "region_id": f"{component.component_id}.{field.field_id}",
+                        "native_capacity": field.max_chars,
+                        "semantic_roles": [field.semantic_role],
+                        "component_key": f"{component.component_id}.{field.field_id}",
+                        "component_binding": {
+                            "component_id": component.component_id,
+                            "field_id": field.field_id,
+                        },
+                    })
+                    region_count += 1
         # Publish a stable, geometry-free component key for every writable
         # native surface. The client model may select ``label.03`` or
         # ``metric.05`` but never sees a source shape ID or a coordinate; the
@@ -893,6 +1438,33 @@ def preflight_native_slots(
                 shape_id = shape_slot.get("shape_id")
                 if isinstance(shape_id, str):
                     shape_to_component[shape_id] = component_key
+        automatic_sequence_groups = _automatic_sequence_component_groups(
+            slots,
+            declared_role=(
+                str(selected.get("role"))
+                if isinstance(selected.get("role"), str) else None
+            ),
+            shape_to_component=shape_to_component,
+        )
+        if automatic_sequence_groups:
+            automatic_keys = {
+                component_key
+                for group in automatic_sequence_groups
+                for component_key in group["component_keys"]
+            }
+            component_groups = [
+                group for group in component_groups
+                if not automatic_keys.intersection(group["component_keys"])
+            ]
+            for entry in component_contract:
+                if entry["component_key"] in automatic_keys:
+                    entry.pop("component_group", None)
+            for group in automatic_sequence_groups:
+                fields = group["component_fields"]
+                for member_index, component_key in enumerate(group["component_keys"]):
+                    by_key[component_key]["component_group"] = group["component_group"]
+                    by_key[component_key]["component_field"] = fields[member_index]
+            component_groups.extend(automatic_sequence_groups)
         curated_groups = _curated_component_groups(
             private_source_root=private_source_root,
             package_sha256=package_sha,
@@ -1043,11 +1615,18 @@ def compile_physical_adapter(
     private_source_root: Path | str,
     workspace: Path | str,
     asset_paths: Mapping[str, Path | str] | None = None,
+    component_profiles: ComponentProfileIndex | None = None,
 ) -> PhysicalAdapterResult:
     """Compile one locked composition/adaptation pair to an OPC AssemblyPlan."""
 
-    if composition_plan.get("schema_version") != "1.0" or composition_plan.get("status") != "PASS":
+    if composition_plan.get("schema_version") not in {"1.0", "2.0", "3.0", "4.0"} or composition_plan.get("status") != "PASS":
         raise PhysicalAdapterError("COMPOSITION_PLAN_INVALID")
+    try:
+        verify_composition_replay_lock(
+            composition_plan, catalog=catalog, component_profiles=component_profiles,
+        )
+    except ValueError as exc:
+        raise PhysicalAdapterError(str(exc)) from exc
     if adaptation_plan.get("schema_version") != "1.0" or adaptation_plan.get("status") != "PASS":
         raise PhysicalAdapterError("ADAPTATION_PLAN_INVALID")
     if adaptation_plan.get("composition_plan_sha256") != composition_plan_sha256(composition_plan):
@@ -1055,24 +1634,30 @@ def compile_physical_adapter(
     if adaptation_plan.get("adaptation_request_sha256") != adaptation_request_sha256(adaptation_request):
         raise PhysicalAdapterError("ADAPTATION_REQUEST_DRIFT")
     # Recompilation proves the values have not been decoupled from the ID-only plan.
-    # Recompute the private source-authoritative preflight only for virtual
-    # fragment-title regions, which intentionally do not exist in the public
-    # catalog as raw shapes. Legacy native-region requests remain byte-stable.
-    requires_fragment_preflight = any(
+    # Recompute the private source-authoritative preflight whenever the
+    # compiled request relies on a physical-only component contract.  Virtual
+    # fragment-title regions are one such contract, but ordinary
+    # ``component_key`` bindings are also assigned from the native preflight.
+    # Omitting that preflight during this replay made a valid component-bound
+    # plan fail closed as COMPONENT_BINDING_DRIFT at assembly time.
+    requires_native_contract_preflight = any(
         isinstance(binding, Mapping)
-        and binding.get("operation") == "replace_fragment_text"
+        and (
+            binding.get("operation") == "replace_fragment_text"
+            or binding.get("component_key") is not None
+        )
         for binding in adaptation_request.get("bindings", ())
     )
     expected_preflight = (
         preflight_native_slots(
             composition_plan, catalog=catalog,
-            private_source_root=private_source_root,
+            private_source_root=private_source_root, component_profiles=component_profiles,
         )
-        if requires_fragment_preflight else None
+        if requires_native_contract_preflight else None
     )
     expected_adaptation = compile_adaptation(
         composition_plan, catalog=catalog, request=adaptation_request,
-        preflight=expected_preflight,
+        preflight=expected_preflight, component_profiles=component_profiles,
     )
     if serialize_adaptation_plan(expected_adaptation) != serialize_adaptation_plan(adaptation_plan):
         raise PhysicalAdapterError("ADAPTATION_REQUEST_DRIFT")
@@ -1084,7 +1669,9 @@ def compile_physical_adapter(
     page_by_id, region_by_id = _page_lookup(catalog)
     source_paths = resolve_catalog_sources(
         catalog, private_source_root=private_source_root,
-        required_package_hashes=_selected_package_hashes(composition_plan),
+        required_package_hashes=_component_source_hashes(
+            composition_plan, component_profiles=component_profiles,
+        ),
     )
     request_facts = _request_facts(adaptation_request)
     structured_requests = _structured_data_requests(adaptation_request)
@@ -1109,8 +1696,7 @@ def compile_physical_adapter(
         page = page_by_id.get(str(page_id))
         if page is None:
             raise PhysicalAdapterError("CATALOG_PAGE_MISSING")
-        materialization = page.get("materialization")
-        if isinstance(materialization, Mapping) and materialization.get("status") != "eligible":
+        if not materialization_eligible(page):
             raise PhysicalAdapterError("CATALOG_MATERIALIZATION_INELIGIBLE")
         package_sha = str(source.get("package_sha256", ""))
         slide_number = source.get("slide_number")
@@ -1175,6 +1761,54 @@ def compile_physical_adapter(
             eligibility_known=True,
             governed_content_inventory=governed_content_inventory,
         )
+        component_assembly = source.get("component_assembly")
+        selected_components: dict[str, Any] = {}
+        reserved_host_slot_ids: set[str] = set()
+        component_placements: tuple[tuple[Any, Any], ...] = ()
+        cardinality_cleanup_specs = _timeline_cardinality_cleanup_specs(
+            private_source_root=private_source_root, page_id=str(page_id),
+            role=str(selected.get("role", "")),
+            minimum_capacity=_requested_minimum_capacity(selected),
+        )
+        reserved_host_slot_ids.update(
+            f"shape_{shape_id}"
+            for cleanup in cardinality_cleanup_specs
+            for shape_id in cleanup.shape_ids
+        )
+        if component_assembly is not None:
+            if component_profiles is None or not isinstance(component_assembly, Mapping):
+                raise PhysicalAdapterError("COMPONENT_PROFILE_REQUIRED")
+            try:
+                component_placements = _component_placements(
+                    source, component_profiles=component_profiles,
+                )
+            except ComponentProfileError as exc:
+                raise PhysicalAdapterError(str(exc)) from exc
+            selected_components = {
+                component.component_id: component
+                for _anchor, component in component_placements
+            }
+            reserved_host_slot_ids.update({
+                f"shape_{shape_id}"
+                for anchor, _component in component_placements
+                for shape_id in anchor.shape_ids
+            })
+            reserved_host_slot_ids.update(
+                f"shape_{shape_id}"
+                for cleanup in _host_cleanup_specs(component_placements)
+                for shape_id in cleanup.shape_ids
+            )
+            # The anchor is intentionally removed during physical component
+            # import, so it cannot remain in the host template's required
+            # editable-slot graph.  All ordinary retained host text slots
+            # continue to have the standard complete-binding contract.
+        if reserved_host_slot_ids:
+            template = replace(
+                template,
+                slot_graph=_slot_graph(
+                    tuple(slot for slot in slots if slot.slot_id not in reserved_host_slot_ids),
+                ),
+            )
         bindings: dict[str, str] = {}
         specs: dict[str, TextBindingSpec] = {}
         template_repairs: list[dict[str, str]] = []
@@ -1182,6 +1816,10 @@ def compile_physical_adapter(
             "".join(slot.text.split()) for slot in slots if slot.text.strip()
         )
         for slot in all_slots:
+            if slot.slot_id in reserved_host_slot_ids:
+                # The exact anchor bytes are the component importer authority.
+                # It will remove this reservation only after the hash check.
+                continue
             compact_source_text = "".join(slot.text.split())
             if slot.slot_id in nested_alias_slot_ids:
                 bindings[slot.slot_id] = ""
@@ -1194,6 +1832,7 @@ def compile_physical_adapter(
             clear_reason = _unbound_template_clear_reason(
                 slot.text,
                 occurrence_count=source_text_counts[compact_source_text],
+                declared_role=str(selected.get("role", "content")),
             )
             if clear_reason is not None:
                 bindings[slot.slot_id] = ""
@@ -1221,6 +1860,8 @@ def compile_physical_adapter(
         asset_specs: dict[str, AssetBindingSpec] = {}
         governed_specs: dict[str, TextBindingSpec] = {}
         structured_fact_ids: set[str] = set()
+        component_fact_ids: set[str] = set()
+        component_text_specs: dict[str, dict[int, TextBindingSpec]] = {}
         for operation in operations_by_slide.get(slide_id, []):
             operation_kind = operation.get("operation")
             if operation_kind == "replace_text":
@@ -1312,6 +1953,38 @@ def compile_physical_adapter(
                     raise PhysicalAdapterError("ASSET_OPERATION_DRIFT")
                 asset_specs[slot_id] = AssetBindingSpec(asset_id, "cover")
                 slide_lineage["asset_bindings"].append({"shape_id": slot_id, "asset_id": asset_id, "asset_sha256": operation.get("asset_sha256")})
+            elif operation_kind == "replace_component_text":
+                component_id, field_id, fact_ref = (
+                    operation.get("component_id"), operation.get("field_id"), operation.get("fact_id"),
+                )
+                if (
+                    not isinstance(component_id, str)
+                    or not isinstance(field_id, str)
+                    or not isinstance(fact_ref, str)
+                    or fact_ref not in request_facts
+                    or component_id not in selected_components
+                ):
+                    raise PhysicalAdapterError("COMPONENT_TEXT_OPERATION_DRIFT")
+                component = selected_components[component_id]
+                field = next((item for item in component.fields if item.field_id == field_id), None)
+                if field is None:
+                    raise PhysicalAdapterError("COMPONENT_FIELD_UNKNOWN")
+                value = request_facts[fact_ref]
+                if len("".join(value.split())) > field.max_chars:
+                    raise PhysicalAdapterError("COMPONENT_TEXT_CAPACITY_EXCEEDED")
+                physical_fact_id, record = _source_fact(value)
+                fact_records.setdefault(physical_fact_id, record)
+                component_fact_ids.add(physical_fact_id)
+                by_shape = component_text_specs.setdefault(component_id, {})
+                if field.shape_id in by_shape:
+                    raise PhysicalAdapterError("COMPONENT_TEXT_BINDING_DUPLICATE")
+                by_shape[field.shape_id] = TextBindingSpec(
+                    value, (physical_fact_id,), "auto", "safe-shrink-to-fit",
+                )
+                slide_lineage.setdefault("component_text_bindings", []).append({
+                    "component_id": component_id, "field_id": field_id,
+                    "fact_id": fact_ref, "replacement_sha256": _sha256_bytes(value.encode("utf-8")),
+                })
             elif operation_kind == "replace_structured_data":
                 contract_id = operation.get("contract_id")
                 request_entry = structured_requests.get(slide_id)
@@ -1388,6 +2061,7 @@ def compile_physical_adapter(
             if isinstance(binding, Mapping) and isinstance(binding.get("fact_id"), str)
         )
         distinct_client_fact_ids.update(structured_fact_ids)
+        distinct_client_fact_ids.update(component_fact_ids)
         declared_role = str(selected.get("role", "content"))
         # A fully certified exact-deck reproduction retains its original
         # source order and may include a chart page with only a native heading
@@ -1421,6 +2095,38 @@ def compile_physical_adapter(
                 f":bound_distinct_facts={len(distinct_client_fact_ids)}"
                 f":required_distinct_facts={required_client_fact_count}"
             )
+        component_import_specs = tuple(
+            replace(
+                component,
+                text_binding_specs=dict(component_text_specs.get(component_id, {})),
+            )
+            for component_id, component in zip(
+                [component.component_id for _anchor, component in component_placements],
+                resolve_component_import_specs(
+                    source, component_profiles=component_profiles,
+                    source_paths=source_paths, context=context,
+                ),
+                strict=True,
+            )
+        )
+        if component_import_specs:
+            slide_lineage["component_imports"] = [
+                {
+                    "component_id": component.component_id,
+                    "host_anchor_id": anchor.host_anchor_id,
+                    "source": {
+                        "package_sha256": spec.source_package_sha256,
+                        "slide_number": spec.source_slide_number,
+                        "source_slide_sha256": spec.source_slide_sha256,
+                    },
+                    "bound_field_count": len(spec.text_binding_specs),
+                }
+                for (anchor, component), spec in zip(
+                    component_placements,
+                    component_import_specs,
+                    strict=True,
+                )
+            ]
         targets.append(AssemblyTargetSlide(
             ordinal=ordinal,
             page_template=template,
@@ -1440,6 +2146,10 @@ def compile_physical_adapter(
             ),
             governed_content_binding_specs=governed_specs,
             asset_binding_specs=asset_specs,
+            component_import_specs=component_import_specs,
+            host_cleanup_specs=_merge_cleanup_specs(
+                cardinality_cleanup_specs, _host_cleanup_specs(component_placements),
+            ),
         ))
         lineage_slides.append(slide_lineage)
 
@@ -1492,13 +2202,14 @@ def assemble_from_plans(
     workspace: Path | str,
     output_path: Path | str,
     asset_paths: Mapping[str, Path | str] | None = None,
+    component_profiles: ComponentProfileIndex | None = None,
 ) -> tuple[PhysicalAssemblyReport, dict[str, Any]]:
     """Materialize a new editable PPTX and return evidence without client text."""
 
     compiled = compile_physical_adapter(
         composition_plan, adaptation_plan, adaptation_request,
         catalog=catalog, private_source_root=private_source_root, workspace=workspace,
-        asset_paths=asset_paths,
+        asset_paths=asset_paths, component_profiles=component_profiles,
     )
     report = assemble_physical_deck(
         compiled.plan, output_path,

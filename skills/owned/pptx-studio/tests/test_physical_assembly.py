@@ -28,6 +28,8 @@ from window_pptx.page_template_library import (
 from window_pptx.cli import parse_args as parse_window_pptx_args
 from window_pptx.physical_assembly import (
     AssetBindingSpec,
+    ComponentImportSpec,
+    HostCleanupSpec,
     AssemblyImportContext,
     AssemblyPlan,
     AssemblyTargetSlide,
@@ -38,8 +40,16 @@ from window_pptx.physical_assembly import (
     StyleCloneSpec,
     TextBindingSpec,
     _SourcePackageContext,
+    _SourceGraph,
     _build_source_graph,
+    _clone_component_xml_into_host,
+    _insert_component_xml_on_canvas,
+    _component_nodes_sha256,
+    _component_root_nodes,
+    _component_relationship_closure,
+    _component_relationship_ids,
     _adapt_slide_text,
+    _assert_xml_relationship_reference_closure,
     _auto_authorize_governed_value,
     _apply_governed_style_clones,
     _cover_crop_values,
@@ -50,6 +60,7 @@ from window_pptx.physical_assembly import (
     _resolve_output_governed_target,
     _sanitize_layout_master_fields,
     _semantic_character_count,
+    _strip_discarded_source_metadata_references,
     _style_clone_scope_sha256,
     _style_clone_target_guard_sha256,
     _slide_structure_signature,
@@ -231,6 +242,438 @@ def test_text_adaptation_preserves_existing_run_styles() -> None:
     assert runs_by_shape[3] == ["2025", "年", "财政项目及政府债支出"]
     assert b'<a:rPr sz="2400"/>' in actual
     assert b'<a:rPr sz="3200" b="1"/>' in actual
+
+
+def _component_fixture_slide(*, include_relationship: bool = False) -> bytes:
+    relationship = (
+        ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
+        ' r:embed="rId7"'
+        if include_relationship else ""
+    )
+    return (
+        f'<p:sld xmlns:p="{PML_NS}" xmlns:a="{DML_NS}"><p:cSld><p:spTree>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="2" name="component-card"/></p:nvSpPr>'
+        '<p:spPr><a:xfrm><a:off x="100" y="200"/><a:ext cx="300" cy="400"/>'
+        '</a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>Card title</a:t>'
+        '</a:r></a:p></p:txBody></p:sp>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="3" name="component-detail"/></p:nvSpPr>'
+        f'<p:spPr><a:blipFill><a:blip{relationship}/></a:blipFill></p:spPr>'
+        '<p:txBody><a:bodyPr/><a:p><a:r><a:t>Card body</a:t></a:r></a:p></p:txBody>'
+        '</p:sp></p:spTree></p:cSld></p:sld>'
+    ).encode()
+
+
+def _component_host_slide() -> bytes:
+    return (
+        f'<p:sld xmlns:p="{PML_NS}" xmlns:a="{DML_NS}"><p:cSld><p:spTree>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="2" name="host-title"/></p:nvSpPr>'
+        '<p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>Host</a:t></a:r></a:p>'
+        '</p:txBody></p:sp>'
+        '<p:sp><p:nvSpPr><p:cNvPr id="4" name="certified-reservation"/></p:nvSpPr>'
+        '<p:spPr><a:xfrm><a:off x="100" y="200"/><a:ext cx="300" cy="400"/>'
+        '</a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>PLACEHOLDER</a:t>'
+        '</a:r></a:p></p:txBody></p:sp>'
+        '</p:spTree></p:cSld></p:sld>'
+    ).encode()
+
+
+def test_component_xml_clone_replaces_only_certified_host_reservation() -> None:
+    component = _component_fixture_slide()
+    host = _component_host_slide()
+    component_nodes = _component_root_nodes(
+        ET.fromstring(component), shape_ids=(2, 3), label="COMPONENT_SOURCE",
+    )
+    anchor_nodes = _component_root_nodes(
+        ET.fromstring(host), shape_ids=(4,), label="COMPONENT_HOST_ANCHOR",
+    )
+
+    result, remap = _clone_component_xml_into_host(
+        host, component,
+        source_shape_ids=(2, 3), host_anchor_shape_ids=(4,),
+        component_sha256=_component_nodes_sha256(component_nodes),
+        host_anchor_sha256=_component_nodes_sha256(anchor_nodes),
+    )
+
+    root = ET.fromstring(result)
+    markers = list(root.iter(f"{{{PML_NS}}}cNvPr"))
+    names = [marker.attrib["name"] for marker in markers]
+    identifiers = [int(marker.attrib["id"]) for marker in markers]
+    assert "certified-reservation" not in names
+    assert "host-title" in names
+    assert sorted(remap) == [2, 3]
+    assert len(identifiers) == len(set(identifiers))
+    assert all(identifier > 4 for identifier in remap.values())
+    assert b"Card title" in result and b"Card body" in result
+
+
+def test_component_xml_clone_rejects_unclosed_relationships() -> None:
+    component = _component_fixture_slide(include_relationship=True)
+    host = _component_host_slide()
+    component_nodes = _component_root_nodes(
+        ET.fromstring(component), shape_ids=(2, 3), label="COMPONENT_SOURCE",
+    )
+    anchor_nodes = _component_root_nodes(
+        ET.fromstring(host), shape_ids=(4,), label="COMPONENT_HOST_ANCHOR",
+    )
+
+    with pytest.raises(PhysicalAssemblyError, match="COMPONENT_RELATIONSHIP_CLOSURE_REQUIRED"):
+        _clone_component_xml_into_host(
+            host, component,
+            source_shape_ids=(2, 3), host_anchor_shape_ids=(4,),
+            component_sha256=_component_nodes_sha256(component_nodes),
+            host_anchor_sha256=_component_nodes_sha256(anchor_nodes),
+            relationship_ids=("rId7",),
+        )
+
+
+def test_component_xml_clone_translates_only_equal_sized_certified_anchors() -> None:
+    component = _component_fixture_slide()
+    host = _component_host_slide().replace(
+        b'<a:off x="100" y="200"/><a:ext cx="300" cy="400"/>',
+        b'<a:off x="900" y="1200"/><a:ext cx="300" cy="400"/>',
+    )
+    component_nodes = _component_root_nodes(
+        ET.fromstring(component), shape_ids=(2,), label="COMPONENT_SOURCE",
+    )
+    anchor_nodes = _component_root_nodes(
+        ET.fromstring(host), shape_ids=(4,), label="COMPONENT_HOST_ANCHOR",
+    )
+
+    result, _remap = _clone_component_xml_into_host(
+        host, component,
+        source_shape_ids=(2,), host_anchor_shape_ids=(4,),
+        component_sha256=_component_nodes_sha256(component_nodes),
+        host_anchor_sha256=_component_nodes_sha256(anchor_nodes),
+    )
+
+    root = ET.fromstring(result)
+    offsets = [
+        (node.attrib.get("x"), node.attrib.get("y"))
+        for node in root.iter(f"{{{DML_NS}}}off")
+    ]
+    assert ("900", "1200") in offsets
+
+
+def test_component_xml_clone_rejects_scaled_anchor() -> None:
+    component = _component_fixture_slide()
+    host = _component_host_slide().replace(
+        b'<a:off x="100" y="200"/><a:ext cx="300" cy="400"/>',
+        b'<a:off x="900" y="1200"/><a:ext cx="301" cy="400"/>',
+    )
+    component_nodes = _component_root_nodes(
+        ET.fromstring(component), shape_ids=(2,), label="COMPONENT_SOURCE",
+    )
+    anchor_nodes = _component_root_nodes(
+        ET.fromstring(host), shape_ids=(4,), label="COMPONENT_HOST_ANCHOR",
+    )
+
+    with pytest.raises(PhysicalAssemblyError, match="COMPONENT_ANCHOR_BOUNDS_MISMATCH"):
+        _clone_component_xml_into_host(
+            host, component,
+            source_shape_ids=(2,), host_anchor_shape_ids=(4,),
+            component_sha256=_component_nodes_sha256(component_nodes),
+            host_anchor_sha256=_component_nodes_sha256(anchor_nodes),
+        )
+
+
+def test_component_xml_canvas_insert_preserves_host_and_translates_native_component() -> None:
+    component = _component_fixture_slide()
+    host = _component_host_slide().replace(
+        b'<a:off x="100" y="200"/><a:ext cx="300" cy="400"/>',
+        b'<a:off x="900" y="1200"/><a:ext cx="300" cy="400"/>',
+    )
+    component_nodes = _component_root_nodes(
+        ET.fromstring(component), shape_ids=(2,), label="COMPONENT_SOURCE",
+    )
+
+    result, remap = _insert_component_xml_on_canvas(
+        host, component,
+        source_shape_ids=(2,), canvas_bbox=(900, 1200, 300, 400),
+        component_sha256=_component_nodes_sha256(component_nodes),
+    )
+
+    root = ET.fromstring(result)
+    names = [marker.attrib["name"] for marker in root.iter(f"{{{PML_NS}}}cNvPr")]
+    offsets = [
+        (node.attrib.get("x"), node.attrib.get("y"))
+        for node in root.iter(f"{{{DML_NS}}}off")
+    ]
+    assert "host-title" in names
+    assert "certified-reservation" in names
+    assert sorted(remap) == [2]
+    assert ("900", "1200") in offsets
+
+    with pytest.raises(PhysicalAssemblyError, match="COMPONENT_CANVAS_BOUNDS_MISMATCH"):
+        _insert_component_xml_on_canvas(
+            host, component,
+            source_shape_ids=(2,), canvas_bbox=(900, 1200, 301, 400),
+            component_sha256=_component_nodes_sha256(component_nodes),
+        )
+
+
+def _component_graph(*, external: bool = False) -> _SourceGraph:
+    target = "https://example.invalid/image.png" if external else "../media/image1.png"
+    mode = ' TargetMode="External"' if external else ""
+    rels = (
+        f'<Relationships xmlns="{REL_NS}"><Relationship Id="rId7" '
+        f'Type="{OFFICE_REL}/image" Target="{target}"{mode}/></Relationships>'
+    ).encode()
+    return _SourceGraph(
+        root_slide_name="ppt/slides/slide1.xml", slide_xml=b"<p:sld/>",
+        slide_sha="a" * 64,
+        rels={"ppt/slides/_rels/slide1.xml.rels": rels},
+        extra_parts={} if external else {"ppt/media/image1.png": b"image"},
+        content_types={} if external else {"ppt/media/image1.png": "image/png"},
+    )
+
+
+def test_component_relationship_closure_includes_only_referenced_safe_parts() -> None:
+    closure = _component_relationship_closure(
+        _component_graph(), root_relationship_ids=("rId7",),
+    )
+
+    assert closure.root_relationship_ids == ("rId7",)
+    assert closure.part_names == ("ppt/media/image1.png",)
+    assert closure.relationship_owner_parts == ("ppt/slides/slide1.xml",)
+
+
+def test_component_relationship_closure_rejects_external_targets() -> None:
+    with pytest.raises(PhysicalAssemblyError, match="COMPONENT_RELATIONSHIP_UNSAFE"):
+        _component_relationship_closure(
+            _component_graph(external=True), root_relationship_ids=("rId7",),
+        )
+
+
+def test_physical_assembly_imports_component_picture_closure_into_host(
+    tmp_path: Path,
+) -> None:
+    """A picture component must arrive as native XML plus a resolvable rId."""
+
+    pptx = pytest.importorskip("pptx")
+    image_module = pytest.importorskip("PIL.Image")
+    from pptx.enum.shapes import MSO_SHAPE
+
+    image_path = tmp_path / "component.png"
+    image_module.new("RGB", (64, 64), (23, 120, 185)).save(image_path)
+    component_path = tmp_path / "component.pptx"
+    component_presentation = pptx.Presentation()
+    component_slide = component_presentation.slides.add_slide(
+        component_presentation.slide_layouts[6],
+    )
+    component_picture = component_slide.shapes.add_picture(
+        str(image_path), 914400, 1828800, 914400, 914400,
+    )
+    component_presentation.save(component_path)
+
+    host_path = tmp_path / "host.pptx"
+    host_presentation = pptx.Presentation()
+    host_slide = host_presentation.slides.add_slide(host_presentation.slide_layouts[6])
+    host_text = host_slide.shapes.add_textbox(914400, 457200, 4572000, 914400)
+    host_text.text = "Host title"
+    anchor = host_slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE, 914400, 1828800, 914400, 914400,
+    )
+    anchor.fill.background()
+    anchor.line.fill.background()
+    cleanup = host_slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE, 4572000, 1828800, 914400, 914400,
+    )
+    cleanup.text = "Unused certified card"
+    host_presentation.save(host_path)
+    host_template = _template_for_slide(host_path, 1)
+
+    with zipfile.ZipFile(component_path) as archive:
+        component_xml = archive.read("ppt/slides/slide1.xml")
+    with zipfile.ZipFile(host_path) as archive:
+        host_xml = archive.read("ppt/slides/slide1.xml")
+    component_nodes = _component_root_nodes(
+        ET.fromstring(component_xml),
+        shape_ids=(component_picture.shape_id,), label="COMPONENT_SOURCE",
+    )
+    anchor_nodes = _component_root_nodes(
+        ET.fromstring(host_xml), shape_ids=(anchor.shape_id,),
+        label="COMPONENT_HOST_ANCHOR",
+    )
+    cleanup_nodes = _component_root_nodes(
+        ET.fromstring(host_xml), shape_ids=(cleanup.shape_id,),
+        label="COMPONENT_HOST_CLEANUP",
+    )
+    component_spec = ComponentImportSpec(
+        source_path=str(component_path),
+        source_package_sha256=hashlib.sha256(component_path.read_bytes()).hexdigest(),
+        source_slide_number=1,
+        source_slide_sha256=hashlib.sha256(component_xml).hexdigest(),
+        source_shape_ids=(component_picture.shape_id,),
+        host_anchor_shape_ids=(anchor.shape_id,),
+        component_sha256=_component_nodes_sha256(component_nodes),
+        host_anchor_sha256=_component_nodes_sha256(anchor_nodes),
+        relationship_ids=_component_relationship_ids(component_nodes),
+    )
+    bindings = {
+        slot_id: "Composed host title"
+        for slot_id in host_template.slot_graph["text_slot_ids"]
+        if slot_id != f"shape_{cleanup.shape_id}"
+    }
+    plan = AssemblyPlan(
+        schema_version="1.0", plan_id="component-picture", scenario_id="test",
+        dominant_style_cluster_id=host_template.style_cluster_id,
+        created_at="2026-08-16T00:00:00Z", target_slide_count=1,
+        target_slides=(
+            AssemblyTargetSlide(
+                1, host_template, bindings, "content", "Host", "",
+                component_import_specs=(component_spec,),
+                host_cleanup_specs=(HostCleanupSpec(
+                    shape_ids=(cleanup.shape_id,),
+                    shape_sha256=_component_nodes_sha256(cleanup_nodes),
+                ),),
+            ),
+        ),
+        library_index_sha256="e" * 64,
+    )
+    output = tmp_path / "component-host.pptx"
+
+    report = assemble_physical_deck(plan, output, library_index_sha256="e" * 64)
+
+    assert report.status == "pass"
+    assert _verify_all_relationships(output)[0] is True
+    result = _verify_python_pptx(output)
+    assert result[0] is True and result[5] == 1
+    with zipfile.ZipFile(output) as archive:
+        slide_xml = archive.read("ppt/slides/slide1.xml")
+        assert b"certified-reservation" not in slide_xml
+        assert b"Unused certified card" not in slide_xml
+        assert b"rIdComponent" in slide_xml
+        assert any("/media/" in name for name in archive.namelist())
+
+
+def test_physical_assembly_accepts_certified_cleanup_in_lineage(
+    tmp_path: Path,
+) -> None:
+    """A certified cardinality cleanup must not look like arbitrary damage."""
+
+    pptx = pytest.importorskip("pptx")
+    from pptx.enum.shapes import MSO_SHAPE
+
+    host_path = tmp_path / "timeline-host.pptx"
+    presentation = pptx.Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    title = slide.shapes.add_textbox(914400, 457200, 4572000, 914400)
+    title.text = "Source title"
+    removable = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE, 4572000, 1828800, 914400, 914400,
+    )
+    removable.text = "Certified fifth milestone"
+    presentation.save(host_path)
+    template = _template_for_slide(host_path, 1)
+
+    with zipfile.ZipFile(host_path) as archive:
+        source_xml = archive.read("ppt/slides/slide1.xml")
+    cleanup_nodes = _component_root_nodes(
+        ET.fromstring(source_xml), shape_ids=(removable.shape_id,),
+        label="COMPONENT_HOST_CLEANUP",
+    )
+    bindings = {
+        slot_id: "Client milestone plan"
+        for slot_id in template.slot_graph["text_slot_ids"]
+        if slot_id != f"shape_{removable.shape_id}"
+    }
+    plan = AssemblyPlan(
+        schema_version="1.0", plan_id="cleanup-lineage", scenario_id="test",
+        dominant_style_cluster_id=template.style_cluster_id,
+        created_at="2026-08-16T00:00:00Z", target_slide_count=1,
+        target_slides=(
+            AssemblyTargetSlide(
+                1, template, bindings, "timeline", "Milestones", "",
+                host_cleanup_specs=(HostCleanupSpec(
+                    shape_ids=(removable.shape_id,),
+                    shape_sha256=_component_nodes_sha256(cleanup_nodes),
+                ),),
+            ),
+        ),
+        library_index_sha256="f" * 64,
+    )
+
+    output = tmp_path / "timeline-cleanup.pptx"
+    report = assemble_physical_deck(plan, output, library_index_sha256="f" * 64)
+
+    assert report.status == "pass"
+    assert report.lineage_records[0].status == "pass"
+    assert report.lineage_records[0].structure_match is True
+    with zipfile.ZipFile(output) as archive:
+        assert b"Certified fifth milestone" not in archive.read("ppt/slides/slide1.xml")
+
+
+def test_physical_assembly_rebinds_native_component_text_after_id_remap(
+    tmp_path: Path,
+) -> None:
+    pptx = pytest.importorskip("pptx")
+    from pptx.enum.shapes import MSO_SHAPE
+
+    component_path = tmp_path / "component-text.pptx"
+    component_presentation = pptx.Presentation()
+    component_slide = component_presentation.slides.add_slide(
+        component_presentation.slide_layouts[6],
+    )
+    component_text = component_slide.shapes.add_textbox(914400, 1828800, 1828800, 914400)
+    component_text.text = "Template component copy"
+    component_presentation.save(component_path)
+
+    host_path = tmp_path / "host-text.pptx"
+    host_presentation = pptx.Presentation()
+    host_slide = host_presentation.slides.add_slide(host_presentation.slide_layouts[6])
+    host_title = host_slide.shapes.add_textbox(914400, 457200, 4572000, 914400)
+    host_title.text = "Host title"
+    anchor = host_slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE, 914400, 1828800, 1828800, 914400,
+    )
+    anchor.fill.background()
+    anchor.line.fill.background()
+    host_presentation.save(host_path)
+    host_template = _template_for_slide(host_path, 1)
+
+    with zipfile.ZipFile(component_path) as archive:
+        component_xml = archive.read("ppt/slides/slide1.xml")
+    with zipfile.ZipFile(host_path) as archive:
+        host_xml = archive.read("ppt/slides/slide1.xml")
+    component_nodes = _component_root_nodes(
+        ET.fromstring(component_xml), shape_ids=(component_text.shape_id,), label="COMPONENT_SOURCE",
+    )
+    anchor_nodes = _component_root_nodes(
+        ET.fromstring(host_xml), shape_ids=(anchor.shape_id,), label="COMPONENT_HOST_ANCHOR",
+    )
+    component_spec = ComponentImportSpec(
+        source_path=str(component_path),
+        source_package_sha256=hashlib.sha256(component_path.read_bytes()).hexdigest(),
+        source_slide_number=1,
+        source_slide_sha256=hashlib.sha256(component_xml).hexdigest(),
+        source_shape_ids=(component_text.shape_id,),
+        host_anchor_shape_ids=(anchor.shape_id,),
+        component_sha256=_component_nodes_sha256(component_nodes),
+        host_anchor_sha256=_component_nodes_sha256(anchor_nodes),
+        text_binding_specs={
+            component_text.shape_id: TextBindingSpec("客户经营关键指标", (), "source"),
+        },
+    )
+    bindings = {slot_id: "Host title" for slot_id in host_template.slot_graph["text_slot_ids"]}
+    plan = AssemblyPlan(
+        schema_version="1.0", plan_id="component-text", scenario_id="test",
+        dominant_style_cluster_id=host_template.style_cluster_id,
+        created_at="2026-08-16T00:00:00Z", target_slide_count=1,
+        target_slides=(AssemblyTargetSlide(
+            1, host_template, bindings, "content", "Host", "",
+            component_import_specs=(component_spec,),
+        ),),
+        library_index_sha256="f" * 64,
+    )
+    output = tmp_path / "component-text-output.pptx"
+
+    report = assemble_physical_deck(plan, output, library_index_sha256="f" * 64)
+
+    assert report.status == "pass"
+    with zipfile.ZipFile(output) as archive:
+        slide_xml = archive.read("ppt/slides/slide1.xml")
+    assert b"\xe5\xae\xa2\xe6\x88\xb7\xe7\xbb\x8f\xe8\x90\xa5\xe5\x85\xb3\xe9\x94\xae\xe6\x8c\x87\xe6\xa0\x87" in slide_xml
+    assert b"Template component copy" not in slide_xml
 
 
 def test_structure_signature_treats_autofit_variants_as_one_governed_node() -> None:
@@ -496,10 +939,55 @@ def _governed_chart_table_source(path: Path, *, include_tag: bool = False) -> No
     parts[rels_name] = parts[rels_name].replace(
         b"</Relationships>", relationship + b"</Relationships>", 1
     )
+    slide_name = "ppt/slides/slide1.xml"
+    parts[slide_name] = parts[slide_name].replace(
+        b"</p:cSld>",
+        (
+            b'<p:custDataLst><p:tags r:id="rId999"/>'
+            b"</p:custDataLst></p:cSld>"
+        ),
+        1,
+    )
     parts["ppt/tags/tag1.xml"] = (
         b'<p14:tagLst xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main"/>'
     )
     _write_zip(path, parts)
+
+
+def test_discarded_tag_metadata_removes_its_slide_reference() -> None:
+    source = (
+        f'<p:sld xmlns:p="{PML_NS}" xmlns:r="{OFFICE_REL}"><p:cSld>'
+        '<p:custDataLst><p:tags r:id="rId88"/></p:custDataLst>'
+        "</p:cSld></p:sld>"
+    ).encode()
+
+    sanitized = _strip_discarded_source_metadata_references(
+        source,
+        ("rId88",),
+        owner_part="ppt/slides/slide1.xml",
+    )
+
+    assert b"custDataLst" not in sanitized
+    assert b'r:id="rId88"' not in sanitized
+
+
+def test_xml_relationship_reference_closure_rejects_a_dangling_tag_reference() -> None:
+    parts = {
+        "ppt/slides/slide1.xml": (
+            f'<p:sld xmlns:p="{PML_NS}" xmlns:r="{OFFICE_REL}"><p:cSld>'
+            '<p:custDataLst><p:tags r:id="rId88"/></p:custDataLst>'
+            "</p:cSld></p:sld>"
+        ).encode(),
+        "ppt/slides/_rels/slide1.xml.rels": (
+            f'<Relationships xmlns="{REL_NS}"></Relationships>'
+        ).encode(),
+    }
+
+    with pytest.raises(
+        PhysicalAssemblyError,
+        match="OUTPUT_DANGLING_XML_RELATIONSHIP_REFERENCE:ppt/slides/slide1.xml:rId88",
+    ):
+        _assert_xml_relationship_reference_closure(parts)
 
 
 def _governed_replacement_specs(

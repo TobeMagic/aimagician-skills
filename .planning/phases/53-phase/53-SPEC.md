@@ -20,17 +20,20 @@ Prove the migrated Skill with a fresh capable-model agent in a clean
 - **Source requests:** USR-V7-01
 - **Current:** fixture-only physical assembly and no fresh capable-agent
   evidence from a clean client requirement folder.
-- **Target:** one `gpt-5.6-terra` medium Codex run creates the required 15-page
-  hospital finance report using only its client pack plus installed Skill.
-- **Acceptance:** clean inventory, agent transcript, 15-page PPTX, and
-  complete per-slide physical lineage all match the locked client brief.
+- **Target:** one `gpt-5.6-terra` medium Codex run creates the required
+  hospital-finance report using only its client pack plus installed Skill;
+  count is derived from the approved narrative rather than prescribed.
+- **Acceptance:** clean inventory, agent transcript, narrative/page-rationale
+  ledger, editable PPTX, and complete per-slide physical lineage all match the
+  locked client brief. The historical 15-page source is replay-only regression
+  evidence.
 - A clean folder contains only client brief, facts, acceptance criteria and
   client-provided assets; no reference PPTX, private templates, previews or
   historic production outputs.
 - Codex runs with `gpt-5.6-terra` at medium reasoning and the installed
   `pptx-studio` Skill.
-- The agent produces exactly 15 editable pages through catalog retrieval,
-  governed composition/adaptation and physical assembly only.
+- The agent produces the narrative-derived editable page set through catalog
+  retrieval, governed composition/adaptation and physical assembly only.
 - Evidence must show directory/section/body/closing anatomy and a complete
   catalog-page/package/slide/slot lineage for every page.
 - When a complete certified work is the semantic and visual match, the agent
@@ -80,8 +83,8 @@ the already governed local private library outside the client folder.
 
 ### In Scope
 
-- One complete 15-page hospital finance work report and its release evidence.
-- Replanning/reassembly required to make that exact output pass.
+- One complete hospital-finance work report and its release evidence.
+- Replanning/reassembly required to make the narrative-derived output pass.
 
 ### Out Of Scope
 

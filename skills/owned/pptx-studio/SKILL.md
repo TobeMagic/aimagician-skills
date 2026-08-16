@@ -20,12 +20,53 @@ page roles, certified page/component IDs, approved fact IDs and asset IDs.
 ## 1. Discuss and lock the brief
 
 Before formal production, confirm or extract audience, decision, scenario,
-presenter, date, language, page budget, deadline, anatomy, authoritative data,
+presenter, date, language, delivery duration/range (if supplied), deadline, anatomy, authoritative data,
 approved assets/rights, brand constraints, prohibitions and acceptance rubric.
 If a material field is missing, ask concise questions only. Never invent a
 fact, claim, brand rule, asset or decision. A normal business deck has cover →
 directory → section dividers → evidence → recommendation/summary → closing;
 change this only when the locked brief says so.
+
+Do not turn a client preference or a historical reference length into a fixed
+slide count. Normalize the locked discussion into
+`work/brief.normalized.json`, then write `work/narrative-plan.json` before any
+template query. The plan has beats, not a requested count: every retained beat
+must state its audience decision (`page_intent`), one-sentence conclusion
+(`key_message`), owned fact IDs, information grammar, density and a
+keep/split/merge/delete decision. The harness derives the delivery count only
+from valid retained beats. It rejects a body without facts, an over-capacity
+beat that was not split, and a section divider not followed within two delivery
+pages by evidence for that same section.
+
+After the runtime paths below are available, validate this contract before
+retrieval. If it fails, revise the narrative or ask the client about the
+specific missing fact; do not retrieve templates to fill a structural hole:
+
+```bash
+$PPTX_STUDIO_MANAGER validate-narrative \
+  --source-root work/source-root.sentinel --archive-root work/archive-root.sentinel \
+  --manifest work/manifest.sentinel \
+  --brief-normalized work/brief.normalized.json \
+  --narrative-input work/narrative-plan.json \
+  --narrative-output work/narrative-validation.json
+```
+
+The resulting `slide_count` and ordered `delivery_beat_ids` are evidence, not
+a user-facing target to backfill. A section followed by a second title-only
+page is a validation failure, not a visual rhythm choice.
+
+Before preflight or assembly, verify that the composition plan still matches
+the pinned catalog, visual observations and compiler. A `MIGRATION_REQUIRED`
+result means re-plan from the locked brief; never edit its old IDs to force it
+through a changed component contract:
+
+```bash
+$PPTX_STUDIO_MANAGER verify-replay \
+  --source-root work/source-root.sentinel --archive-root work/archive-root.sentinel \
+  --manifest work/manifest.sentinel --catalog "$CATALOG" \
+  --observation-index "$OBSERVATIONS" --composition-plan work/composition-plan.json \
+  --replay-output work/replay-report.json
+```
 
 Classify a compact caption as `label`; classify a sentence-like total,
 conclusion or takeaway as `body`. The binder has one narrow safety fallback:
@@ -52,13 +93,15 @@ For each slide retrieve a role- and capacity-safe candidate:
 - chronology uses timeline; causal sequence uses process; differences use
   comparison/content blocks;
 - a quantitative composition, trend, revenue mix, KPI or financial overview
-  uses `data` or `dashboard`; a before/after, plan/actual, year-on-year or
-  category variance uses `comparison`; a published numeric grid uses `table`;
-  an ordered future plan uses `roadmap` or `timeline`.  These are semantic
-  page roles, never aliases for `multi-item` merely because a source page has
-  several labels.  When the certified source has a governed chart/table data
-  contract, use that native data surface and provide its complete client data;
-  do not flatten it into text cards.
+  uses `data` or `dashboard` **only** when the brief supplies the complete
+  governed time series/category grid required by that native data contract; a
+  before/after, plan/actual, year-on-year or category variance uses
+  `comparison`; a published numeric grid uses `table`; an ordered future plan
+  uses `roadmap` or `timeline`. These are semantic page roles, never aliases
+  for `multi-item` merely because a source page has several labels. When the
+  certified source has a governed chart/table data contract, use that native
+  data surface and provide its complete client data; do not flatten it into
+  text cards.
 - clinical-department coverage, clinical-operation coordination or a
   multi-department work interface uses `clinical-network`; never call it a
   generic process, comparison or data page. This specialised role can use a
@@ -66,6 +109,16 @@ For each slide retrieve a role- and capacity-safe candidate:
   genuinely about those relationships.
 - people, awards, map, business model, product, quote and partners use their
   specialist categories.
+
+When no dedicated certified closing page can hold the complete approved CTA in
+one native title surface, the deterministic closing retrieval may consider a
+certified `quote` page only when its independent visual observation explicitly
+labels it `quote`. This remains a `closing` role and must pass the closing
+statement-capacity, style-cluster, quality, binding and rendered-review gates.
+On this narrow fallback only, bind the complete CTA as a `label` when the
+preflight publishes its single quote statement surface as `label`; otherwise
+use `title`. It does not authorize a generic content page, splitting one fact
+over multiple surfaces, or a manually drawn ending.
 
 Use `exact_deck` only when a complete certified work genuinely matches the
 brief **and every client page matches its ordered page grammar and native
@@ -79,24 +132,81 @@ match its declared role and native content capacity.
 
 ### Retrieval command contract
 
-The operator must provide these environment variables before production:
-`PPTX_STUDIO_SKILL_ROOT`, `PPTX_STUDIO_MANAGER`,
-`PPTX_STUDIO_PRIVATE_ROOT` and `PPTX_STUDIO_PRIVATE_SOURCE_ROOT`. The manager must equal
+The runtime resolves the private library in this declared order: an explicit
+`--private-root`, `PPTX_STUDIO_PRIVATE_ROOT`,
+`$PPTX_STUDIO_SKILL_ROOT/.private/`, then a co-installed Skill `.private/`.
+Managed Codex installation deliberately excludes the commercial `.private`
+tree, so local runs set `PPTX_STUDIO_SKILL_ROOT` to the checked-out Skill root;
+this is normal local use, not a client-folder lookup. The operator must provide
+`PPTX_STUDIO_SKILL_ROOT` and `PPTX_STUDIO_MANAGER`; the manager must equal
 `$PPTX_STUDIO_SKILL_ROOT/scripts/manage_pptx_studio_library.py`; the catalog
-is `$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/catalogs/gaojie-active.v4.json`
+is `<skill-root>/.private/intelligence/pptx-studio/catalogs/gaojie-active.v7.json`
 and the observation index is
-`$PPTX_STUDIO_PRIVATE_ROOT/intelligence/pptx-studio/vision/gaojie-active-observations.v1.json`; the physical certified-category root is
-`$PPTX_STUDIO_PRIVATE_SOURCE_ROOT` (currently `sources/gaojie` below the
-private library root).
+`<skill-root>/.private/intelligence/pptx-studio/vision/gaojie-active-observations.v1.json`;
+the hash-bound component authority is
+`<skill-root>/.private/intelligence/pptx-studio/components/gaojie-component-core.v2.json`;
+the hash-bound visual certification ledger is
+`<skill-root>/.private/intelligence/gaojie/certified-core.json`; the physical certified-category root is
+`<skill-root>/.private/sources/gaojie`.
 At the start of a run, verify those exact paths with `test -f` or stop with
 `RUNTIME_UNAVAILABLE`. Do not discover them by scanning the filesystem. Never
 write a private path, catalog content, preview or source package into the
 client folder or final summary.
 
+Component authorities are operator-maintained. A curator must compile a new
+profile from an independently reviewed source/shape declaration with
+`curate-components`; it derives source package and slide hashes, complete root
+closures, field capacities, relationship IDs and equal-size host anchors from
+the local certified PPTX. A v3 profile may also certify a fixed **canvas**
+anchor: its target rectangle is derived from an existing source-native
+component and the curator must prove that the corresponding target page zone
+is empty (except for explicitly declared background underlays). The runtime
+can then translate, never scale, that native editable component into the fixed
+zone. Never hand-author component/anchor hashes or coordinates, make a profile
+from catalog records alone, or use a canvas anchor to cover client evidence.
+This curation route is private-library maintenance, never a production-agent
+tool or client-folder action.
+
+When a curator promotes an archived source only for component reuse, use the
+operator-only `promote-components` route with an exact reviewed package list.
+It hash-verifies an archive original and its copied component-shelf instance;
+it never moves or restores a whole archived category. The resulting
+component-only pages are intentionally excluded from ordinary page query,
+deck inspection and style planning. They may enter a production plan only
+through a hash-bound component profile and a certified host-anchor placement.
+Render, independently review, and rebuild the catalog before compiling that
+profile. A visual candidate that fails the intended role/cardinality review
+must remain unselected even if its copy and render hashes are valid.
+
 Use `$PPTX_STUDIO_MANAGER` only. It always requires
 `--source-root`, `--archive-root` and `--manifest`; production harnesses pass
 client-local `work/` sentinel paths for those three parser arguments. Do not
 search the filesystem for alternatives.
+
+Before any narrative or retrieval work, run the manager's runtime gate exactly
+once and retain its generated JSON. Do **not** write, summarize or simulate
+this report yourself: a hand-authored `status:"PASS"` is invalid evidence.
+The accepted report has `catalog_page_count`, `observation_count` and
+`source_package_count`, all positive, plus `catalog_denied_page_count` and
+the catalog, observation and certification digest fields. Its catalog must
+carry a `PASS` certification overlay bound to the current ledger. Use:
+
+```bash
+$PPTX_STUDIO_MANAGER runtime-check \
+  --source-root work/source-root.sentinel --archive-root work/archive-root.sentinel \
+  --manifest work/manifest.sentinel --runtime-output work/runtime-health.json
+```
+
+If this command fails or its required aggregate fields are absent, stop as
+`RUNTIME_UNAVAILABLE`; do not create a substitute JSON file.
+
+The certification overlay is operator-maintained, never agent-authored. A
+page whose final certified disposition is `deny` is ineligible at query,
+planning, composition, native preflight and physical assembly even when an old
+materialization record says `eligible`. If the certification digest changes,
+the operator rebuilds the catalog through the manager's `rebuild-catalog`
+command with `--certification-evidence`; never edit catalog JSON by hand or
+work around a denied page with a copied ID.
 
 For each initial retrieval, write exactly this JSON shape (all seven fields are
 required; `style` may be `null`) and invoke `query` with the supplied catalog
@@ -128,17 +238,33 @@ finance or institutional report; this excludes pages whose certified visual
 observation identifies anime/characters, metaverse/robot imagery, mobile-app
 mockups, gaming, energy-product, or unsupported scenic stock-photo subjects
 (mountains, clouds, sailboats and landscapes), as well as similarly
-incompatible material.
+incompatible material. It also excludes a template-owned keynote speaker,
+celebrity, public figure or other identifiable portrait. A client-approved
+staff portrait may enter only as an explicit governed asset binding; never
+retain a commercial template's person merely because the surrounding page
+matches the requested role.
 Use `general` only when the locked brief genuinely permits such material. Use
 only returned `candidate_id` values in the composition request. The role
 vocabulary includes `cover`, `contents`, `section`, `closing`, `one-item`,
 `two-item` through `six-item`, `multi-item`, `team`, `timeline`, `process`,
-`business-model`, `comparison`, `matrix`, `roadmap`, `dashboard`, `data`,
+`business-model`, `comparison`, `matrix`, `roadmap`, `risk`, `dashboard`, `data`,
 `table`, `clinical-network`, `product`, `quote`, `partners`, `case-study` and
-`map`. Select the
-role from the client message's information grammar before selecting a page:
+`map`.
+
+Set `suitability` to `academic-defense` for a research or academic-defense
+deck. This keeps research, methodology, experiment and scholarly evidence
+eligible while excluding sales, campaign, consumer-product, celebrity,
+product-showcase and stock-speaker subjects. It is a distinct audience gate,
+not an alias for `general` or a relaxation of the institutional-report gate.
+
+Select the role from the client message's information grammar before selecting a page:
 data, comparison, table and dashboard have dedicated native surfaces and must
 not be relabelled as multi-item.
+When the message describes an implementation sequence, pilot order or
+cross-functional handoff, select `process` even if its heading uses the word
+“architecture”. Reserve `business-model` for a real set of independently
+named business-model units with enough meaningful client facts to populate
+them; decorative one-character diagram markers are never those units.
 Use `page_assembly` for a normal mixed-role business deck. Preserve query
 results in client-local `work/` evidence; never copy a catalog, preview or
 source package there.
@@ -155,6 +281,66 @@ Certified semantic tags also recognize standard complete-work page anatomy:
 complete-work page solely because its visual observation used a more specific
 label.
 
+### Certified component fallback
+
+Whole certified pages are the default. Use a component only after the
+style-cluster planner or bounded role revalidation returns a truthful
+`NO_MATCH` for that **non-structural** beat; it is not a way to decorate an
+otherwise suitable page. Cover, contents, section and closing never use this
+fallback. Query the private authority with:
+
+```bash
+$PPTX_STUDIO_MANAGER query-components \
+  --source-root work/source-root.sentinel --archive-root work/archive-root.sentinel \
+  --manifest work/manifest.sentinel --catalog "$CATALOG" \
+  --observation-index "$OBSERVATIONS" \
+  --component-profile "$COMPONENT_PROFILE" \
+  --query-input work/component-query.json \
+  --query-output work/component-query-result.json
+```
+
+The request is exactly
+`{"role":"dashboard","style":null,"suitability":"institutional-finance","limit":6}`.
+The response contains only opaque IDs, semantic roles and capacities, never a
+private path, shape ID, source copy, geometry, colour or XML. V4 is the
+production component contract: select one to six returned components only when
+each one has a different returned `host_anchor_id` on the same returned
+`host_page_id`. A component may occur once and an anchor may occur once. Do
+not infer a coordinate, transform, colour, scale or extra component. The
+private compiler owns the exact native insertion, ID repair and any
+hash-certified cleanup of unused host cards. A returned anchor can be a
+replacement reservation or a curator-certified fixed canvas zone; the agent
+does not choose between geometry variants or receive enough data to redraw it.
+
+Use the component fallback only after the ordinary style-cluster pass reports
+the non-structural beat as `NO_MATCH`. Keep all ordinary page-eligible beats in
+the planner result. Re-run the planner for those retained ordinary beats to
+lock their candidates and art direction, then query components only for the
+named missing beats. This is a controlled mixed plan, not a handwritten list
+of unrelated pages. When a retained planner request omits a beat that will be
+filled by a certified component, preserve each retained beat's original
+zero-based `sequence_index`; the solver uses this only to prevent false
+adjacent-repeat decisions across the component beat. It never exposes
+geometry, source order or template data. Map a factual KPI grid to `dashboard` and an independently
+named investment-card set to `multi-item` only when the component query returns
+that semantic role; otherwise revise the narrative or ask for the missing
+facts. Cover, contents, section and closing never use this fallback.
+
+This fallback requires a schema-`4.0` composition request. It keeps the normal
+v2 item shape for ordinary pages, and uses this ID-only item for a multi-card
+component page:
+
+```json
+{"slide_id":"s08","beat_id":"evidence","role":"dashboard","host_candidate_ids":["page_<24-lowercase-hex>_001"],"selected_host_candidate_id":"page_<24-lowercase-hex>_001","component_placements":[{"host_anchor_id":"anchor_<24-lowercase-hex>","component_id":"component_<24-lowercase-hex>"},{"host_anchor_id":"anchor_<24-lowercase-hex>","component_id":"component_<24-lowercase-hex>"}],"minimum_capacity":2}
+```
+
+The root request also carries the exact profile authority:
+`"component_profile":{"profile_id":"...","profile_sha256":"..."}`.
+Pass `--component-profile "$COMPONENT_PROFILE"` unchanged to `compose`,
+`verify-replay`, `preflight`, `adapt` and `assemble`. Missing or changed
+profile authority is a migration failure: re-plan; do not replay stale IDs or
+reconstruct the component with freeform shapes.
+
 After broad retrieval has selected a shortlist, revalidate each chosen page
 with the same seven fields plus optional `candidate_ids`, for example
 `"candidate_ids":["page_<24-lowercase-hex>_001"]`. This bounded audit returns
@@ -162,14 +348,23 @@ only that already-known catalog page and applies the same role, suitability and
 native-region gates. It is not a filesystem lookup and does not permit an
 unregistered page.
 
-For `page_assembly`, every `selected_candidate_id` must be unique across the
-deck. The physical importer intentionally rejects a repeated source page;
-when a page type recurs (for example section dividers or data cards), select a
-different returned candidate for each occurrence. Treat
-`PAGE_SOURCE_DUPLICATE` as a composition correction, not an assembly retry.
+For `page_assembly`, prefer a unique `selected_candidate_id` for every page.
+The deterministic planner may use bounded reuse only when the certified
+high-quality cluster cannot supply enough distinct pages:
+in a 10–19 page deck, at most one extra instance; one source page at most
+twice; the two beats must have the same one-to-six/multi/comparison/case-study
+role and may not be adjacent. A sparse certified `section` page is the sole
+structural exception: the planner may reuse it non-adjacently up to four times
+when each occurrence binds a different approved section title and the page has
+no more than two writable text surfaces. Cover, contents, closing, timeline
+and roadmap pages are never repeatable; the planner may reuse one
+`process` page once under the same non-adjacent, same-role content-repeat
+budget when the two beats each fully populate its published step grammar. Do
+not request repetition by hand; copy only the planner's exact result. Any other
+`PAGE_SOURCE_DUPLICATE` is a composition correction, not an assembly retry.
 
 Every returned candidate also has `page_id`, `deck_id`,
-`theme_family_page_count`, `theme_family_visual_quality` and a certified
+`theme_family_page_count`, `theme_family_visual_quality`, `page_visual_quality` and a certified
 `style_signature`. Prefer a cover
 from a complete certified work with enough eligible sibling pages for the
 deck, rather than selecting the visually loudest single-page cover. A complete
@@ -179,13 +374,14 @@ the required independent rendered review. Choose
 the cover candidate's `page_id` as
 `art_direction.anchor_page_id`; copy its exact `style_signature` into
 `allowed_style_signatures`. A complete anchor deck's sibling pages are allowed
-even when their page-level signatures differ. Add at most **one** more
-signature, and only when the query result proves a necessary compatible
+even when their page-level signatures differ. Add at most **three** more
+signatures, and only when the query result proves each necessary compatible
 cross-deck fallback: it must preserve the anchor's
-colour-family. For a cool professional institutional system, balanced and
-dark-blue pages may be deliberately combined for chapter/data/process rhythm;
-red/ceremonial, green, warm, light-neutral or unrelated editorial fallbacks
-are not compatible. Do not substitute a deck ID, style label or
+colour-family. For a cool professional institutional system, light-cyan,
+balanced-blue and dark-blue pages may be deliberately combined for
+evidence/chapter/data/process rhythm; red/ceremonial, green, warm,
+light-neutral or unrelated editorial fallbacks are not compatible. Do not
+substitute a deck ID, style label or
 natural-language direction. The exact
 `art_direction` contract is:
 
@@ -194,20 +390,80 @@ natural-language direction. The exact
 ```
 
 A cross-package fallback must also have a certified portable
-`visual_quality` of at least `0.80` in its query result. A matching style
+`page_visual_quality` of at least `0.80` in its query result. A matching style
 signature alone never permits a visibly weak page to enter a reference-grade
 deck. If no such fallback exists, reframe the message with a compatible
 anchor-family page or split the narrative; do not use a low-quality template
 to satisfy capacity.
+The style planner applies the same `0.80` floor to ordinary selected pages,
+including siblings from the anchor deck. The only lower structural floor is
+`0.78` for a genuinely sparse `section` divider; this does not authorize a
+weak contents, closing or body page.
 
-Before locking an anchor family, perform a one-slide `compose` + `preflight`
-probe for the shortlisted cover. It must expose one native title/body slot
-that fits the locked report title under the physical capacities. A cover is
-permitted to carry only that title: never force presenter/date metadata into a
-decorative title composition that has no certified metadata surface. Reject a
-visually attractive cover whose native surface cannot hold the real title; do
-this before inspecting or selecting its sibling pages. This is a hard
-eligibility gate, not a cue to reduce font size or add freehand text.
+Before locking an anchor family, perform the physical **`probe-cover`** route
+for each shortlisted cover. It is a non-delivery transaction that composes,
+preflights, binds the actual client cover facts, imports one physical page and
+runs the same overlap/overflow/editability QA as a delivery. A capacity-only
+`compose` + `preflight` result is insufficient: a source may have five safe
+slots in isolation but still collide once a real title, department or date is
+placed in them. The probe artifact is deleted after QA and never counts as a
+client delivery.
+
+Write one value-bearing input per returned candidate, retaining only real
+client cover facts that this page is intended to display. A sparse title cover
+must receive only the title; do not force presenter/date metadata into a
+decorative composition without a certified metadata surface. The unbound
+metadata remains in the fact ledger and must be placed once on an appropriate
+opening or evidence page before final binding. For example:
+
+```json
+{"schema_version":"pptx-studio-cover-probe.v1","candidate_id":"page_<24-lowercase-hex>_001","suitability":"institutional-finance","facts":[{"fact_id":"cover-title","value":"项目立项汇报","semantic_role":"title"}]}
+```
+
+```bash
+$PPTX_STUDIO_MANAGER probe-cover \
+  --source-root work/source-root.sentinel --archive-root work/archive-root.sentinel \
+  --manifest work/manifest.sentinel --catalog "$CATALOG" \
+  --observation-index "$OBSERVATIONS" --private-source-root "$PPTX_STUDIO_PRIVATE_SOURCE_ROOT" \
+  --cover-probe-input work/cover-probe-input.json \
+  --cover-probe-output work/cover-probe-result.json \
+  --assembly-workspace work/cover-probes
+```
+
+Only a literal `status:"PASS"` result may contribute its
+`locked_anchor_page_id` to the later style-cluster request. `NO_MATCH`,
+including `COVER_PROBE_PHYSICAL_QA_FAILED`, excludes that candidate rather
+than asking the model to alter geometry, reduce typography or add freehand
+text. This is a hard eligibility gate before inspecting sibling pages.
+
+When the ordinary style-cluster pass reports a genuine `NO_MATCH` for a
+**non-structural** beat and bounded candidate revalidation returns one
+compatible cross-family page, prove that candidate with the disposable
+physical **`probe-page`** route before adding its exact style signature to the
+locked cluster. It is never a delivery, never accepts cover/contents/section/
+closing, and it does not relax the component-fallback rule. The request carries
+the role's semantic `minimum_capacity` rather than raw fact count: a four-step
+timeline has capacity `5` (one title + four milestones), even though it binds
+nine title/label/body surfaces.
+
+```json
+{"schema_version":"pptx-studio-page-probe.v1","candidate_id":"page_<24-lowercase-hex>_001","role":"timeline","suitability":"institutional-finance","minimum_capacity":5,"facts":[{"fact_id":"timeline-title","value":"项目里程碑","semantic_role":"title"},{"fact_id":"milestone-date-01","value":"2026 年 1 月","semantic_role":"label"},{"fact_id":"milestone-action-01","value":"完成项目立项。","semantic_role":"body"}]}
+```
+
+```bash
+$PPTX_STUDIO_MANAGER probe-page \
+  --source-root work/source-root.sentinel --archive-root work/archive-root.sentinel \
+  --manifest work/manifest.sentinel --catalog "$CATALOG" \
+  --observation-index "$OBSERVATIONS" --private-source-root "$PPTX_STUDIO_PRIVATE_SOURCE_ROOT" \
+  --page-probe-input work/page-probe-input.json \
+  --page-probe-output work/page-probe-result.json \
+  --assembly-workspace work/page-probes
+```
+
+Only a literal `status:"PASS"` can establish that this candidate safely binds
+the actual client facts. The temporary imported PPTX is removed after QA; its
+`candidate_id`, `role`, probe hash and compact QA evidence are the only
+permitted retained probe output.
 
 When the anchor comes from a certified multi-page work, retrieve its sibling
 pages by repeating the same query with optional
@@ -217,8 +473,8 @@ different vision signatures while retaining the same native theme. When the
 anchor comes from a certified multi-page work, its other pages are a
 controlled theme family: their shared PowerPoint master/palette/grid outranks
 per-page vision wording such as “infographic” versus “corporate”. You may add
-only the anchor signature plus one independently compatible fallback signature
-under the rule above. This permits a
+only the anchor signature plus at most three independently certified compatible
+companion signatures under the rule above. This permits a
 coherent full-work template to retain its own chapter/data cadence; it does
 not authorize cross-deck random mixing.
 
@@ -229,15 +485,15 @@ substitute for source/materialization validation. From its sanitized inventory c
 unique pages that best express the locked narrative, excluding every page that
 reports `requires_structured_data=true` unless the brief contains the complete
 dataset required by that page's published `data_contract`.
-Then use `strategy:"family_assembly"`: all 15 selected source pages must be
+Then use `strategy:"family_assembly"`: all selected source pages must be
 unique and belong to that exact inspected anchor deck; composition rechecks
 source scope, observation hash, semantic role, native regions, capacity,
 data-surface and family identity. A page described as clinical departments is
 not an allowable process page merely because it shares the anchor's style.
 The physical binding and QA gates still require nonempty client facts for every
 eligible page. If the family cannot supply all required pages/capacity safely,
-select a different anchor family; only then may the one registered compatible
-fallback signature be considered through normal `page_assembly`.
+select a different anchor family; only then may up to two registered compatible
+companion signatures be considered through normal `page_assembly`.
 
 For an `exact_deck` candidate, call `inspect-deck` with the returned `deck_id`
 and write its value-free inventory to `work/deck-inventory.json`:
@@ -259,11 +515,179 @@ misleading must instead be represented by a compatible physical fallback or
 be rejected at rendered inspection—never leave wrong template figures as
 client evidence.
 
-For example, the full composition request begins as follows (replace all
-placeholder values only with query-result values):
+For production without component fallback, the full composition request uses
+schema `2.0`; a plan with a certified component fallback uses schema `4.0` and
+the matching component-profile authority. Both embed the
+**verbatim** PASS object from `work/narrative-validation.json`, and binds one
+`beat_id` to every selected page in the same order. Schema `1.0` is legacy
+fixture compatibility only and cannot be used for a new client delivery. For a
+substantive 10+ page production plan, compilation additionally requires at least six
+source packages across five approved categories, with no package supplying more
+than four pages. This proves genuine page/component assembly without turning
+provenance into a target for random variety: lock the visual anchor first, then
+select compatible certified pages whose native bindability and media budget are
+also safe.
+At least 70% of a 10+ page plan must remain in the locked anchor **cluster**:
+the anchor signature and up to two registered compatible companion signatures
+are one cluster only when the compiler proves each signature's colour-family, tone and
+professional archetype compatible. A raw signature is only a page-level
+visual-description fingerprint; do not mistake corporate/minimal variants of
+the same cool professional system for a collage. Warm, green, ceremonial,
+neutral-light or otherwise incompatible pages remain outside the cluster and
+are rejected.
+
+### Required style-cluster feasibility pass for substantive delivery
+
+For a normal 10+ page page-assembly deck, do not solve cross-library selection
+by hand from a batch of unrelated candidates. After narrative validation, map
+each retained beat to its semantic role and capacity floor, then call the
+runtime planner once:
+
+```bash
+$PPTX_STUDIO_MANAGER plan-style-cluster \
+  --source-root work/source-root.sentinel --archive-root work/archive-root.sentinel \
+  --manifest work/manifest.sentinel --catalog "$CATALOG" \
+  --observation-index "$OBSERVATIONS" --private-source-root "$PPTX_STUDIO_PRIVATE_SOURCE_ROOT" \
+  --style-cluster-input work/style-cluster-request.json \
+  --style-cluster-output work/style-cluster-plan.json
+```
+
+The input has `schema_version`, `suitability`, `slides` and an optional
+`locked_anchor_page_id`; its schema version is the literal
+**`pptx-studio-style-cluster-request.v1`** (never `"1.0"`). Each slide has
+`{beat_id, role, minimum_capacity}` and may add two fact-derived, value-free
+guards: `content_requirements` (`title`/`label`/`metric`/`body` → required
+native-surface count) and `minimum_role_capacities` (the longest approved text
+length for each semantic role). These guards are counts and character lengths,
+never client copy, paths or geometry. Use them whenever the beat has paired
+cards, a mandatory heading, or a long label/date; otherwise omit them. The
+smallest valid start is:
 
 ```json
-{"schema_version":"1.0","strategy":"page_assembly","art_direction":{"anchor_page_id":"page_0123456789abcdef01234567_001","allowed_style_signatures":["style_0123456789abcdef01234567"],"suitability":"institutional-finance"},"slides":[{"slide_id":"s01","role":"cover","candidate_ids":["page_0123456789abcdef01234567_001"],"selected_candidate_id":"page_0123456789abcdef01234567_001","minimum_capacity":12}]}
+{"schema_version":"pptx-studio-style-cluster-request.v1","suitability":"institutional-finance","slides":[{"beat_id":"cover","role":"cover","minimum_capacity":1}]}
+```
+
+For a `timeline`, `roadmap`, or `process` with `content_requirements`, the
+sequence contract is executable: declare exactly one `title`, equal nonzero
+`label` and `body` counts, and set `minimum_capacity` to `1 + label count`.
+Each label/body pair is one complete source-grounded step. Four dated
+milestones therefore require `{"title":1,"label":4,"body":4}` and
+`minimum_capacity:5`; a false four-capacity request is rejected before
+retrieval rather than searching for a three-step template.
+
+The planner receives the declared private source root so it can recognize a
+curator-certified cardinality adaptation as an opaque page/role/capacity
+eligibility key. It never receives removed shape IDs, geometry or hashes and
+cannot request a deletion. A selected adapted timeline remains provisional
+until normal native preflight and `probe-page` verify the exact client
+date/action facts; this never authorizes a fifth milestone, a process downgrade
+or an unregistered page adjustment.
+
+After the required schema-1 cover probe has passed, retain that returned
+`page_id` as `locked_anchor_page_id` on every later style-cluster replan for
+the same brief. This prevents a closing/body recovery from replacing a cover
+whose native title and metadata binding has already been proven. A locked
+anchor that is no longer a safe candidate returns
+`STYLE_CLUSTER_LOCKED_ANCHOR_NO_MATCH`; do not silently substitute another
+cover.
+
+### Deterministic text-backed role ladder
+
+For a v1 text/fact-backed brief, select roles with this ladder before the
+first planner call; do not improvise a chart or inflate card count. It is the
+weak-model default and applies when the brief has no complete governed
+structured-data contract:
+
+| Locked message grammar | Exact text-backed role |
+| --- | --- |
+| structural cover / directory / divider / close | `cover` / `contents` / `section` / `closing` |
+| one conclusion or one hero number | `one-item` |
+| two named metrics, a trend headline plus its stated operational consequence, or a simple before/after | `two-item` (use `comparison` only when both sides are complete and genuinely contrasted) |
+| three named investment, return, risk or parallel units | `three-item` |
+| four/six named parallel units | matching `four-item` … `six-item` |
+| more than six named parallel units | `multi-item` |
+| causal handoff, operating sequence or rollout steps | `process` |
+| dated milestones | `timeline` or `roadmap`, with the exact source-grounded milestone count |
+
+Thus a brief that merely says “volume +18% and month-end close is delayed” is
+`two-item`, not a native trend chart; “platform / interfaces / pilot” is
+`three-item`, not a four-card page. The `minimum_capacity` is the number of
+meaningful client units in that selected role, except a cover where it is the
+short visual-title character count. A section uses its approved title fact's
+character count, not an invented cardinality. Before calling the planner,
+derive the optional surface guards from the locked fact ledger: a page with a
+title, four labels and five bodies must request
+`"content_requirements":{"title":1,"label":4,"body":5}`; if its longest
+label has eight characters, also request
+`"minimum_role_capacities":{"label":8}`. A planner `PASS` then proves the
+selected page has the required editable slots before physical preflight.
+
+If the first planner result is `STYLE_CLUSTER_FEASIBILITY_NO_MATCH`, preserve
+every locked fact and key message. First correct a cover-capacity mismatch with
+the shortest meaningful contiguous phrase already present in the approved
+title, recording that exact source fragment as a separate cover-title fact.
+Then re-run once with the next lower **truthful** role rung
+(`six→five→…→one`, `multi-item→six`, or `comparison→two-item`) only when the
+surviving named facts still fit that form.
+
+If the complete slide sequence still has no feasible cluster, one
+second-order narrative replan is allowed before stopping. It may merge only
+adjacent body beats from the same section when all of their facts and key
+messages remain explicit in one truthful grammar and the combined capacity is
+valid. It may not delete or defer an approved fact, remove a required
+structural page, merge across sections, or relabel a process/data relationship
+as cards. Rewrite and revalidate `brief.normalized.json`,
+`narrative-plan.json`, `fact-store.v1.json` and every `recommended_beat` before
+calling the planner again; the new validated count is the delivery count.
+This is narrative compression for the audience decision, not changing content
+to fit an attractive template. If no lossless merge or truthful lower rung
+exists, stop and request the missing client data. Never hand-select IDs after
+a `NO_MATCH`.
+
+For a cover, section or closing specifically, `minimum_capacity` is the
+character count of the one source-grounded visual title, approved section
+heading or complete approval request, not a fact count. The planner compares
+it with one certified native **title** surface only. A complete closing request
+is atomic: never split it over a title and decorative label merely to force a
+narrow ending page. When the formal project name
+is too long, create a separate visual-title fact only from a contiguous,
+meaningful phrase already present in that approved title (record its precise
+source fragment locator), and bind the complete formal title to an ordinary
+certified body/label surface on the same cover. This is a traceable editorial
+short form, not invented copy. If neither title/body surfaces fit, choose
+another certified cover or ask the client; never silently abbreviate or force
+the formal title into a decorative title lockup.
+On `PASS`, copy the planner's `art_direction` and exact
+`recommended_slides` IDs into the schema-2.0 composition request. Those IDs
+already satisfy unique-page, anchor/fallback compatibility, cross-package
+page-quality, 6-package/5-category, four-pages-per-source and conservative
+private dependency-media-budget constraints. The budget is calculated inside
+the private catalog and reported only as an aggregate; do not inspect source
+PPTX files or manually substitute a heavier candidate. The final physical ZIP
+size gate is still authoritative.
+The evidence reports `reused_page_instance_count` and
+`maximum_reuse_per_page`; zero is preferred. A nonzero count is valid only
+under the bounded rule above and still counts toward package/category
+diversity. They are a safe physical selection, not a visual score or a release decision.
+This v1 planner is for a normal fact/text-backed beat and deliberately excludes
+native chart/table/workbook pages: such a page may enter only through a future
+explicit complete structured-data contract, never from a few headline metrics.
+Accordingly v1 rejects `data`, `dashboard` and `table` roles. If the brief has
+only a few approved metrics, reframe them honestly as `two-item` through
+`six-item` or `multi-item` KPI/evidence cards; if it has an actual complete
+time series, category grid or workbook-equivalent dataset, use the separate
+structured-data route before any such role is selected.
+On `STYLE_CLUSTER_FEASIBILITY_NO_MATCH` or `STYLE_CLUSTER_ROLE_NO_MATCH`, revise
+the narrative grammar/capacity or ask for facts; never bypass it with random
+cross-template choices. Do not replace this planning result with a handwritten
+candidate list for a substantive mixed deck.
+
+For example, the full composition request begins as follows (replace all
+placeholder values only with query-result values and the narrative object with
+the exact validator output):
+
+```json
+{"schema_version":"2.0","strategy":"page_assembly","art_direction":{"anchor_page_id":"page_0123456789abcdef01234567_001","allowed_style_signatures":["style_0123456789abcdef01234567"],"suitability":"institutional-finance"},"narrative_validation":{"schema_version":"pptx-studio-narrative-validation.v1","status":"PASS","brief_id":"locked-brief","brief_sha256":"<64-lowercase-hex>","narrative_sha256":"<64-lowercase-hex>","slide_count":2,"delivery_beat_ids":["cover","closing"],"section_evidence":[]},"slides":[{"slide_id":"s01","beat_id":"cover","role":"cover","candidate_ids":["page_0123456789abcdef01234567_001"],"selected_candidate_id":"page_0123456789abcdef01234567_001","minimum_capacity":12},{"slide_id":"s02","beat_id":"closing","role":"closing","candidate_ids":["page_0123456789abcdef01234567_002"],"selected_candidate_id":"page_0123456789abcdef01234567_002","minimum_capacity":12}]}
 ```
 
 ## 3. Plan and bind without visual implementation authority
@@ -279,7 +703,8 @@ For normal client work, do **not** hand-map `region_id` and `shape_id`. Before
 production, create and lock a `fact-store.v1.json` from the agreed brief and
 authoritative data. It is the client-copy ledger: every active fact has a
 unique `id`, exact `text`, `source_id`, locator, status and approved
-`recommended_beat` (`s01`…`s15`). Then write a small
+`recommended_beat` (`s01`…`sNN`, where `NN` comes from the narrative
+validation). Then write a small
 `content-outline.v1.json`: it has only `schema_version` and `slides`; each
 slide has `slide_id` and an ordered `facts` list; in a locked production run
 every standalone fact is normally
@@ -302,6 +727,46 @@ minimum valid shape (extend it with more facts only):
 ```json
 {"schema_version":"1.0","project":{"title":"客户已确认项目名","language":"zh-CN"},"sources":[{"id":"facts-md","kind":"client-data","locator":"FACTS.md"}],"facts":[{"id":"s01-title","text":"客户已确认标题","status":"active","source_id":"facts-md","locator":"FACTS.md#报告信息","recommended_beat":"s01"}]}
 ```
+
+An input paragraph may contain several explicitly stated client facts. Split
+it into atomic ledger records when—and only when—the source itself names the
+separate values/categories/actions. Keep the same `source_id` and use a
+precise fragment locator such as `brief.normalized.json#facts[f07]:平台建设`.
+For example, “平台 980 万、接口 420 万、培训与试运行 400 万” is three approved
+investment facts; “周期缩短 30%、识别率 85%、月中预警” is three approved KPI
+facts; and three named risks with their owners are three approved risk units.
+This is traceable normalization, not invention. Conversely, do not split an
+undifferentiated conclusion merely to fill cards. Perform this atomicization
+before changing a three-/four-item beat into a weaker one-item page.
+For a `timeline` or `roadmap`, every milestone is one complete linked unit:
+create one source-located `date` fact and one source-located `action` fact for
+each milestone, preserve chronological order from the authoritative source,
+and bind both through the same published `timeline-step.NN` group using
+`component_field:"date"` and `component_field:"action"`. Never bind all dates
+first and all actions second, and never treat a date marker as a page title.
+If the source does not provide both fields for every required step, select a
+simpler page or ask the client; do not retain a blank milestone or infer copy.
+The selected native page must publish exactly the same number of milestone
+groups as the approved source. Never invent a fifth milestone to fill a
+five-node timeline. When no quality-eligible timeline/roadmap has the exact
+count, stop with an actionable `NO_MATCH` or use a separately certified
+compiler-owned timeline-cardinality adaptation. Never relabel dated milestones
+as `process`, even when the chronological order is retained.
+A complete client brief also supplies the editorial title fact for every
+non-sparse structural page it requests—especially contents/agenda, table,
+dashboard and named section variants. Do not assume a template's existing
+“目录” copy may survive: add the client-approved agenda title to the fact
+ledger and bind it to the certified title surface. If it is absent, ask the
+client during requirement lock rather than reaching `bind-outline` with an
+empty mandatory title.
+Numbered agenda ornaments such as `01`–`04` are compiler-owned navigation
+structure, not client facts. Preserve them in their native shapes, exclude
+them from the visual-surface coverage denominator, and never create duplicate
+facts merely to bind them.
+A single CJK glyph is not a meaningful reusable client fact (for example,
+never split `建设` into `建` and `设` to satisfy paired fields); retain the
+meaningful source phrase or select a grammar that needs fewer facts. Numeric
+measurements and genuine non-CJK tokens remain valid.
 
 `project`, nonempty `sources`, every source `id`, every fact `status:"active"`,
 and a source ID matching every fact's `source_id` are mandatory. The outline
@@ -406,6 +871,14 @@ cannot be released with only two facts and ten blank boxes. Supply genuine
 facts for that grammar or reselect a smaller/appropriate page. Governed
 chart/table pages are excluded because their published data contract owns the
 visible data surface.
+
+The binder also rejects any selected text-backed page when approved facts fill
+less than the published visual-surface floor, including sparse section and
+closing pages whose sample copy would otherwise be cleared from visible cards
+or frames. `OUTLINE_VISUAL_SURFACE_COVERAGE_INSUFFICIENT` means re-plan the
+beat, losslessly merge adjacent same-section evidence, or select a lower-density
+certified page. It never authorizes filler, preservation of sample copy,
+freehand drawing or manual post-assembly repair.
 
 Treat a zero count as an absolute design constraint. In particular, a
 chart-led page with `body: 0` must carry its interpretation through its

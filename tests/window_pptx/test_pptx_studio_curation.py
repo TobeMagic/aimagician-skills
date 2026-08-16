@@ -13,11 +13,15 @@ sys.path.insert(0, str(SCRIPT_ROOT))
 
 from pptx_studio.curation import (  # noqa: E402
     ACTIVE_GAOJIE_CATEGORIES,
+    COMPONENT_PROMOTION_SCHEMA_VERSION,
     CurationError,
     INACTIVE_GAOJIE_CATEGORIES,
+    apply_component_promotion,
     apply_curation,
+    plan_component_promotion,
     plan_curation,
     recover_curation,
+    verify_component_promotion,
     verify_curation,
 )
 
@@ -119,3 +123,79 @@ def test_apply_fails_closed_when_source_hash_changes_after_plan(tmp_path: Path) 
         apply_curation(plan, sources, archive_root=archive)
     assert target.is_file()
     assert not archive.exists()
+
+
+def test_component_promotion_copies_only_reviewed_archive_packages_with_hash_provenance(tmp_path: Path) -> None:
+    sources, archive = _sources(tmp_path)
+    selected = archive / "104-数据基座" / "数据基座" / "selected.pptx"
+    rejected = archive / "104-数据基座" / "数据基座" / "rejected.pptx"
+    selected.parent.mkdir(parents=True)
+    selected.write_bytes(b"selected-data-base")
+    rejected.write_bytes(b"rejected-data-base")
+    (sources / "104-数据基座-精选").rmdir()
+    request = {
+        "schema_version": COMPONENT_PROMOTION_SCHEMA_VERSION,
+        "source_locators": ["104-数据基座/数据基座/selected.pptx"],
+    }
+
+    plan = plan_component_promotion(request, sources, archive_root=archive)
+    assert plan["status"] == "PLANNED"
+    assert plan["packages"] == [{
+        "source_locator": "104-数据基座/数据基座/selected.pptx",
+        "target_locator": "104-数据基座-精选/selected.pptx",
+        "source_sha256": _sha(b"selected-data-base"),
+        "target_sha256": None,
+    }]
+
+    applied = apply_component_promotion(plan, sources, archive_root=archive)
+    promoted = sources / "104-数据基座-精选" / "selected.pptx"
+    assert promoted.read_bytes() == b"selected-data-base"
+    assert selected.read_bytes() == b"selected-data-base"
+    assert not (sources / "104-数据基座-精选" / "rejected.pptx").exists()
+    assert verify_component_promotion(applied, sources, archive_root=archive) == {
+        "schema_version": COMPONENT_PROMOTION_SCHEMA_VERSION,
+        "status": "PASS",
+        "target_category": "104-数据基座-精选",
+        "package_count": 1,
+    }
+
+
+def test_component_promotion_adds_a_reviewed_batch_without_overwriting_existing_shelf(tmp_path: Path) -> None:
+    sources, archive = _sources(tmp_path)
+    existing = sources / "104-数据基座-精选" / "already-reviewed.pptx"
+    existing.write_bytes(b"preserved")
+    selected = archive / "104-数据基座" / "数据基座" / "new-reviewed.pptx"
+    selected.parent.mkdir(parents=True)
+    selected.write_bytes(b"new-reviewed")
+
+    plan = plan_component_promotion({
+        "schema_version": COMPONENT_PROMOTION_SCHEMA_VERSION,
+        "source_locators": ["104-数据基座/数据基座/new-reviewed.pptx"],
+    }, sources, archive_root=archive)
+    applied = apply_component_promotion(plan, sources, archive_root=archive)
+
+    assert applied["status"] == "APPLIED"
+    assert existing.read_bytes() == b"preserved"
+    assert (sources / "104-数据基座-精选" / "new-reviewed.pptx").read_bytes() == b"new-reviewed"
+    with pytest.raises(CurationError, match="COMPONENT_PROMOTION_TARGET_COLLISION"):
+        plan_component_promotion({
+            "schema_version": COMPONENT_PROMOTION_SCHEMA_VERSION,
+            "source_locators": ["104-数据基座/数据基座/new-reviewed.pptx"],
+        }, sources, archive_root=archive)
+
+
+def test_component_promotion_rejects_archive_drift_before_writing_target(tmp_path: Path) -> None:
+    sources, archive = _sources(tmp_path)
+    selected = archive / "104-数据基座" / "数据基座" / "selected.pptx"
+    selected.parent.mkdir(parents=True)
+    selected.write_bytes(b"original")
+    (sources / "104-数据基座-精选").rmdir()
+    plan = plan_component_promotion({
+        "schema_version": COMPONENT_PROMOTION_SCHEMA_VERSION,
+        "source_locators": ["104-数据基座/数据基座/selected.pptx"],
+    }, sources, archive_root=archive)
+    selected.write_bytes(b"drifted")
+
+    with pytest.raises(CurationError, match="COMPONENT_PROMOTION_SOURCE_HASH_MISMATCH"):
+        apply_component_promotion(plan, sources, archive_root=archive)
+    assert not (sources / "104-数据基座-精选").exists()

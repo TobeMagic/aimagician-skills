@@ -67,6 +67,38 @@ def test_plan_fails_when_local_png_hash_does_not_match_catalog(tmp_path: Path) -
         plan_visual_batches(catalog, asset_index=assets, completion_render_index=completed, private_root=private, completion_evidence_root=evidence)
 
 
+def test_exact_page_reobservation_overrides_matching_existing_hash(tmp_path: Path) -> None:
+    catalog, assets, completed, private, evidence = _fixture(tmp_path)
+    original = plan_visual_batches(catalog, asset_index=assets, completion_render_index=completed, private_root=private, completion_evidence_root=evidence)
+    item = original["batches"][0][0]
+    existing = ingest_batch_report(original, batch_index=0, report=_agnes_report(item["page_id"], item["image_sha256"]))
+
+    repaired = plan_visual_batches(
+        catalog, asset_index=assets, completion_render_index=completed,
+        private_root=private, completion_evidence_root=evidence,
+        existing_observations=existing, page_ids=[item["page_id"]],
+    )
+    assert repaired["pending_page_count"] == 1
+    assert repaired["batches"][0][0]["page_id"] == item["page_id"]
+
+
+def test_exact_page_reobservation_rejects_unknown_or_duplicate_ids(tmp_path: Path) -> None:
+    catalog, assets, completed, private, evidence = _fixture(tmp_path)
+    page_id = catalog["pages"][0]["page_id"]  # type: ignore[index]
+    with pytest.raises(VisualBatchError, match="VISION_PAGE_IDS_INVALID"):
+        plan_visual_batches(
+            catalog, asset_index=assets, completion_render_index=completed,
+            private_root=private, completion_evidence_root=evidence,
+            page_ids=["page_" + "b" * 24 + "_001"],
+        )
+    with pytest.raises(VisualBatchError, match="VISION_PAGE_IDS_INVALID"):
+        plan_visual_batches(
+            catalog, asset_index=assets, completion_render_index=completed,
+            private_root=private, completion_evidence_root=evidence,
+            page_ids=[page_id, page_id],
+        )
+
+
 def test_ingest_rejects_model_supplied_identity(tmp_path: Path) -> None:
     catalog, assets, completed, private, evidence = _fixture(tmp_path)
     plan = plan_visual_batches(catalog, asset_index=assets, completion_render_index=completed, private_root=private, completion_evidence_root=evidence)

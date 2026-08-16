@@ -75,8 +75,15 @@ def plan_visual_batches(
     completion_evidence_root: Path | str,
     existing_observations: Mapping[str, Any] | None = None,
     batch_size: int = 8,
+    page_ids: Sequence[str] | None = None,
 ) -> dict[str, Any]:
-    """Resolve hash-bound local PNGs into private batches without source names."""
+    """Resolve hash-bound local PNGs into private batches without source names.
+
+    ``page_ids`` is an operator-only repair scope for a known stale visual
+    observation.  It never discovers pages: every requested ID must occur in
+    the pinned catalog, and its current image hash still has to match local
+    render evidence before it is submitted again.
+    """
 
     if type(batch_size) is not int or not 1 <= batch_size <= 8:
         raise VisualBatchError("BATCH_SIZE_INVALID")
@@ -87,10 +94,17 @@ def plan_visual_batches(
     available = _legacy_pngs(asset_index, root)
     available.update(_completed_pngs(completion_render_index, completed_root))
     known = _existing_index(existing_observations)
+    catalog_pages = [item for item in catalog.get("pages", []) if isinstance(item, Mapping)]
+    catalog_page_ids = {str(item.get("page_id")) for item in catalog_pages}
+    requested_page_ids: set[str] | None = None
+    if page_ids is not None:
+        if not page_ids or any(not isinstance(page_id, str) or not page_id for page_id in page_ids):
+            raise VisualBatchError("VISION_PAGE_IDS_INVALID")
+        requested_page_ids = set(page_ids)
+        if len(requested_page_ids) != len(page_ids) or not requested_page_ids <= catalog_page_ids:
+            raise VisualBatchError("VISION_PAGE_IDS_INVALID")
     pending: list[dict[str, str]] = []
-    for page in sorted(catalog.get("pages", []), key=lambda item: str(item.get("page_id"))):
-        if not isinstance(page, Mapping):
-            raise VisualBatchError("CATALOG_PAGE_INVALID")
+    for page in sorted(catalog_pages, key=lambda item: str(item.get("page_id"))):
         page_id, package_sha = page.get("page_id"), page.get("package_sha256")
         slide_number = page.get("slide_number")
         render = page.get("render")
@@ -99,8 +113,10 @@ def plan_visual_batches(
         image_sha = render.get("image_sha256")
         if not isinstance(image_sha, str):
             raise VisualBatchError("CATALOG_RENDER_INVALID")
+        if requested_page_ids is not None and page_id not in requested_page_ids:
+            continue
         already = known.get(page_id)
-        if isinstance(already, Mapping) and already.get("image_sha256") == image_sha:
+        if requested_page_ids is None and isinstance(already, Mapping) and already.get("image_sha256") == image_sha:
             continue
         png = available.get(f"{package_sha}:{slide_number:03d}")
         if png is None or not png.is_file() or png.is_symlink() or _sha256(png) != image_sha:

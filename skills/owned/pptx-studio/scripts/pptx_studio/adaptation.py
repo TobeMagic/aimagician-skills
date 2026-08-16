@@ -7,7 +7,8 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from .composition import composition_plan_sha256
+from .composition import composition_plan_sha256, verify_composition_replay_lock
+from .component_profiles import ComponentProfileIndex
 from .query import governed_content_slot_count
 from .structured_data import (
     StructuredDataError,
@@ -88,6 +89,7 @@ def _physical_region_capacities(preflight: Mapping[str, Any]) -> dict[tuple[str,
                 "capacity": region["native_capacity"],
                 "fragment_group": region.get("fragment_group") is True,
                 "component_key": region.get("component_key"),
+                "component_binding": region.get("component_binding"),
             }
     return capacities
 
@@ -98,11 +100,18 @@ def compile_adaptation(
     catalog: Mapping[str, Any],
     request: Mapping[str, Any],
     preflight: Mapping[str, Any] | None = None,
+    component_profiles: ComponentProfileIndex | None = None,
 ) -> dict[str, Any]:
     """Compile only safe, value-free references for a later materializer."""
 
-    if composition_plan.get("schema_version") != "1.0" or composition_plan.get("status") != "PASS":
+    if composition_plan.get("schema_version") not in {"1.0", "2.0", "3.0", "4.0"} or composition_plan.get("status") != "PASS":
         raise AdaptationError("COMPOSITION_PLAN_INVALID")
+    try:
+        verify_composition_replay_lock(
+            composition_plan, catalog=catalog, component_profiles=component_profiles,
+        )
+    except ValueError as exc:
+        raise AdaptationError(str(exc)) from exc
     facts, assets, bindings, structured_entries = _registry(request)
     physical_capacities = _physical_region_capacities(preflight) if preflight is not None else None
     pages = {str(page.get("page_id")): page for page in catalog.get("pages", []) if isinstance(page, Mapping)}
@@ -139,7 +148,9 @@ def compile_adaptation(
             if is_fragment:
                 if physical_region is None or not physical_region["fragment_group"]:
                     raise AdaptationError("FRAGMENT_REGION_NOT_SELECTED")
-            elif region is None or region.get("page_id") != page.get("page_id") or region_id not in source.get("region_ids", []):
+            elif (
+                physical_region is None or physical_region.get("component_binding") is None
+            ) and (region is None or region.get("page_id") != page.get("page_id") or region_id not in source.get("region_ids", [])):
                 raise AdaptationError("REGION_NOT_SELECTED")
             if physical_capacities is None:
                 if is_fragment:
@@ -159,7 +170,22 @@ def compile_adaptation(
             if target in targets:
                 raise AdaptationError("BINDING_TARGET_DUPLICATE")
             targets.add(target)
-            operations.append({"slide_id": slide_id, "operation": operation, "region_id": region_id, "fact_id": fact_id, "capacity": capacity})
+            component_binding = physical_region.get("component_binding") if physical_region is not None else None
+            if component_binding is not None:
+                if (
+                    not isinstance(component_binding, Mapping)
+                    or not isinstance(component_binding.get("component_id"), str)
+                    or not isinstance(component_binding.get("field_id"), str)
+                ):
+                    raise AdaptationError("COMPONENT_BINDING_DRIFT")
+                operations.append({
+                    "slide_id": slide_id, "operation": "replace_component_text",
+                    "region_id": region_id, "fact_id": fact_id, "capacity": capacity,
+                    "component_id": component_binding["component_id"],
+                    "field_id": component_binding["field_id"],
+                })
+            else:
+                operations.append({"slide_id": slide_id, "operation": operation, "region_id": region_id, "fact_id": fact_id, "capacity": capacity})
         else:
             shape_id, asset_id = binding.get("shape_id"), binding.get("asset_id")
             if not isinstance(shape_id, str) or not isinstance(asset_id, str) or asset_id not in assets:

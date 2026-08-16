@@ -3,7 +3,7 @@
   "$id": "https://pptx-studio.local/schemas/pptx-studio-catalog.v1.schema.json",
   "title": "PPTX Studio Catalog v1",
   "type": "object",
-  "required": ["schema_version", "catalog_id", "source_kind", "active_categories", "deck_count", "page_count", "region_count", "category_index", "decks", "pages", "regions"],
+  "required": ["schema_version", "catalog_id", "source_kind", "active_categories", "deck_count", "page_count", "region_count", "certification_overlay", "category_index", "decks", "pages", "regions"],
   "properties": {
     "schema_version": {"const": "1.0"},
     "catalog_id": {"type": "string", "minLength": 1},
@@ -12,6 +12,21 @@
     "deck_count": {"type": "integer", "minimum": 0},
     "page_count": {"type": "integer", "minimum": 0},
     "region_count": {"type": "integer", "minimum": 0},
+    "certification_overlay": {
+      "type": "object",
+      "required": ["schema_version", "status", "source_schema_version", "source_sha256", "source_entry_count", "denied_page_count", "applied_denied_page_count", "out_of_scope_denied_page_count"],
+      "properties": {
+        "schema_version": {"const": "pptx-studio-certification-overlay.v1"},
+        "status": {"enum": ["PASS", "NOT_APPLIED"]},
+        "source_schema_version": {"type": ["string", "null"]},
+        "source_sha256": {"anyOf": [{"type": "string", "pattern": "^[0-9a-f]{64}$"}, {"type": "null"}]},
+        "source_entry_count": {"type": "integer", "minimum": 0},
+        "denied_page_count": {"type": "integer", "minimum": 0},
+        "applied_denied_page_count": {"type": "integer", "minimum": 0},
+        "out_of_scope_denied_page_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
     "category_index": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
     "decks": {"type": "array"},
     "pages": {"type": "array"},

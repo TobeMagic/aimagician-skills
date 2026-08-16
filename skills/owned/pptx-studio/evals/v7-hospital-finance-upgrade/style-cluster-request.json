@@ -1,0 +1,20 @@
+{
+  "schema_version": "pptx-studio-style-cluster-request.v1",
+  "suitability": "institutional-finance",
+  "slides": [
+    {"beat_id":"cover","role":"cover","minimum_capacity":5},
+    {"beat_id":"agenda","role":"contents","minimum_capacity":0},
+    {"beat_id":"section-current","role":"section","minimum_capacity":0},
+    {"beat_id":"current-pressure","role":"two-item","minimum_capacity":0},
+    {"beat_id":"current-friction","role":"one-item","minimum_capacity":0},
+    {"beat_id":"section-solution","role":"section","minimum_capacity":0},
+    {"beat_id":"solution-architecture","role":"multi-item","minimum_capacity":0},
+    {"beat_id":"section-value","role":"section","minimum_capacity":0},
+    {"beat_id":"investment","role":"multi-item","minimum_capacity":0},
+    {"beat_id":"return","role":"one-item","minimum_capacity":0},
+    {"beat_id":"section-execution","role":"section","minimum_capacity":0},
+    {"beat_id":"risk","role":"two-item","minimum_capacity":0},
+    {"beat_id":"decision-roadmap","role":"timeline","minimum_capacity":0},
+    {"beat_id":"closing","role":"closing","minimum_capacity":0}
+  ]
+}

@@ -388,6 +388,8 @@ class AssemblyTargetSlide:
     )
     asset_binding_specs: Mapping[str, AssetBindingSpec] = field(default_factory=dict)
     selection_evidence: SelectionEvidence | None = None
+    component_import_specs: tuple[ComponentImportSpec, ...] = ()
+    host_cleanup_specs: tuple[HostCleanupSpec, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -434,7 +436,59 @@ class AssemblyTargetSlide:
         }
         if self.selection_evidence is not None:
             payload["selection"] = self.selection_evidence.to_dict()
+        if self.component_import_specs:
+            # Private source locators and native identifiers intentionally stay
+            # inside the live assembler plan. Client-visible evidence records
+            # only the number of independently certified inserts.
+            payload["component_import_count"] = len(self.component_import_specs)
+        if self.host_cleanup_specs:
+            payload["component_host_cleanup_count"] = len(self.host_cleanup_specs)
         return payload
+
+
+@dataclass(frozen=True)
+class ComponentImportSpec:
+    """One private, certified component-to-host insertion contract.
+
+    This object is deliberately an assembler-internal authority.  Agent-facing
+    plans use opaque certified component and host-anchor IDs; the physical
+    adapter resolves those IDs to this source-fingerprinted shape contract.
+    Keeping source paths, shape IDs and relationship IDs out of serialized
+    client plans prevents a model from turning the importer into a freehand
+    OOXML surface.
+    """
+
+    source_path: str
+    source_package_sha256: str
+    source_slide_number: int
+    source_slide_sha256: str
+    source_shape_ids: tuple[int, ...]
+    host_anchor_shape_ids: tuple[int, ...]
+    component_sha256: str
+    host_anchor_sha256: str
+    relationship_ids: tuple[str, ...] = ()
+    # A canvas insertion has no host shape to replace.  Its immutable target
+    # rectangle is compiled from a separately certified source closure and is
+    # never supplied by the agent or serialized into a client plan.
+    canvas_bbox: tuple[int, int, int, int] | None = None
+    canvas_anchor_sha256: str | None = None
+    # Private field bindings are resolved from a hash-bound component profile.
+    # The public plan contains only component/field IDs; the physical mapper
+    # applies replacements after native IDs are remapped into the host slide.
+    text_binding_specs: Mapping[int, TextBindingSpec] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class HostCleanupSpec:
+    """Hash-bound removal of a certified unused host variant region.
+
+    It is intentionally an assembler authority, never an agent-visible shape
+    instruction. A cleanup executes before components are imported so every
+    selected anchor remains available for its own independent replacement.
+    """
+
+    shape_ids: tuple[int, ...]
+    shape_sha256: str
 
 
 @dataclass(frozen=True)
@@ -1502,6 +1556,634 @@ class _SourcePackageContext:
         self.archive.close()
 
 
+_COMPONENT_SHAPE_TAGS = frozenset(
+    f"{{{PML_NS}}}{name}"
+    for name in ("sp", "pic", "graphicFrame", "cxnSp", "grpSp")
+)
+
+
+def _slide_shape_tree(root: ET.Element) -> ET.Element:
+    """Return the one native slide shape tree, or fail before mutation."""
+
+    trees = list(root.findall(f"./{{{PML_NS}}}cSld/{{{PML_NS}}}spTree"))
+    if len(trees) != 1:
+        raise PhysicalAssemblyError("COMPONENT_HOST_SHAPE_TREE_INVALID")
+    return trees[0]
+
+
+def _shape_non_visual_ids(shape: ET.Element) -> tuple[int, ...]:
+    """Collect a complete top-level shape/group closure in XML order."""
+
+    identifiers: list[int] = []
+    for marker in shape.iter(f"{{{PML_NS}}}cNvPr"):
+        try:
+            identifier = int(marker.attrib["id"])
+        except (KeyError, ValueError) as exc:
+            raise PhysicalAssemblyError("COMPONENT_SHAPE_ID_INVALID") from exc
+        if identifier < 1 or identifier in identifiers:
+            raise PhysicalAssemblyError("COMPONENT_SHAPE_ID_INVALID")
+        identifiers.append(identifier)
+    if not identifiers:
+        raise PhysicalAssemblyError("COMPONENT_SHAPE_ID_MISSING")
+    return tuple(identifiers)
+
+
+def _component_root_nodes(
+    root: ET.Element,
+    *,
+    shape_ids: Sequence[int],
+    label: str,
+) -> tuple[ET.Element, ...]:
+    """Resolve only complete top-level component closures.
+
+    A source profile must name every member ID of a selected top-level shape or
+    group.  Selecting one leaf of a grouped card would silently sever visual
+    membership, so it is rejected rather than guessed at runtime.
+    """
+
+    expected = tuple(shape_ids)
+    if not expected or any(type(identifier) is not int or identifier < 1 for identifier in expected):
+        raise PhysicalAssemblyError(f"{label}_SHAPE_IDS_INVALID")
+    if len(set(expected)) != len(expected):
+        raise PhysicalAssemblyError(f"{label}_SHAPE_IDS_DUPLICATE")
+    requested = set(expected)
+    tree = _slide_shape_tree(root)
+    selected: list[ET.Element] = []
+    seen: set[int] = set()
+    for child in list(tree):
+        if child.tag not in _COMPONENT_SHAPE_TAGS:
+            continue
+        member_ids = set(_shape_non_visual_ids(child))
+        if not member_ids.intersection(requested):
+            continue
+        if not member_ids.issubset(requested):
+            raise PhysicalAssemblyError(f"{label}_PARTIAL_GROUP_FORBIDDEN")
+        selected.append(child)
+        seen.update(member_ids)
+    if seen != requested:
+        raise PhysicalAssemblyError(f"{label}_SHAPE_SET_MISMATCH")
+    return tuple(selected)
+
+
+def _component_nodes_sha256(nodes: Sequence[ET.Element]) -> str:
+    """Fingerprint certified components before cloning their XML."""
+
+    if not nodes:
+        raise PhysicalAssemblyError("COMPONENT_NODE_SET_EMPTY")
+    payload = b"\x00".join(ET.tostring(node, encoding="utf-8") for node in nodes)
+    return _sha256_bytes(payload)
+
+
+def _component_relationship_ids(nodes: Sequence[ET.Element]) -> tuple[str, ...]:
+    """List relationship references used by a component in document order."""
+
+    relationship_ids: list[str] = []
+    for node in nodes:
+        for descendant in node.iter():
+            for attribute, value in descendant.attrib.items():
+                if attribute in {
+                    f"{{{OD_REL_NS}}}id",
+                    f"{{{OD_REL_NS}}}embed",
+                    f"{{{OD_REL_NS}}}link",
+                }:
+                    if not value or value in relationship_ids:
+                        continue
+                    relationship_ids.append(value)
+    return tuple(relationship_ids)
+
+
+def _component_root_transform(node: ET.Element) -> tuple[ET.Element, ET.Element] | None:
+    """Return one root-level DrawingML transform and its offset.
+
+    Certified insertion profiles can reuse a component at another published
+    anchor only when both closures have the same native extent.  The compiler
+    may then translate the *root component*, but it may not scale, recolour or
+    inspect arbitrary nested geometry. A certified ``p:grpSp`` moves only by
+    its root group transform, preserving all child-local geometry unchanged.
+    """
+
+    if node.tag == f"{{{PML_NS}}}grpSp":
+        transform = node.find(f"./{{{PML_NS}}}grpSpPr/{{{DML_NS}}}xfrm")
+    else:
+        transform = node.find(f"./{{{PML_NS}}}spPr/{{{DML_NS}}}xfrm")
+        if transform is None:
+            transform = node.find(f"./{{{PML_NS}}}xfrm")
+    if transform is None:
+        # Synthetic compatibility fixtures and a small number of legacy
+        # non-visual roots have no transform. They remain valid only for the
+        # original zero-translation importer path; a mixed transform set is
+        # rejected below rather than guessed from XML order.
+        return None
+    offset = transform.find(f"./{{{DML_NS}}}off")
+    extent = transform.find(f"./{{{DML_NS}}}ext")
+    if offset is None or extent is None:
+        raise PhysicalAssemblyError("COMPONENT_TRANSFORM_MISSING")
+    for attribute in ("x", "y"):
+        if offset.get(attribute) is None:
+            raise PhysicalAssemblyError("COMPONENT_TRANSFORM_INVALID")
+    for attribute in ("cx", "cy"):
+        if extent.get(attribute) is None:
+            raise PhysicalAssemblyError("COMPONENT_TRANSFORM_INVALID")
+    try:
+        int(offset.attrib["x"])
+        int(offset.attrib["y"])
+        if int(extent.attrib["cx"]) <= 0 or int(extent.attrib["cy"]) <= 0:
+            raise ValueError
+    except (KeyError, ValueError) as exc:
+        raise PhysicalAssemblyError("COMPONENT_TRANSFORM_INVALID") from exc
+    return transform, offset
+
+
+def _component_nodes_bbox(nodes: Sequence[ET.Element]) -> tuple[int, int, int, int] | None:
+    """Return a certified closure's union bbox without exposing it publicly."""
+
+    bounds: list[tuple[int, int, int, int]] = []
+    untransformed = 0
+    for node in nodes:
+        resolved = _component_root_transform(node)
+        if resolved is None:
+            untransformed += 1
+            continue
+        transform, offset = resolved
+        extent = transform.find(f"./{{{DML_NS}}}ext")
+        assert extent is not None  # validated by _component_root_transform
+        x, y = int(offset.attrib["x"]), int(offset.attrib["y"])
+        bounds.append((x, y, x + int(extent.attrib["cx"]), y + int(extent.attrib["cy"])))
+    if not bounds:
+        return None
+    if untransformed:
+        # Keep compatibility with an existing exact-copy component closure.
+        # Profile maintenance rejects such a closure for translated reuse;
+        # the assembler itself cannot infer whether a caller intends a move.
+        return None
+    return (
+        min(item[0] for item in bounds), min(item[1] for item in bounds),
+        max(item[2] for item in bounds), max(item[3] for item in bounds),
+    )
+
+
+def _translate_component_nodes(nodes: Sequence[ET.Element], *, dx: int, dy: int) -> None:
+    """Apply an exact-size, profile-derived translation to root components."""
+
+    for node in nodes:
+        resolved = _component_root_transform(node)
+        if resolved is None:
+            raise PhysicalAssemblyError("COMPONENT_TRANSFORM_PARTIAL")
+        _transform, offset = resolved
+        offset.set("x", str(int(offset.attrib["x"]) + dx))
+        offset.set("y", str(int(offset.attrib["y"]) + dy))
+
+
+def _remove_certified_host_shapes(
+    host_slide_xml: bytes, *, shape_ids: Sequence[int], shape_sha256: str,
+) -> bytes:
+    """Remove one pre-certified unused host variant before component import.
+
+    The caller provides only a profile-derived, hash-bound closure. This is a
+    narrow compiler repair for a published page variant, not a general shape
+    deletion API and cannot be reached from an agent request.
+    """
+
+    try:
+        host_root = ET.fromstring(host_slide_xml)
+    except ET.ParseError as exc:
+        raise PhysicalAssemblyError("COMPONENT_HOST_CLEANUP_SLIDE_XML_INVALID") from exc
+    nodes = _component_root_nodes(
+        host_root, shape_ids=shape_ids, label="COMPONENT_HOST_CLEANUP",
+    )
+    if _component_nodes_sha256(nodes) != shape_sha256:
+        raise PhysicalAssemblyError("COMPONENT_HOST_CLEANUP_FINGERPRINT_DRIFT")
+    host_tree = _slide_shape_tree(host_root)
+    for node in nodes:
+        host_tree.remove(node)
+    return ET.tostring(host_root, encoding="utf-8", xml_declaration=True)
+
+
+def _apply_certified_host_cleanups(
+    host_slide_xml: bytes,
+    cleanups: Sequence[HostCleanupSpec],
+) -> bytes:
+    """Apply the exact approved host removals in a stable, auditable order.
+
+    The same transformation is used for physical materialization and for the
+    source-side structural lineage expectation.  Without this, a valid
+    cardinality adaptation is incorrectly measured against the unadapted
+    source and can never pass lineage verification.  ``HostCleanupSpec`` is
+    still validated at plan ingress and each individual removal rechecks its
+    complete closure hash before mutating XML.
+    """
+
+    result = host_slide_xml
+    for cleanup in cleanups:
+        result = _remove_certified_host_shapes(
+            result,
+            shape_ids=cleanup.shape_ids,
+            shape_sha256=cleanup.shape_sha256,
+        )
+    return result
+
+
+def _clone_component_xml_into_host(
+    host_slide_xml: bytes,
+    component_slide_xml: bytes,
+    *,
+    source_shape_ids: Sequence[int],
+    host_anchor_shape_ids: Sequence[int],
+    component_sha256: str,
+    host_anchor_sha256: str,
+    relationship_ids: Sequence[str] = (),
+    relationship_id_remap: Mapping[str, str] | None = None,
+) -> tuple[bytes, dict[int, int]]:
+    """Replace a certified host reservation with a native component closure.
+
+    Relationship-bearing component XML is accepted only after the caller has
+    imported its complete dependency closure and supplied a one-to-one root
+    relationship ID remap.  This prevents a copied picture/chart from keeping
+    a dangling source ``rId`` inside an otherwise valid host slide.
+    """
+
+    try:
+        host_root = ET.fromstring(host_slide_xml)
+        component_root = ET.fromstring(component_slide_xml)
+    except ET.ParseError as exc:
+        raise PhysicalAssemblyError("COMPONENT_SLIDE_XML_INVALID") from exc
+    component_nodes = _component_root_nodes(
+        component_root, shape_ids=source_shape_ids, label="COMPONENT_SOURCE",
+    )
+    anchor_nodes = _component_root_nodes(
+        host_root, shape_ids=host_anchor_shape_ids, label="COMPONENT_HOST_ANCHOR",
+    )
+    if _component_nodes_sha256(component_nodes) != component_sha256:
+        raise PhysicalAssemblyError("COMPONENT_SOURCE_FINGERPRINT_DRIFT")
+    if _component_nodes_sha256(anchor_nodes) != host_anchor_sha256:
+        raise PhysicalAssemblyError("COMPONENT_HOST_ANCHOR_FINGERPRINT_DRIFT")
+    component_bbox = _component_nodes_bbox(component_nodes)
+    anchor_bbox = _component_nodes_bbox(anchor_nodes)
+    if component_bbox is not None and anchor_bbox is not None and (
+        component_bbox[2] - component_bbox[0] != anchor_bbox[2] - anchor_bbox[0]
+        or component_bbox[3] - component_bbox[1] != anchor_bbox[3] - anchor_bbox[1]
+    ):
+        raise PhysicalAssemblyError("COMPONENT_ANCHOR_BOUNDS_MISMATCH")
+    declared_relationships = tuple(relationship_ids)
+    actual_relationships = _component_relationship_ids(component_nodes)
+    if actual_relationships != declared_relationships:
+        raise PhysicalAssemblyError("COMPONENT_RELATIONSHIP_CONTRACT_DRIFT")
+    remapped_relationships = dict(relationship_id_remap or {})
+    if actual_relationships:
+        if (
+            set(remapped_relationships) != set(actual_relationships)
+            or any(
+                not isinstance(value, str) or not value
+                for value in remapped_relationships.values()
+            )
+            or len(set(remapped_relationships.values())) != len(remapped_relationships)
+        ):
+            raise PhysicalAssemblyError("COMPONENT_RELATIONSHIP_CLOSURE_REQUIRED")
+    elif remapped_relationships:
+        raise PhysicalAssemblyError("COMPONENT_RELATIONSHIP_REMAP_UNEXPECTED")
+
+    host_tree = _slide_shape_tree(host_root)
+    host_ids = {
+        identifier
+        for child in list(host_tree)
+        if child.tag in _COMPONENT_SHAPE_TAGS
+        for identifier in _shape_non_visual_ids(child)
+    }
+    insertion_index = min(list(host_tree).index(node) for node in anchor_nodes)
+    for node in anchor_nodes:
+        host_tree.remove(node)
+
+    remap: dict[int, int] = {}
+    next_identifier = max(host_ids, default=0) + 1
+    cloned: list[ET.Element] = []
+    for source_node in component_nodes:
+        target_node = deepcopy(source_node)
+        for marker in target_node.iter(f"{{{PML_NS}}}cNvPr"):
+            original = int(marker.attrib["id"])
+            if original not in remap:
+                while next_identifier in host_ids:
+                    next_identifier += 1
+                remap[original] = next_identifier
+                host_ids.add(next_identifier)
+                next_identifier += 1
+            marker.set("id", str(remap[original]))
+            # Names must be unique in PowerPoint's non-visual drawing tree.
+            marker.set("name", f"component-{remap[original]}")
+        for descendant in target_node.iter():
+            for attribute in (
+                f"{{{OD_REL_NS}}}id",
+                f"{{{OD_REL_NS}}}embed",
+                f"{{{OD_REL_NS}}}link",
+            ):
+                source_relationship_id = descendant.get(attribute)
+                if source_relationship_id is not None:
+                    descendant.set(
+                        attribute, remapped_relationships[source_relationship_id],
+                    )
+        cloned.append(target_node)
+    if component_bbox is not None and anchor_bbox is not None:
+        _translate_component_nodes(
+            cloned,
+            dx=anchor_bbox[0] - component_bbox[0],
+            dy=anchor_bbox[1] - component_bbox[1],
+        )
+    for offset, node in enumerate(cloned):
+        host_tree.insert(insertion_index + offset, node)
+    return ET.tostring(host_root, encoding="utf-8", xml_declaration=True), remap
+
+
+def _insert_component_xml_on_canvas(
+    host_slide_xml: bytes,
+    component_slide_xml: bytes,
+    *,
+    source_shape_ids: Sequence[int],
+    canvas_bbox: tuple[int, int, int, int],
+    component_sha256: str,
+    relationship_ids: Sequence[str] = (),
+    relationship_id_remap: Mapping[str, str] | None = None,
+) -> tuple[bytes, dict[int, int]]:
+    """Clone one certified component into a fixed empty native canvas zone.
+
+    The target rectangle comes only from the private component profile. It is
+    required to be exactly the source closure's native size, so this path can
+    translate a real editable title/statement component but cannot scale or
+    turn the assembler into a drawing API.
+    """
+
+    if (
+        len(canvas_bbox) != 4
+        or any(type(value) is not int for value in canvas_bbox)
+        or canvas_bbox[2] <= 0
+        or canvas_bbox[3] <= 0
+    ):
+        raise PhysicalAssemblyError("COMPONENT_CANVAS_BOUNDS_INVALID")
+    try:
+        host_root = ET.fromstring(host_slide_xml)
+        component_root = ET.fromstring(component_slide_xml)
+    except ET.ParseError as exc:
+        raise PhysicalAssemblyError("COMPONENT_SLIDE_XML_INVALID") from exc
+    component_nodes = _component_root_nodes(
+        component_root, shape_ids=source_shape_ids, label="COMPONENT_SOURCE",
+    )
+    if _component_nodes_sha256(component_nodes) != component_sha256:
+        raise PhysicalAssemblyError("COMPONENT_SOURCE_FINGERPRINT_DRIFT")
+    component_bbox = _component_nodes_bbox(component_nodes)
+    if component_bbox is None or (
+        component_bbox[2] - component_bbox[0], component_bbox[3] - component_bbox[1]
+    ) != (canvas_bbox[2], canvas_bbox[3]):
+        raise PhysicalAssemblyError("COMPONENT_CANVAS_BOUNDS_MISMATCH")
+    declared_relationships = tuple(relationship_ids)
+    actual_relationships = _component_relationship_ids(component_nodes)
+    if actual_relationships != declared_relationships:
+        raise PhysicalAssemblyError("COMPONENT_RELATIONSHIP_CONTRACT_DRIFT")
+    remapped_relationships = dict(relationship_id_remap or {})
+    if actual_relationships:
+        if (
+            set(remapped_relationships) != set(actual_relationships)
+            or any(not isinstance(value, str) or not value for value in remapped_relationships.values())
+            or len(set(remapped_relationships.values())) != len(remapped_relationships)
+        ):
+            raise PhysicalAssemblyError("COMPONENT_RELATIONSHIP_CLOSURE_REQUIRED")
+    elif remapped_relationships:
+        raise PhysicalAssemblyError("COMPONENT_RELATIONSHIP_REMAP_UNEXPECTED")
+
+    host_tree = _slide_shape_tree(host_root)
+    host_ids = {
+        identifier
+        for child in list(host_tree)
+        if child.tag in _COMPONENT_SHAPE_TAGS
+        for identifier in _shape_non_visual_ids(child)
+    }
+    remap: dict[int, int] = {}
+    next_identifier = max(host_ids, default=0) + 1
+    cloned: list[ET.Element] = []
+    for source_node in component_nodes:
+        target_node = deepcopy(source_node)
+        for marker in target_node.iter(f"{{{PML_NS}}}cNvPr"):
+            original = int(marker.attrib["id"])
+            if original not in remap:
+                while next_identifier in host_ids:
+                    next_identifier += 1
+                remap[original] = next_identifier
+                host_ids.add(next_identifier)
+                next_identifier += 1
+            marker.set("id", str(remap[original]))
+            marker.set("name", f"component-{remap[original]}")
+        for descendant in target_node.iter():
+            for attribute in (
+                f"{{{OD_REL_NS}}}id", f"{{{OD_REL_NS}}}embed", f"{{{OD_REL_NS}}}link",
+            ):
+                source_relationship_id = descendant.get(attribute)
+                if source_relationship_id is not None:
+                    descendant.set(attribute, remapped_relationships[source_relationship_id])
+        cloned.append(target_node)
+    _translate_component_nodes(
+        cloned,
+        dx=canvas_bbox[0] - component_bbox[0],
+        dy=canvas_bbox[1] - component_bbox[1],
+    )
+    # A certified canvas is a blank upper layer of the host composition.
+    # Appending keeps the inserted title/statement readable above its native
+    # host background while retaining every host object untouched.
+    for node in cloned:
+        host_tree.append(node)
+    return ET.tostring(host_root, encoding="utf-8", xml_declaration=True), remap
+
+
+@dataclass(frozen=True)
+class ComponentRelationshipClosure:
+    """The exact internal OPC dependency graph required by one component."""
+
+    root_relationship_ids: tuple[str, ...]
+    part_names: tuple[str, ...]
+    relationship_owner_parts: tuple[str, ...]
+
+
+def _component_relationship_closure(
+    graph: _SourceGraph,
+    *,
+    root_relationship_ids: Sequence[str],
+) -> ComponentRelationshipClosure:
+    """Resolve a component's complete safe internal relationship closure.
+
+    A component is allowed to bring only dependencies actually referenced by
+    its certified shape XML. Every descendant relationship is included so a
+    chart, image or diagram cannot be partially copied. External targets are
+    deliberately rejected: a component import is presentation content, not a
+    mechanism for injecting a live link into a client deliverable.
+    """
+
+    requested = tuple(root_relationship_ids)
+    if not requested or len(set(requested)) != len(requested) or any(
+        not isinstance(identifier, str) or not identifier for identifier in requested
+    ):
+        raise PhysicalAssemblyError("COMPONENT_ROOT_RELATIONSHIP_IDS_INVALID")
+    root_rels_path = _rels_path_for_part(graph.root_slide_name)
+    root_entries = {
+        str(entry.get("Id")): entry
+        for entry in _parse_relationships(graph.rels.get(root_rels_path, b""))
+        if isinstance(entry.get("Id"), str)
+    }
+    if not set(requested).issubset(root_entries):
+        raise PhysicalAssemblyError("COMPONENT_ROOT_RELATIONSHIP_MISSING")
+
+    selected_parts: set[str] = set()
+    owners: set[str] = set()
+    pending: list[tuple[str, tuple[Mapping[str, str], ...]]] = [
+        (graph.root_slide_name, tuple(root_entries[identifier] for identifier in requested))
+    ]
+    visited_owners: set[str] = set()
+    while pending:
+        owner, entries = pending.pop()
+        if owner in visited_owners:
+            continue
+        visited_owners.add(owner)
+        owners.add(owner)
+        for entry in entries:
+            issue = _relationship_security_issue(entry)
+            if issue is not None or _relationship_is_external(entry):
+                raise PhysicalAssemblyError("COMPONENT_RELATIONSHIP_UNSAFE")
+            owner_rels = _rels_path_for_part(owner)
+            target = _resolve_rel_target(
+                graph.rels.get(owner_rels, b""), owner_rels, str(entry.get("Target", "")),
+            )
+            if target is None:
+                raise PhysicalAssemblyError("COMPONENT_RELATIONSHIP_TARGET_INVALID")
+            target = _normalise_zip_name(target)
+            if target not in graph.extra_parts:
+                raise PhysicalAssemblyError("COMPONENT_RELATIONSHIP_TARGET_OUTSIDE_CLOSURE")
+            if target in selected_parts:
+                continue
+            selected_parts.add(target)
+            child_rels_path = _rels_path_for_part(target)
+            child_rels = graph.rels.get(child_rels_path)
+            # Leaf media parts legitimately have no relationship part. Treat
+            # absent `.rels` as a closed leaf; a present malformed relation
+            # part still fails through the strict parser.
+            child_entries = (
+                tuple(_parse_relationships(child_rels))
+                if child_rels is not None else ()
+            )
+            if child_entries:
+                pending.append((target, child_entries))
+    return ComponentRelationshipClosure(
+        root_relationship_ids=requested,
+        part_names=tuple(sorted(selected_parts)),
+        relationship_owner_parts=tuple(sorted(owners)),
+    )
+
+
+def _allocate_component_dependency_closure(
+    context: AssemblyImportContext,
+    source: _SourcePackageContext,
+    graph: _SourceGraph,
+    closure: ComponentRelationshipClosure,
+    *,
+    mutation_scope: str,
+) -> dict[str, str]:
+    """Copy every non-root component dependency and its relationship parts."""
+
+    if graph.root_slide_name not in closure.relationship_owner_parts:
+        raise PhysicalAssemblyError("COMPONENT_CLOSURE_ROOT_MISSING")
+    target_map: dict[str, str] = {}
+    for source_part in closure.part_names:
+        data = graph.extra_parts.get(source_part)
+        content_type = graph.content_types.get(source_part)
+        if data is None or not content_type:
+            raise PhysicalAssemblyError("COMPONENT_CLOSURE_PART_MISSING")
+        target_map[source_part] = context.allocate_dependency(
+            source,
+            source_part,
+            data,
+            content_type,
+            mutation_scope=mutation_scope,
+            relationship_free=_rels_path_for_part(source_part) not in graph.rels,
+        )
+    for source_owner in closure.relationship_owner_parts:
+        if source_owner == graph.root_slide_name:
+            continue
+        if source_owner not in target_map:
+            raise PhysicalAssemblyError("COMPONENT_CLOSURE_OWNER_MISSING")
+        source_rels_path = _rels_path_for_part(source_owner)
+        source_rels = graph.rels.get(source_rels_path)
+        if source_rels is None:
+            raise PhysicalAssemblyError("COMPONENT_CLOSURE_RELATIONSHIP_PART_MISSING")
+        target_rels_path = _rels_path_for_part(target_map[source_owner])
+        rewritten = _rewrite_relationship_targets(
+            source_rels,
+            source_rels_path,
+            target_map,
+            output_rels_path=target_rels_path,
+        )
+        context.add_part(
+            target_rels_path,
+            rewritten,
+            "application/vnd.openxmlformats-package.relationships+xml",
+        )
+        context.imported_parts.add(target_rels_path)
+    return target_map
+
+
+def _merge_component_root_relationships(
+    host_rels: bytes,
+    *,
+    host_rels_path: str,
+    component_root_rels: bytes,
+    component_root_rels_path: str,
+    relationship_ids: Sequence[str],
+    component_target_map: Mapping[str, str],
+) -> tuple[bytes, dict[str, str]]:
+    """Append safe component relationships to one already-rewritten host slide."""
+
+    host_entries = _parse_relationships(host_rels)
+    used_ids = {str(entry["Id"]) for entry in host_entries}
+    source_entries = {
+        str(entry["Id"]): entry for entry in _parse_relationships(component_root_rels)
+    }
+    requested = tuple(relationship_ids)
+    if not requested or len(set(requested)) != len(requested):
+        raise PhysicalAssemblyError("COMPONENT_ROOT_RELATIONSHIP_IDS_INVALID")
+    if not set(requested).issubset(source_entries):
+        raise PhysicalAssemblyError("COMPONENT_ROOT_RELATIONSHIP_MISSING")
+    host_owner = _owner_part_from_rels_path(host_rels_path)
+    if host_owner is None:
+        raise PhysicalAssemblyError("COMPONENT_HOST_RELATIONSHIP_OWNER_INVALID")
+    host_folder = posixpath.dirname(host_owner)
+    rel_id_remap: dict[str, str] = {}
+    additions: list[dict[str, str]] = []
+    suffix = 1
+    for source_id in requested:
+        entry = source_entries[source_id]
+        issue = _relationship_security_issue(entry)
+        if issue is not None or _relationship_is_external(entry):
+            raise PhysicalAssemblyError("COMPONENT_RELATIONSHIP_UNSAFE")
+        target = _resolve_rel_target(
+            component_root_rels, component_root_rels_path, entry["Target"],
+        )
+        if target is None or target not in component_target_map:
+            raise PhysicalAssemblyError("COMPONENT_ROOT_RELATIONSHIP_TARGET_MISSING")
+        while f"rIdComponent{suffix}" in used_ids:
+            suffix += 1
+        target_id = f"rIdComponent{suffix}"
+        suffix += 1
+        used_ids.add(target_id)
+        rel_id_remap[source_id] = target_id
+        additions.append({
+            "Id": target_id,
+            "Type": entry["Type"],
+            "Target": posixpath.relpath(component_target_map[target], host_folder or "."),
+        })
+    root = ET.Element(PACKAGE_RELATIONSHIPS_TAG)
+    for entry in [*host_entries, *additions]:
+        attributes = {
+            "Id": entry["Id"], "Type": entry["Type"], "Target": entry["Target"],
+        }
+        if entry.get("TargetMode"):
+            attributes["TargetMode"] = entry["TargetMode"]
+        ET.SubElement(root, PACKAGE_RELATIONSHIP_TAG, attributes)
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True), rel_id_remap
+
+
 def _rels_path_for_part(part_name: str) -> str:
     part = _normalise_zip_name(part_name).lstrip("/")
     folder, filename = posixpath.split(part)
@@ -1824,6 +2506,67 @@ def _relationship_is_discarded_source_metadata(entry: Mapping[str, str]) -> bool
     return rel_type.endswith("/tags") or "/tags/" in target
 
 
+_CUST_DATA_LIST_RE = re.compile(
+    r"<p:custDataLst\b[^>]*>.*?</p:custDataLst>",
+    re.DOTALL,
+)
+
+
+def _strip_discarded_source_metadata_references(
+    owner_xml: bytes,
+    relationship_ids: Iterable[str],
+    *,
+    owner_part: str,
+) -> bytes:
+    """Remove slide-local references to discarded PowerPoint tag metadata.
+
+    The importer deliberately does not carry vendor ``ppt/tags`` parts into a
+    customer deliverable: they are source-authoring metadata, not a visual or
+    editable customer dependency.  A slide can, however, contain
+    ``p:custDataLst/p:tags r:id=...`` pointers to those relationships.  Merely
+    omitting the relationship leaves a dangling rId.  LibreOffice tolerates
+    that malformed state, while PowerPoint can render the *entire slide*
+    blank.  Strip the corresponding XML list before relationship rewriting,
+    and fail closed if a different kind of reference remains.
+
+    Byte-level replacement intentionally preserves the original namespace
+    prefixes and all visual OOXML.  The adaptation pipeline has governed
+    prefix-aware edits, so a generic ElementTree reserialization here would
+    create unnecessary drift.
+    """
+
+    discarded = {str(value) for value in relationship_ids if str(value)}
+    if not discarded:
+        return owner_xml
+    try:
+        source = owner_xml.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise PhysicalAssemblyError(
+            f"discarded metadata owner is not UTF-8 XML: {owner_part}"
+        ) from exc
+
+    def replace_list(match: re.Match[str]) -> str:
+        fragment = match.group(0)
+        referenced = set(re.findall(r'\br:id="([^"]+)"', fragment))
+        return "" if discarded.intersection(referenced) else fragment
+
+    sanitized = _CUST_DATA_LIST_RE.sub(replace_list, source)
+    dangling = sorted(
+        relationship_id
+        for relationship_id in discarded
+        if re.search(
+            r'\br:(?:id|embed|link)="' + re.escape(relationship_id) + r'"',
+            sanitized,
+        )
+    )
+    if dangling:
+        raise PhysicalAssemblyError(
+            "DISCARDED_METADATA_REFERENCE_UNSTRIPPABLE: "
+            f"{owner_part}:" + ",".join(dangling)
+        )
+    return sanitized.encode("utf-8")
+
+
 def _validate_relationship_entry(
     entry: Mapping[str, str],
     *,
@@ -1851,12 +2594,14 @@ def _build_source_graph_from_context(
             f"source missing {slide_name}: {source.package_path}"
         )
     slide_xml = source.archive.read(slide_name)
+    source_slide_sha = _sha256_bytes(slide_xml)
     rels_map: dict[str, bytes] = {}
     extras: dict[str, bytes] = {}
     content_types: dict[str, str] = {slide_name: source.content_type_for(slide_name)}
     layouts: list[str] = []
     masters: list[str] = []
     themes: list[str] = []
+    discarded_metadata_relationships: dict[str, set[str]] = {}
     seen_parts: set[str] = set()
     queue: deque[str] = deque([slide_name])
 
@@ -1900,6 +2645,9 @@ def _build_source_graph_from_context(
                     raise PhysicalAssemblyError(
                         f"external source metadata relationship is forbidden: {rels_path}"
                     )
+                discarded_metadata_relationships.setdefault(owner, set()).add(
+                    entry["Id"]
+                )
                 continue
             if is_external:
                 continue
@@ -1915,10 +2663,35 @@ def _build_source_graph_from_context(
                 )
             queue.append(resolved)
 
+    # A discarded relationship must never leave an rId reference in its owner
+    # part.  At present tags occur on slides, but this handles every imported
+    # XML owner deterministically and fails closed for an unsupported shape of
+    # metadata reference.
+    for owner, relationship_ids in discarded_metadata_relationships.items():
+        if owner == slide_name:
+            slide_xml = _strip_discarded_source_metadata_references(
+                slide_xml,
+                relationship_ids,
+                owner_part=owner,
+            )
+            continue
+        owner_bytes = extras.get(owner)
+        if owner_bytes is None:
+            raise PhysicalAssemblyError(
+                f"discarded metadata owner is not imported: {owner}"
+            )
+        extras[owner] = _strip_discarded_source_metadata_references(
+            owner_bytes,
+            relationship_ids,
+            owner_part=owner,
+        )
+
     graph = _SourceGraph(
         root_slide_name=slide_name,
         slide_xml=slide_xml,
-        slide_sha=_sha256_bytes(slide_xml),
+        # The selected page identity is the original certified source slide.
+        # Sanitizing non-visual tag references must not falsify that lineage.
+        slide_sha=source_slide_sha,
         rels=rels_map,
         extra_parts=extras,
         content_types=content_types,
@@ -2488,6 +3261,7 @@ class AssemblyImportContext:
     source_sizes: dict[str, int] = field(default_factory=dict)
     slide_target_maps: dict[int, dict[str, str]] = field(default_factory=dict)
     replaced_source_parts_by_slide: dict[int, set[str]] = field(default_factory=dict)
+    component_shape_ids_by_slide: dict[int, tuple[int, ...]] = field(default_factory=dict)
     pruned_parts: set[str] = field(default_factory=set)
 
     def __post_init__(self) -> None:
@@ -2659,6 +3433,8 @@ def _prune_unreachable_parts(context: AssemblyImportContext) -> None:
     if root_rels_path not in context.parts:
         raise PhysicalAssemblyError("OUTPUT_ROOT_RELATIONSHIPS_MISSING")
 
+    _assert_xml_relationship_reference_closure(context.parts)
+
     reachable: set[str] = {root_rels_path}
     visited_owners: set[str] = set()
     queue: deque[str] = deque()
@@ -2711,6 +3487,53 @@ def _prune_unreachable_parts(context: AssemblyImportContext) -> None:
         context.imported_parts.discard(part_name)
         context.content_type_overrides.pop("/" + part_name, None)
     context.pruned_parts.update(removable)
+
+
+def _assert_xml_relationship_reference_closure(parts: Mapping[str, bytes]) -> None:
+    """Reject XML references whose owner has no corresponding relationship.
+
+    OPC relationship closure alone is insufficient: an importer can omit a
+    relationship (for example ``ppt/tags``) while its XML owner still points to
+    the removed ``rId``. PowerPoint may blank an otherwise structurally valid
+    slide in that state.  Validate all standard office-document relationship
+    attributes after every import/rewrite and before the candidate is written.
+    """
+
+    for owner, data in sorted(parts.items()):
+        if not owner.endswith(".xml") or owner.endswith(".rels"):
+            continue
+        rels_path = _rels_path_for_part(owner)
+        rels_xml = parts.get(rels_path)
+        if rels_xml is None:
+            # XML parts with no relationship part cannot legitimately carry an
+            # office-document relationship attribute.
+            relationship_ids: set[str] = set()
+        else:
+            relationship_ids = {
+                str(entry["Id"])
+                for entry in _parse_relationships(rels_xml)
+                if isinstance(entry.get("Id"), str)
+            }
+        try:
+            root = ET.fromstring(data)
+        except ET.ParseError as exc:
+            raise PhysicalAssemblyError(f"OUTPUT_XML_PARSE_FAILED:{owner}") from exc
+        unresolved = sorted({
+            str(value)
+            for node in root.iter()
+            for attribute, value in node.attrib.items()
+            if attribute in {
+                f"{{{OD_REL_NS}}}id",
+                f"{{{OD_REL_NS}}}embed",
+                f"{{{OD_REL_NS}}}link",
+            }
+            and str(value) not in relationship_ids
+        })
+        if unresolved:
+            raise PhysicalAssemblyError(
+                "OUTPUT_DANGLING_XML_RELATIONSHIP_REFERENCE:"
+                f"{owner}:{','.join(unresolved)}"
+            )
 
 
 def _default_pres_rels() -> bytes:
@@ -4703,12 +5526,57 @@ def _prepare_asset_replacements(
     return relationship_overrides, cover_crops, evidence
 
 
+_REUSABLE_PAGE_ROLES = frozenset({
+    "one-item", "two-item", "three-item", "four-item", "five-item",
+    "six-item", "multi-item", "comparison", "case-study", "process",
+})
+_MAX_CONTENT_REUSE_PER_PAGE = 2
+_MAX_SECTION_REUSE_PER_PAGE = 4
+
+
+def _max_reused_page_instances(slide_count: int) -> int:
+    return 0 if slide_count < 10 else max(1, slide_count // 20)
+
+
+def _bounded_page_reuse_valid(slides: Sequence[AssemblyTargetSlide]) -> bool:
+    """Validate the same constrained repetition contract as composition."""
+
+    ordered = sorted(slides, key=lambda item: item.ordinal)
+    occurrences: dict[str, list[tuple[int, str]]] = {}
+    for slide in ordered:
+        occurrences.setdefault(slide.page_template.page_id, []).append(
+            (slide.ordinal, slide.narrative_role)
+        )
+    content_reused_instances = 0
+    for records in occurrences.values():
+        if len(records) == 1:
+            continue
+        ordinals = [ordinal for ordinal, _role in records]
+        roles = {role for _ordinal, role in records}
+        if len(roles) != 1 or any(
+            right - left == 1 for left, right in zip(ordinals, ordinals[1:])
+        ):
+            return False
+        role = next(iter(roles))
+        if role == "section":
+            if len(records) > _MAX_SECTION_REUSE_PER_PAGE:
+                return False
+        elif role in _REUSABLE_PAGE_ROLES:
+            if len(records) > _MAX_CONTENT_REUSE_PER_PAGE:
+                return False
+            content_reused_instances += len(records) - 1
+        else:
+            return False
+    return content_reused_instances <= _max_reused_page_instances(len(ordered))
+
+
 def _validate_assembly_plan(
     plan: AssemblyPlan,
     library_index_sha256: str,
     *,
     require_locked_authority: bool = False,
     expected_slide_count: int | None = None,
+    allow_bounded_page_reuse: bool = False,
 ) -> None:
     if plan.library_index_sha256 != library_index_sha256:
         raise PhysicalAssemblyError(
@@ -4726,6 +5594,70 @@ def _validate_assembly_plan(
                 f"ASSEMBLY_PLAN_DUPLICATE_ORDINAL: {slide.ordinal}"
             )
         seen.add(slide.ordinal)
+        anchor_shape_ids: set[int] = set()
+        for component in slide.component_import_specs:
+            if not isinstance(component, ComponentImportSpec):
+                raise PhysicalAssemblyError(
+                    f"ASSEMBLY_PLAN_COMPONENT_IMPORT_INVALID: {slide.ordinal}"
+                )
+            canvas_mode = component.canvas_bbox is not None
+            if (
+                not isinstance(component.source_path, str)
+                or not isinstance(component.source_path, str)
+                or not re.fullmatch(r"[0-9a-f]{64}", component.source_package_sha256)
+                or type(component.source_slide_number) is not int
+                or component.source_slide_number < 1
+                or not re.fullmatch(r"[0-9a-f]{64}", component.source_slide_sha256)
+                or not re.fullmatch(r"[0-9a-f]{64}", component.component_sha256)
+                or not re.fullmatch(r"[0-9a-f]{64}", component.host_anchor_sha256)
+                or not component.source_shape_ids
+                or len(set(component.source_shape_ids)) != len(component.source_shape_ids)
+                or (not canvas_mode and not component.host_anchor_shape_ids)
+                or (canvas_mode and component.host_anchor_shape_ids)
+                or len(set(component.host_anchor_shape_ids)) != len(component.host_anchor_shape_ids)
+                or any(type(value) is not int or value < 1 for value in (*component.source_shape_ids, *component.host_anchor_shape_ids))
+                or (canvas_mode and (
+                    component.canvas_anchor_sha256 is None
+                    or re.fullmatch(r"[0-9a-f]{64}", component.canvas_anchor_sha256) is None
+                    or len(component.canvas_bbox or ()) != 4
+                    or any(type(value) is not int for value in component.canvas_bbox or ())
+                    or (component.canvas_bbox or (0, 0, 0, 0))[2] <= 0
+                    or (component.canvas_bbox or (0, 0, 0, 0))[3] <= 0
+                ))
+                or (not canvas_mode and component.canvas_anchor_sha256 is not None)
+                or len(set(component.relationship_ids)) != len(component.relationship_ids)
+                or any(not isinstance(value, str) or not value for value in component.relationship_ids)
+                or any(
+                    type(shape_id) is not int or shape_id not in component.source_shape_ids
+                    or not isinstance(spec, TextBindingSpec)
+                    for shape_id, spec in component.text_binding_specs.items()
+                )
+            ):
+                raise PhysicalAssemblyError(
+                    f"ASSEMBLY_PLAN_COMPONENT_IMPORT_INVALID: {slide.ordinal}"
+                )
+            if anchor_shape_ids.intersection(component.host_anchor_shape_ids):
+                raise PhysicalAssemblyError(
+                    f"ASSEMBLY_PLAN_COMPONENT_ANCHOR_DUPLICATE: {slide.ordinal}"
+                )
+            anchor_shape_ids.update(component.host_anchor_shape_ids)
+        cleanup_shape_ids: set[int] = set()
+        for cleanup in slide.host_cleanup_specs:
+            if (
+                not isinstance(cleanup, HostCleanupSpec)
+                or not cleanup.shape_ids
+                or len(set(cleanup.shape_ids)) != len(cleanup.shape_ids)
+                or any(type(value) is not int or value < 1 for value in cleanup.shape_ids)
+                or not re.fullmatch(r"[0-9a-f]{64}", cleanup.shape_sha256)
+            ):
+                raise PhysicalAssemblyError(
+                    f"ASSEMBLY_PLAN_COMPONENT_HOST_CLEANUP_INVALID: {slide.ordinal}"
+                )
+            if cleanup_shape_ids.intersection(cleanup.shape_ids) or anchor_shape_ids.intersection(cleanup.shape_ids):
+                raise PhysicalAssemblyError(
+                    f"ASSEMBLY_PLAN_COMPONENT_HOST_CLEANUP_OVERLAP: {slide.ordinal}"
+                )
+            cleanup_shape_ids.update(cleanup.shape_ids)
         if slide.selection_evidence is not None:
             selection = slide.selection_evidence
             if (
@@ -4779,12 +5711,10 @@ def _validate_assembly_plan(
                 raise PhysicalAssemblyError(
                     f"ASSEMBLY_PLAN_PAGE_IDENTITY_MISMATCH: {template.page_id}"
                 )
-        if require_locked_authority and slide.page_template.page_id in seen_page_ids:
-            raise PhysicalAssemblyError(
-                f"ASSEMBLY_PLAN_DUPLICATE_PAGE_ID: {slide.page_template.page_id}"
-            )
         seen_page_ids.add(slide.page_template.page_id)
-        expected = set(slide.page_template.slot_graph.get("text_slot_ids", ()))
+        expected = set(slide.page_template.slot_graph.get("text_slot_ids", ())) - {
+            f"shape_{shape_id}" for shape_id in cleanup_shape_ids
+        }
         actual = set(slide.bindings)
         if not expected and not slide.asset_binding_specs:
             raise PhysicalAssemblyError(
@@ -4875,6 +5805,15 @@ def _validate_assembly_plan(
         raise PhysicalAssemblyError(
             "ASSEMBLY_PLAN_LENGTH_MISMATCH"
         )
+    if (
+        require_locked_authority
+        and len(seen_page_ids) != plan.target_slide_count
+        and (
+            not allow_bounded_page_reuse
+            or not _bounded_page_reuse_valid(plan.target_slides)
+        )
+    ):
+        raise PhysicalAssemblyError("ASSEMBLY_PLAN_DUPLICATE_PAGE_ID")
     if expected_slide_count is not None:
         if expected_slide_count < 1:
             raise PhysicalAssemblyError("EXPECTED_SLIDE_COUNT_INVALID")
@@ -5250,7 +6189,9 @@ def _validate_query_selection_evidence(
             )
         fragment_group_contracts.extend(locked_fragment_contracts)
         selected_page_ids.add(slide.page_template.page_id)
-    if len(selected_page_ids) != plan.target_slide_count:
+    if len(selected_page_ids) != plan.target_slide_count and (
+        require_phase49_ordinals or not _bounded_page_reuse_valid(plan.target_slides)
+    ):
         raise PhysicalAssemblyError("QUERY_SELECTION_DUPLICATE_PAGE_ID")
     return SelectionAuthorityEvidence(
         mode="locked",
@@ -6523,18 +7464,46 @@ def verify_physical_assembly(
                     source_package_verified = False
                     source_slide_verified = False
                 expected_source_slide = source_slide
-                if source_slide and style_clone_specs.get(ordinal):
+                if expected_source_slide and slide.host_cleanup_specs:
+                    expected_source_slide = _apply_certified_host_cleanups(
+                        expected_source_slide,
+                        slide.host_cleanup_specs,
+                    )
+                if expected_source_slide and style_clone_specs.get(ordinal):
                     expected_source_slide = _apply_governed_style_clones(
-                        source_slide,
+                        expected_source_slide,
                         style_clone_specs[ordinal],
                     )
                 source_structure = _slide_structure_signature(expected_source_slide)
                 target_structure = _slide_structure_signature(slide_xml)
-                structure_match = bool(
+                host_structure_match = bool(
                     source_structure
                     and target_structure
                     and source_structure == target_structure
                 )
+                expected_component_ids = (
+                    _import_context.component_shape_ids_by_slide.get(ordinal, ())
+                    if _import_context is not None else ()
+                )
+                actual_component_ids: set[int] = set()
+                if expected_component_ids:
+                    try:
+                        target_root = ET.fromstring(slide_xml)
+                        actual_component_ids = {
+                            int(marker.attrib["id"])
+                            for marker in target_root.iter(f"{{{PML_NS}}}cNvPr")
+                            if marker.get("id", "").isdigit()
+                        }
+                    except ET.ParseError:
+                        actual_component_ids = set()
+                component_structure_match = bool(expected_component_ids) and set(
+                    expected_component_ids
+                ).issubset(actual_component_ids)
+                # A certified component deliberately changes the host shape
+                # tree. Its runtime-created non-visual IDs prove the approved
+                # insertion occurred; ordinary source pages retain the exact
+                # structural-signature requirement.
+                structure_match = host_structure_match or component_structure_match
                 score = _byte_match_score(expected_source_slide, slide_xml)
                 lineage_ok = (
                     zip_ok
@@ -6736,6 +7705,14 @@ def verify_physical_assembly(
     )
     libreoffice = _verify_libreoffice(path, required=require_libreoffice)
     locked = authority_evidence.mode == "locked"
+    page_reuse_ok = (
+        not locked
+        or distinct_page_id_count == plan.target_slide_count
+        or (
+            acceptance_profile == "standard"
+            and _bounded_page_reuse_valid(plan.target_slides)
+        )
+    )
     core_pass = (
         opc.status == "pass"
         and editability.status == "pass"
@@ -6743,13 +7720,13 @@ def verify_physical_assembly(
         and source_residue.status == "pass"
         and len(lineage) == plan.target_slide_count
         and all(record.status == "pass" for record in lineage)
+        and page_reuse_ok
         and (
             expected_slide_count is None
             or (
                 plan.target_slide_count == expected_slide_count
                 and slide_count == expected_slide_count
                 and len(lineage) == expected_slide_count
-                and distinct_page_id_count == expected_slide_count
             )
         )
     )
@@ -6763,8 +7740,7 @@ def verify_physical_assembly(
             authority_evidence.status == "pass"
             and libreoffice.status == "pass"
             and size_check.status == "pass"
-            and distinct_page_id_count == plan.target_slide_count
-            and not duplicate_page_records
+            and page_reuse_ok
             and assembly_metrics.static_duplicate_bytes == 0
             and source_residue.status == "pass"
         )
@@ -6890,6 +7866,7 @@ def assemble_physical_deck(
         library_index_sha256,
         require_locked_authority=locked_requested,
         expected_slide_count=expected_slide_count,
+        allow_bounded_page_reuse=acceptance_profile == "standard",
     )
     selection_authority_evidence: SelectionAuthorityEvidence | None = None
     if (
@@ -7072,6 +8049,10 @@ def assemble_physical_deck(
                 graph.root_slide_name,
                 graph.slide_xml,
             )
+            governed_slide_xml = _apply_certified_host_cleanups(
+                governed_slide_xml,
+                slide.host_cleanup_specs,
+            )
             governed_slide_xml = _apply_governed_style_clones(
                 governed_slide_xml,
                 style_clone_specs.get(slide.ordinal, ()),
@@ -7103,6 +8084,110 @@ def assemble_physical_deck(
                 context,
             )
             slide_bytes = _apply_picture_cover_crops(slide_bytes, cover_crops)
+            host_rels_path = _rels_path_for_part(graph.root_slide_name)
+            target_host_rels_path = _rels_path_for_part(target_slide_name)
+            host_rels = _rewrite_relationship_targets(
+                graph.rels[host_rels_path],
+                host_rels_path,
+                target_map,
+                output_rels_path=target_host_rels_path,
+                relationship_overrides=relationship_overrides,
+            )
+            inserted_component_shape_ids: list[int] = []
+            for component_index, component in enumerate(
+                slide.component_import_specs, start=1,
+            ):
+                component_source, component_graph = context.graph_for(
+                    Path(component.source_path),
+                    component.source_package_sha256,
+                    component.source_slide_number,
+                )
+                if component_graph.slide_sha != component.source_slide_sha256:
+                    raise PhysicalAssemblyError(
+                        "COMPONENT_SOURCE_SLIDE_FINGERPRINT_MISMATCH"
+                    )
+                try:
+                    component_root = ET.fromstring(component_graph.slide_xml)
+                except ET.ParseError as exc:
+                    raise PhysicalAssemblyError("COMPONENT_SLIDE_XML_INVALID") from exc
+                component_nodes = _component_root_nodes(
+                    component_root,
+                    shape_ids=component.source_shape_ids,
+                    label="COMPONENT_SOURCE",
+                )
+                actual_relationship_ids = _component_relationship_ids(component_nodes)
+                if actual_relationship_ids != component.relationship_ids:
+                    raise PhysicalAssemblyError("COMPONENT_RELATIONSHIP_CONTRACT_DRIFT")
+                relationship_id_remap: dict[str, str] = {}
+                if actual_relationship_ids:
+                    closure = _component_relationship_closure(
+                        component_graph,
+                        root_relationship_ids=actual_relationship_ids,
+                    )
+                    component_target_map = _allocate_component_dependency_closure(
+                        context,
+                        component_source,
+                        component_graph,
+                        closure,
+                        mutation_scope="shared",
+                    )
+                    component_root_rels_path = _rels_path_for_part(
+                        component_graph.root_slide_name,
+                    )
+                    component_root_rels = component_graph.rels.get(component_root_rels_path)
+                    if component_root_rels is None:
+                        raise PhysicalAssemblyError(
+                            "COMPONENT_ROOT_RELATIONSHIP_PART_MISSING"
+                        )
+                    host_rels, relationship_id_remap = _merge_component_root_relationships(
+                        host_rels,
+                        host_rels_path=target_host_rels_path,
+                        component_root_rels=component_root_rels,
+                        component_root_rels_path=component_root_rels_path,
+                        relationship_ids=actual_relationship_ids,
+                        component_target_map=component_target_map,
+                    )
+                if component.canvas_bbox is not None:
+                    slide_bytes, component_shape_remap = _insert_component_xml_on_canvas(
+                        slide_bytes,
+                        component_graph.slide_xml,
+                        source_shape_ids=component.source_shape_ids,
+                        canvas_bbox=component.canvas_bbox,
+                        component_sha256=component.component_sha256,
+                        relationship_ids=component.relationship_ids,
+                        relationship_id_remap=relationship_id_remap,
+                    )
+                else:
+                    slide_bytes, component_shape_remap = _clone_component_xml_into_host(
+                        slide_bytes,
+                        component_graph.slide_xml,
+                        source_shape_ids=component.source_shape_ids,
+                        host_anchor_shape_ids=component.host_anchor_shape_ids,
+                        component_sha256=component.component_sha256,
+                        host_anchor_sha256=component.host_anchor_sha256,
+                        relationship_ids=component.relationship_ids,
+                        relationship_id_remap=relationship_id_remap,
+                    )
+                if component.text_binding_specs:
+                    replacements: dict[str, str] = {}
+                    fit_policies: dict[str, str] = {}
+                    for source_shape_id, spec in component.text_binding_specs.items():
+                        output_shape_id = component_shape_remap.get(source_shape_id)
+                        if output_shape_id is None:
+                            raise PhysicalAssemblyError("COMPONENT_TEXT_SHAPE_REMAP_MISSING")
+                        output_slot_id = f"shape_{output_shape_id}"
+                        replacements[output_slot_id] = spec.replacement
+                        fit_policies[output_slot_id] = spec.fit_policy
+                    slide_bytes = _adapt_slide_text(
+                        slide_bytes, replacements,
+                        allowed_slots=tuple(sorted(replacements)),
+                        fit_policies=fit_policies,
+                    )
+                inserted_component_shape_ids.extend(component_shape_remap.values())
+            if inserted_component_shape_ids:
+                context.component_shape_ids_by_slide[slide.ordinal] = tuple(
+                    sorted(inserted_component_shape_ids)
+                )
             context.add_part(
                 target_slide_name,
                 slide_bytes,
@@ -7117,18 +8202,21 @@ def assemble_physical_deck(
                 if source_owner is None or source_owner not in target_map:
                     raise PhysicalAssemblyError(
                         f"relationship owner was not allocated: {source_rels_path}"
-                    )
+                )
                 target_rels_path = _rels_path_for_part(target_map[source_owner])
+                if source_rels_path == host_rels_path:
+                    context.add_part(
+                        target_rels_path,
+                        host_rels,
+                        "application/vnd.openxmlformats-package.relationships+xml",
+                    )
+                    context.imported_parts.add(target_rels_path)
+                    continue
                 rewritten = _rewrite_relationship_targets(
                     graph.rels[source_rels_path],
                     source_rels_path,
                     target_map,
                     output_rels_path=target_rels_path,
-                    relationship_overrides=(
-                        relationship_overrides
-                        if source_rels_path == _rels_path_for_part(graph.root_slide_name)
-                        else None
-                    ),
                 )
                 context.add_part(
                     target_rels_path,
@@ -7360,6 +8448,8 @@ __all__ = [
     "BindingEvidence",
     "BindingProfileAuthorityEvidence",
     "BindingProfileAuthorityLock",
+    "ComponentImportSpec",
+    "HostCleanupSpec",
     "Editability",
     "LineageRecord",
     "LockedAsset",

@@ -599,8 +599,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | **V7-SKILL-01** | `window-pptx` is oversized and conflates historic modes with production workflow | Ship concise `pptx-studio` guidance with requirement discussion, progressive retrieval, governed assembly and repair workflow | Skill trigger/evals route presentation work to the concise workflow and do not over-trigger unrelated documents |
 | **V7-QA-01** | Existing QA is split across historical routes and not organized around component assembly | Provide one evidence-bound quality/repair harness for portable/editable assembly output | Deliberate overflow, overlap, image distortion, typography and inconsistency fixtures fail or repair within declared safe budget |
 | **V7-MIGRATE-01** | Public paths and private-root configuration are named `window-pptx` | Flag-day migrate package/config/install ownership to `pptx-studio` after acceptance tests; remove old tree with no shim | No tracked `window-pptx` production entry point remains; source/install digest parity and migration tests pass |
-| **V7-ACCEPT-01** | Only a fixed-reference work report has been accepted | Run a fresh clean requirement-folder work-report through the migrated flexible-reuse workflow | Exactly 15 editable slides with directory/sections/body/closing; per-slide provenance and physical/component lineage are complete |
+| **V7-ACCEPT-01** | Only a fixed-reference work report has been accepted | Run a fresh clean requirement-folder work-report through the migrated flexible-reuse workflow | The delivered slide count is derived from a validated narrative/page-rationale ledger (not a prescribed count); each delivered page is editable, purposeful, and has complete physical/component lineage. The historical 15-page reference remains a replay-only regression fixture. |
 | **V7-RELEASE-01** | v7 has no closure evidence | Close only with portable/rule checks, independent visual reviews, source/install parity and independent audit | All v7 GOAL criteria PASS and no audit Blocker/Important remains |
+| **V7-MIX-01** | Existing evidence proves one-reference-deck rebinding, not flexible senior-designer assembly | Build a catalog-to-physical-assembly path for coherent mixed page/component reuse with a locked style anchor and narrative-derived page count | Separate no-reference professional-report and academic-defense cases record why every page exists, automatically merge under-filled beats/split over-capacity beats, and for each substantive 10+ page brief use at least 6 packages / 5 categories with complete lineage and no package supplying over 4 pages |
+| **V7-POWERPOINT-01** | LibreOffice can render packages that PowerPoint suppresses because of dangling vendor metadata relationships | Make recursive OPC QA detect and repair/reject dangling relationship references and require a real PowerPoint open/render inspection | A fixture with `p:custDataLst/p:tags` is repaired or rejected; all acceptance slides visibly render in PowerPoint and remain editable |
+| **V7-REPLAY-01** | A historical valid plan can drift after compiler/component-key evolution | Version every plan/preflight/catalog/adapter contract and provide explicit replay or migration behavior | Exact versions replay byte-stably; mismatched versions fail with a migration report and cannot silently reassemble |
 
 | Requirement | v7 Phase | Status |
 |-------------|----------|--------|
@@ -616,3 +619,6 @@ Which phases cover which requirements. Updated during roadmap creation.
 | V7-MIGRATE-01 | Phase 52 | Complete |
 | V7-ACCEPT-01 | Phase 53 | In Progress |
 | V7-RELEASE-01 | Phase 53 | In Progress |
+| V7-MIX-01 | Phase 54 | In Progress |
+| V7-POWERPOINT-01 | Phase 54 | In Progress |
+| V7-REPLAY-01 | Phase 54 | In Progress |

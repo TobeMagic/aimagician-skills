@@ -16,7 +16,7 @@ class QueryError(ValueError):
 
 _ALLOWED_REQUEST = {"mode", "role", "tags", "style", "capacity", "limit", "suitability", "candidate_ids", "deck_id"}
 _MODES = {"deck", "page", "region"}
-_SUITABILITY_PROFILES = {"general", "institutional-finance"}
+_SUITABILITY_PROFILES = {"general", "institutional-finance", "academic-defense"}
 _INSTITUTIONAL_FINANCE_EXCLUSIONS = (
     "anime", "brand-characters", "metaverse", "virtual world", "vr",
     "robot", "smartphone", "app screenshots", "product showcase",
@@ -45,6 +45,25 @@ _INSTITUTIONAL_FINANCE_EXCLUSIONS = (
     "histology", "pathology", "mouse model", "experimental support",
     "epidemiology", "essential oils", "tea products", "medicinal plants",
     "rural revitalization", "crop showcase", "cultivation",
+    # A text-only institutional run has no authority to retain an identifiable
+    # keynote speaker or public figure from a commercial template.  Even when
+    # vision calls the composition a closing page, the portrait remains a
+    # specific subject rather than neutral decoration.  Client-approved staff
+    # portraits belong to the explicit asset-binding route, not this fallback.
+    "speaker portrait", "keynote speaker", "celebrity", "public figure",
+)
+_ACADEMIC_DEFENSE_EXCLUSIONS = (
+    # A defense may legitimately include research, methodology, clinical or
+    # laboratory evidence. It must not inherit an unrelated commercial pitch,
+    # celebrity, consumer product or campaign merely because a diagram's
+    # geometry is reusable. Client-approved study participants remain an
+    # explicit asset-binding concern, never a stock-template fallback.
+    "anime", "brand-characters", "metaverse", "virtual world", "vr",
+    "gaming", "fashion", "speaker portrait", "keynote speaker", "celebrity",
+    "public figure", "product showcase", "automotive", "car", "coffee",
+    "banana", "citrus", "farming", "farm", "agricultural", "agriculture",
+    "sales", "sales proposal", "marketing", "campaign", "e-commerce",
+    "app screenshots", "smartphone",
 )
 # User-confirmed source categories are stronger evidence of a page's intended
 # structural role than an OCR/vision model's free-form description.  Visual
@@ -55,12 +74,12 @@ _CATEGORY_ROLES: dict[str, frozenset[str]] = {
     "037-章节模板": frozenset({"section"}),
     "038-标题模板": frozenset({"title"}),
     "039-结尾模板": frozenset({"closing"}),
-    "041-二段内容": frozenset({"two-item"}),
-    "042-三段内容": frozenset({"three-item"}),
-    "043-四段内容": frozenset({"four-item"}),
-    "044-五段内容": frozenset({"five-item"}),
-    "045-六段内容": frozenset({"six-item"}),
-    "046-多段内容": frozenset({"multi-item"}),
+    "041-二段内容": frozenset({"two-item", "risk"}),
+    "042-三段内容": frozenset({"three-item", "risk"}),
+    "043-四段内容": frozenset({"four-item", "risk"}),
+    "044-五段内容": frozenset({"five-item", "risk"}),
+    "045-六段内容": frozenset({"six-item", "risk"}),
+    "046-多段内容": frozenset({"multi-item", "risk"}),
     "047-人物介绍": frozenset({"team"}),
     "048-荣誉奖项": frozenset({"awards"}),
     "049-时间轴图": frozenset({"timeline"}),
@@ -100,6 +119,13 @@ _ROLE_SEMANTIC_HINTS: dict[str, frozenset[str]] = {
     # when the client message is explicitly about clinical coordination,
     # coverage or multi-department collaboration.
     "clinical-network": frozenset({"clinical departments", "department listing", "multi-department coverage", "medical team", "hospital operations"}),
+    # A risk register may use a certified editorial-detail/case-study visual
+    # grammar only when the vision index independently describes that grammar.
+    # The resulting public role remains `risk` throughout planning and QA.
+    "risk": frozenset({
+        "risk", "risks", "risk register", "mitigation", "recommendation",
+        "case study", "case-study", "three-item", "multi-item",
+    }),
 }
 
 # These observations describe an irreducible visual grammar, not merely a
@@ -111,6 +137,7 @@ _IRREDUCIBLE_SUBJECTS: dict[str, frozenset[str]] = {
     "team-network": frozenset({"medical team", "team introduction", "team"}),
 }
 _NETWORK_ONLY_ROLES = frozenset({"team", "business-model", "clinical-network"})
+_CARDINAL_CONTENT_ROLES = frozenset({"one-item", "two-item", "three-item", "four-item", "five-item", "six-item"})
 
 # A complete-work anchor is a quality commitment, not merely a convenient
 # source of many pages. The portable render fingerprint is only a coarse
@@ -137,9 +164,23 @@ def role_matches_page(page: Mapping[str, Any], observation: Mapping[str, Any], r
     network_tags = _IRREDUCIBLE_SUBJECTS["department-network"] | _IRREDUCIBLE_SUBJECTS["team-network"]
     if terms & network_tags and role not in _NETWORK_ONLY_ROLES:
         return False
+    # A commercial download category is a broad browsing shelf, not a proof
+    # that every page retains that exact cardinal grammar. A page stored under
+    # “three-item” can in fact be a single long editorial body plus two title
+    # lockups. For cardinal cards the vision-certified role must explicitly
+    # agree; accepting category alone is what later produced unfillable pages.
+    suggested = observation.get("suggested_roles", [])
+    if role in _CARDINAL_CONTENT_ROLES:
+        return isinstance(suggested, list) and role in suggested
+    # A visually certified quote is a controlled textual-CTA fallback when a
+    # dedicated ending cannot hold the client's complete approval request.
+    # It is deliberately not granted by category alone: the observation must
+    # independently identify quote grammar, and the planner still applies the
+    # closing role's single-title capacity, style-cluster and quality gates.
+    if role == "closing" and "quote" in _CATEGORY_ROLES.get(str(page.get("category")), frozenset()):
+        return isinstance(suggested, list) and "quote" in suggested
     if role in _CATEGORY_ROLES.get(str(page.get("category")), frozenset()):
         return True
-    suggested = observation.get("suggested_roles", [])
     if isinstance(suggested, list) and role in suggested:
         return True
     hints = _ROLE_SEMANTIC_HINTS.get(role)
@@ -177,7 +218,15 @@ def style_profile_from_observation(observation: Mapping[str, Any]) -> dict[str, 
         tone = "light"
     else:
         tone = "balanced"
-    cool = any(token in labels for token in ("blue", "cyan", "teal"))
+    # The vision vocabulary records a blue city-sky ending as "skyline" rather
+    # than repeating its dominant colour.  Treat that narrow corporate/minimal
+    # skyline convention as cool only in the absence of an explicit warm cue.
+    # Subject suitability remains a separate, stricter policy decision.
+    cool = any(token in labels for token in ("blue", "cyan", "teal")) or (
+        "skyline" in labels
+        and archetype in {"corporate", "minimal"}
+        and not any(token in labels for token in ("red", "orange", "yellow", "gold"))
+    )
     warm = any(token in labels for token in ("red", "orange", "yellow", "gold"))
     green = "green" in labels
     color_family = (
@@ -260,7 +309,14 @@ def _suitability_safe(observation: Mapping[str, Any], *, profile: str) -> bool:
             return re.search(rf"(?<![a-z0-9]){re.escape(token)}(?![a-z0-9])", corpus) is not None
         return token in corpus
 
-    return not any(excluded(token) for token in _INSTITUTIONAL_FINANCE_EXCLUSIONS)
+    exclusions = (
+        _INSTITUTIONAL_FINANCE_EXCLUSIONS
+        if profile == "institutional-finance"
+        else _ACADEMIC_DEFENSE_EXCLUSIONS
+        if profile == "academic-defense"
+        else ()
+    )
+    return not any(excluded(token) for token in exclusions)
 
 
 def _capacity(page: Mapping[str, Any], region: Mapping[str, Any] | None) -> int:
@@ -278,6 +334,12 @@ def materialization_eligible(page: Mapping[str, Any]) -> bool:
     blocked page is never a query, composition or physical-assembly candidate.
     """
 
+    certification = page.get("certification")
+    if (
+        isinstance(certification, Mapping)
+        and certification.get("visual_disposition") == "deny"
+    ):
+        return False
     record = page.get("materialization")
     return record is None or (
         isinstance(record, Mapping) and record.get("status") == "eligible"
@@ -336,6 +398,7 @@ def query_catalog(
             for page in pages.values()
             if str(page.get("deck_id")) == deck_id
             and page.get("category") in active
+            and page.get("component_only") is not True
             and materialization_eligible(page)
         )
         for deck_id in decks
@@ -346,6 +409,7 @@ def query_catalog(
             for page in pages.values()
             if str(page.get("deck_id")) == deck_id
             and page.get("category") in active
+            and page.get("component_only") is not True
             and materialization_eligible(page)
             and isinstance(page.get("render"), Mapping)
             and isinstance(page.get("render", {}).get("visual_quality"), (int, float))
@@ -378,6 +442,8 @@ def query_catalog(
             continue
         if not candidate_id or page.get("category") not in active:
             continue
+        if page.get("component_only") is True:
+            continue
         if not materialization_eligible(page):
             continue
         if query["mode"] == "region" and page.get("component_eligible") is not True:
@@ -398,9 +464,16 @@ def query_catalog(
             continue
         deck_id = str(page.get("deck_id"))
         stats = family_quality_stats.get(deck_id, {"min": 0.0, "mean": 0.0})
+        # Broad cover discovery rejects a weak complete family. An exact
+        # candidate revalidation is different: the style planner has already
+        # certified this specific page's observation, role, capacity and
+        # cluster, so another unselected source page must not contradict it.
+        # Keeping the family veto for unbounded discovery preserves its
+        # original safety purpose without making planner output unreplayable.
         if (
             query["mode"] == "page"
             and query["role"] == "cover"
+            and query["candidate_ids"] is None
             and family_page_count.get(deck_id, 0) >= 8
             and stats["min"] < _COMPLETE_FAMILY_MIN_VISUAL_QUALITY
         ):
@@ -452,6 +525,11 @@ def query_catalog(
                 "minimum": round(stats["min"], 6),
                 "mean": round(stats["mean"], 6),
             },
+            # The composition compiler rejects a cross-package page below
+            # the portable visual-quality floor. Surface that safe scalar at
+            # retrieval time so an author need not infer page quality from a
+            # deck-level mean and accidentally select an unassemblable page.
+            "page_visual_quality": round(float(page.get("render", {}).get("visual_quality", 0.0)), 6),
             "mode": query["mode"],
             "bindable_region_count": bindable_region_count.get(page_id, 0),
             "governed_content_slot_count": governed_content_slot_count(page),
@@ -501,6 +579,7 @@ def inspect_certified_deck(
         if isinstance(page, Mapping)
         and str(page.get("deck_id")) == deck_id
         and page.get("category") in active
+        and page.get("component_only") is not True
         and materialization_eligible(page)
     ]
     if not all_pages:

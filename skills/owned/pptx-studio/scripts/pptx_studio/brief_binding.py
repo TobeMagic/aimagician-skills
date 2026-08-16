@@ -29,6 +29,23 @@ _SEMANTIC_ROLES = frozenset({"title", "label", "metric", "body", "any"})
 # certified body surface only after all fitting label surfaces are exhausted;
 # short labels still cannot steal narrative space.
 _LONG_LABEL_TO_BODY_MIN_CHARS = 12
+_MIN_VISUAL_SURFACE_COVERAGE = 0.50
+
+
+def _is_semantic_fragment(text: str) -> bool:
+    """Reject a visually useless fragment before it can enter an outline.
+
+    A source locator proves provenance but not that an agent selected a
+    meaningful unit of language.  In particular, weak agents sometimes split
+    a normal Chinese word (``建设``) into two title facts solely to fill a
+    repeated native component.  Such a deck is mechanically editable yet
+    plainly unprofessional.  A one-character CJK token is therefore not a
+    reusable fact.  Measurements and symbols remain valid: they use digits
+    or non-CJK characters after punctuation/space normalisation.
+    """
+
+    compact = re.sub(r"[\s\W_]", "", text, flags=re.UNICODE)
+    return not (len(compact) == 1 and "\u3400" <= compact <= "\u9fff")
 
 
 def _structural_coverage_requirements(
@@ -117,6 +134,9 @@ def _preflight_regions(preflight: Mapping[str, Any]) -> dict[str, list[dict[str,
     for slide in preflight["slides"]:
         if not isinstance(slide, Mapping) or not isinstance(slide.get("slide_id"), str) or not isinstance(slide.get("regions"), list):
             raise BriefBindingError("PREFLIGHT_SCHEMA_INVALID")
+        declared_role = slide.get("role")
+        if declared_role is not None and not isinstance(declared_role, str):
+            raise BriefBindingError("PREFLIGHT_SCHEMA_INVALID")
         regions: list[dict[str, Any]] = []
         for region in slide["regions"]:
             if not isinstance(region, Mapping) or not isinstance(region.get("region_id"), str) or type(region.get("native_capacity")) is not int:
@@ -141,6 +161,8 @@ def _preflight_regions(preflight: Mapping[str, Any]) -> dict[str, list[dict[str,
                 "semantic_roles": slot_roles,
                 "fragment_group": region.get("fragment_group") is True,
                 "component_key": region.get("component_key"),
+                "component_binding": region.get("component_binding"),
+                "declared_role": declared_role,
             })
         result[slide["slide_id"]] = regions
     return result
@@ -204,11 +226,18 @@ def _locked_fact_values(fact_store: Mapping[str, Any]) -> dict[str, Mapping[str,
             or not isinstance(item.get("locator"), str)
             or not item.get("locator")
             or not isinstance(item.get("recommended_beat"), str)
-            or re.fullmatch(r"s(?:0[1-9]|1[0-5])", item["recommended_beat"]) is None
+            # Narrative planning permits up to 24 delivery beats.  Fact
+            # ownership must not silently cap a legitimate no-count client
+            # narrative at the historical 15-slide reference length.
+            or re.fullmatch(r"s(?:0[1-9]|1[0-9]|2[0-4])", item["recommended_beat"]) is None
             or identifier in values
             or (kind is not None and (not isinstance(kind, str) or not kind))
         ):
             raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
+        if not _is_semantic_fragment(text):
+            raise BriefBindingError(
+                f"FACT_STORE_SEMANTIC_FRAGMENT_INVALID:fact_id={identifier}"
+            )
         values[identifier] = item
     if not values:
         raise BriefBindingError("FACT_STORE_SCHEMA_INVALID")
@@ -282,7 +311,13 @@ def _require_complete_component_groups(
             (group_id in explicitly_requested_groups and bool(chosen))
             or bool(set(keys).intersection(explicitly_requested_keys))
         )
-        if explicitly_selected and len(chosen) != len(keys):
+        # A wholly absent required group has its own actionable diagnostic in
+        # ``_require_component_group_coverage``.  This check owns only a group
+        # that the outline has started to populate and must therefore finish.
+        if (
+            (explicitly_selected or (group.get("required") is True and bool(chosen)))
+            and len(chosen) != len(keys)
+        ):
             missing = [key for key in keys if key not in selected]
             raise BriefBindingError(
                 "OUTLINE_COMPONENT_GROUP_INCOMPLETE"
@@ -290,6 +325,47 @@ def _require_complete_component_groups(
                 f":provided={','.join(chosen)}:required={','.join(keys)}"
                 f":missing={','.join(missing)}"
             )
+
+
+def _require_visual_surface_coverage(
+    preflight_slide: Mapping[str, Any], prepared: list[Mapping[str, Any]],
+) -> None:
+    """Reject a source page whose visible text skeleton would remain empty.
+
+    Clearing sample copy is necessary but not sufficient: its surrounding
+    cards, frames and diagram units remain visible.  Requiring a bounded share
+    of published native surfaces prevents a two-fact section from releasing a
+    thirteen-unit template shell.  This is a re-selection signal, never a cue
+    to invent filler.
+    """
+
+    contract = preflight_slide.get("component_contract")
+    if not isinstance(contract, list) or not contract:
+        return
+    published_keys = {
+        item.get("component_key")
+        for item in contract
+        if isinstance(item, Mapping) and isinstance(item.get("component_key"), str)
+    }
+    if not published_keys:
+        return
+    # A high-end cover can intentionally expose a single editorial title
+    # while retaining decorative metadata surfaces that must remain empty.
+    # The role floor still requires that one customer fact, and physical QA
+    # validates the populated composition. Requiring a percentage of every
+    # source text box here would force author/presenter/date facts into the
+    # cover, a common cause of collisions and visual noise.
+    if preflight_slide.get("role") == "cover":
+        return
+    coverage = _MIN_VISUAL_SURFACE_COVERAGE
+    required = ceil(len(published_keys) * coverage)
+    if len(prepared) < required:
+        raise BriefBindingError(
+            "OUTLINE_VISUAL_SURFACE_COVERAGE_INSUFFICIENT"
+            f":slide_id={preflight_slide.get('slide_id')}"
+            f":provided={len(prepared)}:required={required}"
+            f":published={len(published_keys)}"
+        )
 
 
 def _published_component_groups(preflight_slide: Mapping[str, Any]) -> dict[str, set[str]]:
@@ -321,6 +397,56 @@ def _published_component_groups(preflight_slide: Mapping[str, Any]) -> dict[str,
             raise BriefBindingError("OUTLINE_COMPONENT_GROUP_INVALID")
         result[group_id] = set(keys)
     return result
+
+
+def _assign_sequence_groups_automatically(
+    preflight_slide: Mapping[str, Any], prepared: list[dict[str, Any]],
+) -> None:
+    """Bind ordered timeline date/action facts to published milestone groups.
+
+    Timeline component groups are compiler-discovered from a certified native
+    page.  Requiring a weak model to name opaque ``timeline-step.03`` keys
+    would turn ordinary fact binding into a private-slot guessing exercise.
+    A strict alternating label/body sequence is therefore assigned to the
+    published group order. Other page types and any explicit component choice
+    retain the ordinary, fully explicit component contract.
+    """
+
+    if preflight_slide.get("role") not in {"timeline", "roadmap"}:
+        return
+    if any(item.get("component_key") is not None or item.get("component_group") is not None for item in prepared):
+        return
+    raw_groups = preflight_slide.get("component_groups")
+    if not isinstance(raw_groups, list):
+        return
+    groups = [
+        group for group in raw_groups
+        if isinstance(group, Mapping)
+        and group.get("component_intent") == "timeline-milestone"
+        and isinstance(group.get("component_group"), str)
+        and isinstance(group.get("component_keys"), list)
+        and group.get("component_fields") == ["date", "action"]
+        and len(group["component_keys"]) == 2
+    ]
+    groups.sort(key=lambda group: str(group["component_group"]))
+    sequence_items = [
+        item for item in prepared
+        if item.get("requested_role") in {"label", "body"}
+    ]
+    if not sequence_items or len(sequence_items) % 2 or len(sequence_items) > len(groups) * 2:
+        return
+    pairs = list(zip(sequence_items[::2], sequence_items[1::2], strict=True))
+    if any(
+        first.get("requested_role") != "label" or second.get("requested_role") != "body"
+        for first, second in pairs
+    ):
+        return
+    for (label, body), group in zip(pairs, groups, strict=False):
+        group_id = str(group["component_group"])
+        label["component_group"] = group_id
+        label["component_field"] = "date"
+        body["component_group"] = group_id
+        body["component_field"] = "action"
 
 
 def _require_component_group_coverage(
@@ -523,6 +649,7 @@ def compile_outline_bindings(
                 raise BriefBindingError(
                     f"OUTLINE_COMPONENT_GROUP_UNKNOWN:slide_id={slide_id}:group={group}"
                 )
+        _assign_sequence_groups_automatically(preflight_slide, prepared)
         _require_complete_component_groups(preflight_slide, prepared)
         for group_id, group_contract in ordered_component_groups.items():
             keys = group_contract["keys"]
@@ -581,7 +708,6 @@ def compile_outline_bindings(
                     f":slide_id={slide_id}:role={role}"
                     f":provided={provided_count}:required={required_count}"
                 )
-
         # Allocate scarce long-capacity regions first. A presentation outline
         # is naturally written title → metric → body; consuming a 31-character
         # body slot for an early five-character label can make a later source
@@ -639,6 +765,22 @@ def compile_outline_bindings(
                         region for region in fitting
                         if "body" in region["semantic_roles"]
                     ]
+                # A native timeline often renders both a milestone date and
+                # its action in compact label surfaces.  The narrative still
+                # retains the action as a semantic body fact, but forcing it
+                # into a non-existent generic body slot would reject a
+                # physically sound, certified timeline.  This is intentionally
+                # one-way and page-role-limited: no ordinary body prose may
+                # occupy a label/title/metric surface.
+                if (
+                    not strict_fitting
+                    and requested_role == "body"
+                    and all(region.get("declared_role") in {"timeline", "roadmap"} for region in fitting)
+                ):
+                    strict_fitting = [
+                        region for region in fitting
+                        if "label" in region["semantic_roles"]
+                    ]
                 fitting = strict_fitting
             if not fitting:
                 raise BriefBindingError(
@@ -659,6 +801,7 @@ def compile_outline_bindings(
                 ),
                 "component_key": chosen.get("component_key"),
                 "component_group": component_group,
+                "component_binding": chosen.get("component_binding"),
             }
 
         # A group-targeting outline does not expose its native component key.
@@ -670,6 +813,7 @@ def compile_outline_bindings(
         ]
         _require_complete_component_groups(preflight_slide, resolved_group_prepared)
         _require_component_group_coverage(preflight_slide, resolved_group_prepared)
+        _require_visual_surface_coverage(preflight_slide, resolved_group_prepared)
 
         for item in prepared:
             ordinal = int(item["ordinal"])
@@ -694,6 +838,16 @@ def compile_outline_bindings(
             if resolved_component_key is not None:
                 output_binding["component_key"] = resolved_component_key
             bindings.append(output_binding)
+    if locked_facts is not None:
+        # The fact store is the locked customer-content ledger. A valid
+        # outline may not simply omit an inconvenient conclusion or metric to
+        # satisfy an attractive template: each active, source-located fact
+        # must have exactly one native binding by the end of compilation.
+        unbound_fact_ids = sorted(set(locked_facts).difference(seen_locked_fact_ids))
+        if unbound_fact_ids:
+            raise BriefBindingError(
+                "LOCKED_FACT_UNBOUND:fact_ids=" + ",".join(unbound_fact_ids)
+            )
     # Structured data is deliberately a distinct semantic payload.  Normal
     # text-only decks still carry the empty field so every downstream stage
     # sees one strict adaptation-request schema.

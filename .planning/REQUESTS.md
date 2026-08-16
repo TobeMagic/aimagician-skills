@@ -563,3 +563,47 @@ curated library flexibly rather than mechanically copying one reference deck.
   using private assets as contents of the clean client requirement folder.
 - Declaring a generic renderer, a free-form visual model response, or one
   successful fixed-reference replay to be the flexible-composition result.
+
+## USR-V7-02 — Cross-library senior-designer assembly (2026-08-14)
+
+**Status:** Accepted
+
+The user confirmed that the accepted whole-deck work-report reproduction is a
+regression case only. The next target is a capable agent that can retrieve,
+combine and carefully adapt the most suitable certified pages and visual
+components from the curated Gaojie library as a human presentation designer
+would. It must first lock requirements, narrative and visual direction, then
+perform coarse deck/page retrieval and fine component retrieval; it must not
+inspect hundreds of anonymous files, invent arbitrary geometry, or fall back
+to freeform drawing.
+
+The acceptance case must receive only a realistic client brief and assets, not
+a reference PPTX. The client does not prescribe a deck length: the agent must
+derive it from the narrative, decision points, fact density and certified page
+capacity, documenting why each page exists and merging/splitting beats as
+needed. For a representative 12+ page brief it must mix at least eight source
+packages from at least six approved categories, use physical whole-page and
+component reuse, retain one dominant coherent visual family, and report exact
+lineage. A source deck may contribute at most three pages. The agent chooses
+bounded IDs and fact/asset bindings; the compiler controls all visual
+mechanics.
+
+The user also reported that a deck which passed LibreOffice validation opened
+with blank slides in PowerPoint. The production definition of done therefore
+requires PowerPoint compatibility: any removed `tags/customXml` metadata must
+also have all owner references removed, and all release pages must be opened
+or rendered by PowerPoint where the environment permits. Frozen historical
+plans must either replay with their declared compiler contract or stop with an
+explicit migration diagnostic.
+
+### Derived Requirements
+
+- V7-MIX-01, V7-POWERPOINT-01, V7-REPLAY-01 (Phase 54)
+
+### Exclusions
+
+- Treating the fixed 15-page reference deck as evidence of mixed-library
+  assembly.
+- Passing delivery based only on LibreOffice output or a self-authored visual
+  score.
+- Copying private source files or previews into the client requirement folder.
