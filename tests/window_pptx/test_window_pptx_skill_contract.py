@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio"
 
 
 def test_v6_skill_defaults_to_locked_quality_first_authoring() -> None:

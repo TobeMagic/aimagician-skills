@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimagician.local/pptx-studio/acquisition-manifest.v1.schema.json",
+  "title": "Window-PPTX AcquisitionManifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "command",
+    "mode",
+    "status",
+    "source_id",
+    "origin",
+    "allowlisted_hosts",
+    "requested_item_ids",
+    "completed_item_ids",
+    "unavailable_item_ids",
+    "resume_cursor",
+    "state_path",
+    "findings",
+    "state_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "command": {
+      "enum": ["discover", "sync", "ingest", "certify", "query"]
+    },
+    "mode": {"enum": ["dry_run", "apply"]},
+    "status": {
+      "enum": [
+        "PASS",
+        "NEEDS_AUTH",
+        "NEEDS_RIGHTS",
+        "QUARANTINED",
+        "PARTIAL",
+        "FAIL"
+      ]
+    },
+    "source_id": {"type": "string", "minLength": 1},
+    "origin": {"type": "string", "pattern": "^https://"},
+    "allowlisted_hosts": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "requested_item_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "completed_item_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "unavailable_item_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "resume_cursor": {"type": ["string", "null"]},
+    "state_path": {
+      "type": ["string", "null"],
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+\\.json$"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "path": {"type": "string"}
+        }
+      }
+    },
+    "state_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"mode": {"const": "apply"}}},
+      "then": {"properties": {"state_path": {"type": "string"}}}
+    },
+    {
+      "if": {"properties": {"mode": {"const": "dry_run"}}},
+      "then": {"properties": {"state_path": {"type": "null"}}}
+    }
+  ]
+}

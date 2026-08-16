@@ -15,7 +15,7 @@ from PIL import Image
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 from window_pptx.backends import (  # noqa: E402
@@ -531,8 +531,8 @@ def test_html_proof_is_renderplan_derived_and_deterministic() -> None:
     second = render_html_proof(plan)
 
     assert first == second
-    assert "window-pptx RenderPlan HTML proof" in first
-    assert "data-window-pptx-id" in first
+    assert "pptx-studio RenderPlan HTML proof" in first
+    assert "data-pptx-studio-id" in first
     assert "<script" not in first
 
 
@@ -1011,15 +1011,15 @@ def test_cli_auto_backend_completes_without_powerpoint_com(
     assert "injected optional proof failure" in payload["html_proof_error"]
     assert (tmp_path / "delivery.pptx").is_file()
     assert (tmp_path / "delivery.pdf").read_bytes().startswith(b"%PDF-")
-    assert (tmp_path / ".window-pptx" / "audits" / "ooxml-report.json").is_file()
+    assert (tmp_path / ".pptx-studio" / "audits" / "ooxml-report.json").is_file()
     verification_report = (
-        tmp_path / ".window-pptx" / "audits" / "portable-verification.json"
+        tmp_path / ".pptx-studio" / "audits" / "portable-verification.json"
     )
     assert com_diagnostics.validate_portable_certification_input(
         tmp_path / "delivery.pptx",
         verification_report,
     )["candidate_sha256"] == sha256_file(tmp_path / "delivery.pptx")
-    assert len(tuple((tmp_path / ".window-pptx" / "exports" / "qa").glob("*.png"))) == 3
+    assert len(tuple((tmp_path / ".pptx-studio" / "exports" / "qa").glob("*.png"))) == 3
 
 
 def test_portable_pipeline_never_promotes_a_candidate_when_proof_fails(
@@ -1042,7 +1042,7 @@ def test_portable_pipeline_never_promotes_a_candidate_when_proof_fails(
         )
 
     assert output.read_bytes() == b"existing delivery remains intact"
-    assert not tuple(tmp_path.glob(".window-pptx-*.pptx"))
+    assert not tuple(tmp_path.glob(".pptx-studio-*.pptx"))
 
 
 @pytest.mark.skipif(
@@ -1079,7 +1079,7 @@ def test_powerpoint_certifier_cannot_mutate_the_verified_candidate(
     assert received[0] != output
     assert received[0].name == ".powerpoint-certification-input.pptx"
     assert output.read_bytes() == b"existing delivery remains intact"
-    assert not tuple(tmp_path.glob(".window-pptx-*.pptx"))
+    assert not tuple(tmp_path.glob(".pptx-studio-*.pptx"))
 
 
 @pytest.mark.parametrize(
@@ -1178,7 +1178,7 @@ def test_portable_bundle_promotion_rolls_back_every_target_on_late_failure(
 
     assert first_target.read_bytes() == b"old report"
     assert second_target.read_bytes() == b"old deck"
-    assert not tuple(tmp_path.glob(".*.window-pptx-backup-*"))
+    assert not tuple(tmp_path.glob(".*.pptx-studio-backup-*"))
 
 
 def test_ooxml_inspector_rejects_forged_render_plan_without_writing(

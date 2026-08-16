@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "narrative-plan.v1.schema.json",
+  "title": "pptx-studio NarrativePlan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "archetype_id", "fact_store_digest", "slides", "coverage", "decisions"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "archetype_id": {"type": "string", "minLength": 1},
+    "fact_store_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "slides": {"type": "array", "minItems": 2, "items": {"type": "object", "additionalProperties": false, "required": ["id", "role", "title", "importance", "fact_refs", "semantic_kind", "structural"], "properties": {"id": {"type": "string"}, "role": {"type": "string"}, "title": {"type": "string"}, "importance": {"enum": ["low", "normal", "high", "critical"]}, "fact_refs": {"type": "array", "items": {"type": "string"}}, "semantic_kind": {"type": "string"}, "structural": {"type": "boolean"}}}},
+    "coverage": {"type": "object"},
+    "decisions": {"type": "array", "items": {"type": "string"}}
+  }
+}

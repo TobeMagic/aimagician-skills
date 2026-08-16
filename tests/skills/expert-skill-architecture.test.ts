@@ -200,7 +200,7 @@ describe("HTML universal design capability architecture", () => {
 
   it("enforces native PowerPoint and hybrid ownership without browser-workflow leakage", () => {
     const native = runDesign(["--task", "html-presentation", "--deliverable", "pptx", "--platform", "windows"]);
-    expect(native).toMatchObject({ owners: ["window-pptx"], final_owner: "window-pptx", handoff: false, mode: "route" });
+    expect(native).toMatchObject({ owners: ["pptx-studio"], final_owner: "pptx-studio", handoff: false, mode: "route" });
     expect(native.suggested_layouts).toEqual([]);
     expect(native.suggested_components).toEqual([]);
     expect(native.output_contracts).toEqual([]);
@@ -216,7 +216,7 @@ describe("HTML universal design capability architecture", () => {
     expect(native.required_quality_checks.map((check: Pattern) => check.id)).not.toContain("browser-opens");
 
     const hybrid = runDesign(["--task", "html-presentation", "--deliverable", "hybrid", "--platform", "cross-platform"]);
-    expect(hybrid).toMatchObject({ owners: ["interface-design", "window-pptx"], final_owner: "window-pptx", handoff: true, mode: "prototype" });
+    expect(hybrid).toMatchObject({ owners: ["interface-design", "pptx-studio"], final_owner: "pptx-studio", handoff: true, mode: "prototype" });
     expect(hybrid.boundary).toContain("ppt-handoff.md");
   });
 
@@ -499,7 +499,7 @@ describe("owned skill trigger contracts", () => {
     const interfaceFrontmatter = frontmatter(await readFile(join(designRoot, "SKILL.md"), "utf8"));
     const engineeringFrontmatter = frontmatter(await readFile(join(engineeringRoot, "SKILL.md"), "utf8"));
     const readmeFrontmatter = frontmatter(await readFile(join(ownedRoot, "github-readme-highstar", "SKILL.md"), "utf8"));
-    const pptxFrontmatter = frontmatter(await readFile(join(ownedRoot, "window-pptx", "SKILL.md"), "utf8"));
+    const pptxFrontmatter = frontmatter(await readFile(join(ownedRoot, "pptx-studio", "SKILL.md"), "utf8"));
 
     expect(interfaceFrontmatter).toContain("README covers");
     expect(interfaceFrontmatter).toMatch(/narrated demo\s+videos/);

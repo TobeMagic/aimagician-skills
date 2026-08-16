@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/pptx-studio-composition-request.v3.schema.json",
+  "title": "PPTX Studio Composition Request v3 (legacy single-placement contract)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "strategy", "art_direction", "narrative_validation", "component_profile", "slides"],
+  "properties": {
+    "schema_version": {"const": "3.0"},
+    "strategy": {"enum": ["page_assembly", "component_assembly"]},
+    "art_direction": {"type": "object"},
+    "narrative_validation": {"type": "object"},
+    "component_profile": {
+      "type": "object", "additionalProperties": false,
+      "required": ["profile_id", "profile_sha256"],
+      "properties": {
+        "profile_id": {"type": "string", "minLength": 1},
+        "profile_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "slides": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object", "additionalProperties": false,
+            "required": ["slide_id", "beat_id", "role", "candidate_ids", "selected_candidate_id", "minimum_capacity"],
+            "properties": {
+              "slide_id": {"type": "string", "minLength": 1}, "beat_id": {"type": "string", "minLength": 1}, "role": {"type": "string", "minLength": 1},
+              "candidate_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+              "selected_candidate_id": {"type": "string", "minLength": 1}, "minimum_capacity": {"type": "integer", "minimum": 0}
+            }
+          },
+          {
+            "type": "object", "additionalProperties": false,
+            "required": ["slide_id", "beat_id", "role", "host_candidate_ids", "selected_host_candidate_id", "host_anchor_id", "selected_component_ids", "minimum_capacity"],
+            "properties": {
+              "slide_id": {"type": "string", "minLength": 1}, "beat_id": {"type": "string", "minLength": 1}, "role": {"type": "string", "minLength": 1},
+              "host_candidate_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^page_[0-9a-f]{24}_[0-9]{3}$"}},
+              "selected_host_candidate_id": {"type": "string", "pattern": "^page_[0-9a-f]{24}_[0-9]{3}$"},
+              "host_anchor_id": {"type": "string", "pattern": "^anchor_[0-9a-f]{24}$"},
+              "selected_component_ids": {"type": "array", "minItems": 1, "maxItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^component_[0-9a-f]{24}$"}},
+              "minimum_capacity": {"type": "integer", "minimum": 0}
+            }
+          }
+        ]
+      }
+    }
+  }
+}

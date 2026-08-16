@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/page-template-query-result.v1.schema.json",
+  "title": "Page Template Query Result v1",
+  "description": "Deterministic CLI/API query result with complete candidate evidence.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "library_index_sha256",
+    "role",
+    "capacity_budget",
+    "semantic_categories",
+    "style_cluster",
+    "asset_requirements",
+    "customer_assets_available",
+    "limit",
+    "allow_fallback",
+    "direct_use_only",
+    "include_ineligible",
+    "weights",
+    "count",
+    "eligible_count",
+    "candidates"
+  ],
+  "properties": {
+    "schema_version": {"const": "page-template-query-result.v1"},
+    "library_index_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "library_resolution_source": {
+      "enum": [
+        "absolute-library",
+        "explicit-private-root",
+        "environment-private-root",
+        "config-private-root"
+      ]
+    },
+    "required_source_ordinal": {"type": "integer", "minimum": 1},
+    "role": {"type": "string", "minLength": 1},
+    "capacity_budget": {"type": "integer", "minimum": 0},
+    "semantic_categories": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "style_cluster": {"type": "string", "minLength": 1},
+    "asset_requirements": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "customer_assets_available": {"type": "boolean"},
+    "limit": {"type": "integer", "minimum": 1, "maximum": 50},
+    "allow_fallback": {"type": "boolean"},
+    "direct_use_only": {"const": true},
+    "include_ineligible": {"type": "boolean"},
+    "weights": {
+      "const": {
+        "role": 0.3,
+        "capacity": 0.25,
+        "semantic": 0.2,
+        "style": 0.15,
+        "editability": 0.1
+      }
+    },
+    "count": {"type": "integer", "minimum": 0},
+    "eligible_count": {"type": "integer", "minimum": 0},
+    "candidates": {
+      "type": "array",
+      "items": {"$ref": "page-template-candidate.v1.schema.json"}
+    }
+  },
+  "additionalProperties": false
+}

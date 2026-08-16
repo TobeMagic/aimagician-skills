@@ -1,6 +1,6 @@
 # HTML Visual Direction To Native PowerPoint Handoff
 
-**Native owner:** window-pptx
+**Native owner:** pptx-studio
 **Aspect ratio:** TBD
 **Office compatibility target:** TBD
 

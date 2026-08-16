@@ -12,7 +12,7 @@ from PIL import Image
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio"
 SCRIPTS_ROOT = SKILL_ROOT / "scripts"
 EXPORTER = SCRIPTS_ROOT / "export_window_pptx_brief_corpus.py"
 GENERATOR = SCRIPTS_ROOT / "build_window_pptx_v6_reference_anchors.py"

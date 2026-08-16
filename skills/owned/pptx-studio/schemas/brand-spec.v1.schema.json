@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "brand-spec.v1.schema.json",
+  "title": "pptx-studio BrandSpec v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "name"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 160},
+    "require_brand_fidelity": {"type": "boolean"},
+    "palette": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["role", "value", "source"], "properties": {"role": {"enum": ["primary", "accent", "positive", "warning", "negative", "background"]}, "value": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"}, "source": {"type": "string", "minLength": 1}}}},
+    "fonts": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["role", "family", "source"], "properties": {"role": {"enum": ["heading", "body"]}, "family": {"type": "string", "minLength": 1}, "source": {"type": "string", "minLength": 1}}}},
+    "required_assets": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["kind", "mandatory"], "properties": {"kind": {"enum": ["logo", "product", "ui", "photo", "icon"]}, "mandatory": {"type": "boolean"}}}},
+    "prohibited_patterns": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 100}}
+  }
+}

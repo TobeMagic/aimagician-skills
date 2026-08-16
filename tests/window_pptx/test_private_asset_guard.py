@@ -12,7 +12,7 @@ SCRIPT = (
     REPO_ROOT
     / "skills"
     / "owned"
-    / "window-pptx"
+    / "pptx-studio"
     / "scripts"
     / "check_window_pptx_private_assets.py"
 )
@@ -47,7 +47,7 @@ def _repo(tmp_path: Path) -> Path:
 
 def test_private_and_cookie_paths_are_rejected() -> None:
     assert module.private_path_reason(
-        Path("skills/owned/window-pptx/.private/secrets/gaojie.cookies")
+        Path("skills/owned/pptx-studio/.private/secrets/gaojie.cookies")
     ) == "PRIVATE_PATH"
     assert module.private_path_reason(Path("secrets/session.txt")) == "SECRET_PATH"
     assert module.private_path_reason(Path("scripts/safe.py")) is None
@@ -89,7 +89,7 @@ def test_staged_guard_fails_closed_without_printing_cookie(tmp_path: Path) -> No
         root
         / "skills"
         / "owned"
-        / "window-pptx"
+        / "pptx-studio"
         / ".private"
         / "secrets"
         / "gaojie.cookies"
@@ -155,7 +155,7 @@ def test_guard_error_output_does_not_echo_repository_details(
 
 def test_staged_guard_passes_for_safe_text_change(tmp_path: Path) -> None:
     root = _repo(tmp_path)
-    source = root / "skills" / "owned" / "window-pptx" / "scripts" / "safe.py"
+    source = root / "skills" / "owned" / "pptx-studio" / "scripts" / "safe.py"
     source.parent.mkdir(parents=True)
     source.write_text('print("safe")\n', encoding="utf-8")
     _git(root, "add", "--", str(source.relative_to(root)))

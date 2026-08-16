@@ -1,0 +1,7 @@
+{
+  "queries": [
+    {"request_id": "four-item", "request": {"mode": "page", "role": "four-item", "tags": [], "style": null, "capacity": 0, "limit": 6, "suitability": "institutional-finance"}},
+    {"request_id": "five-item", "request": {"mode": "page", "role": "five-item", "tags": [], "style": null, "capacity": 0, "limit": 6, "suitability": "institutional-finance"}},
+    {"request_id": "multi-item", "request": {"mode": "page", "role": "multi-item", "tags": [], "style": null, "capacity": 0, "limit": 6, "suitability": "institutional-finance"}}
+  ]
+}

@@ -10,7 +10,7 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx" / "scripts"
+SCRIPTS_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 CLI = SCRIPTS_ROOT / "manage_window_pptx_project_brief.py"
 if str(SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_ROOT))

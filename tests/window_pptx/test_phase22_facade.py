@@ -12,7 +12,7 @@ SCRIPTS_DIR = (
     Path(__file__).resolve().parents[2]
     / "skills"
     / "owned"
-    / "window-pptx"
+    / "pptx-studio"
     / "scripts"
 )
 sys.path.insert(0, str(SCRIPTS_DIR))
@@ -451,7 +451,7 @@ def test_non_json_inspection_detail_is_not_repeated_in_final_result(
 
     stdout = capsys.readouterr().out
     assert stdout.count(detail) == 1
-    assert "window-pptx run complete" not in stdout
+    assert "pptx-studio run complete" not in stdout
     assert final_key not in stdout.split(detail, 1)[1]
 
 
@@ -685,7 +685,7 @@ def test_invalid_output_extension_with_ascii_copy_writes_no_temp_file(
     patch_deck_dependencies(monkeypatch, tmp_path)
     template = tmp_path / "source.pptm"
     template.write_bytes(b"source deck")
-    temp_target = tmp_path / ".window-pptx" / "temp" / "deck_temp_ascii.pptm"
+    temp_target = tmp_path / ".pptx-studio" / "temp" / "deck_temp_ascii.pptm"
     app = RecordingApplication()
     client = RecordingComClient(app)
 
@@ -716,7 +716,7 @@ def test_ascii_staging_output_conflict_never_overwrites_target(
     patch_deck_dependencies(monkeypatch, tmp_path)
     template = tmp_path / "source.pptx"
     template.write_bytes(b"source deck")
-    temp_target = tmp_path / ".window-pptx" / "temp" / "deck_temp_ascii.pptx"
+    temp_target = tmp_path / ".pptx-studio" / "temp" / "deck_temp_ascii.pptx"
     temp_target.parent.mkdir(parents=True)
     temp_target.write_bytes(b"sentinel output")
     app = RecordingApplication()
@@ -790,7 +790,7 @@ def test_inspection_routes_are_terminal_and_emit_one_requested_json_object(
 
     payload = json.loads(capsys.readouterr().out)
     assert set(payload) == expected
-    assert not (tmp_path / ".window-pptx").exists()
+    assert not (tmp_path / ".pptx-studio").exists()
 
 
 @pytest.mark.parametrize("suffix", [".pptm", ".potm"])

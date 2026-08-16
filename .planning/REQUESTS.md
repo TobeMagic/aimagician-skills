@@ -1,33 +1,5 @@
 # Request Ledger
 
-## USR-20260813-002: Lightweight adaptive engineering control plane
-
-**Status:** Accepted
-**Source:** User request to use the Darwin Skill for dynamic optimization
-
-### Accepted Requirements
-
-- **REQ-CONTROL-001:** Keep `aimagician-superpower` as a concise engineering
-  control plane. Its default context must contain only task classification,
-  source-of-truth recovery, risk-scaled delivery, conditional routing, and
-  honest completion conditions.
-- **REQ-CONTROL-002:** Preserve every existing specialized engineering
-  capability through progressive disclosure; do not delete a capability merely
-  because it does not belong in the default prompt.
-- **REQ-CONTROL-003:** `Quick` work must not force planning, wiki, worktree,
-  external-worker, or independent-audit steps. `High`, phase, milestone, and
-  deployable work must retain requirement-to-evidence traceability and closure
-  safeguards.
-- **REQ-CONTROL-004:** Run at least two Darwin iterations, keep deterministic
-  routing regression evidence outside the installable Skill, and never report
-  a static score as a controlled model-effectiveness score.
-
-### Explicit Non-goals
-
-- Modifying `cli-agent-delegator`, OpenCode runtime behavior, or model routing.
-- Deleting capability modules, changing external integrations, or completing
-  the separate `USR-20260813-001` 19-Skill optimization evaluation.
-
 ## USR-20260728-001: Agent-first Skillbird and completion audit
 
 **Status:** Accepted
@@ -544,135 +516,94 @@ folder must not contain the reference deck or private template bytes.
 - Performing the v7 rename and destructive private-asset pruning inside Phase
   49; those changes begin only after the stabilized v6.1 baseline is merged.
 
-## USR-20260811-001: Runtime-pure Skills, project memory, and session orchestration
+## USR-V7-01 — PPTX Studio curated component reuse (2026-08-11)
 
 **Status:** Accepted
-**Source:** User direction on 2026-08-11
 
-### Original Request
+The user approved a new isolated worktree after the v6.1 master merge and
+requires the eventual replacement of `window-pptx` with `pptx-studio`, with no
+compatibility shim. The product must help a capable agent turn a locked, real
+client requirement pack and client assets into an editable high-quality PPTX:
+discuss missing boundaries first; choose one visual direction and deck anatomy;
+retrieve appropriate complete pages or page regions; adapt factual copy and
+client assets; run governed checks and an independent harness.
 
-Archive redundant runtime Skills, remove Skill-local eval directories, use the
-Darwin Skill optimization workflow on core Skills, evolve parallel worktree
-handling into tracked multi-session task orchestration, move Linear behavior
-into project preferences, and add durable project and daily memory to the main
-engineering workflow.
+The private Gaojie library is local-only and user-authorized. The active set
+is exactly: `003-封面模板`, `036-目录模板`, `037-章节模板`, `038-标题模板`,
+`039-结尾模板`, `041-二段内容`, `042-三段内容`, `043-四段内容`,
+`044-五段内容`, `045-六段内容`, `046-多段内容`, `047-人物介绍`,
+`048-荣誉奖项`, `049-时间轴图`, `050-架构流程`, `051-商业模型`,
+`052-样机展示`, `053-金句模板`, `054-合作伙伴`, `057-优秀作品`,
+`059-一段内容`, and `082-地图排版`. The remaining category directories are
+recoverably archived rather than deleted. Every retained deck/page needs
+coarse design evidence and every reusable region needs fine-grained semantic,
+capacity, geometry, style, and provenance evidence so an agent never has to
+browse hundreds of anonymous files. The user explicitly asked that Agnes
+visually inspect retained rendered pages; analysis may use rendered images only
+and must never commit or distribute private bytes.
 
-### Accepted Decisions
-
-- Implement from the latest `origin/master` without mutating the user's active
-  Window-PPTX worktree.
-- Archive `pptx`, `modelscope_imagegen`, `mcp-builder`, and
-  `linear-issue-workflow` from the active owner set.
-- Move evaluation fixtures out of installed Skill packages into a repository
-  quality surface; preserve useful regression evidence instead of deleting it.
-- Replace `parallel-worktree-pr-flow` with a provider-neutral workstream
-  orchestrator where sessions, worktrees, branches, PRs, Codex, and OpenCode
-  are selected by task coupling and risk.
-- Keep project preferences and durable memory under `.planning`; runtime Skills
-  define only the generic discovery, read, write, promotion, and safety rules.
-- Use `skill-optimizer` static and behavioral evidence to accept core Skill
-  changes; prose growth without measurable workflow improvement is rejected.
+The eventual engine must combine three modes: exact complete-deck reuse when
+the brief matches, coherent page-level assembly for a deck, and component-level
+reuse with controlled color/text/asset adjustment. A model may make bounded
+narrative, candidate and fact/asset-binding choices only; it may not draw free
+geometry, write arbitrary OOXML/code/style values, or self-release. The first
+acceptance remains a 15-page work report, but its output should use the
+curated library flexibly rather than mechanically copying one reference deck.
 
 ### Derived Requirements
 
-- SKILL-PURE-01
-- SKILL-ARCHIVE-01
-- SKILL-EVAL-01
-- SKILL-ORCH-01
-- SKILL-MEM-01
-- SKILL-OPT-01
+- V7-CURATE-01 through V7-QUERY-01 (Phase 50)
+- V7-COMPOSE-01, V7-ADAPT-01 (Phase 51)
+- V7-SKILL-01, V7-QA-01, V7-MIGRATE-01 (Phase 52)
+- V7-ACCEPT-01, V7-RELEASE-01 (Phase 53)
 
 ### Exclusions
 
-- Window-PPTX or PPTX-Studio implementation changes.
-- Deleting user worktrees, untracked acceptance artifacts, source mirrors, or
-  historical planning evidence.
-- Recording secrets, raw transcripts, or unverified claims in project memory.
+- Deleting user-owned private source files, publishing private assets, or
+  using private assets as contents of the clean client requirement folder.
+- Declaring a generic renderer, a free-form visual model response, or one
+  successful fixed-reference replay to be the flexible-composition result.
 
-## USR-20260812-001: Master README visual upgrade, Darwin refinement, and repository cleanup
+## USR-V7-02 — Cross-library senior-designer assembly (2026-08-14)
 
 **Status:** Accepted
-**Source:** User instruction on 2026-08-12 after plan discussion
 
-### Original Request
+The user confirmed that the accepted whole-deck work-report reproduction is a
+regression case only. The next target is a capable agent that can retrieve,
+combine and carefully adapt the most suitable certified pages and visual
+components from the curated Gaojie library as a human presentation designer
+would. It must first lock requirements, narrative and visual direction, then
+perform coarse deck/page retrieval and fine component retrieval; it must not
+inspect hundreds of anonymous files, invent arbitrary geometry, or fall back
+to freeform drawing.
 
-Fast-forward the repository to the latest master baseline, continue work on the
-master branch, inspect remaining optimization opportunities and Darwin results,
-use image generation to improve the Skill README presentation, and simplify
-unused files or folders without weakening owned Skill capability or deleting
-valuable history.
+The acceptance case must receive only a realistic client brief and assets, not
+a reference PPTX. The client does not prescribe a deck length: the agent must
+derive it from the narrative, decision points, fact density and certified page
+capacity, documenting why each page exists and merging/splitting beats as
+needed. For a representative 12+ page brief it must mix at least eight source
+packages from at least six approved categories, use physical whole-page and
+component reuse, retain one dominant coherent visual family, and report exact
+lineage. A source deck may contribute at most three pages. The agent chooses
+bounded IDs and fact/asset bindings; the compiler controls all visual
+mechanics.
 
-### Accepted Decisions
-
-- Use a fast-forward master strategy and work only in the clean master-sync
-  worktree; preserve the user's dirty Window-PPTX worktree.
-- Use a static generated hero plus a deterministic dynamic preview with a
-  repository-relative source and static fallback.
-- Optimize runtime noise and stale current documentation, but keep archived
-  Skills, planning records, quality evidence, and required runtime assets
-  recoverable.
-- Use the repository's `skill-optimizer` Darwin protocol rather than adding a
-  duplicate Darwin Skill.
+The user also reported that a deck which passed LibreOffice validation opened
+with blank slides in PowerPoint. The production definition of done therefore
+requires PowerPoint compatibility: any removed `tags/customXml` metadata must
+also have all owner references removed, and all release pages must be opened
+or rendered by PowerPoint where the environment permits. Frozen historical
+plans must either replay with their declared compiler contract or stop with an
+explicit migration diagnostic.
 
 ### Derived Requirements
 
-- README-01
-- README-02
-- SKILL-OPT-02
-- CLEAN-01
-- VERIFY-01
+- V7-MIX-01, V7-POWERPOINT-01, V7-REPLAY-01 (Phase 54)
 
 ### Exclusions
 
-- Window-PPTX behavior or private asset changes.
-- Reintroducing third-party installers or Skill-local evaluation corpora.
-- Deleting historical phase, audit, archive, or user-owned worktree data.
-
-## USR-20260813-001: Measured capability upgrade for owned Skills
-
-**Status:** Accepted
-**Source:** User instruction on 2026-08-13 after reviewing the Darwin baseline
-
-### Original Request
-
-Raise the selected owned Skills to a credible 90+ total Darwin score through
-measured capability improvement. Implement the previously proposed first and
-second batches plus `github-readme-highstar` and `interface-design`; do not
-modify `docx`, `pdf`, `xlsx`, or `window-pptx`.
-
-### Accepted Decisions
-
-- Treat a 90+ claim as `static weighted score >= 70` plus controlled real-task
-  effectiveness `>= 9/10`, no runtime/source-neutrality blocker, and no
-  unresolved Blocker or Important review finding. Static-only scores are not
-  final scores.
-- Upgrade only these 19 Skills: `aimagician-superpower`,
-  `cli-agent-delegator`, `agent-workstream-orchestrator`, `webapp-testing`,
-  `github-pr-workflow`, `composio-tool-router`, `vision-analysis`,
-  `system-prompt-engineering`, `skill-creator`, `llm-know-how-wiki`,
-  `gcloud-ops-workflow`, `deep-research-system`,
-  `opensource-architecture-research`, `academic-paper-workflow`,
-  `repo-interview-playbook`, `knowledge-distillation`,
-  `perspective-distillation`, `github-readme-highstar`, and
-  `interface-design`.
-- Keep the Darwin protocol runtime-neutral: tests and optimization reports live
-  under the repository quality surface, never inside installable Skill folders.
-- Preserve the active Phase 49 scope, historical evidence, external-source
-  exclusion, and the user's dirty Window-PPTX worktree.
-
-### Derived Requirements
-
-- SKILL-90-CORE-01
-- SKILL-90-RESEARCH-01
-- SKILL-90-DESIGN-01
-- SKILL-90-EVAL-01
-- SKILL-90-PURITY-01
-- SKILL-90-VERIFY-01
-
-### Exclusions
-
-- Any change to `window-pptx`, `docx`, `pdf`, or `xlsx`.
-- Decorative prose or score-targeting changes that do not improve controlled
-  behavior.
-- Skill-local `evals/`, third-party installer/update hooks, source branding,
-  secrets, or destructive cleanup.
+- Treating the fixed 15-page reference deck as evidence of mixed-library
+  assembly.
+- Passing delivery based only on LibreOffice output or a self-authored visual
+  score.
+- Copying private source files or previews into the client requirement folder.

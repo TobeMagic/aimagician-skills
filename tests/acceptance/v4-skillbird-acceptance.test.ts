@@ -108,7 +108,7 @@ describe("v4 Skillbird acceptance", () => {
     expect(installedIds(previewJson)).toEqual(expect.arrayContaining([
       "docx",
       "pdf",
-      "window-pptx",
+      "pptx-studio",
       "xlsx"
     ]));
     await expectMissing(join(projectDir, ".claude", "skills", "docx", "SKILL.md"));
@@ -134,7 +134,7 @@ describe("v4 Skillbird acceptance", () => {
     expect(installedIds(appliedJson)).toEqual(expect.arrayContaining([
       "docx",
       "pdf",
-      "window-pptx",
+      "pptx-studio",
       "xlsx"
     ]));
     await expectPath(join(projectDir, ".claude", "skills", "docx", "SKILL.md"));

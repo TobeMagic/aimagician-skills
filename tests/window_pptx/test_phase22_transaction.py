@@ -13,7 +13,7 @@ SCRIPTS_DIR = (
     Path(__file__).resolve().parents[2]
     / "skills"
     / "owned"
-    / "window-pptx"
+    / "pptx-studio"
     / "scripts"
 )
 sys.path.insert(0, str(SCRIPTS_DIR))
@@ -276,7 +276,7 @@ def test_reopened_candidate_content_drift_blocks_promotion_and_still_closes(
 
     assert "close-validation" in events
     assert not output.exists()
-    assert not any(output.parent.glob(".window-pptx-*"))
+    assert not any(output.parent.glob(".pptx-studio-*"))
 
 
 def test_default_reopen_is_read_only_and_windowless_and_restores_security(
@@ -368,7 +368,7 @@ def test_failures_leave_existing_output_unchanged(
         )
 
     assert output.read_bytes() == b"existing-final"
-    assert not any(output.parent.glob(".window-pptx-*"))
+    assert not any(output.parent.glob(".pptx-studio-*"))
 
 
 def test_candidate_cleanup_failure_is_observable(
@@ -387,7 +387,7 @@ def test_candidate_cleanup_failure_is_observable(
     real_unlink = Path.unlink
 
     def fail_candidate_unlink(path: Path, *args: object, **kwargs: object) -> None:
-        if path.name.startswith(".window-pptx-"):
+        if path.name.startswith(".pptx-studio-"):
             raise PermissionError("candidate locked")
         real_unlink(path, *args, **kwargs)
 

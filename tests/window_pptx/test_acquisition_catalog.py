@@ -17,7 +17,7 @@ from jsonschema import Draft202012Validator
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio"
 SCRIPTS_ROOT = SKILL_ROOT / "scripts"
 CLI = SCRIPTS_ROOT / "manage_window_pptx_library.py"
 if str(SCRIPTS_ROOT) not in sys.path:
@@ -1251,7 +1251,7 @@ def test_catalog_ids_dedupe_query_and_dependency_closure(tmp_path: Path) -> None
     canonical_id = catalog_id("public-seed", "work-report-spine", "1", content_hash)
     raw = {
         "schema_version": "3.0",
-        "catalog_id": "window-pptx-public-seed",
+        "catalog_id": "pptx-studio-public-seed",
         "entries": [
             {
                 "catalog_item_id": canonical_id,

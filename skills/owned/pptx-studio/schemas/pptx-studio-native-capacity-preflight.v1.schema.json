@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/pptx-studio-native-capacity-preflight.v1.schema.json",
+  "title": "PPTX Studio Native Capacity Preflight v1",
+  "type": "object",
+  "required": ["schema_version", "status", "composition_plan_sha256", "slide_count", "region_count", "slides"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "status": {"const": "PASS"},
+    "composition_plan_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "slide_count": {"type": "integer", "minimum": 1},
+    "region_count": {"type": "integer", "minimum": 1},
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["slide_id", "ordinal", "catalog_page_id", "source", "regions", "component_contract", "component_groups", "content_contract", "governed_content_contract"],
+        "properties": {
+          "slide_id": {"type": "string", "minLength": 1},
+          "ordinal": {"type": "integer", "minimum": 1},
+          "catalog_page_id": {"type": "string", "minLength": 1},
+          "source": {
+            "type": "object",
+            "required": ["package_sha256", "slide_number", "source_slide_sha256"],
+            "properties": {
+              "package_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "slide_number": {"type": "integer", "minimum": 1},
+              "source_slide_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            },
+            "additionalProperties": false
+          },
+          "regions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["region_id", "native_capacity", "shape_slots"],
+              "properties": {
+                "region_id": {"type": "string", "minLength": 1},
+                "component_key": {"type": "string", "pattern": "^(title|label|metric|body)\\.[0-9]{2}$"},
+                "native_capacity": {"type": "integer", "minimum": 0},
+                "shape_slots": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": ["shape_id", "native_capacity", "semantic_role", "binding_role"],
+                    "properties": {
+                      "shape_id": {"type": "string", "minLength": 1},
+                      "native_capacity": {"type": "integer", "minimum": 0},
+                      "semantic_role": {"type": "string"}
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "component_contract": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["component_key", "semantic_role", "native_capacity", "fragment_group"],
+              "properties": {
+                "component_key": {"type": "string", "pattern": "^(title|label|metric|body)\\.[0-9]{2}$"},
+                "semantic_role": {"enum": ["title", "label", "metric", "body"]},
+                "native_capacity": {"type": "integer", "minimum": 1},
+                "fragment_group": {"type": "boolean"},
+                "component_group": {"type": "string", "pattern": "^group\\.[0-9]{2}$"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "component_groups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["component_group", "component_keys"],
+              "properties": {
+                "component_group": {"type": "string", "pattern": "^group\\.[0-9]{2}$"},
+                "component_keys": {
+                  "type": "array", "minItems": 2,
+                  "items": {"type": "string", "pattern": "^(title|label|metric|body)\\.[0-9]{2}$"}
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "content_contract": {"type": "object"},
+          "governed_content_contract": {
+            "type": "object",
+            "required": ["requires_structured_data", "governed_content_slot_count"],
+            "properties": {
+              "requires_structured_data": {"const": false},
+              "governed_content_slot_count": {"const": 0}
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

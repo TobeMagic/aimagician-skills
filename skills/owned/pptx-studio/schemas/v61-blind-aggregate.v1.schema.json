@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimagician.local/pptx-studio/v61-blind-aggregate.v1.schema.json",
+  "title": "Window-PPTX v6.1 Deterministic Blind Acceptance Aggregate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "protocol_id",
+    "packet_sha256",
+    "rubric_sha256",
+    "status",
+    "reviewer_ids",
+    "reviewer_count",
+    "segment_count",
+    "synthesis_context_ids",
+    "agnes_invocation_ids",
+    "thresholds",
+    "review_results",
+    "finding_counts",
+    "input_documents",
+    "input_bundle_sha256",
+    "issues"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "protocol_id": {"const": "pptx-studio-v61-blind-v1"},
+    "packet_sha256": {"$ref": "#/$defs/sha256"},
+    "rubric_sha256": {"$ref": "#/$defs/sha256"},
+    "status": {"enum": ["PASS", "FAIL", "NOT_RUN"]},
+    "reviewer_ids": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {"enum": ["ART", "NARRATIVE", "PRODUCTION"]}
+    },
+    "reviewer_count": {"type": "integer", "minimum": 0, "maximum": 3},
+    "segment_count": {"type": "integer", "minimum": 0, "maximum": 6},
+    "synthesis_context_ids": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/executionId"}
+    },
+    "agnes_invocation_ids": {
+      "type": "array",
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/executionId"}
+    },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer_median", "reference_parity", "allowed_blocker_count", "allowed_important_count"],
+      "properties": {
+        "reviewer_median": {"const": 8},
+        "reference_parity": {"const": true},
+        "allowed_blocker_count": {"const": 0},
+        "allowed_important_count": {"const": 0}
+      }
+    },
+    "review_results": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/reviewResult"}
+    },
+    "finding_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Blocker", "Important", "Nitpick"],
+      "properties": {
+        "Blocker": {"type": "integer", "minimum": 0},
+        "Important": {"type": "integer", "minimum": 0},
+        "Nitpick": {"type": "integer", "minimum": 0}
+      }
+    },
+    "input_documents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["segments", "reviews"],
+      "properties": {
+        "segments": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/sha256"}
+        },
+        "reviews": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/sha256"}
+        }
+      }
+    },
+    "input_bundle_sha256": {"$ref": "#/$defs/sha256"},
+    "issues": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/issue"}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"enum": ["PASS", "FAIL"]}}},
+      "then": {
+        "properties": {
+          "reviewer_ids": {
+            "prefixItems": [
+              {"const": "ART"},
+              {"const": "NARRATIVE"},
+              {"const": "PRODUCTION"}
+            ],
+            "items": false,
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "reviewer_count": {"const": 3},
+          "segment_count": {"const": 6},
+          "synthesis_context_ids": {"minItems": 3, "maxItems": 3},
+          "agnes_invocation_ids": {"minItems": 6, "maxItems": 6},
+          "review_results": {"minItems": 3, "maxItems": 3}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "PASS"}}},
+      "then": {"properties": {"issues": {"maxItems": 0}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "FAIL"}}},
+      "then": {"properties": {"issues": {"minItems": 1}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "NOT_RUN"}}},
+      "then": {
+        "properties": {
+          "issues": {
+            "contains": {
+              "type": "object",
+              "required": ["disposition"],
+              "properties": {"disposition": {"const": "NOT_RUN"}}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "executionId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "reviewResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_id",
+        "reported_status",
+        "recomputed_status",
+        "recomputed_median",
+        "reference_parity",
+        "finding_counts"
+      ],
+      "properties": {
+        "reviewer_id": {"enum": ["ART", "NARRATIVE", "PRODUCTION"]},
+        "reported_status": {"enum": ["PASS", "FAIL", "NOT_RUN"]},
+        "recomputed_status": {"enum": ["PASS", "FAIL", "NOT_RUN"]},
+        "recomputed_median": {"type": "number", "minimum": 0, "maximum": 10},
+        "reference_parity": {"type": "boolean"},
+        "finding_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["Blocker", "Important", "Nitpick"],
+          "properties": {
+            "Blocker": {"type": "integer", "minimum": 0},
+            "Important": {"type": "integer", "minimum": 0},
+            "Nitpick": {"type": "integer", "minimum": 0}
+          }
+        }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "disposition", "detail"],
+      "properties": {
+        "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]+$"},
+        "disposition": {"enum": ["FAIL", "NOT_RUN"]},
+        "reviewer_id": {"enum": ["ART", "NARRATIVE", "PRODUCTION"]},
+        "segment_id": {"enum": ["SLIDES_01_08", "SLIDES_09_15"]},
+        "detail": {"type": "string", "minLength": 1, "maxLength": 4000}
+      }
+    }
+  }
+}

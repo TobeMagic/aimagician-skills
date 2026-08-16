@@ -210,7 +210,7 @@ The main `SKILL.md` is a router and non-negotiable contract. Capability modules 
 - final editable `.pptx` files;
 - slide masters, native text/shapes/charts/tables/media, notes, and templates;
 - PowerPoint/Office compatibility, rendering, overlap inspection, and native editability;
-- Windows automation and add-in workflows when `window-pptx` is selected.
+- Windows automation and add-in workflows when `pptx-studio` is selected.
 
 ### Hybrid Rule
 
@@ -244,7 +244,7 @@ This does not guarantee taste from prose alone. It makes the design process obse
 | App prototype | Fidelity contract, connected critical flow, state transitions, honest simulation, target-platform verification. |
 | HTML presentation | Browser-native owner, narrative arc, varied frames, keyboard/full-screen/print behavior, notes, per-frame QA, and optional vector PDF. |
 | Explicit HTML-first PPTX | Require editable/fidelity choice, package integrity, notes, and truthful editability disclosure. |
-| Native PowerPoint | Immediate route to `pptx` or `window-pptx`; no HTML final artifact. |
+| Native PowerPoint | Immediate route to `pptx` or `pptx-studio`; no HTML final artifact. |
 | Hybrid presentation | HTML direction plus structured handoff, followed by separate native reconstruction and QA. |
 | README cover | Repository truth pass, claim ledger, selected visual direction, editable source, static hero, downscaled QA, and README integration. |
 | Product demo video | Storyboard, deterministic clock, poster fallback, encoded media, frame inspection, and codec/duration/size evidence. |

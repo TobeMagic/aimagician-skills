@@ -821,14 +821,158 @@ does not preserve `window-pptx` as a long-term public identity.
 
 **Depends on:** v6.0 Phase 48
 **Requirements:** [V61-LIB-01, V61-SEL-01, V61-ASM-01, V61-ADAPT-01, V61-QA-01, V61-CLEAN-01, V61-REL-01]
-**Status:** In Progress
+**Status:** Complete — 2026-08-11
 
-**Closure note:** all evidence is PASS (pushed master `f6dc1f2`, fresh
-completion audit APPROVED); the workflow completion gate is the final control
-plane action.
+**Closure note:** all evidence is PASS (pushed master `a1d2d18`, fresh
+completion audit APPROVED); the v6.1 phase is closed before v7 begins.
 
 ## v6.1 Progress
 
 | Phase | Status | Completed |
 |-------|--------|-----------|
-| 49. Physical Template Assembly and Work-Report Acceptance | In Progress — completion gate pending | 2026-08-11 evidence complete |
+| 49. Physical Template Assembly and Work-Report Acceptance | Complete | 2026-08-11 |
+
+## Milestone v7 — PPTX Studio Curated Composition
+
+v7 replaces the narrow `window-pptx` identity after its physical assembly
+baseline with a deliberately curated private visual library and a governed
+agent workflow. The end state supports an evidence-backed choice between
+whole-deck reuse, coherent page assembly, and bounded component reuse while
+maintaining one art direction and editable PPTX output.
+
+### Phase 50: Asset Curation and Visual Catalog
+
+**Goal:** Convert the user-approved Gaojie category subset into an explicit, recoverably curated local source set and produce deterministic deck, page, and region records enriched with authorized Agnes visual observations so later retrieval does not depend on anonymous files or a model visually browsing all assets.
+
+**Success Criteria**:
+
+- **GOAL-50-01:** A deterministic active-source manifest covers exactly the
+  approved categories and every inactive category is recorded and moved only
+  into a hash-verified local archive with a reversible manifest.
+- **GOAL-50-02:** Every retained package/page has portable render evidence,
+  provenance, style/structure extraction, and a deterministic catalog ID;
+  no private source path or byte is written into tracked output.
+- **GOAL-50-03:** Authorized Agnes observations are captured from rendered
+  pages only and validated against the page image hash; each retained page has
+  coarse role/style/scene/asset observations and an uncertainty status.
+- **GOAL-50-04:** A deterministic region extractor identifies reusable
+  candidate regions with normalized geometry, text/asset capacity, visual
+  hierarchy and guardrails; it rejects unsafe, image-only, or ambiguous
+  regions rather than claiming editability.
+- **GOAL-50-05:** A local retrieval probe returns a bounded, explainable
+  candidate set from role, semantic tags, style cluster, capacity, and reuse
+  mode without traversing the clean client requirement directory.
+
+**Depends on:** v6.1 Phase 49
+**Requirements:** [V7-CURATE-01, V7-CATALOG-01, V7-VISION-01, V7-REGION-01, V7-QUERY-01]
+**Status:** Complete
+
+### Phase 51: Composition Retrieval and Governed Adaptation
+
+**Goal:** Make the curated catalog choose an exact deck, a coherent set of
+pages, or safe editable components, then compile fact-bound adaptation plans
+without granting the authoring model visual implementation authority.
+
+**Success Criteria**:
+
+- **GOAL-51-01:** Retrieval returns mode-specific bounded candidates with
+  source, capacity, compatibility, residue, and confidence evidence.
+- **GOAL-51-02:** One deck-level art direction locks theme/style compatibility
+  while controlled variation is selected intentionally rather than randomly.
+- **GOAL-51-03:** A deterministic compiler converts model candidate/fact/asset
+  choices into governed page and component adaptation plans, failing closed on
+  unsupported composition or source mutation.
+
+**Depends on:** Phase 50
+**Requirements:** [V7-COMPOSE-01, V7-ADAPT-01]
+**Status:** Complete
+
+### Phase 52: PPTX Studio Migration and Agent Workflow
+
+**Goal:** Ship the concise `pptx-studio` owned Skill and harness: requirement
+discussion, brief lock, art direction, bounded retrieval/assembly, iterative
+QA/repair, and client-safe delivery.
+
+**Success Criteria**:
+
+- **GOAL-52-01:** `pptx-studio` is the only shipped Skill identity; obsolete
+  `window-pptx` code/docs are removed only after migration tests pass.
+- **GOAL-52-02:** A capable agent follows a clear discuss-to-delivery workflow
+  with progressive candidate lists, deterministic defaults, and no raw
+  geometry/code/release surface.
+- **GOAL-52-03:** Rule QA and repair cover editability, overflow, clipping,
+  overlap, margins, image distortion, typography, repeated composition, and
+  cross-slide style coherence with evidence-bound stop conditions.
+
+**Depends on:** Phase 51
+**Requirements:** [V7-SKILL-01, V7-QA-01, V7-MIGRATE-01]
+**Status:** Complete
+
+### Phase 53: Clean-Room Work-Report Acceptance and Release
+
+**Goal:** Prove the migrated Skill with a fresh capable-model agent in a clean
+work-report requirement folder whose delivery count is justified by content,
+then close only after structural,
+visual, and independent audit gates.
+
+**Success Criteria**:
+
+- **GOAL-53-01:** The clean folder contains only client requirements/assets;
+  private-library lookup is explicit and external to it.
+- **GOAL-53-02:** The generated editable deck has an intentional
+  directory/section/body/closing anatomy, a per-page rationale ledger, and
+  traceable curated reuse in every slide without an ungoverned visual fallback.
+- **GOAL-53-03:** Portable/rule checks, three independent anonymous visual
+  reviews, source/install parity, and a frozen-point OpenCode audit pass with
+  no unresolved Blocker or Important finding.
+
+**Depends on:** Phase 52
+**Requirements:** [V7-ACCEPT-01, V7-RELEASE-01]
+**Status:** Superseded by Phase 54 — the fixed 15-page replay remains a
+same-source PowerPoint regression fixture, but is insufficient as production
+acceptance.
+
+### Phase 54: Cross-Library Component Assembly and PowerPoint Compatibility
+
+**Goal:** Advance from a successful fixed-deck rebinding regression to a
+genuinely flexible, senior-designer-like assembly workflow: select coherent
+whole pages and certified visual components from many curated private source
+packages, retain native editability, and prove the exact output opens in
+PowerPoint as well as portable renderers.
+
+**Success Criteria**:
+
+- **GOAL-54-01:** A clean client brief with no reference PPTX has its slide
+  count derived from narrative decisions and certified page capacity, not a
+  fixed deck length. For the representative brief (which naturally requires
+  at least twelve pages), it is assembled from at least six certified source
+  packages across at least five approved categories; no source package provides
+  more than four pages.
+- **GOAL-54-02:** The agent uses a staged visual index (deck/page/component),
+  locks an anchor style family, and chooses only candidate/page/component/fact
+  IDs. The compiler owns geometry, style tokens, XML and safe adaptation.
+- **GOAL-54-03:** Complete page imports and component imports both preserve
+  recursive OPC dependency closure, native editability and stable lineage.
+  Any discarded non-visual metadata must have its owner XML references removed.
+- **GOAL-54-04:** A frozen plan can be replayed by its matching compiler
+  version, or fails with an explicit version-migration report; it may never
+  silently produce a different deck.
+- **GOAL-54-05:** The exact delivery passes portable QA and a real PowerPoint
+  open/render inspection. LibreOffice-only success is explicitly insufficient.
+- **GOAL-54-06:** Separate clean professional-report and academic-defense
+  briefs each derive their own narrative/page count and pass the same exact-
+  artifact template-standard acceptance; one cannot stand in for the other.
+
+**Depends on:** Phase 53
+**Requirements:** [V7-MIX-01, V7-POWERPOINT-01, V7-REPLAY-01]
+**Status:** In Progress
+
+## v7 Progress
+
+| Phase | Status | Completed |
+|-------|--------|-----------|
+| 50. Asset Curation and Visual Catalog | Complete | 2026-08-12 |
+| 51. Composition Retrieval and Governed Adaptation | Complete | 2026-08-12 |
+| 52. PPTX Studio Migration and Agent Workflow | Complete | 2026-08-12 |
+| 53. Clean-Room Work-Report Acceptance and Release | In Progress | — |
+| 54. Cross-Library Component Assembly and PowerPoint Compatibility | In Progress | — |

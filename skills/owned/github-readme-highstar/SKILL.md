@@ -91,7 +91,7 @@ metadata:
 | 产品事实、版本或命令无法从当前代码和文档确认 | 停止宣传性文案，标记未知并请求确认 | 只交付结构和待补证据清单 |
 | 浏览器、媒体编码或视觉检查工具不可用 | 验证 HTML 源和静态 poster，记录未运行的派生物 | 保留可复现源，禁止声称 GIF/视频已通过 |
 | 动态媒体体积过大、首帧不可读或路径失效 | 修正源、尺寸或编码后重跑 | 仅使用静态 hero，保留动态源待后续生成 |
-| 用户要求的是原生 PPTX 而非 HTML 视觉 | 路由到 `window-pptx` 并停止 HTML 交付 | 输出 README 视觉 brief，不伪装成 PPTX |
+| 用户要求的是原生 PPTX 而非 HTML 视觉 | 路由到 `pptx-studio` 并停止 HTML 交付 | 输出 README 视觉 brief，不伪装成 PPTX |
 
 If a visual render, product fact, or README-scale check fails, stop integration, preserve the editable source, and rerun the same artifact check after the structural cause is corrected.
 

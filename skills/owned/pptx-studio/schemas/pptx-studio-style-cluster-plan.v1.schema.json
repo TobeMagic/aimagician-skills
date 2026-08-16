@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PPTX Studio Style Cluster Plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status"],
+  "properties": {
+    "schema_version": {"const": "pptx-studio-style-cluster-plan.v1"},
+    "status": {"enum": ["PASS", "NO_MATCH"]},
+    "code": {"type": "string"},
+    "missing_beat_ids": {"type": "array", "items": {"type": "string"}},
+    "art_direction": {
+      "type": "object", "additionalProperties": false,
+      "required": ["anchor_page_id", "allowed_style_signatures", "suitability"],
+      "properties": {
+        "anchor_page_id": {"type": "string", "minLength": 1},
+        "allowed_style_signatures": {"type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true, "items": {"type": "string", "pattern": "^style_[0-9a-f]{24}$"}},
+        "suitability": {"enum": ["general", "institutional-finance"]}
+      }
+    },
+    "recommended_slides": {"type": "array"},
+    "evidence": {"type": "object"}
+  },
+  "allOf": [
+    {"if": {"properties": {"status": {"const": "PASS"}}}, "then": {"required": ["art_direction", "recommended_slides", "evidence"]}},
+    {"if": {"properties": {"status": {"const": "NO_MATCH"}}}, "then": {"required": ["code", "missing_beat_ids"]}}
+  ]
+}

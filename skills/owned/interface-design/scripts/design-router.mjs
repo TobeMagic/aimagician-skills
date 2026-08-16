@@ -100,7 +100,7 @@ function modeFor(task, deliverable, pipeline, pptxMode) {
 }
 
 function ownerFor(options) {
-  const nativeOwner = "window-pptx";
+  const nativeOwner = "pptx-studio";
   if (options.pipeline === "html-first" && options.deliverable === "pptx") {
     return { owners: ["interface-design"], final_owner: "interface-design", handoff: false };
   }

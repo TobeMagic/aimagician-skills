@@ -14,7 +14,7 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio"
 BENCHMARK_ROOT = SKILL_ROOT / "benchmarks" / "v5"
 BENCHMARK_RUNNER = SKILL_ROOT / "scripts" / "run_window_pptx_benchmark.py"
 BLIND_REVIEW_VALIDATOR = (

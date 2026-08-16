@@ -10,9 +10,9 @@ from referencing import Registry, Resource
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx" / "scripts"
+SCRIPTS_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 EXPORTER = SCRIPTS_ROOT / "export_window_pptx_brief_corpus.py"
-SCHEMAS = REPO_ROOT / "skills" / "owned" / "window-pptx" / "schemas"
+SCHEMAS = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "schemas"
 if str(SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_ROOT))
 

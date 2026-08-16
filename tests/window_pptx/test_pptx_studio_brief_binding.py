@@ -1,0 +1,781 @@
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"))
+
+from pptx_studio.brief_binding import BriefBindingError, compile_outline_bindings, validate_fact_store  # noqa: E402
+from window_pptx.page_template_library import _slot_capacity  # noqa: E402
+
+
+def _preflight() -> dict[str, object]:
+    return {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
+        {"region_id": "r-title", "native_capacity": 8, "shape_slots": [{"semantic_role": "title"}]},
+        {"region_id": "r-body", "native_capacity": 24, "shape_slots": [{"semantic_role": "body"}]},
+        {"region_id": "r-metric", "native_capacity": 5, "shape_slots": [{"semantic_role": "metric"}]},
+    ]}]}
+
+
+def test_outline_binding_uses_native_capacity_and_semantic_role() -> None:
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "年度报告", "semantic_role": "title"},
+        {"value": "156", "semantic_role": "metric"},
+        {"value": "预算执行总体平稳", "semantic_role": "body"},
+    ]}]}, preflight=_preflight())
+    assert [item["region_id"] for item in result["bindings"]] == ["r-title", "r-metric", "r-body"]
+    assert [item["fact_id"] for item in result["facts"]] == ["s01-f01", "s01-f02", "s01-f03"]
+
+
+def test_distributed_source_lockup_preserves_its_verified_spacing_capacity() -> None:
+    """A source-proven wide lockup must not lose capacity to space stripping."""
+
+    assert _slot_capacity(
+        text="深入                       临床科室",
+        semantic_role="label", bbox={"x": 100, "y": 700, "w": 180, "h": 30},
+        font_size_pt=18.0,
+    ) >= len("深入                       临床科室")
+
+
+def test_outline_binding_honors_published_component_key() -> None:
+    """The agent may target a semantic component, never an arbitrary slot."""
+
+    preflight = {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
+        {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+         "shape_slots": [{"semantic_role": "title"}]},
+        {"region_id": "r-card-1", "component_key": "label.01", "native_capacity": 8,
+         "shape_slots": [{"semantic_role": "label"}]},
+        {"region_id": "r-card-2", "component_key": "label.02", "native_capacity": 8,
+         "shape_slots": [{"semantic_role": "label"}]},
+    ]}]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "感染楼", "semantic_role": "label", "component_key": "label.02"},
+    ]}]}, preflight=preflight)
+    assert [item["region_id"] for item in result["bindings"]] == ["r-title", "r-card-2"]
+    assert [item["component_key"] for item in result["bindings"]] == ["title.01", "label.02"]
+
+    with pytest.raises(BriefBindingError, match="OUTLINE_COMPONENT_NO_FITTING_SLOT"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+            {"value": "项目进度", "semantic_role": "title", "component_key": "label.01"},
+        ]}]}, preflight=preflight)
+
+    # Ordinary facts intentionally need not know an opaque component ordinal:
+    # the binding engine owns deterministic native-slot selection.
+    auto = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "项目进度", "semantic_role": "title"},
+    ]}]}, preflight=preflight | {"slides": [{
+        **preflight["slides"][0],
+        "component_contract": [{"component_key": "title.01"}],
+    }]})
+    assert auto["bindings"][0]["component_key"] == "title.01"
+
+
+def test_outline_binding_resolves_opaque_component_group_members() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "component_contract": [
+            {"component_key": "title.01"},
+            {"component_key": "label.01"},
+            {"component_key": "metric.01"},
+        ],
+        "component_groups": [{
+            "component_group": "group.01",
+            "component_keys": ["label.01", "metric.01"],
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-metric", "component_key": "metric.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "支付进度", "semantic_role": "label", "component_group": "group.01"},
+        {"value": "93%", "semantic_role": "metric", "component_group": "group.01"},
+    ]}]}, preflight=preflight)
+    assert [item["component_key"] for item in result["bindings"]] == [
+        "title.01", "label.01", "metric.01",
+    ]
+
+
+def test_outline_binding_preserves_published_order_for_same_role_group_members() -> None:
+    """A card's two labels must not swap solely because both fit either slot."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "component_contract": [
+            {"component_key": "title.01"},
+            {"component_key": "label.01"},
+            {"component_key": "label.02"},
+            {"component_key": "metric.01"},
+        ],
+        "component_groups": [{
+            "component_group": "project-card.01",
+            "component_keys": ["label.01", "label.02", "metric.01"],
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-project", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-caption", "component_key": "label.02", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-metric", "component_key": "metric.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "感染楼", "semantic_role": "label", "component_group": "project-card.01"},
+        {"value": "已完成主体施工", "semantic_role": "label", "component_group": "project-card.01"},
+        {"value": "93%", "semantic_role": "metric", "component_group": "project-card.01"},
+    ]}]}, preflight=preflight)
+    assert [item["component_key"] for item in result["bindings"]] == [
+        "title.01", "label.01", "label.02", "metric.01",
+    ]
+
+
+def test_outline_binding_uses_named_component_fields_not_model_order() -> None:
+    """Named card fields make same-role members safe for weak-model outlines."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "component_contract": [
+            {"component_key": "title.01"}, {"component_key": "label.01"},
+            {"component_key": "label.02"}, {"component_key": "metric.01"},
+        ],
+        "component_groups": [{
+            "component_group": "project-card.01",
+            "component_keys": ["label.01", "label.02", "metric.01"],
+            "component_fields": ["project_name", "funding_type", "amount"],
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-project", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-funding", "component_key": "label.02", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-amount", "component_key": "metric.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "1500", "semantic_role": "metric", "component_group": "project-card.01", "component_field": "amount"},
+        {"value": "感染楼", "semantic_role": "label", "component_group": "project-card.01", "component_field": "project_name"},
+        {"value": "财政资金", "semantic_role": "label", "component_group": "project-card.01", "component_field": "funding_type"},
+    ]}]}, preflight=preflight)
+    assert [item["component_key"] for item in result["bindings"]] == [
+        "title.01", "metric.01", "label.01", "label.02",
+    ]
+
+    with pytest.raises(BriefBindingError, match="OUTLINE_COMPONENT_FIELD_REQUIRED"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+            {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+            {"value": "感染楼", "semantic_role": "label", "component_group": "project-card.01"},
+            {"value": "财政资金", "semantic_role": "label", "component_group": "project-card.01"},
+            {"value": "1500", "semantic_role": "metric", "component_group": "project-card.01"},
+        ]}]}, preflight=preflight)
+
+
+def test_auto_slot_allocation_does_not_activate_nonrequired_component_group() -> None:
+    """A decorative group is only all-or-nothing when the outline chose it."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "component_contract": [
+            {"component_key": "title.01"},
+            {"component_key": "label.01"},
+            {"component_key": "label.02"},
+        ],
+        "component_groups": [{
+            "component_group": "group.01",
+            "component_keys": ["label.01", "label.02"],
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label-1", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-label-2", "component_key": "label.02", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "年度工作汇报", "semantic_role": "title"},
+        {"value": "某市中心医院", "semantic_role": "label"},
+    ]}]}, preflight=preflight)
+    assert len(result["bindings"]) == 2
+
+
+def test_outline_binding_rejects_partial_native_component_group() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "component_contract": [
+            {"component_key": "title.01"},
+            {"component_key": "label.01"},
+            {"component_key": "metric.01"},
+        ],
+        "component_groups": [{
+            "component_group": "group.01",
+            "component_keys": ["label.01", "metric.01"],
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-metric", "component_key": "metric.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    partial = {"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "运营关键指标", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "门诊收入", "semantic_role": "label", "component_key": "label.01"},
+    ]}]}
+    with pytest.raises(BriefBindingError, match=r"OUTLINE_COMPONENT_GROUP_INCOMPLETE:slide_id=s01:group=group.01"):
+        compile_outline_bindings(partial, preflight=preflight)
+
+    complete = partial | {"slides": [{"slide_id": "s01", "facts": [
+        *partial["slides"][0]["facts"],
+        {"value": "1.26", "semantic_role": "metric", "component_key": "metric.01"},
+    ]}]}
+    result = compile_outline_bindings(complete, preflight=preflight)
+    assert [item["component_key"] for item in result["bindings"]] == [
+        "title.01", "label.01", "metric.01",
+    ]
+
+
+def test_outline_binding_requires_curated_visual_component_groups() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "five-item",
+        "component_groups": [{
+            "component_group": "card.01", "component_keys": ["label.01", "metric.01"],
+            "required": True,
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-metric", "component_key": "metric.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    with pytest.raises(BriefBindingError, match=r"OUTLINE_REQUIRED_COMPONENT_GROUP_MISSING:slide_id=s01:groups=card.01"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{
+            "slide_id": "s01", "facts": [
+                {"value": "项目进度", "semantic_role": "title", "component_key": "title.01"},
+            ],
+        }]}, preflight=preflight)
+
+
+def test_outline_binding_rejects_overflow_without_guessing() -> None:
+    with pytest.raises(
+        BriefBindingError,
+        match=r"OUTLINE_FACT_NO_FITTING_SLOT:slide_id=s01:ordinal=1:requested_chars=[0-9]+:remaining_slots=body:24x1,metric:5x1,title:8x1",
+    ):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+            {"value": "这是一段明确超过所有认证槽位容量且不得截断的客户文字内容", "semantic_role": "body"},
+        ]}]}, preflight=_preflight())
+
+
+def test_outline_binding_never_uses_a_title_or_metric_surface_for_body_copy() -> None:
+    preflight = {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
+        {"region_id": "r-title", "native_capacity": 32, "shape_slots": [{"semantic_role": "title"}]},
+        {"region_id": "r-metric", "native_capacity": 32, "shape_slots": [{"semantic_role": "metric"}]},
+    ]}]}
+    with pytest.raises(BriefBindingError, match=r"OUTLINE_FACT_NO_FITTING_SLOT:slide_id=s01:ordinal=1"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+            {"value": "这是一条不能冒充标题或指标的经营解释", "semantic_role": "body"},
+        ]}]}, preflight=preflight)
+
+
+def test_outline_binding_rejects_sparse_rich_text_only_template() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "content_contract": {"title": 1, "label": 12, "metric": 2, "body": 0},
+        "governed_content_contract": {"requires_structured_data": False},
+        "regions": [
+            *[
+                {"region_id": f"r-label-{index}", "native_capacity": 12,
+                 "shape_slots": [{"semantic_role": "label"}]}
+                for index in range(12)
+            ],
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+        ],
+    }]}
+    with pytest.raises(
+        BriefBindingError,
+        match=r"OUTLINE_STRUCTURAL_COVERAGE_INSUFFICIENT:slide_id=s01:role=label:provided=2:required=8",
+    ):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{
+            "slide_id": "s01", "facts": [
+                {"value": "标题", "semantic_role": "title"},
+                {"value": "标签一", "semantic_role": "label"},
+                {"value": "标签二", "semantic_role": "label"},
+            ],
+        }]}, preflight=preflight)
+
+
+def test_outline_binding_requires_coverage_of_dense_card_groups() -> None:
+    groups = [
+        {"component_group": f"group.{index:02d}", "component_keys": [f"label.{index:02d}", f"metric.{index:02d}"]}
+        for index in range(1, 5)
+    ]
+    components = [entry for group in groups for entry in (
+        {"component_key": group["component_keys"][0]},
+        {"component_key": group["component_keys"][1]},
+    )]
+    regions = [
+        {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+         "shape_slots": [{"semantic_role": "title"}]},
+    ] + [
+        {"region_id": f"r-{key}", "component_key": key, "native_capacity": 12,
+         "shape_slots": [{"semantic_role": "label" if key.startswith("label") else "metric"}]}
+        for group in groups for key in group["component_keys"]
+    ]
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "dashboard",
+        "content_contract": {"title": 1, "label": 4, "metric": 4, "body": 0},
+        "component_contract": [{"component_key": "title.01"}, *components],
+        "component_groups": groups, "regions": regions,
+    }]}
+    sparse = {"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "经营指标", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "预算率", "semantic_role": "label", "component_group": "group.01"},
+        {"value": "96.9%", "semantic_role": "metric", "component_group": "group.01"},
+    ]}]}
+    with pytest.raises(BriefBindingError, match=r"OUTLINE_COMPONENT_GROUP_COVERAGE_INSUFFICIENT:slide_id=s01:provided=1:required=2"):
+        compile_outline_bindings(sparse, preflight=preflight)
+
+
+def test_outline_binding_rejects_sparse_facts_for_dense_visual_skeleton() -> None:
+    """Cleared sample copy must not leave most visible template units empty."""
+
+    component_contract = [
+        {"component_key": "title.01"},
+        *[{"component_key": f"body.{index:02d}"} for index in range(1, 6)],
+    ]
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "section",
+        "content_contract": {"title": 1, "label": 0, "metric": 0, "body": 5},
+        "component_contract": component_contract,
+        "regions": [
+            {
+                "region_id": "r-title", "component_key": "title.01",
+                "native_capacity": 12,
+                "shape_slots": [{"semantic_role": "title"}],
+            },
+            *[
+                {
+                    "region_id": f"r-body-{index}",
+                    "component_key": f"body.{index:02d}",
+                    "native_capacity": 24,
+                    "shape_slots": [{"semantic_role": "body"}],
+                }
+                for index in range(1, 6)
+            ],
+        ],
+    }]}
+    sparse = {"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "重点工作", "semantic_role": "title"},
+        {"value": "两项事实不足以支撑六个视觉表面", "semantic_role": "body"},
+    ]}]}
+
+    with pytest.raises(
+        BriefBindingError,
+        match=r"OUTLINE_VISUAL_SURFACE_COVERAGE_INSUFFICIENT:slide_id=s01:provided=2:required=3:published=6",
+    ):
+        compile_outline_bindings(sparse, preflight=preflight)
+
+
+def test_outline_binding_allows_a_deliberately_sparse_title_only_cover() -> None:
+    """Metadata decorations must not coerce filler into a certified cover."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "cover",
+        "component_contract": [
+            {"component_key": "title.01"}, {"component_key": "label.01"},
+            {"component_key": "label.02"}, {"component_key": "body.01"},
+            {"component_key": "label.03"},
+        ],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label-1", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-label-2", "component_key": "label.02", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-body", "component_key": "body.01", "native_capacity": 32,
+             "shape_slots": [{"semantic_role": "body"}]},
+            {"region_id": "r-label-3", "component_key": "label.03", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+        ],
+    }]}
+
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "数智化升级", "semantic_role": "title"},
+        ],
+    }]}, preflight=preflight)
+
+    assert result["bindings"] == [{
+        "slide_id": "s01", "operation": "replace_text", "region_id": "r-title",
+        "shape_id": None, "fact_id": "s01-f01", "asset_id": None,
+        "component_key": "title.01",
+    }]
+
+
+def test_outline_binding_uses_complete_component_groups_instead_of_raw_density() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "content_contract": {"title": 1, "label": 12, "metric": 10, "body": 0},
+        "component_contract": [
+            {"component_key": "title.01"},
+            {"component_key": "label.01"},
+            {"component_key": "metric.01"},
+        ],
+        "component_groups": [{
+            "component_group": "group.01",
+            "component_keys": ["label.01", "metric.01"],
+        }],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-metric", "component_key": "metric.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "重大项目", "semantic_role": "title", "component_key": "title.01"},
+        {"value": "感染楼", "semantic_role": "label", "component_key": "label.01"},
+        {"value": "1500", "semantic_role": "metric", "component_key": "metric.01"},
+    ]}]}, preflight=preflight)
+    assert len(result["bindings"]) == 3
+
+
+def test_outline_binding_requires_a_title_for_a_certified_title_surface() -> None:
+    """A page header cannot be silently left blank by role misclassification."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "content_contract": {"title": 1, "label": 1, "metric": 0, "body": 0},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-label", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+        ],
+    }]}
+    with pytest.raises(
+        BriefBindingError,
+        match=r"OUTLINE_STRUCTURAL_COVERAGE_INSUFFICIENT:slide_id=s01:role=title:provided=0:required=1",
+    ):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{
+            "slide_id": "s01", "facts": [
+                {"value": "经营分析", "semantic_role": "label"},
+            ],
+        }]}, preflight=preflight)
+
+
+def test_outline_binding_requires_subtitle_body_for_section_with_native_panel() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "section",
+        "content_contract": {"title": 1, "label": 0, "metric": 0, "body": 1},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-body", "native_capacity": 24,
+             "shape_slots": [{"semantic_role": "body"}]},
+        ],
+    }]}
+    with pytest.raises(BriefBindingError, match=r"OUTLINE_STRUCTURAL_COVERAGE_INSUFFICIENT:slide_id=s01:role=body"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+            {"value": "运营", "semantic_role": "title"},
+        ]}]}, preflight=preflight)
+
+
+def test_outline_binding_does_not_fill_specialist_roadmap_ornaments() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "role": "roadmap",
+        "content_contract": {"title": 1, "label": 12, "metric": 0, "body": 4},
+        "governed_content_contract": {"requires_structured_data": False},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-quarter", "native_capacity": 8,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-plan", "native_capacity": 24,
+             "shape_slots": [{"semantic_role": "body"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "2026 路线图", "semantic_role": "title"},
+            {"value": "一季度", "semantic_role": "label"},
+            {"value": "更新内控流程", "semantic_role": "body"},
+        ],
+    }]}, preflight=preflight)
+    assert len(result["bindings"]) == 3
+
+
+def test_outline_binding_allows_timeline_actions_in_certified_label_surfaces() -> None:
+    """Timeline date/action pairs remain semantically typed without fake body slots."""
+
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "timeline",
+        "content_contract": {"title": 1, "label": 4, "metric": 0, "body": 0},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-date", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-action", "native_capacity": 24,
+             "shape_slots": [{"semantic_role": "label"}]},
+        ],
+    }]}
+
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "实施里程碑", "semantic_role": "title"},
+            {"value": "2026 年 1 月", "semantic_role": "label"},
+            {"value": "完成项目立项", "semantic_role": "body"},
+        ],
+    }]}, preflight=preflight)
+
+    assert [item["region_id"] for item in result["bindings"]] == [
+        "r-title", "r-date", "r-action",
+    ]
+
+
+def test_outline_binding_automatically_preserves_timeline_date_action_pairs() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "timeline",
+        "component_contract": [
+            {"component_key": "title.01"}, {"component_key": "label.01"},
+            {"component_key": "label.02"}, {"component_key": "label.03"},
+            {"component_key": "label.04"},
+        ],
+        "component_groups": [
+            {"component_group": "timeline-step.01", "component_keys": ["label.01", "label.02"],
+             "component_intent": "timeline-milestone", "component_fields": ["date", "action"], "required": True},
+            {"component_group": "timeline-step.02", "component_keys": ["label.03", "label.04"],
+             "component_intent": "timeline-milestone", "component_fields": ["date", "action"], "required": True},
+        ],
+        "regions": [
+            {"region_id": "r-title", "component_key": "title.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-date-1", "component_key": "label.01", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-action-1", "component_key": "label.02", "native_capacity": 24,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-date-2", "component_key": "label.03", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-action-2", "component_key": "label.04", "native_capacity": 24,
+             "shape_slots": [{"semantic_role": "label"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "实施里程碑", "semantic_role": "title"},
+            {"value": "2026 年 1 月", "semantic_role": "label"},
+            {"value": "完成项目立项", "semantic_role": "body"},
+            {"value": "2026 年 4 月", "semantic_role": "label"},
+            {"value": "启动第一阶段建设", "semantic_role": "body"},
+        ],
+    }]}, preflight=preflight)
+
+    assert [item["component_key"] for item in result["bindings"]] == [
+        "title.01", "label.01", "label.02", "label.03", "label.04",
+    ]
+
+
+def test_outline_binding_never_applies_timeline_label_fallback_to_an_ordinary_page() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "three-item",
+        "regions": [{"region_id": "r-label", "native_capacity": 24,
+                     "shape_slots": [{"semantic_role": "label"}]}],
+    }]}
+
+    with pytest.raises(BriefBindingError, match=r"OUTLINE_FACT_NO_FITTING_SLOT:slide_id=s01:ordinal=1"):
+        compile_outline_bindings({"schema_version": "1.0", "slides": [{
+            "slide_id": "s01", "facts": [
+                {"value": "普通页面正文不能占用标签表面", "semantic_role": "body"},
+            ],
+        }]}, preflight=preflight)
+
+
+def test_outline_binding_does_not_invent_clinical_network_chips() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01", "role": "clinical-network",
+        "content_contract": {"title": 1, "label": 16, "metric": 1, "body": 0},
+        "governed_content_contract": {"requires_structured_data": False},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12, "shape_slots": [{"semantic_role": "title"}]},
+            {"region_id": "r-chip", "native_capacity": 6, "shape_slots": [{"semantic_role": "label"}]},
+            {"region_id": "r-metric", "native_capacity": 6, "shape_slots": [{"semantic_role": "metric"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "临床协同", "semantic_role": "title"},
+            {"value": "覆盖", "semantic_role": "label"},
+            {"value": "18", "semantic_role": "metric"},
+        ],
+    }]}, preflight=preflight)
+    assert len(result["bindings"]) == 3
+
+
+def test_outline_binding_defers_rich_governed_page_to_data_contract() -> None:
+    preflight = {"status": "PASS", "slides": [{
+        "slide_id": "s01",
+        "content_contract": {"title": 1, "label": 12, "metric": 10, "body": 0},
+        "governed_content_contract": {"requires_structured_data": True},
+        "regions": [
+            {"region_id": "r-title", "native_capacity": 12,
+             "shape_slots": [{"semantic_role": "title"}]},
+        ],
+    }]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{
+        "slide_id": "s01", "facts": [
+            {"value": "收入构成", "semantic_role": "title"},
+        ],
+    }]}, preflight=preflight)
+    assert result["facts"] == [{"fact_id": "s01-f01", "value": "收入构成"}]
+
+
+def test_outline_binding_reserves_the_largest_slot_for_later_long_copy() -> None:
+    preflight = {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
+        {"region_id": "r-short", "native_capacity": 6, "shape_slots": [{"semantic_role": "label"}]},
+        {"region_id": "r-long", "native_capacity": 24, "shape_slots": [{"semantic_role": "body"}]},
+    ]}]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "治理基础", "semantic_role": "label"},
+        {"value": "预算事前校验与月度偏差复盘闭环", "semantic_role": "body"},
+    ]}]}, preflight=preflight)
+
+    # Facts retain client narrative order, while the allocator has prevented
+    # the short first label from consuming the only long-capacity surface.
+    assert [item["fact_id"] for item in result["facts"]] == ["s01-f01", "s01-f02"]
+    assert [item["region_id"] for item in result["bindings"]] == ["r-short", "r-long"]
+
+
+def test_outline_binding_places_a_long_summary_label_in_body_only_as_last_resort() -> None:
+    preflight = {"status": "PASS", "slides": [{"slide_id": "s01", "regions": [
+        {"region_id": "r-label", "native_capacity": 6, "shape_slots": [{"semantic_role": "label"}]},
+        {"region_id": "r-body", "native_capacity": 36, "shape_slots": [{"semantic_role": "body"}]},
+    ]}]}
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"value": "总支出92846.30万元，全年预算总体平稳", "semantic_role": "label"},
+    ]}]}, preflight=preflight)
+
+    assert result["bindings"][0]["region_id"] == "r-body"
+
+
+def _fact_store() -> dict[str, object]:
+    return {
+        "schema_version": "1.0",
+        "project": {"title": "验收报告", "language": "zh-CN"},
+        "sources": [{"id": "facts-md", "kind": "data", "locator": "FACTS.md"}],
+        "facts": [
+            {"id": "report-title", "text": "年度财务运营报告", "status": "active", "source_id": "facts-md", "locator": "FACTS.md#标题", "recommended_beat": "s01"},
+            {"id": "budget-rate", "text": "96.9%", "status": "active", "source_id": "facts-md", "locator": "FACTS.md#指标", "recommended_beat": "s01"},
+        ],
+    }
+
+
+def test_locked_fact_outline_resolves_only_ledger_values() -> None:
+    result = compile_outline_bindings({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"fact_id": "report-title", "semantic_role": "title"},
+        {"fact_id": "budget-rate", "semantic_role": "metric"},
+    ]}]}, preflight=_preflight(), fact_store=_fact_store())
+
+    assert result["facts"] == [
+        {"fact_id": "report-title", "value": "年度财务运营报告"},
+        {"fact_id": "budget-rate", "value": "96.9%"},
+    ]
+
+
+def test_locked_fact_outline_rejects_an_unbound_active_customer_fact() -> None:
+    outline = {"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"fact_id": "report-title", "semantic_role": "title"},
+    ]}]}
+
+    with pytest.raises(BriefBindingError, match="LOCKED_FACT_UNBOUND:fact_ids=budget-rate"):
+        compile_outline_bindings(outline, preflight=_preflight(), fact_store=_fact_store())
+
+
+def test_fact_store_validation_exposes_only_freeze_summary() -> None:
+    assert validate_fact_store(_fact_store()) == {
+        "schema_version": "1.0",
+        "status": "PASS",
+        "fact_count": 2,
+        "approved_beats": ["s01"],
+    }
+
+
+def test_fact_store_accepts_narrative_derived_delivery_beats_beyond_fifteen() -> None:
+    """The frozen ledger must match the 24-beat narrative planner boundary."""
+
+    fact_store = _fact_store()
+    fact_store["facts"][1]["recommended_beat"] = "s17"  # type: ignore[index]
+
+    assert validate_fact_store(fact_store)["status"] == "PASS"
+
+
+def test_fact_store_accepts_optional_classification_without_changing_copy() -> None:
+    fact_store = _fact_store()
+    fact_store["facts"][0]["kind"] = "label"  # type: ignore[index]
+    assert validate_fact_store(fact_store)["status"] == "PASS"
+
+    fact_store["facts"][0]["kind"] = 7  # type: ignore[index]
+    with pytest.raises(BriefBindingError, match="FACT_STORE_SCHEMA_INVALID"):
+        validate_fact_store(fact_store)
+
+
+def test_fact_store_rejects_single_cjk_glyph_used_as_a_fake_component_fact() -> None:
+    """Source location alone must not license splitting ``建设`` into 建 / 设."""
+
+    fact_store = _fact_store()
+    fact_store["facts"][0]["text"] = "建"  # type: ignore[index]
+    with pytest.raises(
+        BriefBindingError,
+        match="FACT_STORE_SEMANTIC_FRAGMENT_INVALID:fact_id=report-title",
+    ):
+        validate_fact_store(fact_store)
+
+
+@pytest.mark.parametrize(
+    "outline,error",
+    [
+        ({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [{"value": "自行新增", "semantic_role": "title"}]}]}, "LOCKED_FACT_REFERENCE_REQUIRED"),
+        ({"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [{"fact_id": "unknown", "semantic_role": "title"}]}]}, "LOCKED_FACT_UNKNOWN"),
+    ],
+)
+def test_locked_fact_outline_rejects_free_or_unknown_values(outline: dict[str, object], error: str) -> None:
+    with pytest.raises(BriefBindingError, match=error):
+        compile_outline_bindings(outline, preflight=_preflight(), fact_store=_fact_store())
+
+
+def test_locked_fact_outline_enforces_client_approved_slide_beat() -> None:
+    fact_store = _fact_store()
+    fact_store["facts"][0]["recommended_beat"] = "s02"  # type: ignore[index]
+    outline = {"schema_version": "1.0", "slides": [{"slide_id": "s01", "facts": [
+        {"fact_id": "report-title", "semantic_role": "title"},
+    ]}]}
+
+    with pytest.raises(BriefBindingError, match="LOCKED_FACT_BEAT_MISMATCH"):
+        compile_outline_bindings(outline, preflight=_preflight(), fact_store=fact_store)

@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS = REPO_ROOT / "skills" / "owned" / "window-pptx" / "scripts"
+SCRIPTS = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
@@ -774,9 +774,9 @@ def test_cli_exposes_strict_brief_routes_and_audited_outputs() -> None:
     assert collect_requested_actions(args) == ["render_brief_plan"]
     result = build_dry_run_result(args, "project")
     assert result["would_run"] == ["render_brief_plan"]
-    assert "project/.window-pptx/audits/narrative-plan.json" in result["would_write"]
-    assert "project/.window-pptx/audits/direction-decision.json" in result["would_write"]
-    assert "project/.window-pptx/audits/quality-report.v2.json" in result["would_write"]
+    assert "project/.pptx-studio/audits/narrative-plan.json" in result["would_write"]
+    assert "project/.pptx-studio/audits/direction-decision.json" in result["would_write"]
+    assert "project/.pptx-studio/audits/quality-report.v2.json" in result["would_write"]
 
 
 def test_cli_requires_both_weak_model_contracts() -> None:
@@ -810,10 +810,10 @@ def test_cli_scopes_direct_agnes_generation_to_brief_render_route() -> None:
 
     assert args.generate_assets_with_agnes is True
     assert (
-        "project/.window-pptx/audits/asset-materialization.json"
+        "project/.pptx-studio/audits/asset-materialization.json"
         in result["would_write"]
     )
-    assert "project/.window-pptx/generated-assets" in result["would_write"]
+    assert "project/.pptx-studio/generated-assets" in result["would_write"]
     with pytest.raises(SystemExit):
         parse_args(
             [
@@ -1436,7 +1436,7 @@ def test_png_preview_missing_and_unreadable_are_hard_gates_when_expected(
 
 def test_new_public_artifacts_validate_against_shipped_schemas() -> None:
     result = prepare_brief_generation(facts(), brief())
-    schemas = REPO_ROOT / "skills" / "owned" / "window-pptx" / "schemas"
+    schemas = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "schemas"
     payloads = {
         "fact-store.v1.schema.json": facts(),
         "brief-plan.v1.schema.json": brief(),
@@ -1476,7 +1476,7 @@ def test_repair_log_v2_keeps_post_render_vectors_in_v2_semantics(
             REPO_ROOT
             / "skills"
             / "owned"
-            / "window-pptx"
+            / "pptx-studio"
             / "schemas"
             / "repair-log.v2.schema.json"
         ).read_text(encoding="utf-8")

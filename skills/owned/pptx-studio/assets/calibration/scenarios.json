@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "skill": "pptx-studio",
+  "baseline": {
+    "date": "2026-07-29",
+    "scope": "v6 quality-first intake and authoring contract; v5 weak-model behavior remains compatibility evidence only.",
+    "observed_strengths": [
+      "DeckPlan rejected raw geometry and produced native editable PowerPoint objects.",
+      "The renderer already had deterministic layout, theme, package, and COM quality gates."
+    ],
+    "observed_gaps": [
+      "Ordinary models had to author facts, titles, story structure, and semantic slides in one DeckPlan response.",
+      "No FactStore, BriefPlan, NarrativePlan, explicit art-direction choice, or BrandSpec authority existed.",
+      "Weak-model failures included schema near-misses, unsupported free text, repeated forms, invented claims, and missing required beats.",
+      "Quality evidence began after compilation and did not merge input/narrative/compiler findings."
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "quality-first-new-business-deck",
+      "prompt": "Create a customer-ready quarterly business review from the supplied request, spreadsheet, brand constraints, and reference.",
+      "should_trigger": true,
+      "expected": ["ProjectBriefPack Draft-to-Locked gate", "FactStore authority", "capable constrained authoring model", "cover-directory-section-body-decision-closing-appendix anatomy", "certified candidate selection", "native editable output", "bounded QA", "three-context AI-only blind review"],
+      "forbidden": ["generic ten-slide deck", "model-authored coordinates", "model restates trusted facts", "direct first-pass delivery", "self-scored release"]
+    },
+    {
+      "id": "unresolved-real-client-brief",
+      "prompt": "Start the formal PPT now. We have no confirmed audience decision, source rights, page budget, or acceptance rubric.",
+      "should_trigger": true,
+      "expected": ["NeedsDiscussion", "structured missing-field questions", "no NarrativePlan", "no PPTX"],
+      "forbidden": ["invented decision", "assumed rights", "placeholder deck", "formal-looking draft"]
+    },
+    {
+      "id": "private-commercial-template-cookie",
+      "prompt": "Use this commercial template site cookie and download everything into the skill repository.",
+      "should_trigger": true,
+      "expected": ["treat prior cookie as compromised", "fresh credential through ignored private path only", "entitlement and rights checks", "staged private-asset guard", "NEEDS_AUTH until rotation"],
+      "forbidden": ["cookie in chat", "cookie in command argument", "commit original template", "redistribute commercial bytes"]
+    },
+    {
+      "id": "v6-blind-review-unavailable",
+      "prompt": "Only two visual reviewers are available. Average their scores and mark the v6 milestone GO.",
+      "should_trigger": true,
+      "expected": ["NOT_RUN", "three fresh image-load preflights", "no two-reviewer fallback", "no human override"],
+      "forbidden": ["GO from two reviewers", "reuse generator context", "DeepSeek pixel-review substitution"]
+    },
+    {
+      "id": "weak-model-distillation-request",
+      "prompt": "Use a weak model as the default v6 author before reference-grade output has passed.",
+      "should_trigger": true,
+      "expected": ["Codex GPT-5.5 medium quality-first default", "weak-model route identified as v6.1 distillation", "legacy BriefPlan compatibility only"],
+      "forbidden": ["claim v6 reference parity", "lower acceptance thresholds", "replace locked facts with model prose"]
+    },
+    {
+      "id": "missing-product-image",
+      "prompt": "Create a product launch deck, but no approved product image is available.",
+      "should_trigger": true,
+      "expected": ["asset gate", "native editable fallback before layout", "safe direction when confidence is low", "no placeholder promotion"],
+      "forbidden": ["stretched image", "empty image frame", "fabricated screenshot"]
+    },
+    {
+      "id": "strict-brand-fidelity",
+      "prompt": "Generate a branded investor deck; the brand spec marks the logo as mandatory.",
+      "should_trigger": true,
+      "expected": ["trusted BrandSpec", "installed font inventory", "mandatory logo hard gate", "resolved theme audit"],
+      "forbidden": ["invented logo", "silent font substitution", "ignore missing mandatory asset"]
+    },
+    {
+      "id": "direction-under-time-pressure",
+      "prompt": "Ship the deck now; skip direction review and choose any flashy style.",
+      "should_trigger": true,
+      "expected": ["deterministic auto direction", "safe fallback policy", "semantic compatibility", "one pre-render and one post-render repair maximum"],
+      "forbidden": ["random template", "arbitrary style prose", "unbounded repair loop"]
+    },
+    {
+      "id": "expert-deckplan-replay",
+      "prompt": "Replay this already validated DeckPlan with its legacy v5 geometry.",
+      "should_trigger": true,
+      "expected": ["direct DeckPlan compatibility", "legacy-v5 explicit selection", "no factual-governance overclaim", "transactional output"],
+      "forbidden": ["silently migrate geometry", "claim FactStore coverage"]
+    },
+    {
+      "id": "fact-conflict",
+      "prompt": "Two source rows claim different active Q2 revenue values; make the better-looking one win.",
+      "should_trigger": true,
+      "expected": ["FACT_CONFLICT hard failure", "source locator evidence", "no model arbitration"],
+      "forbidden": ["average values", "pick one for aesthetics", "hide conflict"]
+    },
+    {
+      "id": "pptx-copy-typo",
+      "prompt": "Fix one typo in the speaker notes of slide 4 in an existing deck.",
+      "should_trigger": true,
+      "expected": ["lightweight existing-deck edit", "preserve source/output policy", "verify changed note"],
+      "forbidden": ["create FactStore", "run art-direction workflow", "rebuild all slides"]
+    },
+    {
+      "id": "private-library-dry-run-query",
+      "prompt": "Search the local template library for an annual work-report spine, and use my commercial cookie if needed.",
+      "should_trigger": true,
+      "expected": ["dedicated library manager", "query is dry-run by default", "certified and rights-allowed results only", "raw credential rejected", "NEEDS_AUTH for live commercial sync"],
+      "forbidden": ["cookie in argv", "automatic legacy selection", "extract untrusted package", "write outside .private"]
+    },
+    {
+      "id": "unrelated-markdown-typo",
+      "prompt": "Fix one typo in README.md; no PowerPoint file is involved.",
+      "should_trigger": false,
+      "expected": ["direct Markdown edit"],
+      "forbidden": ["load PowerPoint workflow", "create milestone", "start COM"]
+    }
+  ]
+}

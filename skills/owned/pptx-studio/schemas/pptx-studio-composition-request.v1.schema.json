@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/pptx-studio-composition-request.v1.schema.json",
+  "title": "PPTX Studio Composition Request v1",
+  "type": "object",
+  "required": ["schema_version", "strategy", "art_direction", "slides"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "strategy": {"enum": ["exact_deck", "family_assembly", "page_assembly", "component_assembly"]},
+    "art_direction": {
+      "type": "object",
+      "required": ["anchor_page_id", "allowed_style_signatures", "suitability"],
+      "properties": {
+        "anchor_page_id": {"type": "string", "pattern": "^page_[0-9a-f]{24}_[0-9]{3}$"},
+        "allowed_style_signatures": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^style_[0-9a-f]{24}$"}},
+        "suitability": {"enum": ["general", "institutional-finance"]}
+      },
+      "additionalProperties": false
+    },
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["slide_id", "role", "candidate_ids", "selected_candidate_id", "minimum_capacity"],
+        "properties": {
+          "slide_id": {"type": "string", "minLength": 1},
+          "role": {"type": "string", "minLength": 1},
+          "candidate_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "selected_candidate_id": {"type": "string", "minLength": 1},
+          "minimum_capacity": {"type": "integer", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

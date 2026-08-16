@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/binding-profile.v1.schema.json",
+  "title": "Binding Profile v1",
+  "description": "Skill-owned, hash-lockable recipe that maps semantic facts to certified physical template slots without storing customer prose or private source copy.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "scenario_id",
+    "acceptance_profile",
+    "created_at",
+    "library_id",
+    "library_index_sha256",
+    "dominant_style_cluster_id",
+    "default_unassigned_connective_id",
+    "governed_policy",
+    "slides"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "profile_id": {"type": "string", "minLength": 1, "maxLength": 120},
+    "scenario_id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "acceptance_profile": {"type": "string", "minLength": 1, "maxLength": 120},
+    "created_at": {"type": "string", "format": "date-time"},
+    "library_id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "library_index_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "dominant_style_cluster_id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "default_unassigned_connective_id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "governed_policy": {"const": "deterministic-authorize-exact"},
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {"$ref": "#/$defs/profileSlide"}
+    }
+  },
+  "$defs": {
+    "renderingSelector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fact_id", "rendering_sha256"],
+      "properties": {
+        "fact_id": {"type": "string", "minLength": 1, "maxLength": 160},
+        "rendering_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "factBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "renderings", "separator"],
+      "properties": {
+        "kind": {"const": "fact"},
+        "renderings": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {"$ref": "#/$defs/renderingSelector"}
+        },
+        "separator": {"enum": ["", " ", "\n", " / ", " · ", "：", ": "]},
+        "fit_policy": {"enum": ["preserve", "no-autofit", "shrink-to-fit"]}
+      }
+    },
+    "connectiveBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "connective_id"],
+      "properties": {
+        "kind": {"const": "connective"},
+        "connective_id": {"type": "string", "minLength": 1, "maxLength": 160},
+        "fit_policy": {"enum": ["preserve", "no-autofit", "shrink-to-fit"]}
+      }
+    },
+    "bindingRule": {
+      "oneOf": [
+        {"$ref": "#/$defs/factBinding"},
+        {"$ref": "#/$defs/connectiveBinding"}
+      ]
+    },
+    "fragmentRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_kind", "target_id", "fact_id", "rendering_sha256"],
+      "properties": {
+        "target_kind": {"enum": ["group", "slot"]},
+        "target_id": {"type": "string", "minLength": 1, "maxLength": 160},
+        "fact_id": {"type": "string", "minLength": 1, "maxLength": 160},
+        "rendering_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "styleClone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_shape_id",
+        "target_shape_id",
+        "scope",
+        "source_style_sha256",
+        "target_guard_sha256"
+      ],
+      "properties": {
+        "source_shape_id": {"type": "integer", "minimum": 1},
+        "target_shape_id": {"type": "integer", "minimum": 1},
+        "scope": {
+          "enum": ["shape-fill", "text-color", "picture-color-effects"]
+        },
+        "source_style_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "target_guard_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "capacity_budget",
+        "semantic_categories",
+        "asset_requirements",
+        "customer_assets_available",
+        "style_cluster",
+        "limit",
+        "allow_fallback",
+        "required_source_ordinal"
+      ],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "capacity_budget": {"type": "integer", "minimum": 1},
+        "semantic_categories": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "asset_requirements": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "customer_assets_available": {"type": "boolean"},
+        "style_cluster": {"type": "string", "minLength": 1},
+        "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+        "allow_fallback": {"type": "boolean"},
+        "required_source_ordinal": {"type": "integer", "minimum": 1, "maximum": 999}
+      }
+    },
+    "profileSlide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordinal",
+        "page_id",
+        "narrative_role",
+        "fact_ids",
+        "title_binding",
+        "query",
+        "bindings",
+        "fragment_bindings"
+      ],
+      "properties": {
+        "ordinal": {"type": "integer", "minimum": 1, "maximum": 200},
+        "page_id": {"type": "string", "pattern": "^[0-9a-f]{64}:[0-9]{3}$"},
+        "narrative_role": {"type": "string", "minLength": 1, "maxLength": 80},
+        "fact_ids": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1, "maxLength": 160},
+          "uniqueItems": true,
+          "maxItems": 128
+        },
+        "title_binding": {"$ref": "#/$defs/factBinding"},
+        "headline_binding": {"$ref": "#/$defs/factBinding"},
+        "query": {"$ref": "#/$defs/query"},
+        "bindings": {
+          "type": "object",
+          "propertyNames": {"pattern": "^shape_[0-9]+$"},
+          "additionalProperties": {"$ref": "#/$defs/bindingRule"}
+        },
+        "fragment_bindings": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/fragmentRule"}
+        },
+        "style_clones": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/styleClone"}
+        }
+      }
+    }
+  }
+}

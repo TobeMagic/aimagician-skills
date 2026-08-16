@@ -1,0 +1,67 @@
+{
+  "schema_version": "3.0",
+  "registry_id": "pptx-studio-certified-pilot-v3",
+  "candidate_count": 84,
+  "source_digests": {
+    "layouts.json": "sha256:a3c8a6db124c5c0521119d0b13b41ec79dedef95c6bc0f42f259366b9ab78b73",
+    "components.json": "sha256:d8ddd27b2518c377affb99ae08eee1ff21fcaddb2ae84105dba474c6b5a4f4a2",
+    "themes.json": "sha256:9965f12986dbdc74398286bef4a8a4e61d4b4ee756fe67ca4205879d4825e214",
+    "design-packs.json": "sha256:e9634ac3fe2658c40246a736134855fe09ac4f16bb3ce1a77f4561eb98dff5ba",
+    "art-directions.json": "sha256:64ff0a18f1b3172f2462eedd1c186f1fcccf8bca38083fa73bb834020d2646a8"
+  },
+  "derivation": {
+    "physical_pages": 15,
+    "base_variants_per_family": 2,
+    "supplement_variants": 10,
+    "specialty_aliases": 9
+  },
+  "specialty_aliases": [
+    {"id": "specialty.map", "family": "text-media", "semantic_kinds": ["map", "regional-footprint"], "required_assets": ["map"], "max_items": 6},
+    {"id": "specialty.awards", "family": "case-study", "semantic_kinds": ["awards", "honors"], "required_assets": ["award-image"], "max_items": 6},
+    {"id": "specialty.people-profile", "family": "team", "semantic_kinds": ["people-profile", "team"], "required_assets": ["portrait"], "max_items": 6},
+    {"id": "specialty.partner-wall", "family": "cards", "semantic_kinds": ["partners", "logo-wall"], "required_assets": ["logo"], "max_items": 12},
+    {"id": "specialty.business-model", "family": "matrix", "semantic_kinds": ["business-model", "value-chain"], "required_assets": [], "max_items": 9},
+    {"id": "specialty.architecture", "family": "process", "semantic_kinds": ["architecture", "system-flow"], "required_assets": [], "max_items": 8},
+    {"id": "specialty.mockup", "family": "product-showcase", "semantic_kinds": ["mockup", "product-demo"], "required_assets": ["product-image"], "max_items": 4},
+    {"id": "specialty.quote", "family": "focal-statement", "semantic_kinds": ["quote", "key-message"], "required_assets": [], "max_items": 1},
+    {"id": "specialty.six-content", "family": "cards", "semantic_kinds": ["six-content", "multi-content"], "required_assets": [], "max_items": 6}
+  ],
+  "spines": [
+    {
+      "id": "institutional-work-summary",
+      "source_mode": "physical_ooxml",
+      "deck_family_id": "institutional-annual-editorial",
+      "style_cluster_id": "ivory-green-gold-editorial",
+      "theme_id": "public-enterprise",
+      "art_direction_id": "institutional-work-summary-v2",
+      "manifest": "design-packs/institutional-annual-editorial/template-pack-v2.json",
+      "scenarios": ["annual-work-report", "business-report", "operations-review"],
+      "required_roles": ["cover", "agenda", "section", "body", "decision", "closing"],
+      "materializer": "template_pack_v1_adapter"
+    },
+    {
+      "id": "campus-innovation-pitch",
+      "source_mode": "registered_composition",
+      "deck_family_id": "campus-innovation-pitch",
+      "style_cluster_id": "optimistic-technical-stage",
+      "theme_id": "technology",
+      "art_direction_id": "campus-innovation-pitch-v2",
+      "manifest": "design-packs/product-launch-stage/template-pack-v2.json",
+      "scenarios": ["campus-competition", "product-launch", "investor-pitch"],
+      "required_roles": ["cover", "agenda", "section", "body", "decision", "closing", "appendix"],
+      "materializer": "registered_native_renderer"
+    },
+    {
+      "id": "academic-defense-editorial",
+      "source_mode": "registered_composition",
+      "deck_family_id": "academic-defense-editorial",
+      "style_cluster_id": "research-editorial-evidence",
+      "theme_id": "education-training",
+      "art_direction_id": "academic-defense-editorial-v2",
+      "manifest": "design-packs/data-research-editorial/template-pack-v2.json",
+      "scenarios": ["academic-defense", "research-report", "data-analysis"],
+      "required_roles": ["cover", "agenda", "section", "body", "decision", "closing", "appendix"],
+      "materializer": "registered_native_renderer"
+    }
+  ]
+}

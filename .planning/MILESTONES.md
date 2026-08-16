@@ -1,6 +1,25 @@
 # Milestones
 
-## v6.1 Window-PPTX Physical Template Assembly (Active)
+## v7 PPTX Studio Curated Composition (Active)
+
+**Goal:** Give a capable agent a curated, visual-evidence-backed local PPTX
+studio that can discuss/lock a real client brief, choose complete-deck, page,
+or component reuse intentionally, adapt only declared editable slots, and
+release a polished editable PPTX through a deterministic quality harness.
+
+**Phase gates:**
+- Phase 50: Asset Curation and Visual Catalog
+- Phase 51: Composition Retrieval and Governed Adaptation
+- Phase 52: PPTX Studio Migration and Agent Workflow
+- Phase 53: Clean-Room Work-Report Acceptance and Release
+
+**Status:** Active. v6.1's physical assembly baseline is complete on master
+`a1d2d18`. v7 does not declare flexible composition or the new public identity
+complete until each new phase passes its own evidence and audit gate.
+
+---
+
+## v6.1 Window-PPTX Physical Template Assembly (Shipped: 2026-08-11)
 
 **Goal:** Make a medium-capability Codex agent turn a complete client
 requirement pack into a native-editable, reference-grade PPTX by selecting
@@ -11,12 +30,10 @@ package bloat.
 **Phase gates:**
 - Phase 49: Physical Template Assembly and Work-Report Acceptance
 
-**Status:** Active. The v6.1 checkpoint is merged into an isolated
-stabilization worktree, but release remains blocked by incorrect non-first-page
-metadata, lost direct-use eligibility, a single hard-coded style cluster,
-incomplete nested OPC relationship traversal, insufficient recursive
-verification, and a 4.02x package-size amplification. No v6.1 completion or
-release claim is valid until Phase 49 records passing evidence for every gate.
+**Status:** Shipped. Phase 49 corrected non-first-page metadata, direct-use
+eligibility, style clustering, recursive OPC traversal/verification and
+package size, then passed clean-room generation, blind AI review, source/install
+parity and a pushed-master independent audit.
 
 ---
 

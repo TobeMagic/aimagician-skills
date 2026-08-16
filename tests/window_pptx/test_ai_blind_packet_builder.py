@@ -14,7 +14,7 @@ SCRIPT = (
     REPO_ROOT
     / "skills"
     / "owned"
-    / "window-pptx"
+    / "pptx-studio"
     / "scripts"
     / "build_window_pptx_ai_blind_packet.py"
 )

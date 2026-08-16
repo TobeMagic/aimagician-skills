@@ -4,16 +4,16 @@ import { shouldCopyManagedSource } from "../../src/bootstrap/copy-filter";
 
 describe("managed source copy filter", () => {
   it("keeps authored skill files", () => {
-    expect(shouldCopyManagedSource(join("skills", "owned", "window-pptx", "SKILL.md"))).toBe(true);
+    expect(shouldCopyManagedSource(join("skills", "owned", "pptx-studio", "SKILL.md"))).toBe(true);
   });
 
-  it.each([".git", ".pytest_cache", "evals", "node_modules", "__pycache__"])(
+  it.each([".git", ".private", ".pytest_cache", "evals", "node_modules", "__pycache__"])(
     "excludes transient %s directories at any depth",
     (directory) => {
       expect(shouldCopyManagedSource(join(directory, "artifact.bin"))).toBe(false);
       expect(
         shouldCopyManagedSource(
-          join("skills", "owned", "window-pptx", "scripts", directory, "artifact.bin")
+          join("skills", "owned", "pptx-studio", "scripts", directory, "artifact.bin")
         )
       ).toBe(false);
     }
@@ -22,7 +22,7 @@ describe("managed source copy filter", () => {
   it("does not exclude an authored directory that only resembles .pytest_cache", () => {
     expect(
       shouldCopyManagedSource(
-        join("skills", "owned", "window-pptx", "references", ".pytest_cache-guide", "README.md")
+        join("skills", "owned", "pptx-studio", "references", ".pytest_cache-guide", "README.md")
       )
     ).toBe(true);
   });
@@ -30,7 +30,7 @@ describe("managed source copy filter", () => {
   it.each(["module.pyc", "module.PYO"])("excludes Python bytecode %s", (filename) => {
     expect(
       shouldCopyManagedSource(
-        join("skills", "owned", "window-pptx", "scripts", "window_pptx", filename)
+        join("skills", "owned", "pptx-studio", "scripts", "window_pptx", filename)
       )
     ).toBe(false);
   });

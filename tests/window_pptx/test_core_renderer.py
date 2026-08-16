@@ -13,7 +13,7 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 import window_pptx
@@ -1481,9 +1481,9 @@ def test_cli_exposes_explicit_compile_and_render_routes() -> None:
     )
     assert dry["would_run"] == ["render_deck_plan"]
     assert dry["would_write"] == [
-        "project/.window-pptx/audits/quality-report.v2.json",
-        "project/.window-pptx/audits/portable-proof",
-        "project/.window-pptx/audits/render-proof.html",
+        "project/.pptx-studio/audits/quality-report.v2.json",
+        "project/.pptx-studio/audits/portable-proof",
+        "project/.pptx-studio/audits/render-proof.html",
         "project/output/final.pptx",
     ]
 
@@ -1616,7 +1616,7 @@ def test_compile_cli_route_is_cross_platform_and_does_not_start_com(
     payload = json.loads(capsys.readouterr().out)
     assert result == 0
     assert payload["compiled_deck"]["compiler_version"] == (
-        "window-pptx-semantic-1.0"
+        "pptx-studio-semantic-1.0"
     )
     assert len(payload["compiled_deck"]["slides"]) == 2
 

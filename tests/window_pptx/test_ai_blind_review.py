@@ -7,7 +7,7 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 from window_pptx.ai_blind_review import (  # noqa: E402
@@ -92,7 +92,7 @@ def unit_payload(
     )
     return {
         "schema_version": "1.0",
-        "protocol_id": "window-pptx-ai-blind-v1",
+        "protocol_id": "pptx-studio-ai-blind-v1",
         "benchmark_id": packet.benchmark_id,
         "packet_sha256": packet.packet_sha256,
         "reviewer_id": reviewer_id,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real Windows PowerPoint acceptance for window-pptx Phase 22.
+"""Real Windows PowerPoint acceptance for pptx-studio Phase 22.
 
 This script is intentionally self-contained and writes only beneath a UUID
 directory in Windows TEMP.  Its only stdout output is one JSON document.
@@ -32,7 +32,7 @@ from PIL import Image
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS_DIR = REPO_ROOT / "skills" / "owned" / "window-pptx" / "scripts"
+SCRIPTS_DIR = REPO_ROOT / "skills" / "owned" / "pptx-studio" / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import window_pptx_automation as automation  # noqa: E402
@@ -81,7 +81,7 @@ class RecordingClient:
 
 
 def trace(message: str) -> None:
-    print(f"window-pptx-uat: {message}", file=sys.stderr, flush=True)
+    print(f"pptx-studio-uat: {message}", file=sys.stderr, flush=True)
 
 
 def app_is_alive(app: Any) -> bool:
@@ -598,7 +598,7 @@ def case_guard_failures(root: Path, environment: dict[str, Any]) -> dict[str, An
         invalid_client,
     )
     assert isinstance(error, OutputPolicyError)
-    staging = project / ".window-pptx" / "temp" / "deck_temp_ascii.pptx"
+    staging = project / ".pptx-studio" / "temp" / "deck_temp_ascii.pptx"
     assert not staging.exists() and digest(source) == source_hash
 
     staging.parent.mkdir(parents=True)
@@ -679,7 +679,7 @@ def case_promotion_failure(root: Path, environment: dict[str, Any]) -> dict[str,
         else:
             raise AssertionError("promotion failure unexpectedly succeeded")
         assert output.read_bytes() == existing and digest(source) == source_hash
-        assert not list(output.parent.glob(".window-pptx-*.pptx"))
+        assert not list(output.parent.glob(".pptx-studio-*.pptx"))
         return {"existing_output_unchanged": True, "candidate_cleanup": True}
     finally:
         safe_close(presentation)
@@ -737,7 +737,7 @@ def case_pdf_partial(root: Path, environment: dict[str, Any]) -> dict[str, Any]:
             raise AssertionError("PDF partial failure unexpectedly succeeded")
         validate_ooxml_package(output)
         assert pdf_output.read_bytes() == old_pdf and digest(source) == source_hash
-        assert not list(output.parent.glob(".window-pptx-*.pdf"))
+        assert not list(output.parent.glob(".pptx-studio-*.pdf"))
         return {
             "pptx_promoted": True,
             "existing_pdf_unchanged": True,

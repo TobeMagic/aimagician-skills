@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aimagician.local/pptx-studio/v61-visual-segment.v1.schema.json",
+  "title": "Window-PPTX v6.1 Isolated Visual Segment",
+  "description": "Hash-bound evidence from one isolated Agnes invocation over one frozen half-deck image batch.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "protocol_id",
+    "reviewer_id",
+    "segment_id",
+    "packet_sha256",
+    "rubric_sha256",
+    "route_id",
+    "model_id",
+    "invocation_id",
+    "context_mode",
+    "image_sha256s",
+    "request_sha256",
+    "response_sha256",
+    "status",
+    "inspected_slides",
+    "observations"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "protocol_id": {"const": "pptx-studio-v61-blind-v1"},
+    "reviewer_id": {"enum": ["ART", "NARRATIVE", "PRODUCTION"]},
+    "segment_id": {"enum": ["SLIDES_01_08", "SLIDES_09_15"]},
+    "packet_sha256": {"$ref": "#/$defs/sha256"},
+    "rubric_sha256": {"$ref": "#/$defs/sha256"},
+    "route_id": {"const": "agnes-direct/agnes-2.0-flash"},
+    "model_id": {"const": "agnes-2.0-flash"},
+    "invocation_id": {"$ref": "#/$defs/executionId"},
+    "context_mode": {"const": "fresh-isolated"},
+    "image_sha256s": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/sha256"}
+    },
+    "request_sha256": {"$ref": "#/$defs/sha256"},
+    "response_sha256": {"$ref": "#/$defs/sha256"},
+    "status": {"enum": ["PASS", "NOT_RUN"]},
+    "failure_reason": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "inspected_slides": {
+      "type": "array",
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {"type": "integer", "minimum": 1, "maximum": 15}
+    },
+    "observations": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {"$ref": "#/$defs/observation"}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "NOT_RUN"}}},
+      "then": {"required": ["failure_reason"]}
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "PASS"},
+          "segment_id": {"const": "SLIDES_01_08"}
+        },
+        "required": ["status", "segment_id"]
+      },
+      "then": {
+        "properties": {
+          "inspected_slides": {
+            "prefixItems": [
+              {"const": 1}, {"const": 2}, {"const": 3}, {"const": 4},
+              {"const": 5}, {"const": 6}, {"const": 7}, {"const": 8}
+            ],
+            "items": false,
+            "minItems": 8,
+            "maxItems": 8
+          },
+          "observations": {"minItems": 8, "maxItems": 8}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "PASS"},
+          "segment_id": {"const": "SLIDES_09_15"}
+        },
+        "required": ["status", "segment_id"]
+      },
+      "then": {
+        "properties": {
+          "inspected_slides": {
+            "prefixItems": [
+              {"const": 9}, {"const": 10}, {"const": 11}, {"const": 12},
+              {"const": 13}, {"const": 14}, {"const": 15}
+            ],
+            "items": false,
+            "minItems": 7,
+            "maxItems": 7
+          },
+          "observations": {"minItems": 7, "maxItems": 7}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "executionId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slide", "evidence"],
+      "properties": {
+        "slide": {"type": "integer", "minimum": 1, "maximum": 15},
+        "evidence": {"type": "string", "minLength": 1, "maxLength": 4000}
+      }
+    }
+  }
+}

@@ -9,7 +9,7 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 import window_pptx.quality as quality_module  # noqa: E402
@@ -158,7 +158,7 @@ def test_inspector_detects_com_geometry_font_tag_and_page_drift() -> None:
     shape = presentation.Slides.items[0].Shapes.Item(first_object.name)
     shape.Left += 12
     shape.TextFrame.TextRange.Font.Name = "Comic Sans MS"
-    shape.Tags.values.pop("window-pptx:editable")
+    shape.Tags.values.pop("pptx-studio:editable")
     presentation.PageSetup.SlideWidth += 20
 
     report = inspect_quality(plan, render_report, presentation)
@@ -181,7 +181,7 @@ def test_repair_is_candidate_only_bounded_and_monotonically_improves() -> None:
     shape = presentation.Slides.items[0].Shapes.Item(first_object.name)
     shape.Left += 12
     shape.TextFrame.TextRange.Font.Name = "Comic Sans MS"
-    shape.Tags.values.pop("window-pptx:editable")
+    shape.Tags.values.pop("pptx-studio:editable")
     presentation.PageSetup.SlideWidth += 20
     before = inspect_quality(plan, render_report, presentation)
 
@@ -207,7 +207,7 @@ def test_repair_keeps_name_change_last_for_compound_shape_repairs() -> None:
     shape = presentation.Slides.items[0].Shapes.Item(first_object.name)
     shape.Name = "drifted-name"
     shape.Left += 12
-    shape.Tags.values.pop("window-pptx:editable")
+    shape.Tags.values.pop("pptx-studio:editable")
     before = inspect_quality(plan, render_report, presentation)
 
     repair = repair_quality(plan, render_report, presentation, before)
@@ -217,7 +217,7 @@ def test_repair_keeps_name_change_last_for_compound_shape_repairs() -> None:
     repaired = presentation.Slides.items[0].Shapes.Item(first_object.name)
     assert repaired.Name == first_object.name
     assert repaired.Left == pytest.approx(first_object.x * 72)
-    assert repaired.Tags.values["window-pptx:editable"] == "true"
+    assert repaired.Tags.values["pptx-studio:editable"] == "true"
     assert repair.final_report.hard_gate_failures == ()
 
 

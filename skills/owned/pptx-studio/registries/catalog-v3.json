@@ -1,0 +1,44 @@
+{
+  "schema_version": "3.0",
+  "catalog_id": "pptx-studio-public-metadata-seed",
+  "entries": [
+    {
+      "catalog_item_id": "tplv3-f6f3ac292112e6c978447d45",
+      "source_id": "public-metadata-seed",
+      "item_id": "annual-work-report-editorial-spine",
+      "version_id": "1",
+      "content_sha256": "sha256:9d032ad389c7dcd38a7f09329d5328d922f40ca649489a12f6f1519eea102e05",
+      "media_type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "geometry": {
+        "width_in": 13.333,
+        "height_in": 7.5,
+        "slide_count": 28
+      },
+      "phash": {
+        "state": "not_applicable"
+      },
+      "capacity": {
+        "min_slides": 24,
+        "max_slides": 32,
+        "max_text_chars": 7200
+      },
+      "scenarios": [
+        "annual-work-report"
+      ],
+      "style_tags": [
+        "editorial",
+        "executive"
+      ],
+      "rights_decision": "allowed",
+      "rights_record_digest": null,
+      "quarantine_disposition": "NOT_RUN",
+      "quarantine_report_digest": null,
+      "dependency_ids": [],
+      "editability": "native_editable",
+      "certification": "unverified",
+      "provenance": [
+        "synthetic-public-metadata-contract"
+      ]
+    }
+  ]
+}

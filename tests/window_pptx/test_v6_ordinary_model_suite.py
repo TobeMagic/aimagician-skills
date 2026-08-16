@@ -19,7 +19,7 @@ from window_pptx.registry import resolve_archetype
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio"
 SCRIPTS_ROOT = SKILL_ROOT / "scripts"
 
 

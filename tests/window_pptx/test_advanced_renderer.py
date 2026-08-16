@@ -9,7 +9,7 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 from window_pptx.deck_plan import (  # noqa: E402
@@ -409,7 +409,7 @@ def test_render_route_allows_ratio_aware_png_exports_after_render(
     )
     dry_run = build_dry_run_result(args, tmp_path)
     assert dry_run["would_run"] == ["render_deck_plan", "export_qa"]
-    assert str(tmp_path / ".window-pptx" / "exports" / "qa") in dry_run["would_write"]
+    assert str(tmp_path / ".pptx-studio" / "exports" / "qa") in dry_run["would_write"]
 
     plan = build_render_plan(
         advanced_deck(),

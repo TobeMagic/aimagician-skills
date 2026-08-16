@@ -11,7 +11,7 @@ SCRIPT = (
     ROOT
     / "skills"
     / "owned"
-    / "window-pptx"
+    / "pptx-studio"
     / "scripts"
     / "build_window_pptx_v6_portfolio_packets.py"
 )

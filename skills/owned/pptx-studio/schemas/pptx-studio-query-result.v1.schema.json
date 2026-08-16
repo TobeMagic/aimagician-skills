@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pptx-studio.local/schemas/pptx-studio-query-result.v1.schema.json",
+  "title": "PPTX Studio Query Result v1",
+  "type": "object",
+  "required": ["schema_version", "status", "request", "candidates"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "status": {"enum": ["PASS", "NO_MATCH"]},
+    "request": {"type": "object"},
+    "candidates": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["candidate_id", "page_id", "mode", "style_signature", "governed_content_slot_count", "requires_structured_data", "gates", "scores", "reasons"],
+        "properties": {
+          "candidate_id": {"type": "string", "minLength": 1},
+          "page_id": {"type": "string", "minLength": 1},
+          "mode": {"enum": ["deck", "page", "region"]},
+          "style_signature": {"type": "string", "pattern": "^style_[0-9a-f]{24}$"},
+          "governed_content_slot_count": {"type": "integer", "minimum": 0},
+          "requires_structured_data": {"type": "boolean"},
+          "gates": {"type": "array"},
+          "scores": {"type": "object"},
+          "reasons": {"type": "array"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

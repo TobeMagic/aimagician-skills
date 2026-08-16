@@ -1,19 +1,19 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.1
-milestone_name: Window-PPTX Physical Template Assembly
-current_phase: 49
-current_phase_name: Physical Template Assembly and Work-Report Acceptance
+milestone: v7
+milestone_name: PPTX Studio Curated Composition
+current_phase: 54
+current_phase_name: Cross-Library Component Assembly and PowerPoint Compatibility
 status: in_progress
-stopped_at: v6.1 Phase 49 evidence is accepted; controlled off-phase Skill capability optimization `USR-20260813-001` is in progress; preserve Phase 49 scope and return to its workflow completion gate
-last_updated: "2026-08-13T10:30:00+08:00"
-last_activity: 2026-08-13
+stopped_at: Phase 54 fixed canvas insertion and component-source style gating are implemented; 169 focused regressions pass. Curate cool-professional title/statement and KPI sources, then resume professional-report author run and academic-defense acceptance
+last_updated: "2026-08-17T00:00:00+08:00"
+last_activity: 2026-08-17
 progress:
-  total_phases: 51
-  completed_phases: 46
-  total_plans: 50
-  completed_plans: 49
-  percent: 90
+  total_phases: 54
+  completed_phases: 48
+  total_plans: 51
+  completed_plans: 51
+  percent: 93
 ---
 
 # Project State
@@ -26,7 +26,8 @@ See: `README.md`
 
 **Core value:** Skillbird manages owned skills as the default source of truth, while external skill repositories remain disabled references unless explicitly enabled.
 
-**Current focus:** v6.1 Phase 49 evidence is accepted. A controlled off-phase Skill capability optimization task `USR-20260813-001` is upgrading 19 selected owned Skills through static and behavioral Darwin evidence, without changing Window-PPTX behavior, `docx`, `pdf`, or `xlsx`; return to the Phase 49 workflow completion gate after closure.
+**Current focus:** v7 Phase 50 begins from the complete v6.1 physical-page
+baseline on pushed master `a1d2d18`.
 Its certified physical-page assembly passed clean-room generation, recursive
 OPC/editability QA, three independent blind reviews, fresh premerge approval,
 source/Codex/OpenCode install parity, and a fresh pushed-master completion
@@ -66,11 +67,14 @@ fully independent AI blind-review contexts for v6 acceptance.
 
 ## Current Position
 
-Milestone: v6.1 Window-PPTX Physical Template Assembly
-Current Phase: 49
-Current Phase Name: Physical Template Assembly and Work-Report Acceptance
-Status: In Progress — all acceptance evidence PASS; this controlled maintenance task is complete, while the Phase 49 workflow completion gate remains separately tracked
-Last Activity: 2026-08-11
+Milestone: v7 PPTX Studio Curated Composition
+Current Phase: 54
+Current Phase Name: Cross-Library Component Assembly and PowerPoint Compatibility
+Status: In Progress — the former Phase 53 fixed 15-page replay is retained as
+a same-source PowerPoint regression baseline only. The production workflow now
+derives page count from a narrative rationale ledger and must assemble an
+editable coherent deck from multiple certified source packages/components.
+Last Activity: 2026-08-14
 
 ### Preserved Control-Plane History
 

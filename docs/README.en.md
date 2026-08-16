@@ -44,7 +44,7 @@ Evaluation corpora live under `quality/skill-evals` and are not installed into r
 | `github-readme-highstar` | README information architecture, repository visual integration, and GitHub delivery QA |
 | `skill-optimizer` | Darwin baseline/treatment evaluation and independent Skill improvement |
 
-Native editable PowerPoint remains owned by `window-pptx`. HTML visual exploration and HTML-first presentation output remain owned by `interface-design`; they are not a replacement for an editable Office deliverable.
+Native editable PowerPoint remains owned by `pptx-studio`. HTML visual exploration and HTML-first presentation output remain owned by `interface-design`; they are not a replacement for an editable Office deliverable.
 
 ## CLI
 

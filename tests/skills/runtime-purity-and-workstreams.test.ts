@@ -23,7 +23,7 @@ describe("runtime-pure Skill architecture", () => {
       await expect(readdir(join(ownedRoot, id, "evals"))).rejects.toThrow();
     }
     expect(await readdir(join(root, "quality", "skill-evals"))).toEqual(
-      expect.arrayContaining(["aimagician-superpower", "aimagician-superpower-slim-2026-08-13", "skill-optimizer", "window-pptx"])
+      expect.arrayContaining(["aimagician-superpower", "aimagician-superpower-slim-2026-08-13", "skill-optimizer", "pptx-studio"])
     );
   });
 

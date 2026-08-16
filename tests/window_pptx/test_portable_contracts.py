@@ -8,7 +8,7 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "window-pptx"
+SKILL_ROOT = REPO_ROOT / "skills" / "owned" / "pptx-studio"
 SCRIPTS_ROOT = SKILL_ROOT / "scripts"
 if str(SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_ROOT))
@@ -128,7 +128,7 @@ def _schema_errors(schema_name: str, value: object) -> list[str]:
 def test_governed_engine_sources_cover_python_node_worker_and_package_manifests(
     tmp_path: Path,
 ) -> None:
-    skill_root = tmp_path / "window-pptx"
+    skill_root = tmp_path / "pptx-studio"
     source_files = {
         "scripts/run.py": "print('runner')\n",
         "scripts/window_pptx/core.py": "VALUE = 1\n",
