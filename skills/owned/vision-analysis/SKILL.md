@@ -1,6 +1,6 @@
 ---
 name: vision-analysis
-description: Use when an agent must understand pixels from screenshots, diagrams, charts, posters, UI captures, scanned image pages, or multiple reference images, especially when a CLI agent such as OpenCode cannot pass image attachments to its selected model. Routes authorized images through a direct multimodal API and returns sanitized textual evidence for later reasoning or review.
+description: Use when the current model or worker cannot see images, or when the user asks for an authorized Agnes evidence package from screenshots, diagrams, charts, posters, UI captures, scanned pages, or multiple reference images. Do not use when this session already has a reliable native image tool. Routes authorized images through a direct multimodal API and returns sanitized textual evidence for later reasoning or review.
 category: research
 subcategory: visual-analysis
 tags:
@@ -21,9 +21,9 @@ Acquire trustworthy visual evidence without pretending a text-only CLI attachmen
 
 ## Trigger And Boundary
 
-Use this skill for screenshot inspection, OCR-like reading, UI defects, chart or diagram interpretation, visual comparison, document pages already rendered to images, and any CLI-agent task that must understand pixels.
+Use this skill when the current model or worker cannot inspect pixels, or when the user asks for an Agnes evidence package with sanitized provenance.
 
-Do not use it for image generation, audio, native PDF parsing, video analysis, or a one-file textual lookup. A main Agent with a reliable native image tool may inspect locally, but CLI-agent visual work must acquire evidence here before text reasoning.
+Do not use it for image generation, audio, native PDF parsing, video analysis, a one-file textual lookup, or a session that already has a reliable native image tool. Inspect locally first in that case.
 
 ## Required Workflow
 
@@ -31,7 +31,7 @@ Do not use it for image generation, audio, native PDF parsing, video analysis, o
 2. Confirm that external upload is authorized. Every invocation requires `--allow-external-upload`; the flag covers the entire invocation, including HTTPS URLs.
 3. Run `scripts/analyze.mjs` with one or more `--image` values and a prompt or prompt file.
 4. Treat the returned report as evidence, not final authority. Spot-check completion-critical claims with another reliable viewer or observable product check when available.
-5. For broader reasoning, planning, or review, pass the sanitized textual report to `cli-agent-delegator`; OpenCode should not receive the original image attachment for Agnes.
+5. For broader reasoning, planning, or review, pass the sanitized textual report to the current host's subagent. Do not attach the original image to a text-only worker.
 
 ### 1. Bind Inputs And Question
 

@@ -21,6 +21,8 @@ compatibility:
 
 # CLI Agent Delegator
 
+This skill is archived from the default install set. Load it only when the user names OpenCode or another foreign CLI, or when HOST=opencode. Ordinary sessions use the current host's native subagent.
+
 Use external CLI agents as bounded workers while the main Agent keeps the scarce work: requirement reconciliation, product and architecture judgment, risk decisions, result validation, integration, and completion accountability.
 
 OpenCode is the current provider. It can explore, research, reason over sanitized visual evidence, run checks, produce reports, review work, and perform a small isolated write task when the controller supplies an exact contract. Pixel understanding is acquired through the owned `vision-analysis` skill before OpenCode reasoning. Future CLI agents can implement the same delegation contract under `references/providers/`.

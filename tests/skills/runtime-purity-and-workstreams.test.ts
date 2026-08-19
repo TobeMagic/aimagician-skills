@@ -28,7 +28,7 @@ describe("runtime-pure Skill architecture", () => {
   });
 
   it("archives obsolete Skills and removes their active routing", async () => {
-    const archived = ["pptx", "modelscope_imagegen", "mcp-builder", "linear-issue-workflow"];
+    const archived = ["pptx", "modelscope_imagegen", "mcp-builder", "linear-issue-workflow", "cli-agent-delegator"];
     const owned = await readdir(ownedRoot);
     const taxonomy = await readFile(join(root, "catalog", "taxonomy.yaml"), "utf8");
     for (const id of archived) {

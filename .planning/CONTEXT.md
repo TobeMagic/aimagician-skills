@@ -18,8 +18,8 @@ The repository also contains a planning-managed Window-PPTX production engine. I
 | CTX-ARCH-002 | External skill sources are disabled references unless the user explicitly enables installation. | `.planning/STATE.md` | Active |
 | CTX-WORKFLOW-001 | Latest user decisions, locked requirements/specifications, planning state, project context, and evidence use distinct authority levels; recency is navigation, not authority. | `skills/owned/aimagician-superpower/references/capabilities/state-and-continuity.md` | Active |
 | CTX-WORKFLOW-002 | Off-phase work requires an approved task with parent milestone, parent phase, and return checkpoint. | `.planning/REQUESTS.md` | Active |
-| CTX-AGENT-001 | CLI workers are bounded executors and reviewers; the controller owns architecture, risk, reconciliation, validation, and completion. | `skills/owned/cli-agent-delegator/SKILL.md` | Active |
-| CTX-AGENT-002 | Images are acquired through `vision-analysis`; OpenCode receives sanitized text evidence rather than native Agnes image attachments. | `skills/owned/vision-analysis/SKILL.md` | Active |
+| CTX-AGENT-001 | Host-native subagents are bounded executors and reviewers; the controller owns architecture, risk, reconciliation, validation, and completion. | `rules/owned/host-native-delegation/RULE.md` | Active |
+| CTX-AGENT-002 | Images are read with the current model's native vision when available; `vision-analysis` is the fallback when the session cannot see pixels or the user asks for an Agnes evidence package. | `rules/owned/native-capability-first/RULE.md` | Active |
 | CTX-PPTX-001 | Direct-use eligibility and complete physical lineage are mandatory for automated template reuse; reference-only pages may guide art direction but cannot be assembled automatically. | USR-V61-01 / Phase 49 | Active |
 | CTX-PPTX-002 | OPC import resolves each target relative to its relationship owner, traverses every internal dependency, rejects unsafe targets, and conservatively deduplicates only safe immutable parts. | Phase 49 specification | Active |
 

@@ -113,12 +113,6 @@ skills:
     tags: [vision, image-understanding, multimodal, screenshot, visual-evidence, agnes]
     recommendedScopes: [global]
     description: Direct, consent-gated image understanding with sanitized evidence and provider provenance for downstream reasoning.
-  cli-agent-delegator:
-    group: operate
-    subgroup: agent-orchestration
-    tags: [cli-agent, multi-agent, delegation, orchestration, opencode, exploration, research, review, verification, short-task]
-    recommendedScopes: [global]
-    description: Delegate broad discovery, deep research, bounded short git/test/write tasks, reasoning over acquired visual evidence, and independent review to OpenCode while retaining main-Agent judgment.
   composio-tool-router:
     group: operate
     subgroup: tool-routing
@@ -256,9 +250,9 @@ skills:
   agent-workstream-orchestrator:
     group: operate
     subgroup: agent-orchestration
-    tags: [multi-agent, workstreams, sessions, codex, opencode, worktree, integration]
+    tags: [multi-agent, workstreams, sessions, worktree, integration]
     recommendedScopes: [global]
-    description: Route independent work across tracked Codex or OpenCode sessions, optional worktrees, integration ownership, and parent-level acceptance.
+    description: Route independent work across tracked host-native sessions, optional worktrees, integration ownership, and parent-level acceptance.
   using-git-worktrees:
     group: operate
     subgroup: git

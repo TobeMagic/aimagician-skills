@@ -37,7 +37,7 @@
 
 The daily command is `skillbird`. It manages skills across Codex, Claude, OpenCode, Gemini, Hermes, Cursor, and Copilot with global or project-local installs.
 
-The important change: owned skills are now the source of truth. External collections such as GSD, Superpowers, selected Claude skills, UI packs, and Playwright skills are curated into owned skills or kept as disabled reference material. Bootstrap installs only the active owned set by default.
+The important change: owned skills, rules, and memory policy are now the source of truth. External collections such as GSD, Superpowers, selected Claude skills, UI packs, and Playwright skills are curated into owned skills or kept as disabled reference material. Bootstrap installs only the active owned skill set by default. Rule and memory sync to CLI targets lands in a later Skillbird engine slice.
 
 ## Quick Start
 
@@ -73,8 +73,8 @@ Skillbird keeps a goal-first, risk-scaled workflow model:
 3. For `High`, phase, or milestone work, recover context and lock the active milestone, phase, roadmap goal, requirements, and success criteria.
 4. Discuss requirements only when ambiguity materially changes scope, risk, or acceptance; research when local evidence affects the design.
 5. Execute surgically, run the decisive verification command, and create or update the PR once the target behavior is proven.
-6. Delegate bounded discovery, research, verification, or independent review to OpenCode when it materially saves context or improves confidence.
-7. Run independent OpenCode audits for `High` work, phase/milestone closure, deployable postmerge evidence, or when explicitly requested.
+6. Delegate bounded discovery, research, verification, or independent review to the current host's native subagent when it materially saves context or improves confidence.
+7. Run independent host-native audits for `High` work, phase/milestone closure, deployable postmerge evidence, or when explicitly requested.
 8. Close the task after the verified deliverable is merged or ready; perform Linear/wiki/report updates afterwards only when a ticket, project policy, or user request makes them useful.
 
 The workflow stays light by default for reversible one- or two-file edits, docs, and configuration work. Public APIs, schema/data changes, security, integrations, UI/AI contracts, production state, cross-module work, and multi-Agent execution escalate to the formal `SPEC.md` / independent review path.
@@ -106,36 +106,18 @@ For phase-managed or High work, the `align` gate prevents work from drifting awa
 
 Planning can remain tracked or use one local-private store shared by every worktree under the repository's Git common directory. The runtime attaches worktrees, excludes `/.planning` through Git's local exclude file, and provides short write leases with revision conflict detection. Local-private planning has no automatic backup and is lost with the clone.
 
-Lightweight work may use a concise PR description and verification evidence; phase and milestone work use `.planning/tasks/<task-id>.md` plus requirement and `GOAL-*` evidence. High, phase, milestone, deployable-postmerge, policy-required, or explicitly requested closure gets a frozen independent OpenCode review point, model attempt provenance, and a main-Agent spot-check. Visual evidence is acquired directly by `vision-analysis` with explicit upload authorization and passed as sanitized text to a controller-selected reasoning model. The controller chooses every OpenCode primary and ordered fallback from the current free inventory; Agnes is appended once as the final fallback when available. Planning-managed projects use `.planning/PROJECT.md` and `.planning/CONTEXT.md` for durable product, architecture, invariant, decision, verification, and source-routing continuity. `init` previews project, phase, task, or milestone artifacts and writes only with `--write`; it never overwrites existing files or follows an unapproved planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
+Lightweight work may use a concise PR description and verification evidence; phase and milestone work use `.planning/tasks/<task-id>.md` plus requirement and `GOAL-*` evidence. High, phase, milestone, deployable-postmerge, policy-required, or explicitly requested closure gets a frozen independent host-native review point and a main-Agent spot-check. Visual evidence is read with the current model's native image tool when available; `vision-analysis` is the fallback when the session cannot see pixels or the user asks for an Agnes evidence package. Planning-managed projects use `.planning/PROJECT.md` and `.planning/CONTEXT.md` for durable product, architecture, invariant, decision, verification, and source-routing continuity. User and project memory live at `~/.skillbird/memory/` and `.planning/memory/`. `init` previews project, phase, task, or milestone artifacts and writes only with `--write`; it never overwrites existing files or follows an unapproved planning symlink outside the project. Condition-based waiting and filesystem pollution isolation are available through `wait-for.mjs` and `find-polluter.mjs`.
 
-Linear is managed only through `composio-tool-router` and Composio CLI, never through Linear MCP. If Linear context is not needed to understand the requirement, OpenCode performs the approved post-merge status/comment/closure work as a bounded task after core delivery. The first PR in a project resolves its integration branch from project evidence; no global `dev` default is assumed.
+Linear is managed only through `composio-tool-router` and Composio CLI, never through Linear MCP. If Linear context is not needed to understand the requirement, a host-native worker may perform the approved post-merge status/comment/closure work as a bounded task after core delivery. The first PR in a project resolves its integration branch from project evidence; no global `dev` default is assumed.
 
-The delegated runtime caches `opencode models --verbose`, lists active free candidates across configured providers, exposes worker eligibility and quota-policy provenance, requires explicit `--model`, accepts ordered `--fallback-model` values, uses the current positional prompt syntax, and streams progress until the worker exits:
+The archived OpenCode runner remains available for explicit foreign-CLI work:
 
 ```bash
-node skills/owned/cli-agent-delegator/scripts/opencode-run.mjs \
-  --dir <project> \
-  --task-type quick \
-  --modality text \
-  --model <best-suitable-free-model> \
-  --fallback-model <next-suitable-free-model> \
-  --prompt-file <prompt-file>
-
-node skills/owned/cli-agent-delegator/scripts/opencode-run.mjs \
-  --dir <project> \
-  --task-type discovery \
-  --modality vision \
-  --model <best-suitable-free-reasoning-model> \
-  --file <image-or-https-url> \
-  --allow-external-upload \
-  --prompt-file <prompt-file>
-
-node skills/owned/cli-agent-delegator/scripts/opencode-run.mjs \
+node skills/archived/cli-agent-delegator/scripts/opencode-run.mjs \
   --dir <project> \
   --task-type audit \
   --modality text \
   --model <best-suitable-free-audit-model> \
-  --fallback-model <next-suitable-free-audit-model> \
   --prompt-file <audit-prompt-file> \
   --review-ref <exact-commit>
 ```
@@ -159,9 +141,8 @@ Local-first delivery gates, shared private planning, frozen review points, and S
 | Skill | Role |
 |---|---|
 | `aimagician-superpower` | Risk-scaled SDD plus project memory, codebase exploration, progressive discovery, prototypes, engineering design, vertical delivery, root-cause debugging, technical review, traceable verification, audit, and handoff |
-| `cli-agent-delegator` | External CLI-worker runtime for broad evidence collection, deep research, long-running bounded operations, dynamic free-model routing, and independent reviews when dispatch materially helps |
-| `agent-workstream-orchestrator` | Provider-neutral tracked multi-session and multi-lane coordination with optional worktrees, integration ownership, and resumable handoff |
-| `vision-analysis` | Consent-gated direct Agnes image understanding for screenshots, diagrams, posters, and other visual evidence, with sanitized provenance for downstream reasoning |
+| `agent-workstream-orchestrator` | Host-native tracked multi-session and multi-lane coordination with optional worktrees, integration ownership, and resumable handoff |
+| `vision-analysis` | Fallback Agnes image understanding when the current model cannot see pixels, or when the user asks for a sanitized evidence package |
 | `interface-design` | HTML/CSS/JS design, prototypes, UI, dashboards, repository branding, covers, posters, product demo video, creative coding, data visualization, HTML presentations, responsive browser QA, and brand routing |
 | `github-readme-highstar` | README information architecture, quick-start clarity, repository visual collaboration, static hero and supplemental demo integration |
 | `system-prompt-engineering` | System-prompt requirements, composition, identity, tools, delegation, safety, memory, search, channel adaptation, code-agent behavior, and evaluation |
@@ -183,8 +164,9 @@ External sources are curated into owned skills instead of installed by default.
 
 | Source area | New owned path |
 |---|---|
-| GSD + Superpowers planning/execution | `aimagician-superpower` |
-| CLI agent delegation for discovery, research, bounded operations, reasoning, and independent review | `cli-agent-delegator` |
+| GSD + Superpowers planning/execution | `aimagician-superpower` plus owned coding rules |
+| Host-native subagent dispatch and coding discipline | `rules/owned` |
+| User and project memory policy | `memory/owned/project-memory-policy` |
 | Direct authorized image understanding and sanitized visual evidence | `vision-analysis` |
 | Composio SaaS tool routing and MCP-light discovery | `composio-tool-router` |
 | System-prompt playbooks and cross-product prompt patterns | `system-prompt-engineering` |
@@ -233,7 +215,7 @@ node skills/owned/interface-design/scripts/export-html-deck-pptx.mjs --slides sl
 node skills/owned/interface-design/scripts/export-html-stage-pptx.mjs --html deck.html --out deck.pptx --mode fidelity
 ```
 
-The owned catalog currently contains 24 active Skills. Runtime packages contain only capability instructions, references, templates, and helpers; evaluation corpora live under `quality/skill-evals/` and are not installed. Full upstream source mirrors used during consolidation stay ignored under each Skill's `references/_external_repos/`; they are neither packaged nor installed. Project-specific preferences and resumable memory live under `.planning/`, outside general-purpose Skills. The distillation, optimization, HTML presentation, README visual, and Skillbird validation records are kept under `docs/audits/`.
+The owned catalog currently contains 23 active Skills plus owned rules and memory policy. Runtime packages contain only capability instructions, references, templates, and helpers; evaluation corpora live under `quality/skill-evals/` and are not installed. Full upstream source mirrors used during consolidation stay ignored under each Skill's `references/_external_repos/`; they are neither packaged nor installed. Project-specific preferences and resumable memory live under `.planning/memory/` and `~/.skillbird/memory/`, outside general-purpose Skills. The distillation, optimization, HTML presentation, README visual, and Skillbird validation records are kept under `docs/audits/`.
 
 See [`docs/design/html-universal-design-capability-merge.md`](docs/design/html-universal-design-capability-merge.md) for the capability analysis and boundary decisions.
 

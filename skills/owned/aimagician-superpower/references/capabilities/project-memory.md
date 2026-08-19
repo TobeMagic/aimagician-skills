@@ -15,7 +15,7 @@ For planning-managed projects:
 - `memory.md` contains durable architecture, invariants, accepted preferences, recurring commands, active risks, and links to authoritative evidence.
 - `YYYY-MM-DD.md` contains that day's decisions, verified progress, failed attempts worth avoiding, open questions, and the exact resume point.
 
-For a project without `.planning`, adopt a project-local location only when the user or repository policy requests durable memory. Do not silently introduce planning infrastructure for a quick task.
+User memory, when present, lives at `~/.skillbird/memory/memory.md` with optional daily notes. Read user memory before project memory on resume. Do not silently introduce planning infrastructure for a quick task.
 
 ## Read Policy
 

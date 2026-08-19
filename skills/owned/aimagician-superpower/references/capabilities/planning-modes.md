@@ -47,7 +47,7 @@ Avoid instructions such as "handle errors" or "add tests" without naming the req
 
 ## Independent Plan Review
 
-For substantial work, load `cli-agent-delegator` and dispatch a fresh OpenCode plan reviewer with the specification, research conclusion, accepted decisions, relevant owned skills, context, and complete plan. The reviewer checks:
+For substantial work, dispatch a fresh host-native plan reviewer with the specification, research conclusion, accepted decisions, relevant owned skills, context, and complete plan. The reviewer checks:
 
 - missing or extra scope;
 - requirement coverage and falsifiability;

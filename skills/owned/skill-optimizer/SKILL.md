@@ -19,7 +19,6 @@ metadata:
     - assets/templates/judge-contract.md
   preferred_companions:
     - skill-creator
-    - cli-agent-delegator
 compatibility:
   tools: [bash, file, agent]
   requires: One or more existing Skill directories and representative user prompts

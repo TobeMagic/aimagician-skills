@@ -6,7 +6,7 @@ Use this module when an external CLI agent or fresh subagent can reduce context 
 
 The coordinating agent owns objective, boundaries, source-of-truth context, task decomposition, provider choice, permissions, prompt quality, progress monitoring, result validation, integration, and final completion. Delegation never transfers accountability. Keep unresolved product and architecture decisions, risk acceptance, and final completion judgment with the controller.
 
-Use prompt templates under `references/roles/` together with the full envelope in `cli-agent-delegator/references/prompt-contract.md`. Each dispatch includes the exact task, source of truth, relevant requirements, accepted decisions, known context, required owned skills, allowed and forbidden scope, permission mode, write scope, commands, tests, git policy, output format, status and severity protocol, and escalation rule. The worker loads every named skill before substantive work or returns `NEEDS_CONTEXT`. Do not tell an agent to rediscover context the controller already has.
+Use prompt templates under `references/roles/` together with OBJECTIVE, ALLOWED_SCOPE, FORBIDDEN_SCOPE, PERMISSION_MODE, and STATUS_PROTOCOL. Each dispatch includes the exact task, source of truth, relevant requirements, accepted decisions, known context, required owned skills, allowed and forbidden scope, permission mode, write scope, commands, tests, git policy, output format, status and severity protocol, and escalation rule. The worker loads every named skill before substantive work or returns `NEEDS_CONTEXT`. Do not tell an agent to rediscover context the controller already has.
 
 ## Role Routing
 
@@ -57,7 +57,7 @@ Findings use `Blocker`, `Important`, or `Nitpick`. A Blocker stops progression. 
 
 ## Provider And Model Selection
 
-Use `cli-agent-delegator` for provider execution and delegate eligible simple short tasks after requirements and evidence are locked. List current active free workers, then let the controller explicitly select the best suitable primary and ordered fallbacks from task difficulty, context, reasoning/tool needs, known current quality, and availability. The controller records the rationale and does not maintain a universal model ranking. Acquire visual evidence through `vision-analysis` with explicit external-upload authorization; OpenCode receives sanitized text rather than image attachments. The runtime appends Agnes once as the final fallback when available. Escalate model capability when a role reports reasoning limits; do not retry the same insufficient context unchanged.
+Use the current host's native subagent after requirements and evidence are locked. Acquire visual evidence locally when this session can read images; load `vision-analysis` only when the current model cannot see pixels or the user asks for an Agnes evidence package. Escalate model capability when a role reports reasoning limits; do not retry the same insufficient context unchanged.
 
 For long-running CLI agents, monitor activity events and wait while progress continues. Do not impose a fixed wall-clock stop on an active run. Classify stale, permission, model, command, and provider failures explicitly.
 

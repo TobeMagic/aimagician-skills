@@ -11,6 +11,8 @@
     "dist",
     "catalog",
     "skills",
+    "rules",
+    "memory",
     "README.md",
     "!**/__pycache__",
     "!**/*.pyc"

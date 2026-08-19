@@ -1,6 +1,6 @@
 ---
 name: aimagician-superpower
-description: Use when starting or resuming engineering work, understanding a requirement, exploring a codebase, implementing changes, debugging, refactoring, reviewing, applying specification-driven delivery, or deciding whether a task, phase, milestone, or release is complete. Selects the shortest reliable engineering path from scope and risk; expands into planning, research, specialist routes, and independent audit only when they materially protect the requested outcome.
+description: Use when the work is High-risk, cross-module, a public or stored-data contract, a phase or milestone, specification-driven delivery, or an explicit request to plan, audit, or decide whether a delivery is complete. Selects the shortest reliable engineering path from scope and risk; do not use for a reversible one- or two-file Quick change that the coding rules already cover.
 category: build
 subcategory: workflow
 tags:
@@ -35,7 +35,7 @@ State the objective, observable acceptance signal, allowed scope, forbidden scop
 | `Standard` | Bounded feature, fix, or review with a known module | Resolve only behavior-changing ambiguity -> map the affected path -> implement -> focused verification -> deliver. |
 | `High` | Cross-module/public contract, data or schema, security, deployable behavior, difficult reversal, phase/milestone, or material uncertainty | Align and discuss -> research/design/plan -> implement in checkpoints -> review and risk-scaled verification -> audit/close. |
 
-Escalate for an unclear objective, public or stored-data contract, security, production behavior, broad blast radius, irreversible operation, or explicit review/audit request. Downgrade when existing evidence has already answered the question. Do not force planning records, a wiki, a worktree, external agents, or an independent audit on a `Quick` task.
+Escalate for an unclear objective, public or stored-data contract, security, production behavior, broad blast radius, irreversible operation, or explicit review/audit request. Downgrade when existing evidence has already answered the question. Do not force planning records, a wiki, a worktree, external agents, or an independent audit on a `Quick` task. Quick and Standard coding discipline lives in the owned coding rules; this Skill expands only when risk requires it.
 
 A new or changed callable/API contract is `Standard` at minimum, even when the implementation is isolated; escalate it to `High` when it is a released/public contract or crosses a High-risk surface.
 
@@ -45,7 +45,7 @@ A new or changed callable/API contract is `Standard` at minimum, even when the i
 
 For a new `Quick` task, read the request and the known local target. For `Standard`, add the nearest implementation, tests, and repository conventions needed to make the next decision. Reuse evidence already collected instead of scanning again.
 
-For `High`, phase, milestone, resumed, or context-poor work, first read this file, the latest user decision, current repository state, and the active task or handoff. When planning is adopted, read `.planning/STATE.md`, `.planning/PROJECT.md`, `.planning/CONTEXT.md`, the active specification or roadmap, and only the project docs/wiki pages they route to. When `.planning/memory/` exists, read `memory.md` and today's note only when the task needs continuity; memory never overrides accepted requirements, source code, or runtime evidence.
+For `High`, phase, milestone, resumed, or context-poor work, first read this file, the latest user decision, current repository state, and the active task or handoff. When planning is adopted, read `.planning/STATE.md`, `.planning/PROJECT.md`, `.planning/CONTEXT.md`, the active specification or roadmap, and only the project docs/wiki pages they route to. When `.planning/memory/` or `~/.skillbird/memory/` exists, read `memory.md` and today's note only when the task needs continuity; memory never overrides accepted requirements, source code, or runtime evidence.
 
 If a material uncertainty remains, discuss it before mutation. Never invent missing context, restart proven discovery, or treat a summary as proof.
 
@@ -98,7 +98,7 @@ The index groups the detailed modules by decision surface. Load the smallest app
 | Tests, review, UAT, audit, or handoff | [Verify and close](references/capabilities/index.md#verify-and-close) |
 | UI, AI, security, data, documents, operations, Git/PR, or third-party SaaS | [Specialist gates](references/capabilities/index.md#specialist-gates) |
 
-Use another owned Skill only when its domain is actually present: `interface-design` for HTML visual work, `webapp-testing` for browser evidence, `github-pr-workflow` for PR operations, `composio-tool-router` for third-party SaaS, `llm-know-how-wiki` for a requested or material project knowledge base, and the relevant document/cloud/vision Skill for those surfaces. They are conditional routes, never default preflight.
+Use another owned Skill only when its domain is actually present: `interface-design` for HTML visual work, `webapp-testing` for browser evidence, `github-pr-workflow` for PR operations, `composio-tool-router` for third-party SaaS, `llm-know-how-wiki` for a requested or material project knowledge base, and the relevant document/cloud/vision Skill for those surfaces. Delegate with the current host's native subagent. They are conditional routes, never default preflight.
 
 ## 5. Verify, Close, and Report Honestly
 

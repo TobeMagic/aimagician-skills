@@ -18,7 +18,7 @@ import {
   quotaPolicyForModel,
   resolveModelRoute,
   runModelChain
-} from "../../skills/owned/cli-agent-delegator/scripts/opencode-run.mjs";
+} from "../../skills/archived/cli-agent-delegator/scripts/opencode-run.mjs";
 
 const execFileAsync = promisify(execFile);
 const tempDirectories: string[] = [];
@@ -284,7 +284,6 @@ process.exit(2);
   await chmod(executable, 0o755);
   return {
     root,
-    runner: join(process.cwd(), "skills", "owned", "cli-agent-delegator", "scripts", "opencode-run.mjs"),
+    runner: join(process.cwd(), "skills", "archived", "cli-agent-delegator", "scripts", "opencode-run.mjs"),
     env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, XDG_CACHE_HOME: join(root, "cache") }
   };
-}

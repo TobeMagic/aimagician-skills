@@ -35,7 +35,7 @@ describe("consolidated owned skill content", () => {
     const mergeAudit = await readFile(join(docsRoot, "superpowers", "aimagician-superpower-capability-merge.md"), "utf8");
 
     for (const forbidden of [
-      "GSD", "Superpowers", "code-guidelines", "Source Decisions", "Consolidation Rules",
+      "GSD", "Superpowers", "Source Decisions", "Consolidation Rules",
       "Installing external workflow frameworks", "auto-update hooks", "source-routing"
     ]) {
       expect(runtimeContent).not.toContain(forbidden);
@@ -98,16 +98,18 @@ describe("consolidated owned skill content", () => {
     expect(appleDesign).toContain("Apple");
   });
 
-  it("keeps CLI agent delegation provider-based, bounded, and independently validated", async () => {
-    const skillRoot = join(ownedSkillsRoot, "cli-agent-delegator");
-    const skill = await readOwnedSkill("cli-agent-delegator");
+  it("archives CLI agent delegation outside the active owner set and keeps the OpenCode contract recoverable", async () => {
+    const skillRoot = join(process.cwd(), "skills", "archived", "cli-agent-delegator");
+    const skill = await readFile(join(skillRoot, "SKILL.md"), "utf8");
     const opencodeProvider = await readFile(join(skillRoot, "references", "providers", "opencode.md"), "utf8");
     const promptContract = await readFile(join(skillRoot, "references", "prompt-contract.md"), "utf8");
     const discoveryTask = await readFile(join(skillRoot, "references", "task-types", "discovery-and-research.md"), "utf8");
     const operationsTask = await readFile(join(skillRoot, "references", "task-types", "bounded-operations-and-execution.md"), "utf8");
     const reviewTask = await readFile(join(skillRoot, "references", "task-types", "independent-review-and-audit.md"), "utf8");
 
+    await expect(readOwnedSkill("cli-agent-delegator")).rejects.toThrow();
     expect(skill).toContain("Dispatch Trigger Gate");
+    expect(skill).toContain("archived from the default install set");
     expect(skill).toContain("wording alone is not sufficient");
     expect(skill).toContain("Bounded-Operation Gate");
     expect(skill).toContain("does not impose tool-level access control");

@@ -51,4 +51,4 @@ Each finding includes:
 
 `Blocker` prevents progression or completion. `Important` is material and must be fixed and re-reviewed or deferred by an explicit user decision. `Nitpick` is non-blocking. Do not inflate severity, report preferences as defects, or bury a Blocker under general praise. When no finding remains, say so and name residual test gaps or uncertainty.
 
-Use `assets/templates/engineering-review.md` for durable review evidence. For substantial work, run the specification and quality passes as fresh OpenCode roles through `cli-agent-delegator`, then have the main Agent reproduce material findings and inspect the decisive evidence. A review is closed only after accepted findings are fixed and re-reviewed, explicitly deferred, or rejected with evidence.
+Use `assets/templates/engineering-review.md` for durable review evidence. For substantial work, run the specification and quality passes as fresh host-native reviewer sessions, then have the main Agent reproduce material findings and inspect the decisive evidence. A review is closed only after accepted findings are fixed and re-reviewed, explicitly deferred, or rejected with evidence.

@@ -508,15 +508,15 @@ describe("owned skill trigger contracts", () => {
     expect(interfaceFrontmatter).toContain("HTML-first PDF or PPTX conversion");
     expect(interfaceFrontmatter).toContain("Route ordinary native PowerPoint delivery to the PPT skill");
     expect(readmeFrontmatter).toContain("README 封面");
-    expect(engineeringFrontmatter).toContain("implementing changes");
-    expect(engineeringFrontmatter).toContain("debugging");
-    expect(engineeringFrontmatter).toContain("refactoring");
+    expect(engineeringFrontmatter).toContain("High-risk");
+    expect(engineeringFrontmatter).toContain("specification-driven delivery");
+    expect(engineeringFrontmatter).toContain("Quick change");
     expect(pptxFrontmatter).toContain("PPTX");
     expect(pptxFrontmatter).toContain("deck");
   });
 
   it("routes visual acquisition separately and makes audit-model selection explicit", async () => {
-    const provider = await readFile(join(ownedRoot, "cli-agent-delegator", "references", "providers", "opencode.md"), "utf8");
+    const provider = await readFile(join(process.cwd(), "skills", "archived", "cli-agent-delegator", "references", "providers", "opencode.md"), "utf8");
     expect(provider).toContain("For any task, phase, milestone, release, or delivery completion audit that requires independence");
     expect(provider).toContain("controller-selected reasoning route");
     expect(provider).toContain("runtime appends `agnes/agnes-2.0-flash` exactly once as the final fallback");

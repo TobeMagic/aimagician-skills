@@ -11,7 +11,7 @@ Use this contract for every delegated role.
 - Permission mode, exact write scope, git policy, and child-agent policy.
 - Expected checks, evidence, progress events, finding severity, output format, and escalation conditions.
 
-Do not ask the agent to rediscover context already known to the controller. Do not grant write permission implicitly. If a named skill, source, decision, or permission is missing, return `NEEDS_CONTEXT` instead of improvising. Use the full `cli-agent-delegator/references/prompt-contract.md` envelope for OpenCode.
+Do not ask the agent to rediscover context already known to the controller. Do not grant write permission implicitly. If a named skill, source, decision, or permission is missing, return `NEEDS_CONTEXT` instead of improvising. Use OBJECTIVE, ALLOWED_SCOPE, FORBIDDEN_SCOPE, PERMISSION_MODE, and STATUS_PROTOCOL on every host-native worker.
 
 ## Required Status
 

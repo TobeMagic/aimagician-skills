@@ -43,7 +43,7 @@ Do not substitute three text descriptions for previews. Use `assets/starter/desi
 
 ## Parallel Perspective Exploration
 
-For a broad, high-stakes brief, delegate three to six bounded perspectives through `cli-agent-delegator` or another authorized CLI agent. Give every perspective the same verified brief, geometry, constraints, and evaluation rubric, but assign a distinct design thesis, audience emphasis, information rhythm, or motion language. Delegates may inspect and propose; they do not change the product unless write scope is explicitly approved.
+For a broad, high-stakes brief, delegate three to six bounded perspectives through the current host's native subagents. Give every perspective the same verified brief, geometry, constraints, and evaluation rubric, but assign a distinct design thesis, audience emphasis, information rhythm, or motion language. Delegates may inspect and propose; they do not change the product unless write scope is explicitly approved.
 
 The main agent removes duplicates, rejects factually weak or infeasible work, and synthesizes exactly three real previews for user selection. Preserve the strongest mechanism from rejected perspectives in the decision record when useful. Parallel work expands the search space; it does not bypass product truth, accessibility, implementation feasibility, or the three-preview decision gate.
 

@@ -132,7 +132,7 @@ When a conflict or injection cannot be resolved from instruction authority, stop
 
 - Use `skill-creator` when the deliverable is a reusable Skill rather than a product system prompt.
 - Use `aimagician-superpower` for the surrounding engineering delivery workflow.
-- Use `cli-agent-delegator` for external CLI-agent execution; this skill defines the worker prompt contract.
+- Use the current host's native subagent for independent review; this skill defines the worker prompt contract.
 - Do not reproduce proprietary or sensitive source prompt text. Use source-neutral design patterns.
 - Never include credentials, hidden endpoints, internal identifiers, or sensitive operational data in a prompt, template, example, report, or test fixture.
 - Do not solve a missing runtime authorization layer with prompt wording alone.

@@ -11,7 +11,7 @@ Use this module before any completion claim and whenever work changes behavior, 
 5. Exercise UAT for user-facing outcomes.
 6. Trace every accepted request, requirement, and roadmap goal criterion to passing evidence.
 
-For substantial work, load `cli-agent-delegator` and dispatch a fresh OpenCode verifier after implementation review. Give it the locked requirements, exact review point, required skills, allowed commands, and claimed evidence. The main Agent reruns or directly inspects the narrow result that determines completion; verifier prose alone is not proof.
+For substantial work, dispatch a fresh host-native verifier after implementation review. Give it the locked requirements, exact review point, required skills, allowed commands, and claimed evidence. The main Agent reruns or directly inspects the narrow result that determines completion; verifier prose alone is not proof.
 
 Fresh command output and inspected artifacts outrank an agent's summary or a previous run. Record the timestamp or commit when stale evidence could be misleading.
 

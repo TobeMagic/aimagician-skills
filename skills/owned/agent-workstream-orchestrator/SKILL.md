@@ -1,14 +1,12 @@
 ---
 name: agent-workstream-orchestrator
-description: Use when work can be split into independently tracked agent sessions, when a bounded task should run outside the controller context, or when multiple read or write lanes need coordinated execution. Routes work by coupling and risk across the current agent, fresh Codex sessions, OpenCode, optional worktrees, integration branches, and pull requests; do not use for a single tightly coupled task that is faster and safer in the current session.
+description: Use when work can be split into independently tracked agent sessions, when a bounded task should run outside the controller context, or when multiple read or write lanes need coordinated execution. Routes work by coupling and risk across the current host's native sessions, optional worktrees, integration branches, and pull requests; do not use for a single tightly coupled task that is faster and safer in the current session.
 category: operate
 subcategory: agent-orchestration
 tags:
   - multi-agent
   - workstreams
   - sessions
-  - codex
-  - opencode
   - worktree
   - integration
 compatibility:
@@ -31,7 +29,7 @@ Use this Skill when at least one condition holds:
 - multiple outputs need integration, conflict control, or a unified acceptance pass;
 - a paused or background session must be tracked and resumed safely.
 
-Do not use it for one external worker, one short tightly coupled edit, a single known-file check, a decision that depends on unresolved user intent, or work whose files, state, and acceptance cannot be partitioned. In those cases, keep the work in the controller and resolve the boundary first. `cli-agent-delegator` can dispatch one bounded worker without creating a durable workstream registry.
+Do not use it for one host-native subagent, one short tightly coupled edit, a single known-file check, a decision that depends on unresolved user intent, or work whose files, state, and acceptance cannot be partitioned. In those cases, keep the work in the controller and resolve the boundary first. A single bounded worker does not need a durable workstream registry.
 
 ## Control Contract
 
@@ -53,14 +51,14 @@ Choose the least expensive isolation that preserves correctness.
 
 | Work | Default execution | Isolation |
 |---|---|---|
-| Independent exploration, research, review, or report | OpenCode through `cli-agent-delegator`; Codex when deeper reasoning is required | Fresh session, read-only, no worktree |
-| Short test, Git inspection, lint, bounded mechanical update | OpenCode through `cli-agent-delegator` | Fresh session; exact write scope if edits are allowed |
-| Complex design or core implementation | Fresh Codex session | Worktree when writes overlap controller state |
-| Independent bounded implementation | Codex or OpenCode selected by difficulty | Tracked session plus worktree and branch |
+| Independent exploration, research, review, or report | Current host native subagent | Fresh session, read-only, no worktree |
+| Short test, Git inspection, lint, bounded mechanical update | Current host native subagent | Fresh session; exact write scope if edits are allowed |
+| Complex design or core implementation | Fresh host session | Worktree when writes overlap controller state |
+| Independent bounded implementation | Host session selected by difficulty | Tracked session plus worktree and branch |
 | Shared, high-coupling architecture or migration | Controller | Sequential; delegate evidence collection only |
-| Multiple isolated write lanes requiring one delivery | Mixed providers by lane | Worktrees, integration owner, then PR if the repository uses PRs |
+| Multiple isolated write lanes requiring one delivery | Mixed host sessions by lane | Worktrees, integration owner, then PR if the repository uses PRs |
 
-Provider choice is dynamic. Use task difficulty, available tools, model capability, quota, and required modality. OpenCode model selection and fallback belong to `cli-agent-delegator`; do not hard-code one provider here.
+Provider choice stays on the current HOST. Use a foreign CLI only when the user names it. Do not hard-code OpenCode or Codex as the default worker.
 
 ## Progressive Disclosure
 

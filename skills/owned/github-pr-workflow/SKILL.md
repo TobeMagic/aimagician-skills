@@ -1,10 +1,9 @@
 ---
 name: github-pr-workflow
-description: Use when creating, inspecting, reviewing, updating, merging, or closing a GitHub pull request. Resolve repository-specific branch and merge protections first; use Linear through Composio only as optional post-delivery tracking.
+description: Use when creating, inspecting, reviewing, updating, merging, or closing a GitHub pull request. Resolve repository-specific branch and merge protections first. Do not use for ordinary local commits. Linear through Composio is optional post-delivery tracking only.
 metadata:
   related_skills:
     - composio-tool-router
-    - cli-agent-delegator
 compatibility:
   tools: [bash, git, gh]
   requires: GitHub CLI authenticated for the target repository

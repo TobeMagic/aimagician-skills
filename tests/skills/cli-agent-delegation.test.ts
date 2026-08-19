@@ -3,18 +3,21 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ownedRoot = join(process.cwd(), "skills", "owned");
-const delegatorRoot = join(ownedRoot, "cli-agent-delegator");
+const archivedRoot = join(process.cwd(), "skills", "archived");
+const delegatorRoot = join(archivedRoot, "cli-agent-delegator");
 const superpowerRoot = join(ownedRoot, "aimagician-superpower");
 
 describe("cli-agent-delegator capability contract", () => {
-  it("renames the owned skill without leaving an alias or tombstone", async () => {
+  it("archives the skill without leaving an owned copy or alias", async () => {
     await expect(access(join(delegatorRoot, "SKILL.md"))).resolves.toBeUndefined();
+    await expect(access(join(ownedRoot, "cli-agent-delegator", "SKILL.md"))).rejects.toThrow();
     await expect(access(join(ownedRoot, "cli-agent-orchestrator", "SKILL.md"))).rejects.toThrow();
 
     const skill = await readFile(join(delegatorRoot, "SKILL.md"), "utf8");
     expect(skill).toMatch(/^---\nname: cli-agent-delegator\n/);
     expect(skill).toContain("category: operate");
     expect(skill).toContain("subcategory: agent-orchestration");
+    expect(skill).toContain("archived from the default install set");
   });
 
   it("puts broad exploration, research, vision, and independent review on the trigger surface without forcing trivial dispatch", async () => {
@@ -151,8 +154,9 @@ describe("cli-agent-delegator capability contract", () => {
     expect(review).toContain("Fresh whole-result auditor");
     expect(review).toContain("original-request traceability");
     expect(review).toContain("Use exactly");
-    expect(orchestration).toContain("cli-agent-delegator");
+    expect(orchestration).toContain("current host's native subagent");
     expect(orchestration).toContain("phase audit, and milestone or completion audit");
+    expect(orchestration).not.toContain("cli-agent-delegator");
     expect(qualityReviewer).toContain("`Blocker`, `Important`, and `Nitpick`");
     expect(qualityReviewer).not.toContain("Critical, Important, and Minor");
   });

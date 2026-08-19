@@ -16,8 +16,8 @@ Browse current primary sources when package behavior, third-party APIs, platform
 ## Exploration Depth
 
 - Inspect one or two known files directly.
-- For broad codebase, document corpus, dependency, architecture, data-flow, web, or visual exploration, load `cli-agent-delegator` before the main Agent scans the sources itself.
-- Give OpenCode the objective, source of truth, required owned skills, accepted decisions, allowed and forbidden scope, permission mode, required output, and concrete questions.
+- For broad codebase, document corpus, dependency, architecture, data-flow, web, or visual exploration, dispatch the current host's native subagent before the main Agent scans the sources itself.
+- Give the worker the objective, source of truth, required owned skills, accepted decisions, allowed and forbidden scope, permission mode, required output, and concrete questions.
 - Keep the main agent responsible for spot-checking critical claims and reconciling the report with local evidence.
 
 ## Code And System Mapping

@@ -16,6 +16,7 @@ Archived IDs:
 - modelscope_imagegen (owned, 2026-08-11; removed from the active runtime set)
 - mcp-builder (owned, 2026-08-11; project-specific protocol development belongs in engineering context)
 - linear-issue-workflow (owned, 2026-08-11; replaced by project preference plus composio-tool-router)
+- cli-agent-delegator (owned, 2026-08-19; default OpenCode dispatch replaced by host-native subagent rules; restore only when a foreign CLI is explicitly requested)
 
 Notes:
 - These entries will not be installed by bootstrap; catalog entries were removed/disabled.

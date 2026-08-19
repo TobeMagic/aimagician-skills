@@ -25,21 +25,20 @@ npx aimagician_superpower@latest
 
 ## Source Of Truth
 
-The current active set is `skills/owned`. Consolidated GSD, Superpowers, selected Claude, UI, browser-testing, and document capabilities are maintained there as clean owner Skills. External catalog entries remain disabled references, and archived Skills remain recoverable under `skills/archived` without entering the default install set.
+The current active set is `skills/owned`, plus always-on habits in `rules/owned` and memory policy in `memory/owned`. External catalog entries remain disabled references, and archived Skills remain recoverable under `skills/archived` without entering the default install set.
 
-The repository currently contains 24 active owned Skills across six categories:
+The repository currently contains 23 active owned Skills across six categories:
 
 `build`, `research`, `design`, `documents`, `operate`, `strategy`.
 
-Evaluation corpora live under `quality/skill-evals` and are not installed into runtime Skill directories. Project preferences and resumable memory live under `.planning`.
+Evaluation corpora live under `quality/skill-evals` and are not installed into runtime Skill directories. Project memory lives under `.planning/memory/`; user memory lives under `~/.skillbird/memory/`.
 
 ## Core Routes
 
 | Skill | Purpose |
 |---|---|
 | `aimagician-superpower` | Risk-scaled engineering workflow, project memory, exploration, design, implementation, debugging, verification, audit, and handoff |
-| `cli-agent-delegator` | OpenCode delegation for discovery, research, short checks, bounded writes, reports, and independent review |
-| `agent-workstream-orchestrator` | Provider-neutral tracked sessions, optional worktrees, integration, and resumable handoffs |
+| `agent-workstream-orchestrator` | Host-native tracked sessions, optional worktrees, integration, and resumable handoffs |
 | `interface-design` | HTML/CSS/JS visual work, repository branding, prototypes, dashboards, motion, and browser/media QA |
 | `github-readme-highstar` | README information architecture, repository visual integration, and GitHub delivery QA |
 | `skill-optimizer` | Darwin baseline/treatment evaluation and independent Skill improvement |
