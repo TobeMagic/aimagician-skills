@@ -18,7 +18,7 @@ Compare actual files, runtime behavior, and evidence with:
 
 Do not infer compliance from a completion summary. Spot-check or execute critical evidence and inspect the final diff.
 
-Require a fresh independent OpenCode auditor against a frozen review point for High work, phase or milestone closure, deployable postmerge closure, a project-mandated review, or an explicit user request. Quick and Standard work normally close from decisive verification and the repository's actual PR protections; add a compact combined review only when the diff, risk, or project policy justifies it. Acquire visual evidence first through `vision-analysis` with explicit upload authorization, then provide its sanitized text result to the auditor. The controller explicitly selects the best suitable free audit model and ordered fallbacks; Agnes is appended once as the final fallback when available. Supply only the sources that are material to the chosen tier: original objective or PRD, accepted decisions, applicable planning state, specification or task record, non-goals, actual diff or artifacts, verification, and exclusions. The main Agent reconciles findings against primary evidence and retains the final completion decision.
+Require a fresh independent auditor on the current host against a frozen review point for High work, phase or milestone closure, deployable postmerge closure, a project-mandated review, or an explicit user request. Foreign OpenCode (`skills/archived/cli-agent-delegator`) is opt-in only. Quick and Standard work normally close from decisive verification and the repository's actual PR protections; add a compact combined review only when the diff, risk, or project policy justifies it. Acquire visual evidence with the current model's native image tool when available; load `vision-analysis` only when the session cannot see pixels or the user asks for an Agnes evidence package, then pass the sanitized text result to the auditor. Supply only the sources that are material to the chosen tier: original objective or PRD, accepted decisions, applicable planning state, specification or task record, non-goals, actual diff or artifacts, verification, and exclusions. The main Agent reconciles findings against primary evidence and retains the final completion decision. Leftover: this repository's `workflow.mjs` `validateOpenCodeAudit` still requires the literal `Provider: OpenCode` on planning-managed complete-gate records until that gate is generalized; see `docs/RULES-AND-MEMORY.md`.
 
 ## Gap Classification
 
@@ -42,7 +42,7 @@ For High or planning-managed closure, require:
 - all required evidence `PASS`;
 - user-facing UAT complete when applicable;
 - no unresolved blocking review finding;
-- OpenCode model-selection rationale, declared/effective chain, provider, primary/final model, transitions, attempt chain, fallback reason, fresh session, frozen review point, requirement matrix, finding counts, and controller spot-check recorded;
+- auditor host, model, session, frozen review point, requirement matrix, finding counts, and controller spot-check recorded;
 - no stale placeholder or accidental capability loss;
 - state and documentation updated;
 - temporary output handled intentionally;

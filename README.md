@@ -1,7 +1,7 @@
 <h1 align="center">Skillbird</h1>
 
 <p align="center">
-  <em>Owned skills that turn AI coding CLIs into evidence-driven engineering and design agents</em>
+  <em>Owned skills, rules, and memory that turn AI coding CLIs into evidence-driven engineering and design agents</em>
 </p>
 
 <p align="center">
@@ -37,7 +37,7 @@
 
 The daily command is `skillbird`. It manages skills across Codex, Claude, OpenCode, Gemini, Hermes, Cursor, and Copilot with global or project-local installs.
 
-The important change: owned skills, rules, and memory policy are now the source of truth. External collections such as GSD, Superpowers, selected Claude skills, UI packs, and Playwright skills are curated into owned skills or kept as disabled reference material. Bootstrap installs only the active owned skill set by default. Rule and memory sync to CLI targets lands in a later Skillbird engine slice.
+The important change: owned skills, always-on rules, and memory policy are now the source of truth. External collections such as GSD, Superpowers, selected Claude skills, UI packs, and Playwright skills are curated into owned skills or kept as disabled reference material. Bootstrap installs only the active owned skill set by default. Later agents should start from [`docs/RULES-AND-MEMORY.md`](docs/RULES-AND-MEMORY.md). Rule and memory sync to CLI targets lands in a later Skillbird engine slice.
 
 ## Quick Start
 
@@ -110,6 +110,8 @@ Lightweight work may use a concise PR description and verification evidence; pha
 
 Linear is managed only through `composio-tool-router` and Composio CLI, never through Linear MCP. If Linear context is not needed to understand the requirement, a host-native worker may perform the approved post-merge status/comment/closure work as a bounded task after core delivery. The first PR in a project resolves its integration branch from project evidence; no global `dev` default is assumed.
 
+Owned always-on rules live under `rules/owned/` (`code-guidelines`, `review-before-edit`, `native-capability-first`, `host-native-delegation`, `git-safety`, `memory-pointer`). Memory policy and templates live under `memory/owned/project-memory-policy/`. The layout, locked decisions, and leftover engine work are recorded in [`docs/RULES-AND-MEMORY.md`](docs/RULES-AND-MEMORY.md).
+
 The archived OpenCode runner remains available for explicit foreign-CLI work:
 
 ```bash
@@ -132,7 +134,7 @@ The route selects the required context map, design record, vertical slices, test
 
 The combined trigger, capability, boundary, and real-project validation is recorded in [`docs/audits/skill-capability-audit-2026-07-21.md`](docs/audits/skill-capability-audit-2026-07-21.md).
 
-OpenCode delegation triggers, bounded permissions, model routing, independent reviewer gates, and migration evidence are recorded in [`docs/audits/cli-agent-delegator-upgrade-2026-07-22.md`](docs/audits/cli-agent-delegator-upgrade-2026-07-22.md).
+The former default OpenCode runner, its permission and model-routing contract, and the migration evidence are historical. They live with the archived skill and [`docs/audits/cli-agent-delegator-upgrade-2026-07-22.md`](docs/audits/cli-agent-delegator-upgrade-2026-07-22.md). Current dispatch is host-native; see [`docs/RULES-AND-MEMORY.md`](docs/RULES-AND-MEMORY.md).
 
 Local-first delivery gates, shared private planning, frozen review points, and Skillbird content-drift validation are recorded in [`docs/audits/local-first-delivery-and-planning-storage-2026-07-30.md`](docs/audits/local-first-delivery-and-planning-storage-2026-07-30.md).
 
@@ -186,7 +188,7 @@ Six categories are used everywhere:
 | `research` | Papers, literature, open-source architecture, repo evidence, direct visual evidence |
 | `design` | HTML visual design, prototypes, UI/UX, dashboards, data visualization, HTML presentations, brand routing, accessibility, motion, image generation |
 | `documents` | README, Word, PDF, PowerPoint, spreadsheets |
-| `operate` | GitHub, cloud, tracked agent workstreams, releases, CLI agent delegation, Composio tool routing |
+| `operate` | GitHub, cloud, tracked host-native workstreams, releases, Composio tool routing |
 | `strategy` | Product, business, pricing, customers, growth |
 
 Every owned skill is formatted with `category`, `subcategory`, and `tags` frontmatter:
@@ -279,8 +281,12 @@ Useful flags:
 
 ```text
 skills/
-  owned/<skill-id>/SKILL.md      owned skills, default source of truth
-  archived/                      archived local skills
+  owned/<skill-id>/SKILL.md      23 active owned skills, default install set
+  archived/                      archived local skills (not installed by default)
+rules/
+  owned/<id>/RULE.md             always-on generic habits; not skills
+memory/
+  owned/project-memory-policy/   memory read/write policy and templates
 catalog/
   taxonomy.yaml                  six-category classification
   skills/*.yaml                  disabled external references
@@ -288,6 +294,8 @@ src/
   cli/                           skillbird command surface
   manager/                       search/install/format workflows
   bootstrap/                     target resolution and sync engine
+docs/
+  RULES-AND-MEMORY.md            current rules, memory, and leftover engine work
 ```
 
 State paths:

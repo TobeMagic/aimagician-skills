@@ -36,7 +36,7 @@
 - Specification compliance: NOT_RUN
 - Quality review: NOT_RUN
 - Integration audit: NOT_RUN
-- Fresh OpenCode phase auditor: NOT_RUN
+- Fresh independent phase auditor: NOT_RUN
 
 | Severity | Finding | Evidence | Disposition |
 |---|---|---|---|

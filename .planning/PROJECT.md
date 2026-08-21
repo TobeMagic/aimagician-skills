@@ -54,10 +54,11 @@ independent AI acceptance.
 
 ## Context
 
-This project is intended to live in the `skills/` subdirectory of an existing workspace, as its own repository and planning root. The repository combines two concerns:
+This project is intended to live in the `skills/` subdirectory of an existing workspace, as its own repository and planning root. The repository combines three owned surfaces:
 
-1. A home for AImagician's own skills, stored locally in the repo.
-2. A configurable distribution layer for third-party or open-source skills that should not necessarily be vendored into the repository.
+1. A home for AImagician's own skills, stored locally under `skills/owned/`.
+2. Always-on generic rules under `rules/owned/` and memory policy under `memory/owned/`. These are not skills and are not yet projected by Skillbird onto CLI rule/memory paths. See `docs/RULES-AND-MEMORY.md`.
+3. A configurable distribution layer for third-party or open-source skills that should not necessarily be vendored into the repository.
 
 The expected usage flow is concrete and simple:
 
@@ -101,6 +102,8 @@ The user expects all major targets to be covered in v1 because the integration i
 | v6.0 gates promotion on engineering plus independent AI evidence | Automatic scores alone previously concealed visible quality failures | Active |
 | v6.1 permits only direct-use physical lineage for acceptance | Reference-only pages and generated visual fallbacks cannot prove template reuse | Active |
 | The next milestone uses `pptx-studio` and removes `window-pptx` completely | The capability is a full design studio, not a Windows/COM-specific tool; dual public identities are explicitly rejected | Accepted |
+| Default worker is the current host's native subagent; `cli-agent-delegator` is archived | Hosts already have subagents; foreign OpenCode is opt-in | Active |
+| Habits live in `rules/owned`; memory uses user + project stores | Skills stay capability modules; rules stay always-on; Skillbird rule/memory sync is later | Active |
 
 ---
-*Last updated: 2026-08-08 after locking v6.1 physical assembly stabilization*
+*Last updated: 2026-08-21 after locking host-native rules/memory as first-class owned assets*

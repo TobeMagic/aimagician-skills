@@ -105,4 +105,4 @@ The caller must report:
 - backend/model and retry history;
 - observations, inferences, and uncertainty;
 - controller spot-checks for critical claims;
-- whether the report was passed into a later OpenCode reasoning or audit task.
+- whether the report was passed into a later host-native reasoning or audit task.

@@ -42,4 +42,4 @@ The result never records:
 
 ## Downstream Reasoning
 
-When OpenCode must continue the task, append the JSON report as controller-provided visual evidence and run OpenCode as text reasoning. The controller explicitly chooses the best suitable active free reasoning model and ordered fallbacks for the task; the runtime appends Agnes once as the final text fallback when available.
+When a later reasoning or audit step continues the task, append the JSON report as controller-provided visual evidence. Use the current host's native subagent for that step. Load archived `cli-agent-delegator` only when the user names OpenCode or another foreign CLI. Do not attach original image bytes to a text-only worker.

@@ -46,4 +46,26 @@ describe("owned rules and memory policy", () => {
     await access(join(memoryRoot, "templates", "project-memory.md"));
     await access(join(memoryRoot, "templates", "daily-memory.md"));
   });
+
+  it("keeps living docs aligned with host-native rules and memory", async () => {
+    const readme = await readFile(join(root, "README.md"), "utf8");
+    const english = await readFile(join(root, "docs", "README.en.md"), "utf8");
+    const contract = await readFile(join(root, "docs", "RULES-AND-MEMORY.md"), "utf8");
+    const context = await readFile(join(root, ".planning", "CONTEXT.md"), "utf8");
+
+    for (const doc of [readme, english, contract]) {
+      expect(doc).toContain("23 active");
+      expect(doc).toContain("rules/owned");
+      expect(doc).toContain("cli-agent-delegator");
+    }
+    expect(contract).toContain("host-native");
+    expect(contract).toContain("validateOpenCodeAudit");
+    for (const id of expectedRules) {
+      expect(contract).toContain(id);
+    }
+    expect(context).toContain("CTX-ARCH-003");
+    expect(context).toContain("CTX-DEC-010");
+    expect(context).toContain("docs/RULES-AND-MEMORY.md");
+    expect(readme).not.toMatch(/CLI agent delegation/);
+  });
 });

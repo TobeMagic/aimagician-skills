@@ -45,12 +45,14 @@ The previous owned runtime contained one router plus nine short capability modul
 
 ## Capability Routing
 
+Current dispatch (2026-08-21): host-native subagent. `cli-agent-delegator` is archived. See `docs/RULES-AND-MEMORY.md`. The merge table below remains the 2026-07-20 coverage map; the exploration row is updated to the current owner.
+
 | Capability family | Native owner or route |
 |---|---|
 | Goal, boundary, risk, baseline discussion | `intake-and-boundary.md` |
 | Milestones, phases, state, resume, pause, checkpoints | `state-and-continuity.md` plus workflow runtime |
 | Falsifiable requirements, ambiguity interview and lock | `spec-driven-development.md` plus SPEC template and gate |
-| Local mapping, dependency and current external research | `research-and-discovery.md`; broad exploration delegates to `cli-agent-delegator` |
+| Local mapping, dependency and current external research | `research-and-discovery.md`; broad exploration delegates to the current host's native subagent |
 | Brainstorming, assumptions, option comparison, decomposition | `ideation-and-scope.md` |
 | Quick, phase, research, MVP, TDD, repair, review and ultra plans | `planning-modes.md` plus plan template and gate |
 | Agent roles, model routing, status and review order | `agent-orchestration.md` plus role prompts |
